@@ -57,14 +57,14 @@ class MangaReader:
 
     def mark_chapters_until_n_as_read(self, manga_data, N):
         """Marks all chapters whose numerical index <=N as read"""
-        for chapter in manga_data["chapters"]:
+        for chapter in manga_data["chapters"].values():
             if chapter["number"] <= N:
                 chapter["read"] = True
 
     def download_unread_chapters(self):
         """Downloads all chapters that are not read"""
         for manga_data in self.state.values():
-            for chapter in manga_data["chapters"]:
+            for chapter in manga_data["chapters"].values():
                 server = self._servers[manga_data["server_id"]]
                 if not chapter["read"]:
                     server.download_chapter(manga_data, chapter)
@@ -80,14 +80,15 @@ class MangaReader:
         Return set of updated chapters or a False-like value
         """
         server = self._servers[manga_data["server_id"]]
-        def get_ids(chap): return {x["id"] for x in chap}
-        chapter_ids = get_ids(manga_data["chapters"])
+        chapter_ids = set(manga_data["chapters"].keys())
 
         server.update_manga_data(manga_data)
 
-        current_chapter_ids = get_ids(manga_data["chapters"])
+        current_chapter_ids = set(manga_data["chapters"].keys())
         new_chapter_ids = current_chapter_ids - chapter_ids
-        new_chapters = list(filter(lambda x: x["id"] in new_chapter_ids, manga_data["chapters"]))
+
+        new_chapters = [manga_data["chapters"][x] for x in new_chapter_ids]
+        assert len(new_chapter_ids) == len(new_chapters)
         if download:
             for chapter_data in new_chapters[:limit]:
                 server.download_chapter(manga_data, chapter_data)

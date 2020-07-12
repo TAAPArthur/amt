@@ -70,9 +70,9 @@ class Server:
 
     def search(self, term):
         term_lower = term.lower()
-        return filter(lambda x: term_lower in x['name'].lower(), self.get_manga_list())
+        return list(filter(lambda x: term_lower in x['name'].lower(), self.get_manga_list()))
 
-    def update_manga_data(self, initial_data):
+    def update_manga_data(self, manga_data):
         """
         Returns manga data from API
 
@@ -102,10 +102,24 @@ class Server:
 
         Currently, only pages are expected.
         """
-        assert False
-        return []
+        raise NotImplementedError
 
     def save_chapter_page(self, page_data, path):
         """
         Returns chapter page scan (image) content
         """
+        raise NotImplementedError
+
+    def create_manga_data(self, id, name, cover=None):
+        return dict(server_id=self.id, id=id, name=name, chapters={})
+
+    def update_chapter_data(self, manga_data, id, title, number, read=False, date=None):
+
+        new_values = dict(id=id, title=title, number=number, read=read, data=date)
+        if id in manga_data["chapters"]:
+            manga_data["chapters"][id].update(new_values)
+        else:
+            manga_data["chapters"][id] = new_values
+
+    def create_page_data(self, url, id=None, encryption_key=None):
+        return dict(url=url, id=id, encryption_key=encryption_key)

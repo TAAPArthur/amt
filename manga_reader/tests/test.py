@@ -67,6 +67,27 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         assert len(self.manga_reader.get_servers()) == len(servers)
 
 
+class ServerTest(BaseUnitTestClass):
+    def test_get_manga_list(self):
+        for server in self.manga_reader.get_servers():
+            with self.subTest(server=server.id, method="search"):
+                manga_list = server.search("a")
+                assert isinstance(manga_list, list)
+                assert all([isinstance(x, dict) for x in manga_list])
+            with self.subTest(server=server.id, method="get_manga_list"):
+                manga_list = server.get_manga_list()
+                assert isinstance(manga_list, list)
+                assert all([isinstance(x, dict) for x in manga_list])
+
+            manga_data = manga_list[0]
+            with self.subTest(server=server.id, method="update_manga_data"):
+                dummy_dict = {"test": "test_value"}
+                manga_data["chapters"][0] = dummy_dict
+                return_val = server.update_manga_data(manga_data)
+                assert not return_val
+                assert isinstance(manga_data["chapters"], dict)
+
+
 class MangaReaderTest(BaseUnitTestClass):
 
     def test_save_load(self):
@@ -88,12 +109,12 @@ class MangaReaderTest(BaseUnitTestClass):
                 manga_list = server.get_manga_list()
                 manga_data = manga_list[0]
                 self.manga_reader.add_manga(manga_data)
-                last_chapter_num = max(manga_data["chapters"], key=lambda x: x["number"])["number"]
+                last_chapter_num = max(manga_data["chapters"].values(), key=lambda x: x["number"])["number"]
                 last_chapter_num_read = last_chapter_num - 1
                 assert last_chapter_num > 1
                 self.manga_reader.mark_chapters_until_n_as_read(manga_data, last_chapter_num_read)
 
-                assert all(map(lambda x: x["read"], filter(lambda x: last_chapter_num_read >= x["number"], manga_data["chapters"])))
+                assert all(map(lambda x: x["read"], filter(lambda x: last_chapter_num_read >= x["number"], manga_data["chapters"].values())))
 
                 def fake_download_chapter(manga_data, chapter_data):
                     assert chapter_data["number"] > last_chapter_num_read
