@@ -1,5 +1,7 @@
 import unittest
 import shutil
+import os
+from PIL import Image
 
 from manga_reader.manga_reader import MangaReader
 from manga_reader.settings import Settings
@@ -94,3 +96,18 @@ class MangaReaderTest(BaseUnitTestClass):
                 manga_data["chapters"].clear()
                 new_chapters2 = self.manga_reader.update_manga(manga_data)
                 assert new_chapters == new_chapters2
+
+    def test_update_download(self):
+        for server in self.manga_reader.get_servers():
+            with self.subTest(server=server.id):
+                manga_list = server.get_manga_list()
+                manga_data = manga_list[0]
+                self.manga_reader.add_manga(manga_data, no_update=True)
+                chapter_data = self.manga_reader.update_manga(manga_data, download=True, limit=1)[0]
+                dir_path = self.manga_reader.settings.get_chapter_dir(manga_data, chapter_data)
+
+                dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
+                assert filenames
+                for file_name in filenames:
+                    with open(os.path.join(dirpath, file_name), "rb") as img_file:
+                        Image.open(img_file)

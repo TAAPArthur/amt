@@ -33,9 +33,9 @@ class MangaReader:
     def _get_global_id(self, manga_data):
         return manga_data["server_id"] + ":" + manga_data["id"]
 
-    def add_manga(self, manga_data):
+    def add_manga(self, manga_data, no_update=False):
         self.state[self._get_global_id(manga_data)] = manga_data
-        return self.update_manga(manga_data)
+        return [] if no_update else self.update_manga(manga_data)
 
     def remove_manga(self, id=None, manga_data=None):
         if id:
@@ -55,13 +55,13 @@ class MangaReader:
             result += server.search(term)
         return result
 
-    def update(self):
+    def update(self, download=False):
         new_chapters = []
         for manga_data in self.state.values():
-            new_chapters += self.update_manga(manga_data)
+            new_chapters += self.update_manga(manga_data, download)
         return new_chapters
 
-    def update_manga(self, manga_data, download=False):
+    def update_manga(self, manga_data, download=False, limit=None):
         """
         Return set of updated chapters or a False-like value
         """
@@ -75,6 +75,6 @@ class MangaReader:
         new_chapter_ids = current_chapter_ids - chapter_ids
         new_chapters = list(filter(lambda x: x["id"] in new_chapter_ids, manga_data["chapters"]))
         if download:
-            for chapter_data in new_chapters:
+            for chapter_data in new_chapters[:limit]:
                 server.download_chapter(manga_data, chapter_data)
         return new_chapters

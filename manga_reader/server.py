@@ -90,7 +90,6 @@ class Server:
             fp.write(r.content)
 
     def download_chapter(self, manga_data, chapter_data):
-
         list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
         dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)
         for index, page_data in enumerate(list_of_pages):
