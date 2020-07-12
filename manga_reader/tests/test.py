@@ -1,16 +1,16 @@
 import unittest
+import shutil
 
-
-from manga_reader.tests.test_server import TestServer, TestServer2
 from manga_reader.manga_reader import MangaReader
 from manga_reader.settings import Settings
-import shutil
+from manga_reader.tests.test_server import TestServer, TestServer2
+
+TEST_HOME = "/tmp/manga_reader/test_home"
 
 
 class TestMangaReader(MangaReader):
     def __init__(self, class_list):
-        self.home = "/tmp/manga_reader/test_home"
-        settings = Settings(home=self.home)
+        settings = Settings(home=TEST_HOME)
         settings.init()
         if class_list:
             super().__init__(class_list, settings)
@@ -22,6 +22,19 @@ class BaseUnitTestClass(unittest.TestCase):
     def setUp(self):
         self.manga_reader = TestMangaReader([TestServer, TestServer2])
         assert not self.manga_reader.state
+
+    def tearDown(self):
+        shutil.rmtree(TEST_HOME, ignore_errors=True)
+
+
+class SettingsTest(BaseUnitTestClass):
+    def test_settings_save_load(self):
+        settings = Settings(home=TEST_HOME)
+        settings.manga_viewer_cmd = "dummy_cmd"
+        settings.save()
+
+        settings = Settings(home=TEST_HOME)
+        assert settings.manga_viewer_cmd == "dummy_cmd"
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
@@ -53,9 +66,6 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
 
 class MangaReaderTest(BaseUnitTestClass):
-
-    def tearDown(self):
-        shutil.rmtree(self.manga_reader.home, ignore_errors=True)
 
     def test_save_load(self):
         for server in self.manga_reader.get_servers():
