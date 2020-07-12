@@ -1,10 +1,10 @@
 
 
-def ChapterData(id, title, date=None):
-    return dict(title=title, id=id, data=date)
+def create_chapter_data(id, title, number, read=False, date=None):
+    return dict(id=id, title=title, number=number, read=read, data=date)
 
 
-def PageData(url, id=None):
+def create_page_data(url, id=None):
     return dict(url=url, id=id)
 
 

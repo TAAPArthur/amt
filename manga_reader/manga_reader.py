@@ -55,6 +55,20 @@ class MangaReader:
             result += server.search(term)
         return result
 
+    def mark_chapters_until_n_as_read(self, manga_data, N):
+        """Marks all chapters whose numerical index <=N as read"""
+        for chapter in manga_data["chapters"]:
+            if chapter["number"] <= N:
+                chapter["read"] = True
+
+    def download_unread_chapters(self):
+        """Downloads all chapters that are not read"""
+        for manga_data in self.state.values():
+            for chapter in manga_data["chapters"]:
+                server = self._servers[manga_data["server_id"]]
+                if not chapter["read"]:
+                    server.download_chapter(manga_data, chapter)
+
     def update(self, download=False):
         new_chapters = []
         for manga_data in self.state.values():

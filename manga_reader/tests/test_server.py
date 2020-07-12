@@ -1,5 +1,5 @@
 from manga_reader.server import Server
-from manga_reader.manga_data import create_manga_data, ChapterData, PageData
+from manga_reader.manga_data import create_manga_data, create_chapter_data, create_page_data
 from PIL import Image
 
 
@@ -15,15 +15,21 @@ class TestServer(Server):
                            create_manga_data(server_id=self.id, id="3", name="Manga3")
                            ]
         self.test_chapters = {
-            "1": [ChapterData(id="1", title="Chapter1", date="2020-07-11")],
-            "2": [ChapterData(id="2", title="Chapter1", date="1")],
-            "3": [ChapterData(id="3", title="ChapterN", date="today")]
+            "1": [
+                create_chapter_data(id="1", title="Chapter1", number=1, date="2020-07-9"),
+                create_chapter_data(id="2", title="Chapter2", number=2, date="2020-07-10"),
+                create_chapter_data(id="3", title="Chapter3", number=3, date="2020-07-09")
+            ],
+            "2": [create_chapter_data(id="4", title="Chapter1", number=1, date="1")],
+            "3": [create_chapter_data(id="5", title="ChapterN", number=1, date="today")]
         }
 
         self.test_pages = {
-            "1": [PageData(url="") for k in range(3)],
-            "2": [PageData(url="") for k in range(3)],
-            "3": [PageData(url="") for k in range(3)]
+            "1": [create_page_data(url="") for k in range(3)],
+            "2": [create_page_data(url="") for k in range(3)],
+            "3": [create_page_data(url="") for k in range(3)],
+            "4": [create_page_data(url="") for k in range(3)],
+            "5": [create_page_data(url="") for k in range(3)]
         }
 
     def get_manga_list(self):

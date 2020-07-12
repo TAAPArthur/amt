@@ -80,6 +80,27 @@ class MangaReaderTest(BaseUnitTestClass):
         self.manga_reader.load_state()
         assert old_state == self.manga_reader.state
 
+    def test_mark_chapters_until_n_as_read(self):
+
+        for server in self.manga_reader.get_servers():
+            with self.subTest(server=server.id):
+                self.manga_reader.state.clear()
+                manga_list = server.get_manga_list()
+                manga_data = manga_list[0]
+                self.manga_reader.add_manga(manga_data)
+                last_chapter_num = max(manga_data["chapters"], key=lambda x: x["number"])["number"]
+                last_chapter_num_read = last_chapter_num - 1
+                assert last_chapter_num > 1
+                self.manga_reader.mark_chapters_until_n_as_read(manga_data, last_chapter_num_read)
+
+                assert all(map(lambda x: x["read"], filter(lambda x: last_chapter_num_read >= x["number"], manga_data["chapters"])))
+
+                def fake_download_chapter(manga_data, chapter_data):
+                    assert chapter_data["number"] > last_chapter_num_read
+
+                server.download_chapter = fake_download_chapter
+                self.manga_reader.download_unread_chapters()
+
     def test_update_no_manga(self):
         assert not self.manga_reader.update()
 
