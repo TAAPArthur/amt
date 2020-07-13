@@ -45,12 +45,6 @@ class SettingsTest(BaseUnitTestClass):
 
 class ServerWorkflowsTest(BaseUnitTestClass):
 
-    def test_caching(self):
-        start = time.time()
-        for i in range(10):
-            list(self.manga_reader.get_servers())[0].session.get('http://httpbin.org/delay/1')
-        assert time.time() - start < 5
-
     def test_manga_reader_add_remove_manga(self):
         for server in self.manga_reader.get_servers():
             manga_list = server.get_manga_list()
@@ -96,6 +90,24 @@ class ServerTest(BaseUnitTestClass):
                 return_val = server.update_manga_data(manga_data)
                 assert not return_val
                 assert isinstance(manga_data["chapters"], dict)
+
+    def test_caching(self):
+        start = time.time()
+        for i in range(10):
+            list(self.manga_reader.get_servers())[0].session.get('http://httpbin.org/delay/1')
+        assert time.time() - start < 5
+
+    def test_login_fail(self):
+        for server in self.manga_reader.get_servers():
+            if not server.has_login():
+                continue
+
+            with self.subTest(server=server.id, method="login"):
+                assert not server.login("A", "B")
+
+            server.settings.password_load_cmd = r"echo -e A\\tB"
+            with self.subTest(server=server.id, method="relogin"):
+                assert not server.relogin()
 
 
 class MangaReaderTest(BaseUnitTestClass):

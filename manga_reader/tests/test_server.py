@@ -4,7 +4,6 @@ from PIL import Image
 
 class TestServer(Server):
     id = 'test'
-    has_login = False
 
     def __init__(self, settings):
         super().__init__(settings=settings)
@@ -57,3 +56,11 @@ class TestServer2(TestServer):
         for i in range(10):
             self.session.get('http://httpbin.org/delay/10')
         return super().get_manga_list()
+
+    def has_login(self): return True
+
+    def login(self, username, password):
+        return False
+
+    def relogin(self):
+        return False

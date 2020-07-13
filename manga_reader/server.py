@@ -1,7 +1,6 @@
 import requests
 import os
 import pickle
-from manga_reader.password_manager import PasswordManager
 from cachecontrol import CacheControl
 from cachecontrol.caches.file_cache import FileCache
 from cachecontrol.heuristics import ExpiresAfter
@@ -9,7 +8,6 @@ from cachecontrol.heuristics import ExpiresAfter
 
 class Server:
     enabled = True
-    has_login = False
     id = None
     lang = 'en'
     locale = 'enUS'
@@ -41,15 +39,18 @@ class Server:
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0"
         }
 
+    def has_login(self): return False
+
     def login(self, username, password):
         return False
 
     def relogin(self):
         self.session.cookies.clear()
 
-        credential = PasswordManager.get(self.id)
+        credential = self.settings.get_credentials(self.id)
         if credential:
-            self.logged_in = self.login(credential[0], credential[1])
+            return self.login(credential[0], credential[1])
+        return False
 
     def load_session(self):
         """ Load session from disk """

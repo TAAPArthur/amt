@@ -1,16 +1,16 @@
 from pathlib import Path
-import os
 import json
+import os
+import subprocess
 
 APP_NAME = "manager-reader"
-HOME = str()
 
 
 class Settings:
 
-    password_manager_toggle = True
-    password_manager_save = ""
-    password_manager_load = ""
+    password_manager_enabled = False
+    password_save_cmd = "tpm insert {}"
+    password_load_cmd = "tpm show {}"
     manga_viewer_cmd = ""
     cache_requests = False
 
@@ -63,3 +63,19 @@ class Settings:
         dir = os.path.join(self.data_dir, manga_data["server_id"], manga_data["name"], "cover.jpg")
         os.makedirs(dir, exist_ok=True)
         return dir
+
+    def get_credentials(self, server_id: str) -> (str, str):
+        """Returns the saved username, password"""
+        if self.password_manager_enabled and self.password_load_cmd:
+            try:
+                output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=True, stdin=subprocess.DEVNULL).strip().decode("utf-8")
+                login, password = output.split("\t")
+                return login, password
+            except subprocess.CalledProcessError:
+                pass
+
+    def store_credentials(self, server_id, username, password):
+        """Stores the username, password for the given server_id"""
+        if self.password_manager_enabled and self.password_save_cmd:
+            process = subprocess.Popen(self.password_save_cmd.format(server_id), shell=True, stdin=subprocess.PIPE)
+            process.communicate(input=bytes("{}\t{}".format(username, password), "utf8"))
