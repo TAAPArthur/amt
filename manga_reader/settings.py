@@ -12,6 +12,7 @@ class Settings:
     password_manager_save = ""
     password_manager_load = ""
     manga_viewer_cmd = ""
+    cache_requests = False
 
     def __init__(self, home=Path.home(), no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))

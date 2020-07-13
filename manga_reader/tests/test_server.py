@@ -49,3 +49,8 @@ class TestServer(Server):
 
 class TestServer2(TestServer):
     id = 'test2'
+
+    def get_manga_list(self):
+        for i in range(10):
+            self.session.get('http://httpbin.org/delay/10')
+        return super().get_manga_list()

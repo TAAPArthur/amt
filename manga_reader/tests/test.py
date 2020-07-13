@@ -2,6 +2,7 @@ import unittest
 import shutil
 import os
 from PIL import Image
+import time
 
 from manga_reader.manga_reader import MangaReader
 from manga_reader.settings import Settings
@@ -14,6 +15,7 @@ class TestMangaReader(MangaReader):
     def __init__(self, class_list):
         settings = Settings(home=TEST_HOME)
         settings.init()
+        settings.cache = True
         if class_list:
             super().__init__(class_list, settings)
         else:
@@ -40,6 +42,12 @@ class SettingsTest(BaseUnitTestClass):
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
+
+    def test_caching(self):
+        start = time.time()
+        for i in range(10):
+            list(self.manga_reader.get_servers())[0].session.get('http://httpbin.org/delay/1')
+        assert time.time() - start < 5
 
     def test_manga_reader_add_remove_manga(self):
         for server in self.manga_reader.get_servers():

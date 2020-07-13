@@ -2,6 +2,9 @@ import requests
 import os
 import pickle
 from manga_reader.password_manager import PasswordManager
+from cachecontrol import CacheControl
+from cachecontrol.caches.file_cache import FileCache
+from cachecontrol.heuristics import ExpiresAfter
 
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60'
@@ -28,7 +31,10 @@ class Server:
     def __init__(self, settings):
         self.settings = settings
         if not self.load_session():
-            self.session = requests.Session()
+            if settings.cache:
+                self.session = CacheControl(requests.Session(), heuristic=ExpiresAfter(days=1), cache=FileCache('.web_cache', forever=True))
+            else:
+                self.session = requests.Session()
 
         self.session.headers = self.headers
 
@@ -48,8 +54,7 @@ class Server:
         file_path = os.path.join(self.settings.cache_dir, '{0}.pickle'.format(self.id))
         try:
             with open(file_path, 'rb') as f:
-                session = pickle.load(f)
-                self.session = session
+                self.session = pickle.load(f)
                 return True
         except FileNotFoundError:
             pass
