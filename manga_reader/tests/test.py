@@ -4,7 +4,7 @@ import os
 from PIL import Image
 import time
 
-from manga_reader.manga_reader import MangaReader
+from manga_reader.manga_reader import MangaReader, SERVERS
 from manga_reader.settings import Settings
 from manga_reader.tests.test_server import TestServer, TestServer2
 
@@ -20,11 +20,13 @@ class TestMangaReader(MangaReader):
             super().__init__(class_list, settings)
         else:
             super().__init__(settings=settings)
+        assert len(self.get_servers())
+        assert all(self.get_servers())
 
 
 class BaseUnitTestClass(unittest.TestCase):
     def setUp(self):
-        self.manga_reader = TestMangaReader([TestServer, TestServer2])
+        self.manga_reader = TestMangaReader([TestServer, TestServer2, ] + SERVERS)
         assert not self.manga_reader.state
 
     def tearDown(self):
@@ -97,6 +99,9 @@ class ServerTest(BaseUnitTestClass):
 
 
 class MangaReaderTest(BaseUnitTestClass):
+
+    def test_number_servers(self):
+        assert len(self.manga_reader.get_servers()) > 2
 
     def test_save_load(self):
         for server in self.manga_reader.get_servers():

@@ -1,12 +1,18 @@
+import manga_reader.servers
 from manga_reader.server import Server
-# from manga_reader.servers.crunchyroll import Crunchyroll
-# from manga_reader.servers.vizmanga import VizManga
 from manga_reader.settings import Settings
 import json
 
+import importlib
+import pkgutil
+import inspect
 
-# SERVERS = [Crunchyroll, VizManga]
 SERVERS = []
+for _finder, name, _ispkg in pkgutil.iter_modules(manga_reader.servers.__path__, manga_reader.servers.__name__ + '.'):
+    module = importlib.import_module(name)
+    for _name, obj in dict(inspect.getmembers(module)).items():
+        if inspect.isclass(obj) and issubclass(obj, Server) and obj != Server:
+            SERVERS.append(obj)
 
 
 class MangaReader:
@@ -15,8 +21,9 @@ class MangaReader:
         self.settings = settings if settings else Settings()
         self._servers = {}
         for cls in class_list:
-            instance = cls(self.settings)
-            self._servers[instance.id] = instance
+            if cls.id:
+                instance = cls(self.settings)
+                self._servers[instance.id] = instance
         self.state = {}
 
     def load_state(self):
@@ -37,7 +44,7 @@ class MangaReader:
         self.state[self._get_global_id(manga_data)] = manga_data
         return [] if no_update else self.update_manga(manga_data)
 
-    def remove_manga(self, id=None, manga_data=None):
+    def remove_manga(self, manga_data=None, id=None):
         if id:
             del self.state[id]
         else:
