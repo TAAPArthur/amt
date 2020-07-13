@@ -80,14 +80,14 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 class ServerTest(BaseUnitTestClass):
     def test_get_manga_list(self):
         for server in self.manga_reader.get_servers():
-            with self.subTest(server=server.id, method="search"):
-                manga_list = server.search("a")
-                assert isinstance(manga_list, list)
-                assert all([isinstance(x, dict) for x in manga_list])
             with self.subTest(server=server.id, method="get_manga_list"):
                 manga_list = server.get_manga_list()
                 assert isinstance(manga_list, list)
                 assert all([isinstance(x, dict) for x in manga_list])
+            with self.subTest(server=server.id, method="search"):
+                search_manga_list = server.search("a")
+                assert isinstance(search_manga_list, list)
+                assert all([isinstance(x, dict) for x in search_manga_list])
 
             manga_data = manga_list[0]
             with self.subTest(server=server.id, method="update_manga_data"):
@@ -105,14 +105,16 @@ class MangaReaderTest(BaseUnitTestClass):
 
     def test_save_load(self):
         for server in self.manga_reader.get_servers():
-            manga_list = server.get_manga_list()
-            self.manga_reader.add_manga(manga_list[0])
-
-        old_state = dict(self.manga_reader.state)
-        self.manga_reader.save_state()
-        self.manga_reader.state.clear()
-        self.manga_reader.load_state()
-        assert old_state == self.manga_reader.state
+            with self.subTest(server=server.id):
+                manga_list = server.get_manga_list()
+                self.manga_reader.add_manga(manga_list[0])
+                old_state = dict(self.manga_reader.state)
+                self.manga_reader.save_state()
+                assert old_state == dict(self.manga_reader.state)
+                self.manga_reader.state.clear()
+                self.manga_reader.load_state()
+                assert old_state == self.manga_reader.state
+                self.manga_reader.state.clear()
 
     def test_mark_chapters_until_n_as_read(self):
 

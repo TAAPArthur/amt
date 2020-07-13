@@ -7,21 +7,9 @@ from cachecontrol.caches.file_cache import FileCache
 from cachecontrol.heuristics import ExpiresAfter
 
 
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; WOW64) Gecko/20100101 Firefox/60'
-
-
 class Server:
     enabled = True
     has_login = False
-    headers = {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept-Language': 'en,en-US;q=0.9',
-        'Connection': 'keep-alive',
-        'DNT': '1',
-        'Origin': 'https://www.crunchyroll.com',
-        'User-Agent': USER_AGENT,
-    }
     id = None
     lang = 'en'
     locale = 'enUS'
@@ -36,7 +24,22 @@ class Server:
             else:
                 self.session = requests.Session()
 
-        self.session.headers = self.headers
+        self.session.headers = self.get_header()
+
+    def get_base_url(self):
+        raise NotImplementedError
+
+    def get_header(self):
+
+        return {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en,en-US;q=0.9",
+            "Connection": "keep-alive",
+            "Origin": self.get_base_url(),
+            "Referer": self.get_base_url(),
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0"
+        }
 
     def login(self, username, password):
         return False
@@ -98,7 +101,7 @@ class Server:
         list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
         dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)
         for index, page_data in enumerate(list_of_pages):
-            full_path = os.path.join(dir_path, Server.get_page_name_from_index(index))
+            full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + ".png")
             self.save_chapter_page(page_data, full_path)
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
@@ -116,11 +119,12 @@ class Server:
         raise NotImplementedError
 
     def create_manga_data(self, id, name, cover=None):
-        return dict(server_id=self.id, id=id, name=name, chapters={})
+        return dict(server_id=self.id, id=id, name=name, cover=None, chapters={})
 
-    def update_chapter_data(self, manga_data, id, title, number, read=False, date=None):
-
-        new_values = dict(id=id, title=title, number=number, read=read, data=date)
+    def update_chapter_data(self, manga_data, id, title, number, read=False, incomplete=False, date=None):
+        id = str(id)
+        assert isinstance(number, int)
+        new_values = dict(id=id, title=title, number=number, read=read, incomplete=False, data=date)
         if id in manga_data["chapters"]:
             manga_data["chapters"][id].update(new_values)
         else:

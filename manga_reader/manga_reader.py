@@ -38,7 +38,7 @@ class MangaReader:
     # TODO detect files added
 
     def _get_global_id(self, manga_data):
-        return manga_data["server_id"] + ":" + manga_data["id"]
+        return str(manga_data["server_id"]) + ":" + str(manga_data["id"])
 
     def add_manga(self, manga_data, no_update=False):
         self.state[self._get_global_id(manga_data)] = manga_data
