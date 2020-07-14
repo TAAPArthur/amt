@@ -23,6 +23,14 @@ class TestMangaReader(MangaReader):
         assert len(self.get_servers())
         assert all(self.get_servers())
 
+        def save_chapter_page(page_data, path):
+            image = Image.new('RGB', (100, 100))
+            image.save(path, "PNG")
+
+        for server in self.get_servers():
+            if server.has_login():
+                server.save_chapter_page = save_chapter_page
+
 
 class BaseUnitTestClass(unittest.TestCase):
     def setUp(self):
