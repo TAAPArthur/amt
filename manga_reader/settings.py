@@ -15,6 +15,7 @@ class Settings:
     cache_requests = False
     cache = False
     no_save_session = False
+    free_only = False
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))

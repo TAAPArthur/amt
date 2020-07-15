@@ -113,6 +113,7 @@ class VizManga(Server):
             chapter_number = match.group(2)
             chapter_id = match.group(3)
             chapter_date = None
+            premium = raw_url_maybe[0] != "/"
             # There could be duplicate elements with the same chapter slug; they refer to the same chapter so skip them
             if chapter_id in slugs:
                 continue
@@ -125,7 +126,7 @@ class VizManga(Server):
             # so we"ll just use the chapter number as the title
             title = chapter_number
 
-            self.update_chapter_data(manga_data, id=chapter_id, number=int(chapter_number), title=title, date=chapter_date)
+            self.update_chapter_data(manga_data, id=chapter_id, number=int(chapter_number), premium=premium, title=title, date=chapter_date)
             """
             data['chapters'].append(dict(
                 slug=chapter_slug,

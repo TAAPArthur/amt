@@ -87,11 +87,15 @@ class MangaReader:
         Return set of updated chapters or a False-like value
         """
         server = self._servers[manga_data["server_id"]]
-        chapter_ids = set(manga_data["chapters"].keys())
+
+        def get_chapter_ids(chapters):
+            return {x for x in chapters if not chapters[x]["premium"]} if self.settings.free_only else set(chapters.keys())
+
+        chapter_ids = get_chapter_ids(manga_data["chapters"])
 
         server.update_manga_data(manga_data)
 
-        current_chapter_ids = set(manga_data["chapters"].keys())
+        current_chapter_ids = get_chapter_ids(manga_data["chapters"])
         new_chapter_ids = current_chapter_ids - chapter_ids
 
         new_chapters = [manga_data["chapters"][x] for x in new_chapter_ids]

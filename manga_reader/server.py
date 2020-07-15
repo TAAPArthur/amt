@@ -43,6 +43,7 @@ class Server:
         }
 
     def has_login(self): return False
+    def has_free_chapters(self): return True
 
     def login(self, username, password):
         return False
@@ -129,10 +130,10 @@ class Server:
     def create_manga_data(self, id, name, cover=None):
         return dict(server_id=self.id, id=id, name=name, cover=None, chapters={})
 
-    def update_chapter_data(self, manga_data, id, title, number, read=False, incomplete=False, date=None):
+    def update_chapter_data(self, manga_data, id, title, number, premium=False, read=False, incomplete=False, date=None):
         id = str(id)
         assert isinstance(number, int)
-        new_values = dict(id=id, title=title, number=number, read=read, incomplete=False, data=date)
+        new_values = dict(id=id, title=title, number=number, premium=premium, read=read, incomplete=False, data=date)
         if id in manga_data["chapters"]:
             manga_data["chapters"][id].update(new_values)
         else:

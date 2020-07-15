@@ -16,6 +16,7 @@ class TestMangaReader(MangaReader):
         settings = Settings(home=TEST_HOME)
         settings.init()
         settings.cache = True
+        settings.free_only = True
         if class_list:
             super().__init__(class_list, settings)
         else:
