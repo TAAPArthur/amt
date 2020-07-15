@@ -143,8 +143,13 @@ class MangaReaderTest(BaseUnitTestClass):
             with self.subTest(server=server.id):
                 self.manga_reader.state.clear()
                 manga_list = server.get_manga_list()
-                manga_data = manga_list[0]
-                self.manga_reader.add_manga(manga_data)
+                manga_data = None
+                for manga_data in manga_list:
+                    self.manga_reader.add_manga(manga_data)
+                    if len(manga_data["chapters"]) > 2:
+                        break
+                    self.manga_reader.remove_manga(manga_data)
+                assert len(manga_data["chapters"]) > 2
                 last_chapter_num = max(manga_data["chapters"].values(), key=lambda x: x["number"])["number"]
                 last_chapter_num_read = last_chapter_num - 1
                 assert last_chapter_num > 1
