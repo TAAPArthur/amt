@@ -17,12 +17,15 @@ class Server:
     def __init__(self, settings):
         self.settings = settings
         if not self.load_session():
-            if settings.cache:
-                self.session = CacheControl(requests.Session(), heuristic=ExpiresAfter(days=1), cache=FileCache('.web_cache', forever=True))
-            else:
-                self.session = requests.Session()
+            self.create_session()
 
         self.session.headers = self.get_header()
+
+    def create_session(self):
+        if self.settings.cache:
+            self.session = CacheControl(requests.Session(), heuristic=ExpiresAfter(days=1), cache=FileCache('.web_cache', forever=True))
+        else:
+            self.session = requests.Session()
 
     def get_base_url(self):
         raise NotImplementedError
@@ -54,6 +57,8 @@ class Server:
 
     def load_session(self):
         """ Load session from disk """
+        if self.settings.no_save_session:
+            return False
 
         file_path = os.path.join(self.settings.cache_dir, '{0}.pickle'.format(self.id))
         try:
@@ -66,6 +71,8 @@ class Server:
 
     def save_session(self):
         """ Save session to disk """
+        if self.settings.no_save_session:
+            return False
 
         file_path = os.path.join(self.settings.cache_dir, '{0}.pickle'.format(self.id))
         with open(file_path, 'wb') as f:

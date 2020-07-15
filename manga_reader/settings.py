@@ -13,11 +13,14 @@ class Settings:
     password_load_cmd = "tpm show {}"
     manga_viewer_cmd = ""
     cache_requests = False
+    cache = False
+    no_save_session = False
 
-    def __init__(self, home=Path.home(), no_load=False):
+    def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
         self.cache_dir = os.getenv('XDG_CACHE_HOME', os.path.join(home, ".cache", APP_NAME))
         self.data_dir = os.getenv('XDG_DATA_HOME', os.path.join(home, ".local/share", APP_NAME))
+        self.no_save_session = no_save_session
         if not no_load:
             self.load()
 
