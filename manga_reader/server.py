@@ -18,14 +18,13 @@ class Server:
         self.settings = settings
         if not self.load_session():
             self.create_session()
+        if self.settings.cache:
+            self.session = CacheControl(self.session, heuristic=ExpiresAfter(days=1), cache=FileCache('.web_cache', forever=True))
 
         self.session.headers = self.get_header()
 
     def create_session(self):
-        if self.settings.cache:
-            self.session = CacheControl(requests.Session(), heuristic=ExpiresAfter(days=1), cache=FileCache('.web_cache', forever=True))
-        else:
-            self.session = requests.Session()
+        self.session = requests.Session()
 
     def get_base_url(self):
         raise NotImplementedError
