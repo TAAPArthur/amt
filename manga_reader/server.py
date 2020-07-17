@@ -104,12 +104,18 @@ class Server:
         raise NotImplementedError
 
     def create_manga_data(self, id, name, cover=None):
-        return dict(server_id=self.id, id=id, name=name, cover=None, chapters={})
+        return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, chapters={}, trackers={})
 
     def update_chapter_data(self, manga_data, id, title, number, premium=False, read=False, incomplete=False, date=None):
         id = str(id)
-        assert isinstance(number, int)
-        new_values = dict(id=id, title=title, number=number, premium=premium, read=read, incomplete=False, data=date)
+        special = False
+        try:
+            number = int(number)
+        except ValueError:
+            special = True
+            number = float(number.replace("-", "."))
+
+        new_values = dict(id=id, title=title, number=number, premium=premium, read=read, incomplete=False, special=special, data=date)
         if id in manga_data["chapters"]:
             manga_data["chapters"][id].update(new_values)
         else:

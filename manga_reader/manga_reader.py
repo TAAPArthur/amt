@@ -100,13 +100,30 @@ class MangaReader:
     def get_servers(self):
         return self._servers.values()
 
+    def get_server(self, id):
+        return self._servers[id]
+
+    def is_added(self, tracker_id=None):
+        for manga_data in self.get_manga_in_library():
+            if manga_data["trackers"][self.get_primary_tracker().id] == tracker_id:
+                return manga_data
+        return False
+
+    def track(self, manga_data, tracker_id=None):
+        manga_data["trackers"][self.get_primary_tracker().id] = tracker_id
+
     def get_manga_in_library(self):
         return self.state.values()
 
-    def search_for_manga(self, term):
+    def get_manga_ids_in_library(self):
+        return self.state.keys()
+
+    def search_for_manga(self, term, exact=False):
         result = []
         for server in self.get_servers():
             result += server.search(term)
+        if exact:
+            result = list(filter(lambda x: x["title"] == term, result))
         return result
 
     def mark_chapters_until_n_as_read(self, manga_data, N):
@@ -114,6 +131,14 @@ class MangaReader:
         for chapter in manga_data["chapters"].values():
             if chapter["number"] <= N:
                 chapter["read"] = True
+
+        manga_data["progress"] = N
+
+    def get_last_chapter_number(self, manga_data):
+        return max(manga_data["chapters"].values(), key=lambda x: x["number"])["number"]
+
+    def get_last_read(self, manga_data):
+        return manga_data["progress"]
 
     def download_unread_chapters(self):
         """Downloads all chapters that are not read"""

@@ -126,7 +126,7 @@ class VizManga(Server):
             # so we"ll just use the chapter number as the title
             title = chapter_number
 
-            self.update_chapter_data(manga_data, id=chapter_id, number=int(chapter_number), premium=premium, title=title, date=chapter_date)
+            self.update_chapter_data(manga_data, id=chapter_id, number=chapter_number, premium=premium, title=title, date=chapter_date)
             """
             data['chapters'].append(dict(
                 slug=chapter_slug,
