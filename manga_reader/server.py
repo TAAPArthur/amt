@@ -1,6 +1,5 @@
-import requests
+import requests_cache
 import os
-import pickle
 from cachecontrol import CacheControl
 from cachecontrol.caches.file_cache import FileCache
 from cachecontrol.heuristics import ExpiresAfter
@@ -13,18 +12,12 @@ class Server:
     locale = 'enUS'
     session = None
     settings = None
+    dirty = False
 
-    def __init__(self, settings):
+    def __init__(self, session, settings):
         self.settings = settings
-        if not self.load_session():
-            self.create_session()
-        if self.settings.cache:
-            self.session = CacheControl(self.session, heuristic=ExpiresAfter(days=1), cache=FileCache('.web_cache', forever=True))
-
+        self.session = session
         self.session.headers = self.get_header()
-
-    def create_session(self):
-        self.session = requests.Session()
 
     def get_base_url(self):
         raise NotImplementedError
@@ -44,6 +37,12 @@ class Server:
     def has_login(self): return False
     def has_free_chapters(self): return True
 
+    def is_session_dirty(self):
+        return self.dirty
+
+    def set_session_dirty(self, value=True):
+        self.dirty = value
+
     def login(self, username, password):
         return False
 
@@ -54,29 +53,6 @@ class Server:
         if credential:
             return self.login(credential[0], credential[1])
         return False
-
-    def load_session(self):
-        """ Load session from disk """
-        if self.settings.no_save_session:
-            return False
-
-        file_path = os.path.join(self.settings.cache_dir, '{0}.pickle'.format(self.id))
-        try:
-            with open(file_path, 'rb') as f:
-                self.session = pickle.load(f)
-                return True
-        except FileNotFoundError:
-            pass
-        return False
-
-    def save_session(self):
-        """ Save session to disk """
-        if self.settings.no_save_session:
-            return False
-
-        file_path = os.path.join(self.settings.cache_dir, '{0}.pickle'.format(self.id))
-        with open(file_path, 'wb') as f:
-            pickle.dump(self.session, f)
 
     def get_manga_list(self):
         """
@@ -106,11 +82,12 @@ class Server:
             fp.write(r.content)
 
     def download_chapter(self, manga_data, chapter_data):
-        list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
-        dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)
-        for index, page_data in enumerate(list_of_pages):
-            full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + ".png")
-            self.save_chapter_page(page_data, full_path)
+        with requests_cache.disabled():
+            list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
+            dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)
+            for index, page_data in enumerate(list_of_pages):
+                full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + ".png")
+                self.save_chapter_page(page_data, full_path)
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
         """

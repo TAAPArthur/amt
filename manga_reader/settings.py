@@ -12,8 +12,8 @@ class Settings:
     password_save_cmd = "tpm insert {}"
     password_load_cmd = "tpm show {}"
     manga_viewer_cmd = ""
-    cache_requests = False
     cache = False
+    expire_after = 60 * 60
     no_save_session = False
     free_only = False
 

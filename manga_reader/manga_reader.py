@@ -2,6 +2,10 @@ import manga_reader.servers
 from manga_reader.server import Server
 from manga_reader.settings import Settings
 import json
+import os
+import requests_cache
+import requests
+import pickle
 
 import importlib
 import pkgutil
@@ -13,18 +17,58 @@ for _finder, name, _ispkg in pkgutil.iter_modules(manga_reader.servers.__path__,
     for _name, obj in dict(inspect.getmembers(module)).items():
         if inspect.isclass(obj) and issubclass(obj, Server) and obj != Server:
             SERVERS.append(obj)
+    SERVERS.sort(key=lambda x: x.priority)
 
 
 class MangaReader:
 
-    def __init__(self, class_list=SERVERS, settings=None):
+    def __init__(self, class_list=SERVERS, settings=None, no_load=False):
         self.settings = settings if settings else Settings()
         self._servers = {}
+        self.state = {}
+
+        if self.settings.cache:
+            requests_cache.core.install_cache(expire_after=self.settings.expire_after, allowable_methods=('GET', 'POST'))
+
+        self.session = None
+        if not no_load:
+            self.load_session()
+            self.load_state()
+        if not self.session:
+            self.session = requests.Session()
+
+        self.tracker = Anilist(self.session)
+
         for cls in class_list:
             if cls.id:
-                instance = cls(self.settings)
+                instance = cls(self.session, self.settings)
                 self._servers[instance.id] = instance
-        self.state = {}
+
+    def get_primary_tracker(self):
+        return self.tracker
+
+    def load_session(self):
+        """ Load session from disk """
+        if self.settings.no_save_session:
+            return False
+
+        file_path = os.path.join(self.settings.cache_dir, 'session.pickle')
+        try:
+            with open(file_path, 'rb') as f:
+                self.session = pickle.load(f)
+                return True
+        except FileNotFoundError:
+            pass
+        return False
+
+    def save_session(self):
+        """ Save session to disk """
+        if self.settings.no_save_session:
+            return False
+
+        file_path = os.path.join(self.settings.cache_dir, 'session.pickle')
+        with open(file_path, 'wb') as f:
+            pickle.dump(self.session, f)
 
     def load_state(self):
         with open(self.settings.get_metadata(), 'r') as jsonFile:

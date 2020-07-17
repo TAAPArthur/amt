@@ -58,7 +58,7 @@ class VizManga(Server):
                 "rem_user": 1,
                 "authenticity_token": token,
             })
-        self.save_session()
+        self.set_session_dirty()
         return r.status_code == 200
 
     def get_manga_list(self):
