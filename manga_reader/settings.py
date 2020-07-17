@@ -33,6 +33,17 @@ class Settings:
     def _get_members(self):
         return [attr for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
 
+    @classmethod
+    def get_members(clazz):
+        return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("__")]
+
+    def set(self, name, value):
+        setattr(self, name, value)
+        return value
+
+    def get(self, name):
+        return getattr(self, name)
+
     def save(self):
         with open(self.get_settings_file(), 'w') as f:
             settings_to_save = {}

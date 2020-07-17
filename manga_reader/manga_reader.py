@@ -71,8 +71,11 @@ class MangaReader:
             pickle.dump(self.session, f)
 
     def load_state(self):
-        with open(self.settings.get_metadata(), 'r') as jsonFile:
-            self.state = json.load(jsonFile)
+        try:
+            with open(self.settings.get_metadata(), 'r') as jsonFile:
+                self.state = json.load(jsonFile)
+        except FileNotFoundError:
+            self.settings.init()
 
     def save_state(self):
         with open(self.settings.get_metadata(), 'w') as jsonFile:
