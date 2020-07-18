@@ -1,23 +1,25 @@
-import manga_reader.servers
-from manga_reader.server import Server
-from manga_reader.settings import Settings
-import json
-import os
-import requests_cache
-import requests
-import pickle
+from . import servers
+from .server import Server
+from .settings import Settings
+from .trackers.anilist import Anilist
 
 import importlib
-import pkgutil
 import inspect
+import json
+import logging
+import os
+import pickle
+import pkgutil
+import random
+import requests
+import requests_cache
 
 SERVERS = []
-for _finder, name, _ispkg in pkgutil.iter_modules(manga_reader.servers.__path__, manga_reader.servers.__name__ + '.'):
+for _finder, name, _ispkg in pkgutil.iter_modules(servers.__path__, servers.__name__ + '.'):
     module = importlib.import_module(name)
     for _name, obj in dict(inspect.getmembers(module)).items():
         if inspect.isclass(obj) and issubclass(obj, Server) and obj != Server:
             SERVERS.append(obj)
-    SERVERS.sort(key=lambda x: x.priority)
 
 
 class MangaReader:
@@ -28,6 +30,7 @@ class MangaReader:
         self.state = {}
 
         if self.settings.cache:
+            logging.debug("Installing cache")
             requests_cache.core.install_cache(expire_after=self.settings.expire_after, allowable_methods=('GET', 'POST'))
 
         self.session = None
@@ -36,8 +39,15 @@ class MangaReader:
             self.load_state()
         if not self.session:
             self.session = requests.Session()
+        self.session.headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en,en-US;q=0.9",
+            "Connection": "keep-alive",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0"
+        }
 
-        self.tracker = Anilist(self.session)
+        self.tracker = Anilist(self.session, self.settings.get_secret(Anilist.id))
 
         for cls in class_list:
             if cls.id:
@@ -100,6 +110,9 @@ class MangaReader:
     def get_servers(self):
         return self._servers.values()
 
+    def get_servers_ids(self):
+        return self._servers.keys()
+
     def get_server(self, id):
         return self._servers[id]
 
@@ -109,8 +122,9 @@ class MangaReader:
                 return manga_data
         return False
 
-    def track(self, manga_data, tracker_id=None):
+    def track(self, manga_data, tracker_id, list_id):
         manga_data["trackers"][self.get_primary_tracker().id] = tracker_id
+        manga_data["tracker_lists"][self.get_primary_tracker().id] = list_id
 
     def get_manga_in_library(self):
         return self.state.values()
@@ -132,13 +146,26 @@ class MangaReader:
             if chapter["number"] <= N:
                 chapter["read"] = True
 
-        manga_data["progress"] = N
-
     def get_last_chapter_number(self, manga_data):
         return max(manga_data["chapters"].values(), key=lambda x: x["number"])["number"]
 
     def get_last_read(self, manga_data):
+        return max(manga_data["chapters"].values(), key=lambda x: x["number"] if x["read"] else 0)["number"]
+
+    def get_progress(self, manga_data):
         return manga_data["progress"]
+
+    def update_progress(self):
+        for manga_data in self.get_manga_in_library():
+            manga_data["progress"] = self.get_last_read(manga_data)
+
+    def mark_up_to_date(self, server_id=None, N=0, force=False):
+        for manga_data in self.get_manga_in_library():
+            if not server_id or manga_data["server_id"] == server_id:
+                last_read = self.get_last_chapter_number(manga_data) - N
+                if not force:
+                    last_read = max(self.get_last_read(manga_data), last_read)
+                self.mark_chapters_until_n_as_read(manga_data, last_read)
 
     def download_unread_chapters(self):
         """Downloads all chapters that are not read"""
@@ -148,13 +175,45 @@ class MangaReader:
                 if not chapter["read"]:
                     server.download_chapter(manga_data, chapter)
 
+    def download_chapters(self, manga_data, num):
+        last_read = self.get_last_read(manga_data)
+        chapters = list(manga_data["chapters"].values())
+        chapters.sort(key=lambda x: x["number"])
+        server = self._servers[manga_data["server_id"]]
+        counter = 0
+        for chapter in chapters:
+            if chapter["number"] > last_read:
+                server.download_chapter(manga_data, chapter)
+                if counter == num:
+                    break
+
+    def compile_unread_chapters(self, shuffle=False):
+        unreads = []
+        for manga_data in self.state.values():
+            unread_dirs = []
+            for chapter in manga_data["chapters"].values():
+                if not chapter["read"]:
+                    dir_path = self.settings.get_chapter_dir(manga_data, chapter)
+                    unread_dirs.append("'" + dir_path + "'/*")
+            unreads.append(unread_dirs)
+
+        if shuffle:
+            random.shuffle(unreads)
+        paths = [x for chapters in unreads for x in chapters]
+        print(paths)
+        logging.info("Bundling %s", paths)
+        return self.settings.compile(" ".join(paths))
+
+    def read_bundle(self, bundle_name):
+        return self.settings.view(bundle_name)
+
     def update(self, download=False):
         new_chapters = []
         for manga_data in self.state.values():
             new_chapters += self.update_manga(manga_data, download)
         return new_chapters
 
-    def update_manga(self, manga_data, download=False, limit=None):
+    def update_manga(self, manga_data, download=False, limit=None, page_limit=None):
         """
         Return set of updated chapters or a False-like value
         """
@@ -174,5 +233,18 @@ class MangaReader:
         assert len(new_chapter_ids) == len(new_chapters)
         if download:
             for chapter_data in new_chapters[:limit]:
-                server.download_chapter(manga_data, chapter_data)
+                server.download_chapter(manga_data, chapter_data, page_limit)
         return new_chapters
+
+    def sync_progress(self, force=False):
+        with requests_cache.disabled():
+            data = []
+            tracker = self.get_primary_tracker()
+            for manga_data in self.get_manga_in_library():
+                if manga_data["tracker_lists"][tracker.id] and (force or manga_data["progress"] < self.get_last_read(manga_data)):
+                    data.append((manga_data["tracker_lists"][tracker.id], self.get_last_read(manga_data)))
+                    logging.info("Preparing to update %s", manga_data["name"])
+
+            tracker.update(data)
+            self.update_progress()
+            self.save_state()

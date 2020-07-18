@@ -2,20 +2,34 @@ from pathlib import Path
 import json
 import os
 import subprocess
+from subprocess import CalledProcessError
+from datetime import date
+import logging
+
 
 APP_NAME = "manager-reader"
 
 
 class Settings:
 
-    password_manager_enabled = False
+    password_manager_enabled = True
     password_save_cmd = "tpm insert {}"
     password_load_cmd = "tpm show {}"
     manga_viewer_cmd = ""
+    compile_cmds = {
+        "pdf": "convert {:1} {:2}",
+        "cbz": "zip {:2} {:1}"
+    }
+    viewers = {
+        "pdf": "zathura",
+        "cbz": "zathura"
+    }
+    compile_format = "pdf"
     cache = False
     expire_after = 60 * 60
     no_save_session = False
     free_only = False
+    shell = True
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
@@ -83,7 +97,7 @@ class Settings:
         """Returns the saved username, password"""
         if self.password_manager_enabled and self.password_load_cmd:
             try:
-                output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=True, stdin=subprocess.DEVNULL).strip().decode("utf-8")
+                output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
                 login, password = output.split("\t")
                 return login, password
             except subprocess.CalledProcessError:
@@ -92,5 +106,26 @@ class Settings:
     def store_credentials(self, server_id, username, password):
         """Stores the username, password for the given server_id"""
         if self.password_manager_enabled and self.password_save_cmd:
-            process = subprocess.Popen(self.password_save_cmd.format(server_id), shell=True, stdin=subprocess.PIPE)
+            logging.debug("Storing credentials for %s", server_id)
+            process = subprocess.Popen(self.password_save_cmd.format(server_id), shell=self.shell, stdin=subprocess.PIPE)
             process.communicate(input=bytes("{}\t{}".format(username, password), "utf8"))
+
+    def get_secret(self, server_id: str) -> (str, str):
+        result = self.get_credentials(server_id)
+        return result[0] if result else None
+
+    def store_secret(self, server_id, secret):
+        self.store_credentials(server_id, secret, "token")
+
+    def compile(self, img_dirs):
+        name = "{}.{}".format(date.today(), self.compile_format)
+        cmd = self.compile_cmds[self.compile_format].format(img_dirs, name)
+        subprocess.check_call(cmd, shell=self.shell)
+        return name
+
+    def view(self, name):
+        try:
+            subprocess.check_call("{} {}".format(self.viewers[name.split(".")[1]], name), shell=self.shell)
+            return True
+        except CalledProcessError:
+            return False

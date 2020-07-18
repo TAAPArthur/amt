@@ -1,34 +1,23 @@
-# -*- coding: utf-8 -*-
-
-# Copyright (C) 2019-2020 Valéry Febvre
-# SPDX-License-Identifier: GPL-3.0-only or GPL-3.0-or-later
-# Author: Valéry Febvre <vfebvre@easter-eggs.com>
-
 from dataclasses import dataclass
-from datetime import datetime
 from enum import IntEnum
-import requests
 import re
 from typing import List
-import uuid
 import unidecode
 
 from pure_protobuf.dataclasses_ import loads, field, message
 from pure_protobuf.types import int32
 
-from manga_reader.server import Server
+from ..server import Server
 
 LANGUAGES_CODES = dict(
     en=0,
     es=1,
 )
 RE_ENCRYPTION_KEY = re.compile('.{1,2}')
-SERVER_NAME = 'MANGA Plus by SHUEISHA'
 
 
 class Mangaplus(Server):
     id = 'mangaplus'
-    name = SERVER_NAME
     lang = 'en'
 
     base_url = 'https://mangaplus.shueisha.co.jp'
@@ -41,13 +30,6 @@ class Mangaplus(Server):
 
     def get_base_url(self):
         return self.base_url
-
-    def get_header(self):
-        return {
-            'Origin': self.get_base_url(),
-            'Referer': self.get_base_url(),
-            'SESSION-TOKEN': repr(uuid.uuid1()),
-        }
 
     def get_manga_list(self):
         r = self.session.get(self.api_most_populars_url)

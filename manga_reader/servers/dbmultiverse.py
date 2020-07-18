@@ -1,6 +1,5 @@
 from bs4 import BeautifulSoup
-
-from manga_reader.server import Server
+from ..server import Server
 
 
 class Dbmultiverse(Server):
@@ -14,6 +13,8 @@ class Dbmultiverse(Server):
     cover_url = base_url + '/image.php?comic=page&num=0&lg=en&ext=jpg&small=1&pw=8f3722a594856af867d55c57f31ee103'
 
     synopsis = "Dragon Ball Multiverse (\"DBM\"), the sequel of the manga, is a dojinshi (manga created by non-professionals, using a universe and characters which are not theirs), made by Salagir and Gogeta Jr, from France."
+
+    delay = 1
 
     def get_base_url(self):
         return self.base_url
@@ -54,10 +55,7 @@ class Dbmultiverse(Server):
             r = self.session.get(self.page_url.format(page["title"]))
             soup = BeautifulSoup(r.text, "lxml")
             img = soup.find("img", {"id": "balloonsimg"})
-            if img:
-                url = img["src"]
-            else:
-                url = soup.find('div', id='balloonsimg').get('style').split(';')[0].split(':')[1][4:-1]
+            url = img["src"] if img else soup.find('div', id='balloonsimg').get('style').split(';')[0].split(':')[1][4:-1]
             pages.append(self.create_page_data(url=self.base_url + url))
         return pages
 

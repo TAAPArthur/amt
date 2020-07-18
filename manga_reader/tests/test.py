@@ -1,36 +1,40 @@
-import unittest
-import shutil
-import os
 from PIL import Image
+import logging
+import os
+import shutil
 import time
+import unittest
+import sys
 
-from manga_reader.manga_reader import MangaReader, SERVERS
-from manga_reader.settings import Settings
-from manga_reader.tests.test_server import TestServer, TestServer2
+from ..manga_reader import MangaReader, SERVERS
+from ..settings import Settings
+from .test_server import TestServer, TestServer2
 
 TEST_HOME = "/tmp/manga_reader/test_home"
 
 
+logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)
+logger = logging.getLogger()
+stream_handler = logging.StreamHandler(sys.stdout)
+logger.addHandler(stream_handler)
+
+
 class TestMangaReader(MangaReader):
     def __init__(self, class_list):
+        # Save cache in local directory
+        os.putenv('XDG_CACHE_HOME', ".")
+        stream_handler.stream = sys.stdout
         settings = Settings(home=TEST_HOME)
         settings.init()
         settings.cache = True
         settings.free_only = True
+        settings.password_manager_enabled = False
         if class_list:
             super().__init__(class_list, settings)
         else:
             super().__init__(settings=settings)
         assert len(self.get_servers())
         assert all(self.get_servers())
-
-        def save_chapter_page(page_data, path):
-            image = Image.new('RGB', (100, 100))
-            image.save(path, "PNG")
-
-        for server in self.get_servers():
-            if server.has_login():
-                server.save_chapter_page = save_chapter_page
 
 
 class BaseUnitTestClass(unittest.TestCase):
@@ -92,13 +96,12 @@ class ServerTest(BaseUnitTestClass):
                 assert isinstance(search_manga_list, list)
                 assert all([isinstance(x, dict) for x in search_manga_list])
 
-            manga_data = manga_list[0]
-            with self.subTest(server=server.id, method="update_manga_data"):
-                dummy_dict = {"test": "test_value"}
-                manga_data["chapters"][0] = dummy_dict
-                return_val = server.update_manga_data(manga_data)
-                assert not return_val
-                assert isinstance(manga_data["chapters"], dict)
+            for i in (0, -1):
+                manga_data = manga_list[i]
+                with self.subTest(server=server.id, method="update_manga_data", i=i):
+                    return_val = server.update_manga_data(manga_data)
+                    assert not return_val
+                    assert isinstance(manga_data["chapters"], dict)
 
     def test_caching(self):
         start = time.time()
@@ -108,7 +111,7 @@ class ServerTest(BaseUnitTestClass):
 
     def test_login_fail(self):
         for server in self.manga_reader.get_servers():
-            if not server.has_login():
+            if not server.has_login:
                 continue
 
             with self.subTest(server=server.id, method="login"):
@@ -186,7 +189,7 @@ class MangaReaderTest(BaseUnitTestClass):
                 manga_list = server.get_manga_list()
                 manga_data = manga_list[0]
                 self.manga_reader.add_manga(manga_data, no_update=True)
-                chapter_data = self.manga_reader.update_manga(manga_data, download=True, limit=1)[0]
+                chapter_data = self.manga_reader.update_manga(manga_data, download=True, limit=1, page_limit=3)[0]
                 dir_path = self.manga_reader.settings.get_chapter_dir(manga_data, chapter_data)
 
                 dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
@@ -194,3 +197,7 @@ class MangaReaderTest(BaseUnitTestClass):
                 for file_name in filenames:
                     with open(os.path.join(dirpath, file_name), "rb") as img_file:
                         Image.open(img_file)
+
+                # error if we try to save a page we have already downloaded
+                server.save_chapter_page = None
+                self.manga_reader.update_manga(manga_data, download=True, limit=1, page_limit=3)

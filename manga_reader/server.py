@@ -1,8 +1,7 @@
 import requests_cache
 import os
-from cachecontrol import CacheControl
-from cachecontrol.caches.file_cache import FileCache
-from cachecontrol.heuristics import ExpiresAfter
+import logging
+import time
 
 
 class Server:
@@ -13,29 +12,16 @@ class Server:
     session = None
     settings = None
     dirty = False
+    delay = 0
 
-    def __init__(self, session, settings):
+    has_anime = False
+    has_manga = True
+    has_login = False
+    has_free_chapters = True
+
+    def __init__(self, session, settings=None):
         self.settings = settings
         self.session = session
-        self.session.headers = self.get_header()
-
-    def get_base_url(self):
-        raise NotImplementedError
-
-    def get_header(self):
-
-        return {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "en,en-US;q=0.9",
-            "Connection": "keep-alive",
-            "Origin": self.get_base_url(),
-            "Referer": self.get_base_url(),
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0"
-        }
-
-    def has_login(self): return False
-    def has_free_chapters(self): return True
 
     def is_session_dirty(self):
         return self.dirty
@@ -51,7 +37,11 @@ class Server:
 
         credential = self.settings.get_credentials(self.id)
         if credential:
-            return self.login(credential[0], credential[1])
+            logged_in = self.login(credential[0], credential[1])
+            if not logged_in:
+                logging.warning("Could not login with username: %s", credential[0])
+            return logged_in
+        logging.warning("Could not load credentials")
         return False
 
     def get_manga_list(self):
@@ -81,13 +71,32 @@ class Server:
         with open(self.settings.get_cover_path(manga_data), 'wb') as fp:
             fp.write(r.content)
 
-    def download_chapter(self, manga_data, chapter_data):
-        with requests_cache.disabled():
+    def needs_authenticated(self):
+        return self.has_login
+
+    def download_chapter(self, manga_data, chapter_data, page_limit=None):
+        with self.session.cache_disabled():
+            logging.info("Starting download of %s %s", manga_data["name"], chapter_data["title"])
+            if self.needs_authenticated():
+                logging.debug("Server is not authenticated; relogging in")
+                self.relogin()
             list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
             dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)
-            for index, page_data in enumerate(list_of_pages):
+            logging.debug("Starting download for %d pages", len(list_of_pages))
+            for index, page_data in enumerate(list_of_pages[:page_limit]):
+                temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp.png")
                 full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + ".png")
-                self.save_chapter_page(page_data, full_path)
+
+                if os.path.exists(full_path):
+                    logging.debug("Page %s already download", full_path)
+                else:
+                    print(self.delay)
+                    if self.delay:
+                        time.sleep(self.delay)
+                        print("awoken")
+                    self.save_chapter_page(page_data, temp_full_path)
+                    os.rename(temp_full_path, full_path)
+        logging.info("%s %d %s is downloaded", manga_data["name"], chapter_data["number"], chapter_data["title"])
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
         """
@@ -104,7 +113,7 @@ class Server:
         raise NotImplementedError
 
     def create_manga_data(self, id, name, cover=None):
-        return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, chapters={}, trackers={})
+        return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, chapters={}, trackers={}, tracker_lists={})
 
     def update_chapter_data(self, manga_data, id, title, number, premium=False, read=False, incomplete=False, date=None):
         id = str(id)

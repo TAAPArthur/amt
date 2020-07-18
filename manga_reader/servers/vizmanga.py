@@ -1,8 +1,9 @@
 from PIL import Image
 from bs4 import BeautifulSoup
 import re
+import logging
 
-from manga_reader.server import Server
+from ..server import Server
 
 # Improved from https://github.com/manga-py/manga-py
 
@@ -11,6 +12,8 @@ class VizManga(Server):
     id = "vizmanga"
     lang = "en"
     locale = "enUS"
+
+    has_login = True
 
     base_url = "http://www.viz.com"
     login_url = base_url + "/manga/try_manga_login"
@@ -24,30 +27,17 @@ class VizManga(Server):
     chapter_regex = re.compile(r"/shonenjump/(.*)-chapter-([\d\-]*)/chapter/(\d*)")
     page_regex = re.compile(r"var pages\s*=\s*(\d*);")
 
-    def get_header(self):
-        return {
-            "Referer": "https://www.viz.com",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",
-        }
-
-    def get_base_url(self):
-        return self.base_url
-
-    def has_login(self): return True
-
     def get_token(self):
         auth_token = self.session.get(self.refresh_login_url)
         token = re.search(r'AUTH_TOKEN\s*=\s*"(.+?)"', auth_token.text)
         return token.group(1)
 
-    def refresh_login(self):
+    def needs_authenticated(self):
         r = self.session.get(self.refresh_login_url)
         soup = BeautifulSoup(r.content, "lxml")
         return bool(soup.select(".o_profile-link"))
 
     def login(self, username, password):
-        if not username or not password:
-            return False
         token = self.get_token()
 
         r = self.session.post(
@@ -77,7 +67,6 @@ class VizManga(Server):
         return result
 
     def update_manga_data(self, manga_data):
-        self.refresh_login()
         r = self.session.get(self.api_chapters_url.format(manga_data["id"]))
         soup = BeautifulSoup(r.content, "lxml")
 
@@ -127,19 +116,8 @@ class VizManga(Server):
             title = chapter_number
 
             self.update_chapter_data(manga_data, id=chapter_id, number=chapter_number, premium=premium, title=title, date=chapter_date)
-            """
-            data['chapters'].append(dict(
-                slug=chapter_slug,
-                title=title,
-                url=self.api_chapter_url.format(series_name, chapter_number, chapter_slug),
-                date=chapter_date,
-            ))
-            """
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
-
-        if not self.refresh_login():
-            self.relogin()
         chapter_url = self.api_chapter_url.format(manga_data["name"], chapter_data["number"], chapter_data["id"])
         match = self.page_regex.search(self.session.get(chapter_url).text)
         num_pages = int(match.group(1)) + 1
@@ -149,19 +127,15 @@ class VizManga(Server):
             pages.append(self.create_page_data(url=self.api_chapter_data_url.format(chapter_data["id"], i)))
         return pages
 
-    def _get_chapter_url(self, chapter_slug, i):
-        url = self.api_chapter_data_url.format(chapter_slug, i)
-
-        r = self.session.get(url)
-        return r.text.strip()
-
     def save_chapter_page(self, page_data, path):
-        if not self.refresh_login():
-            self.relogin()
-        r = self.session.get(page_data["url"])
+        r = self.session.get(page_data["url"], headers={"Referer": "https://www.viz.com"})
+        if r.status_code != 200:
+            logging.warning("Could not load page_data['url']; Response code %d", r.status_code)
+            return
         real_img_url = r.text.strip()
 
         r = self.session.get(real_img_url, stream=True)
+        assert not r.from_cache
         if r.status_code != 200:
             return None
 
@@ -218,7 +192,7 @@ class VizManga(Server):
 
         return ref
 
-    @staticmethod
+    @ staticmethod
     def paste(ref: Image.Image, orig: Image.Image, orig_box, ref_box):
         ref.paste(orig.crop((
             int(orig_box[0]), int(orig_box[1]),
