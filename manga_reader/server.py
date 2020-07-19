@@ -66,11 +66,6 @@ class Server:
     def get_page_name_from_index(page_index):
         return '%03d' % page_index
 
-    def download_cover(self, manga_data):
-        r = self.session.get(manga_data["cover"])
-        with open(self.settings.get_cover_path(manga_data), 'wb') as fp:
-            fp.write(r.content)
-
     def needs_authenticated(self):
         return self.has_login
 

@@ -16,15 +16,15 @@ class Settings:
     password_save_cmd = "tpm insert {}"
     password_load_cmd = "tpm show {}"
     manga_viewer_cmd = ""
-    compile_cmds = {
-        "pdf": "convert {:1} {:2}",
-        "cbz": "zip {:2} {:1}"
+    bundle_cmds = {
+        "cbz": "zip {:2} {:1}",
+        "pdf": "convert {:1} {:2}"
     }
+    bundle_format = "pdf"
     viewers = {
-        "pdf": "zathura",
-        "cbz": "zathura"
+        "cbz": "zathura",
+        "pdf": "zathura"
     }
-    compile_format = "pdf"
     cache = False
     expire_after = 60 * 60
     no_save_session = False
@@ -44,9 +44,6 @@ class Settings:
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
 
-    def _get_members(self):
-        return [attr for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
-
     @classmethod
     def get_members(clazz):
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("__")]
@@ -61,19 +58,19 @@ class Settings:
     def save(self):
         with open(self.get_settings_file(), 'w') as f:
             settings_to_save = {}
-            members = self._get_members()
+            members = Settings.get_members()
             for attr in members:
-                settings_to_save[attr] = getattr(self, attr)
+                settings_to_save[attr] = self.get(attr)
             json.dump(settings_to_save, f, indent=4)
 
     def load(self):
         try:
             with open(self.get_settings_file(), 'r') as f:
                 saved_settings = json.load(f)
-                members = self._get_members()
+                members = Settings.get_members()
                 for attr in members:
                     if attr in saved_settings:
-                        setattr(self, attr, saved_settings[attr])
+                        self.set(attr, saved_settings[attr])
         except FileNotFoundError:
             pass
 
@@ -84,12 +81,7 @@ class Settings:
         return os.path.join(self.data_dir, "metadata.json")
 
     def get_chapter_dir(self, manga_data, chapter_data):
-        dir = os.path.join(self.data_dir, manga_data["server_id"], manga_data["name"], chapter_data["title"])
-        os.makedirs(dir, exist_ok=True)
-        return dir
-
-    def get_cover_path(self, manga_data):
-        dir = os.path.join(self.data_dir, manga_data["server_id"], manga_data["name"], "cover.jpg")
+        dir = os.path.join(self.data_dir, manga_data["server_id"], manga_data["name"].replace(" ", "_"), '%03f' % chapter_data["number"])
         os.makedirs(dir, exist_ok=True)
         return dir
 
@@ -97,10 +89,12 @@ class Settings:
         """Returns the saved username, password"""
         if self.password_manager_enabled and self.password_load_cmd:
             try:
+                logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
                 output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
                 login, password = output.split("\t")
                 return login, password
             except subprocess.CalledProcessError:
+                logging.info("Unable to load credentials for %s", server_id)
                 pass
 
     def store_credentials(self, server_id, username, password):
@@ -117,9 +111,9 @@ class Settings:
     def store_secret(self, server_id, secret):
         self.store_credentials(server_id, secret, "token")
 
-    def compile(self, img_dirs):
-        name = "{}.{}".format(date.today(), self.compile_format)
-        cmd = self.compile_cmds[self.compile_format].format(img_dirs, name)
+    def bundle(self, img_dirs):
+        name = "{}.{}".format(date.today(), self.bundle_format)
+        cmd = self.bundle_cmds[self.bundle_format].format(img_dirs, name)
         subprocess.check_call(cmd, shell=self.shell)
         return name
 

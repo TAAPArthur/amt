@@ -10,7 +10,7 @@ from ..manga_reader import MangaReader, SERVERS
 from ..settings import Settings
 from .test_server import TestServer, TestServer2
 
-TEST_HOME = "/tmp/manga_reader/test_home"
+TEST_HOME = "/tmp/manga_reader/test_home/"
 
 
 logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)
@@ -26,6 +26,7 @@ class TestMangaReader(MangaReader):
         stream_handler.stream = sys.stdout
         settings = Settings(home=TEST_HOME)
         settings.init()
+        settings.shell = True
         settings.cache = True
         settings.free_only = True
         settings.password_manager_enabled = False
@@ -54,6 +55,48 @@ class SettingsTest(BaseUnitTestClass):
 
         settings = Settings(home=TEST_HOME)
         assert settings.manga_viewer_cmd == "dummy_cmd"
+
+    def test_credentials(self):
+        settings = Settings(home=TEST_HOME)
+        settings.password_manager_enabled = True
+        settings.password_load_cmd = "cat {}{}".format(TEST_HOME, "{}")
+        settings.password_save_cmd = r"cat - >> {}{}".format(TEST_HOME, "{}")
+        server_id = "test"
+        assert not settings.get_credentials(server_id)
+        username, password = "user", "pass"
+        settings.store_credentials(server_id, username, password)
+        assert (username, password) == settings.get_credentials(server_id)
+        tracker_id = "test-tracker"
+        assert not settings.get_credentials(tracker_id)
+        assert not settings.get_secret(tracker_id)
+        secret = "MySecret"
+        settings.store_secret(tracker_id, secret)
+        assert secret == settings.get_secret(tracker_id)
+
+    def test_bundle(self):
+        settings = Settings(home=TEST_HOME)
+        settings.bundle_format = "pdf"
+        settings.bundle_cmds[settings.bundle_format] = "echo {} {}"
+        settings.viewers[settings.bundle_format] = "echo {}"
+        name = settings.bundle("")
+        assert name.endswith("." + settings.bundle_format)
+        assert settings.view(name)
+
+        settings.viewers[settings.bundle_format] = "exit 1"
+        assert not settings.view(name)
+
+    def test_get_chapter_dir(self):
+        settings = Settings(home=TEST_HOME)
+        server = TestServer(None, settings)
+        manga_data = server.create_manga_data("id", "Manga Name")
+        server.update_chapter_data(manga_data, "chapter_id", title="Degenerate Chapter Title ~//\\\\!@#$%^&*()", number="1-2")
+        dir = settings.get_chapter_dir(manga_data, manga_data["chapters"]["chapter_id"])
+        # should yield the same result everytime
+        assert dir == settings.get_chapter_dir(manga_data, manga_data["chapters"]["chapter_id"])
+
+        settings.bundle_cmds[settings.bundle_format] = "ls {}; echo {}"
+
+        name = settings.bundle(dir)
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
@@ -117,6 +160,11 @@ class ServerTest(BaseUnitTestClass):
             with self.subTest(server=server.id, method="login"):
                 assert not server.login("A", "B")
 
+            server.settings.password_manager_enabled = False
+            with self.subTest(server=server.id, method="relogin"):
+                assert not server.relogin()
+
+            server.settings.password_manager_enabled = True
             server.settings.password_load_cmd = r"echo -e A\\tB"
             with self.subTest(server=server.id, method="relogin"):
                 assert not server.relogin()

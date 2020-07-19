@@ -202,7 +202,7 @@ class MangaReader:
         paths = [x for chapters in unreads for x in chapters]
         print(paths)
         logging.info("Bundling %s", paths)
-        return self.settings.compile(" ".join(paths))
+        return self.settings.bundle(" ".join(paths))
 
     def read_bundle(self, bundle_name):
         return self.settings.view(bundle_name)
