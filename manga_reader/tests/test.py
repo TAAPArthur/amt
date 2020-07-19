@@ -244,6 +244,8 @@ class MangaReaderTest(BaseUnitTestClass):
 
     def test_update_download(self):
         for server in self.manga_reader.get_servers():
+            if not server.has_free_chapters:
+                continue
             with self.subTest(server=server.id):
                 manga_list = server.get_manga_list()
                 manga_data = manga_list[0]

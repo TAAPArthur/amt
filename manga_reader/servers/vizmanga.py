@@ -32,7 +32,7 @@ class VizManga(Server):
         token = re.search(r'AUTH_TOKEN\s*=\s*"(.+?)"', auth_token.text)
         return token.group(1)
 
-    def needs_authenticated(self):
+    def needs_authentication(self):
         r = self.session.get(self.refresh_login_url)
         soup = BeautifulSoup(r.content, "lxml")
         return bool(soup.select(".o_profile-link"))
