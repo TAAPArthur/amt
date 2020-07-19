@@ -99,6 +99,17 @@ class SettingsTest(BaseUnitTestClass):
         name = settings.bundle(dir)
 
 
+class TrackerTest(BaseUnitTestClass):
+    def test_get_list(self):
+
+        tracker = self.manga_reader.get_primary_tracker()
+
+        data = tracker.get_tracker_list(id=1)
+        assert data
+        assert isinstance(data, list)
+        assert isinstance(data[0], dict)
+
+
 class ServerWorkflowsTest(BaseUnitTestClass):
 
     def test_manga_reader_add_remove_manga(self):

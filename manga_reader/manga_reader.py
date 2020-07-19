@@ -31,7 +31,7 @@ class MangaReader:
 
         if self.settings.cache:
             logging.debug("Installing cache")
-            requests_cache.core.install_cache(expire_after=self.settings.expire_after, allowable_methods=('GET', 'POST'))
+            requests_cache.core.install_cache(expire_after=self.settings.expire_after, allowable_methods=('GET', 'POST'), include_headers=True)
 
         self.session = None
         if not no_load:
@@ -39,13 +39,12 @@ class MangaReader:
             self.load_state()
         if not self.session:
             self.session = requests.Session()
-        self.session.headers = {
+        self.session.headers.update({
             "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",
-            "Accept-Encoding": "gzip, deflate, br",
             "Accept-Language": "en,en-US;q=0.9",
             "Connection": "keep-alive",
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0"
-        }
+        })
 
         self.tracker = Anilist(self.session, self.settings.get_secret(Anilist.id))
 
