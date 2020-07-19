@@ -4,6 +4,7 @@ import os
 import shutil
 import time
 import unittest
+from unittest.mock import patch
 import sys
 
 from ..manga_reader import MangaReader, SERVERS
@@ -108,6 +109,11 @@ class TrackerTest(BaseUnitTestClass):
         assert data
         assert isinstance(data, list)
         assert isinstance(data[0], dict)
+
+    @patch('builtins.input', return_value='value')
+    def test_auth(self, input):
+        tracker = self.manga_reader.get_primary_tracker()
+        assert "value" == tracker.auth()
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
