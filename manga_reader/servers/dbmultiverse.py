@@ -14,7 +14,7 @@ class Dbmultiverse(Server):
 
     synopsis = "Dragon Ball Multiverse (\"DBM\"), the sequel of the manga, is a dojinshi (manga created by non-professionals, using a universe and characters which are not theirs), made by Salagir and Gogeta Jr, from France."
 
-    delay = 1
+    static_pages = True
 
     def get_base_url(self):
         return self.base_url
