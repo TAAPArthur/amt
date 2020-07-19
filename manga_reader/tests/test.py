@@ -42,7 +42,8 @@ class TestMangaReader(MangaReader):
 class BaseUnitTestClass(unittest.TestCase):
     def setUp(self):
         self.manga_reader = TestMangaReader([TestServer, TestServer2, ] + SERVERS)
-        assert not self.manga_reader.state
+        self.settings = self.manga_reader.settings
+        assert not self.manga_reader.get_manga_in_library()
 
     def tearDown(self):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
@@ -216,7 +217,7 @@ class MangaReaderTest(BaseUnitTestClass):
 
         for server in self.manga_reader.get_servers():
             with self.subTest(server=server.id):
-                self.manga_reader.state.clear()
+                self.manga_reader.manga.clear()
                 manga_list = server.get_manga_list()
                 manga_data = None
                 for manga_data in manga_list:
@@ -279,3 +280,39 @@ class MangaReaderTest(BaseUnitTestClass):
                 # error if we try to save a page we have already downloaded
                 server.save_chapter_page = None
                 assert not server.download_chapter(manga_data, chapter_data, page_limit=3)
+
+    def _prepare_for_bundle(self):
+        server = self.manga_reader.get_server(TestServer.id)
+        manga_list = server.get_manga_list()
+        num_chapters = 0
+        for manga_data in manga_list:
+            self.manga_reader.add_manga(manga_data)
+            num_chapters += len(manga_data["chapters"])
+
+        self.assertEqual(num_chapters, self.manga_reader.download_unread_chapters())
+
+        self.settings.bundle_cmds[self.settings.bundle_format] = "echo {{}} > {}/{{}}".format(TEST_HOME)
+        self.settings.viewers[self.settings.bundle_format] = "echo {}"
+
+    def test_bundle(self):
+        self._prepare_for_bundle()
+        name = self.manga_reader.bundle_unread_chapters()
+        assert self.manga_reader.read_bundle(name)
+        assert all([x["read"] for manga_data in self.manga_reader.get_manga_in_library() for x in manga_data["chapters"].values()])
+
+    def test_bundle_shuffle(self):
+        self._prepare_for_bundle()
+        names = set()
+        for i in range(10):
+            names.add(self.manga_reader.bundle_unread_chapters(shuffle=True))
+        assert all(names)
+        assert len(names) > 1
+
+    def test_bundle_no_unreads(self):
+        assert not self.manga_reader.bundle_unread_chapters()
+
+    def test_bundle_fail(self):
+        self._prepare_for_bundle()
+        self.settings.viewers[self.settings.bundle_format] = "exit 1; echo {};"
+        assert not self.manga_reader.read_bundle("none.{}".format(self.settings.bundle_format))
+        assert not any([x["read"] for manga_data in self.manga_reader.get_manga_in_library() for x in manga_data["chapters"].values()])

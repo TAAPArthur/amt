@@ -27,7 +27,7 @@ class MangaReader:
     def __init__(self, class_list=SERVERS, settings=None, no_load=False):
         self.settings = settings if settings else Settings()
         self._servers = {}
-        self.state = {}
+        self.state = {"manga": {}, "bundles": {}}
 
         if self.settings.cache:
             logging.debug("Installing cache")
@@ -37,6 +37,9 @@ class MangaReader:
         if not no_load:
             self.load_session()
             self.load_state()
+
+        self.manga = self.state["manga"]
+        self.bundles = self.state["bundles"]
         if not self.session:
             self.session = requests.Session()
         self.session.headers.update({
@@ -97,14 +100,14 @@ class MangaReader:
         return str(manga_data["server_id"]) + ":" + str(manga_data["id"])
 
     def add_manga(self, manga_data, no_update=False):
-        self.state[self._get_global_id(manga_data)] = manga_data
+        self.manga[self._get_global_id(manga_data)] = manga_data
         return [] if no_update else self.update_manga(manga_data)
 
     def remove_manga(self, manga_data=None, id=None):
         if id:
-            del self.state[id]
+            del self.manga[id]
         else:
-            del self.state[self._get_global_id(manga_data)]
+            del self.manga[self._get_global_id(manga_data)]
 
     def get_servers(self):
         return self._servers.values()
@@ -126,10 +129,10 @@ class MangaReader:
         manga_data["tracker_lists"][self.get_primary_tracker().id] = list_id
 
     def get_manga_in_library(self):
-        return self.state.values()
+        return self.manga.values()
 
     def get_manga_ids_in_library(self):
-        return self.state.keys()
+        return self.manga.keys()
 
     def search_for_manga(self, term, exact=False):
         result = []
@@ -149,7 +152,7 @@ class MangaReader:
         return max(manga_data["chapters"].values(), key=lambda x: x["number"])["number"]
 
     def get_last_read(self, manga_data):
-        return max(manga_data["chapters"].values(), key=lambda x: x["number"] if x["read"] else 0)["number"]
+        return max(filter(lambda x: x["read"], manga_data["chapters"].values()), key=lambda x: x["number"], default={"number": -1})["number"]
 
     def get_progress(self, manga_data):
         return manga_data["progress"]
@@ -168,42 +171,58 @@ class MangaReader:
 
     def download_unread_chapters(self):
         """Downloads all chapters that are not read"""
-        for manga_data in self.state.values():
-            self.download_chapters(manga_data)
+        return sum([self.download_chapters(manga_data) for manga_data in self.get_manga_in_library()])
 
     def download_chapters(self, manga_data, num=0):
         last_read = self.get_last_read(manga_data)
-        server = self._servers[manga_data["server_id"]]
+        server = self.get_server(manga_data["server_id"])
         counter = 0
         for chapter in sorted(manga_data["chapters"].values(), key=lambda x: x["number"]):
             if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(manga_data, chapter):
                 counter += 1
                 if counter == num:
                     break
+        return counter
 
-    def compile_unread_chapters(self, shuffle=False):
+    def _create_bundle_data_entry(self, manga_data, chapter_data):
+        return dict(manga_id=self._get_global_id(manga_data), chapter_id=chapter_data["id"], manga_name=manga_data["name"], chapter_num=chapter_data["number"])
+
+    def bundle_unread_chapters(self, shuffle=False):
         unreads = []
-        for manga_data in self.state.values():
+        for manga_data in self.get_manga_in_library():
             unread_dirs = []
-            for chapter in manga_data["chapters"].values():
+            for chapter in sorted(manga_data["chapters"].values(), key=lambda x: x["number"]):
                 if not chapter["read"]:
                     dir_path = self.settings.get_chapter_dir(manga_data, chapter)
-                    unread_dirs.append("'" + dir_path + "'/*")
+                    unread_dirs.append(("'" + dir_path + "'/*", self._create_bundle_data_entry(manga_data, chapter)))
             unreads.append(unread_dirs)
+        if not unreads:
+            return None
 
         if shuffle:
             random.shuffle(unreads)
-        paths = [x for chapters in unreads for x in chapters]
-        print(paths)
+
+        paths = [x[0] for chapters in unreads for x in chapters]
+        bundle_data = [x[1] for chapters in unreads for x in chapters]
         logging.info("Bundling %s", paths)
-        return self.settings.bundle(" ".join(paths))
+        name = self.settings.bundle(" ".join(paths))
+        self.bundles[name] = bundle_data
+        return name
 
     def read_bundle(self, bundle_name):
-        return self.settings.view(bundle_name)
+        if self.settings.view(bundle_name):
+            self.mark_bundle_as_read(bundle_name)
+            return True
+        return False
+
+    def mark_bundle_as_read(self, bundle_name, remove=False):
+        bundled_data = self.bundles[bundle_name]
+        for bundle in bundled_data:
+            self.manga[bundle["manga_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
     def update(self, download=False):
         new_chapters = []
-        for manga_data in self.state.values():
+        for manga_data in self.get_manga_in_library():
             new_chapters += self.update_manga(manga_data, download)
         return new_chapters
 
@@ -211,7 +230,7 @@ class MangaReader:
         """
         Return set of updated chapters or a False-like value
         """
-        server = self._servers[manga_data["server_id"]]
+        server = self.get_server(manga_data["server_id"])
 
         def get_chapter_ids(chapters):
             return {x for x in chapters if not chapters[x]["premium"]} if self.settings.free_only else set(chapters.keys())

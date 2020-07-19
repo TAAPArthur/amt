@@ -112,7 +112,7 @@ class Settings:
         self.store_credentials(server_id, secret, "token")
 
     def bundle(self, img_dirs):
-        name = "{}.{}".format(date.today(), self.bundle_format)
+        name = "{}_{}.{}".format(date.today(), str(hash(str(img_dirs)))[1:8], self.bundle_format)
         cmd = self.bundle_cmds[self.bundle_format].format(img_dirs, name)
         subprocess.check_call(cmd, shell=self.shell)
         return name
