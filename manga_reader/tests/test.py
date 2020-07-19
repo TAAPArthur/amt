@@ -163,6 +163,13 @@ class ServerTest(BaseUnitTestClass):
                     assert not return_val
                     assert isinstance(manga_data["chapters"], dict)
 
+            with self.subTest(server=server.id, method="search"):
+                manga_data = manga_list[0]
+                chapter_data = list(manga_data["chapters"].values())[0]
+                if not chapter_data["premium"]:
+                    assert server.download_chapter(manga_data, chapter_data, page_limit=1)
+                assert not server.download_chapter(manga_data, chapter_data, page_limit=1)
+
     def test_caching(self):
         start = time.time()
         for i in range(10):
@@ -235,6 +242,8 @@ class MangaReaderTest(BaseUnitTestClass):
         assert not self.manga_reader.update()
 
     def test_update(self):
+
+        self.manga_reader.settings.free_only = False
         for server in self.manga_reader.get_servers():
             with self.subTest(server=server.id):
                 manga_list = server.get_manga_list()
@@ -257,6 +266,8 @@ class MangaReaderTest(BaseUnitTestClass):
                 manga_data = manga_list[0]
                 self.manga_reader.add_manga(manga_data, no_update=True)
                 chapter_data = self.manga_reader.update_manga(manga_data, download=True, limit=1, page_limit=3)[0]
+                min_chapter = min(manga_data["chapters"].values(), key=lambda x: x["number"])
+                assert min_chapter == chapter_data
                 dir_path = self.manga_reader.settings.get_chapter_dir(manga_data, chapter_data)
 
                 dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
@@ -267,4 +278,4 @@ class MangaReaderTest(BaseUnitTestClass):
 
                 # error if we try to save a page we have already downloaded
                 server.save_chapter_page = None
-                server.download_chapter(manga_data, chapter_data, page_limit=3)
+                assert not server.download_chapter(manga_data, chapter_data, page_limit=3)

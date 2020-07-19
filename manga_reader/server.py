@@ -70,12 +70,15 @@ class Server:
     def download_chapter(self, manga_data, chapter_data, page_limit=None):
         with self.session.cache_disabled():
             logging.info("Starting download of %s %s", manga_data["name"], chapter_data["title"])
-            if self.needs_authenticated():
+            if chapter_data["premium"] and self.needs_authenticated():
                 logging.debug("Server is not authenticated; relogging in")
-                self.relogin()
+                if not self.relogin():
+                    logging.info("Cannot access chapter %s #%f %s", manga_data["name"], chapter_data["number"], chapter_data["title"])
+                    return False
             list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
             dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)
             logging.debug("Starting download for %d pages", len(list_of_pages))
+            downloaded_page = False
             for index, page_data in enumerate(list_of_pages[:page_limit]):
                 temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp.png")
                 full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + ".png")
@@ -89,7 +92,9 @@ class Server:
                         print("awoken")
                     self.save_chapter_page(page_data, temp_full_path)
                     os.rename(temp_full_path, full_path)
+                    downloaded_page = True
         logging.info("%s %d %s is downloaded", manga_data["name"], chapter_data["number"], chapter_data["title"])
+        return downloaded_page
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
         """

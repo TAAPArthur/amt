@@ -169,20 +169,15 @@ class MangaReader:
     def download_unread_chapters(self):
         """Downloads all chapters that are not read"""
         for manga_data in self.state.values():
-            for chapter in manga_data["chapters"].values():
-                server = self._servers[manga_data["server_id"]]
-                if not chapter["read"]:
-                    server.download_chapter(manga_data, chapter)
+            self.download_chapters(manga_data)
 
-    def download_chapters(self, manga_data, num):
+    def download_chapters(self, manga_data, num=0):
         last_read = self.get_last_read(manga_data)
-        chapters = list(manga_data["chapters"].values())
-        chapters.sort(key=lambda x: x["number"])
         server = self._servers[manga_data["server_id"]]
         counter = 0
-        for chapter in chapters:
-            if chapter["number"] > last_read:
-                server.download_chapter(manga_data, chapter)
+        for chapter in sorted(manga_data["chapters"].values(), key=lambda x: x["number"]):
+            if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(manga_data, chapter):
+                counter += 1
                 if counter == num:
                     break
 
@@ -228,7 +223,7 @@ class MangaReader:
         current_chapter_ids = get_chapter_ids(manga_data["chapters"])
         new_chapter_ids = current_chapter_ids - chapter_ids
 
-        new_chapters = [manga_data["chapters"][x] for x in new_chapter_ids]
+        new_chapters = sorted([manga_data["chapters"][x] for x in new_chapter_ids], key=lambda x: x["number"])
         assert len(new_chapter_ids) == len(new_chapters)
         if download:
             for chapter_data in new_chapters[:limit]:
