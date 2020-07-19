@@ -248,4 +248,4 @@ class MangaReaderTest(BaseUnitTestClass):
 
                 # error if we try to save a page we have already downloaded
                 server.save_chapter_page = None
-                self.manga_reader.update_manga(manga_data, download=True, limit=1, page_limit=3)
+                server.download_chapter(manga_data, chapter_data, page_limit=3)

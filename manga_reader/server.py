@@ -33,8 +33,6 @@ class Server:
         return False
 
     def relogin(self):
-        self.session.cookies.clear()
-
         credential = self.settings.get_credentials(self.id)
         if credential:
             logged_in = self.login(credential[0], credential[1])
