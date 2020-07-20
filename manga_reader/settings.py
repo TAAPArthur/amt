@@ -59,6 +59,9 @@ class Settings:
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("__")]
 
     def set(self, name, value):
+        if isinstance(self.get(name), bool) and not isinstance(value, bool):
+            value = value.lower() not in ["false", 0, ""]
+        print(value, type(value))
         setattr(self, name, value)
         return value
 

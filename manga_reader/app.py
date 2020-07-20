@@ -4,13 +4,17 @@ import logging
 
 
 class Application(MangaReader):
+    auto_select = False
+
     def print_results(self, results):
         for i, result in enumerate(results):
             print("{:4}| {}:{}\t{}".format(i, result["server_id"], result["id"], result["name"]))
 
-    def select_manga(self, results, prompt, no_auto_select=False):
+    def select_manga(self, results, prompt):
         index = 0
-        if no_auto_select or len(results) > 1:
+
+        print(self.auto_select)
+        if not self.auto_select and len(results) > 1:
             index = input(prompt)
         try:
             return results[int(index)]
@@ -18,21 +22,21 @@ class Application(MangaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def search_add(self, term, no_auto_select=False, exact=False, nosave=False):
+    def search_add(self, term, exact=False, nosave=False):
         results = self.search_for_manga(term, exact=exact)
         if len(results) == 0:
             logging.warning("Could not find manga %s", term)
             return
         self.print_results(results)
 
-        manga_data = self.select_manga(results, "Select manga to add: ", no_auto_select=no_auto_select)
+        manga_data = self.select_manga(results, "Select manga to add: ")
         if manga_data:
             self.add_manga(manga_data)
             if not nosave:
                 self.save_state()
         return manga_data
 
-    def load_from_tracker(self, user_id=None, user_name=None, no_auto_select=False):
+    def load_from_tracker(self, user_id=None, user_name=None):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(id=user_id if user_id else tracker.get_user_info()["id"], user_name=user_name)
         count = 0
@@ -46,7 +50,7 @@ class Application(MangaReader):
 
                 known_matching_manga = list(filter(lambda x: x["name"].lower() == entry["name"].lower(), self.get_manga_in_library()))
                 if known_matching_manga:
-                    manga_data = self.select_manga(known_matching_manga, "Select from known manga: ", no_auto_select=no_auto_select)
+                    manga_data = self.select_manga(known_matching_manga, "Select from known manga: ")
 
                 if not manga_data:
                     manga_data = self.search_add(entry["name"], exact=True, nosave=True)

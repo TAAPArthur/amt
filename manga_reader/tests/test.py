@@ -11,6 +11,7 @@ from ..manga_reader import MangaReader, SERVERS
 from ..app import Application
 from ..settings import Settings
 from .test_server import TestServer, TestServer2
+from ..main import parse_args
 
 TEST_HOME = "/tmp/manga_reader/test_home/"
 
@@ -49,6 +50,11 @@ class BaseUnitTestClass(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
+
+    def add_arbitrary_manga(self):
+        server = self.manga_reader.get_server(TestServer.id)
+        for manga_data in server.get_manga_list():
+            self.manga_reader.add_manga(manga_data)
 
 
 class SettingsTest(BaseUnitTestClass):
@@ -322,11 +328,6 @@ class MangaReaderTest(BaseUnitTestClass):
 
 class ApplicationTest(BaseUnitTestClass):
 
-    def add_arbitrary_manga(self):
-        server = self.manga_reader.get_server(TestServer.id)
-        for manga_data in server.get_manga_list():
-            self.manga_reader.add_manga(manga_data)
-
     def test_list(self):
         self.add_arbitrary_manga()
         self.app.list()
@@ -365,3 +366,36 @@ class ApplicationTest(BaseUnitTestClass):
                 self.assertEqual(0, new_count)
             else:
                 self.assertEqual(new_count, len(self.manga_reader.get_manga_in_library()))
+
+
+class ArgsTest(BaseUnitTestClass):
+    @patch('builtins.input', return_value='0')
+    def test_arg(self, input):
+        parse_args(app=self.manga_reader, args=["auth"])
+
+    def test_get_settings(self):
+        parse_args(app=self.manga_reader, args=["get", "password_manager_enabled"])
+
+    def test_set_settings_bool(self):
+        parse_args(app=self.manga_reader, args=["set", "password_manager_enabled", "false"])
+        self.assertEqual(self.settings.password_manager_enabled, False)
+        parse_args(app=self.manga_reader, args=["set", "password_manager_enabled", "true"])
+        self.assertEqual(self.settings.password_manager_enabled, True)
+
+    def test_set_settings(self):
+        parse_args(app=self.manga_reader, args=["set", "bundle_format", "jpg"])
+        self.assertEqual(self.settings.bundle_format, "jpg")
+        parse_args(app=self.manga_reader, args=["set", "bundle_format", "true"])
+        self.assertEqual(self.settings.bundle_format, "true")
+
+    def test_print_app_state(self):
+        self.add_arbitrary_manga()
+        chapter_id = list(self.manga_reader.get_manga_ids_in_library())[0]
+        parse_args(app=self.manga_reader, args=["list-chapters", chapter_id])
+        parse_args(app=self.manga_reader, args=["list"])
+
+    def test_search(self):
+        assert not len(self.manga_reader.get_manga_in_library())
+        parse_args(app=self.manga_reader, args=["--auto", "search", "manga"])
+        assert len(self.manga_reader.get_manga_in_library())
+        self.assertRaises(ValueError, parse_args, app=self.manga_reader, args=["--auto", "search", "manga"])
