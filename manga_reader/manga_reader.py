@@ -100,7 +100,10 @@ class MangaReader:
         return str(manga_data["server_id"]) + ":" + str(manga_data["id"])
 
     def add_manga(self, manga_data, no_update=False):
-        self.manga[self._get_global_id(manga_data)] = manga_data
+        global_id = self._get_global_id(manga_data)
+        if global_id in self.manga:
+            raise ValueError("{} {} is already known".format(global_id, manga_data["name"]))
+        self.manga[global_id] = manga_data
         return [] if no_update else self.update_manga(manga_data)
 
     def remove_manga(self, manga_data=None, id=None):
@@ -129,7 +132,7 @@ class MangaReader:
         for server in self.get_servers():
             result += server.search(term)
         if exact:
-            result = list(filter(lambda x: x["title"] == term, result))
+            result = list(filter(lambda x: x["name"] == term, result))
         return result
 
     def mark_chapters_until_n_as_read(self, manga_data, N):

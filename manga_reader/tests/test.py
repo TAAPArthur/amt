@@ -8,6 +8,7 @@ from unittest.mock import patch
 import sys
 
 from ..manga_reader import MangaReader, SERVERS
+from ..app import Application
 from ..settings import Settings
 from .test_server import TestServer, TestServer2
 
@@ -20,7 +21,7 @@ stream_handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(stream_handler)
 
 
-class TestMangaReader(MangaReader):
+class TestApplication(Application):
     def __init__(self, class_list):
         # Save cache in local directory
         os.putenv('XDG_CACHE_HOME', ".")
@@ -41,7 +42,8 @@ class TestMangaReader(MangaReader):
 
 class BaseUnitTestClass(unittest.TestCase):
     def setUp(self):
-        self.manga_reader = TestMangaReader([TestServer, TestServer2, ] + SERVERS)
+        self.app = TestApplication([TestServer, TestServer2, ] + SERVERS)
+        self.manga_reader = self.app
         self.settings = self.manga_reader.settings
         assert not self.manga_reader.get_manga_in_library()
 
@@ -316,3 +318,50 @@ class MangaReaderTest(BaseUnitTestClass):
         self.settings.viewers[self.settings.bundle_format] = "exit 1; echo {};"
         assert not self.manga_reader.read_bundle("none.{}".format(self.settings.bundle_format))
         assert not any([x["read"] for manga_data in self.manga_reader.get_manga_in_library() for x in manga_data["chapters"].values()])
+
+
+class ApplicationTest(BaseUnitTestClass):
+
+    def add_arbitrary_manga(self):
+        server = self.manga_reader.get_server(TestServer.id)
+        for manga_data in server.get_manga_list():
+            self.manga_reader.add_manga(manga_data)
+
+    def test_list(self):
+        self.add_arbitrary_manga()
+        self.app.list()
+
+    def test_list_chapters(self):
+        self.add_arbitrary_manga()
+        for id in self.manga_reader.get_manga_ids_in_library():
+            self.app.list_chapters(id)
+
+    @patch('builtins.input', return_value='0')
+    def test_search_add(self, input):
+        manga_data = self.app.search_add("manga")
+        assert(manga_data)
+        assert manga_data in self.manga_reader.get_manga_in_library()
+
+    @patch('builtins.input', return_value='a')
+    def test_search_add_nan(self, input):
+        assert not self.app.search_add("manga")
+
+    @patch('builtins.input', return_value='1000')
+    def test_search_add_out_or_range(self, input):
+        assert not self.app.search_add("manga")
+
+    @patch('builtins.input', return_value='0')
+    def test_load_from_tracker(self, input):
+        for j in range(3):
+            if j == 2:
+                self.settings.trackers.clear()
+            count, new_count = 0, 0
+            for i in range(1, 3):
+                c, n = self.app.load_from_tracker(user_id=i)
+                assert c >= n
+                count += c
+                new_count += n
+            if j == 1:
+                self.assertEqual(0, new_count)
+            else:
+                self.assertEqual(new_count, len(self.manga_reader.get_manga_in_library()))
