@@ -30,6 +30,16 @@ class Settings:
     no_save_session = False
     free_only = False
     shell = True
+    trackers = {}
+
+    def get_tracker_info(self, tracker_server_id, manga_id):
+        return self.trackers.get(manga_id, {}).get(tracker_server_id, None)
+
+    def track(self, tracker_server_id, manga_id, tracker_id, tracker_title=None):
+        if manga_id not in self.trackers:
+            self.trackers[manga_id] = {}
+
+        self.trackers[manga_id][tracker_server_id] = (tracker_id, tracker_title)
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))

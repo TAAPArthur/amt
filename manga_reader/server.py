@@ -113,7 +113,7 @@ class Server:
         raise NotImplementedError
 
     def create_manga_data(self, id, name, cover=None):
-        return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, chapters={}, trackers={}, tracker_lists={})
+        return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, chapters={})
 
     def update_chapter_data(self, manga_data, id, title, number, premium=False, read=False, incomplete=False, date=None):
         id = str(id)

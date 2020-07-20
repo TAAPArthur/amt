@@ -118,16 +118,6 @@ class MangaReader:
     def get_server(self, id):
         return self._servers[id]
 
-    def is_added(self, tracker_id=None):
-        for manga_data in self.get_manga_in_library():
-            if manga_data["trackers"][self.get_primary_tracker().id] == tracker_id:
-                return manga_data
-        return False
-
-    def track(self, manga_data, tracker_id, list_id):
-        manga_data["trackers"][self.get_primary_tracker().id] = tracker_id
-        manga_data["tracker_lists"][self.get_primary_tracker().id] = list_id
-
     def get_manga_in_library(self):
         return self.manga.values()
 
@@ -249,13 +239,20 @@ class MangaReader:
                 server.download_chapter(manga_data, chapter_data, page_limit)
         return new_chapters
 
+    def is_added(self, tracker_id=None):
+        for manga_id in self.get_manga_ids_in_library():
+            if self.settings.get_tracker_info(self.get_primary_tracker().id, manga_id):
+                return self.manga[manga_id]
+        return False
+
     def sync_progress(self, force=False):
         with requests_cache.disabled():
             data = []
             tracker = self.get_primary_tracker()
-            for manga_data in self.get_manga_in_library():
-                if manga_data["tracker_lists"][tracker.id] and (force or manga_data["progress"] < self.get_last_read(manga_data)):
-                    data.append((manga_data["tracker_lists"][tracker.id], self.get_last_read(manga_data)))
+            for manga_id, manga_data in self.manga.items():
+                tracker_info = self.settings.get_tracker_info(self.get_primary_tracker().id, manga_id)
+                if tracker_info and (force or manga_data["progress"] < self.get_last_read(manga_data)):
+                    data.append(tracker_info[0], self.get_last_read(manga_data))
                     logging.info("Preparing to update %s", manga_data["name"])
 
             tracker.update(data)

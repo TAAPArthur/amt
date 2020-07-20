@@ -57,8 +57,8 @@ class Anilist():
         self.session = session
         self.accessToken = accessToken
 
-    def get_media_dict(self, id, list_entry_id, anime, title, progress):
-        return {"id": id, "list_entry_id": list_entry_id, "anime": anime, "title": title, "progress": progress}
+    def get_media_dict(self, id, anime, title, progress):
+        return {"id": id, "anime": anime, "name": title, "progress": progress}
 
     def get_auth_header(self):
         return {'Authorization': 'Bearer ' + self.accessToken}
@@ -78,8 +78,7 @@ class Anilist():
         response = self.session.post(self.url, json={'query': self.get_list_query, 'variables': variables})
         data = response.json()
         return [self.get_media_dict(
-            id=x["media"]["id"],
-            list_entry_id=x["id"],
+            id=x["id"],
             anime=x["media"]["type"] == "ANIME",
             title=x["media"]["title"]["english"] or x["media"]["title"]["romaji"],
             progress=x["progress"]
