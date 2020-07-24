@@ -29,14 +29,12 @@ class TestApplication(Application):
         stream_handler.stream = sys.stdout
         settings = Settings(home=TEST_HOME)
         settings.init()
+        settings.expire_after = 7 * 24 * 60 * 60
         settings.shell = True
         settings.cache = True
         settings.free_only = True
         settings.password_manager_enabled = False
-        if class_list:
-            super().__init__(class_list, settings)
-        else:
-            super().__init__(settings=settings)
+        super().__init__(class_list, settings)
         assert len(self.get_servers())
         assert all(self.get_servers())
 

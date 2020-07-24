@@ -16,9 +16,6 @@ class Dbmultiverse(Server):
 
     static_pages = True
 
-    def get_base_url(self):
-        return self.base_url
-
     def get_manga_list(self):
         return [self.create_manga_data(id=1, name="Dragon Ball Multiverse (DBM)")]
 

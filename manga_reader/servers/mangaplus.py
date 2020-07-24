@@ -28,9 +28,6 @@ class Mangaplus(Server):
     api_chapter_url = api_url + '/manga_viewer?chapter_id={0}&split=yes&img_quality=high'
     manga_url = base_url + '/titles/{0}'
 
-    def get_base_url(self):
-        return self.base_url
-
     def get_manga_list(self):
         r = self.session.get(self.api_most_populars_url)
         resp_data = loads(MangaplusResponse, r.content)
