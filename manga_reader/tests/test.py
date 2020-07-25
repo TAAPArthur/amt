@@ -10,7 +10,7 @@ import sys
 from ..manga_reader import MangaReader, SERVERS
 from ..app import Application
 from ..settings import Settings
-from .test_server import TestServer, TestServer2
+from .test_server import TestServer
 from ..main import parse_args
 
 TEST_HOME = "/tmp/manga_reader/test_home/"
@@ -41,7 +41,7 @@ class TestApplication(Application):
 
 class BaseUnitTestClass(unittest.TestCase):
     def setUp(self):
-        self.app = TestApplication([TestServer, TestServer2, ] + SERVERS)
+        self.app = TestApplication([TestServer] + SERVERS)
         self.manga_reader = self.app
         self.settings = self.manga_reader.settings
         assert not self.manga_reader.get_manga_in_library()
@@ -170,7 +170,7 @@ class ServerTest(BaseUnitTestClass):
                     assert not return_val
                     assert isinstance(manga_data["chapters"], dict)
 
-            with self.subTest(server=server.id, method="search"):
+            with self.subTest(server=server.id, method="download"):
                 manga_data = manga_list[0]
                 chapter_data = list(manga_data["chapters"].values())[0]
                 if not chapter_data["premium"]:
@@ -199,6 +199,26 @@ class ServerTest(BaseUnitTestClass):
             server.settings.password_load_cmd = r"echo -e A\\tB"
             with self.subTest(server=server.id, method="relogin"):
                 assert not server.relogin()
+
+
+@unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
+class PremiumTest(BaseUnitTestClass):
+    def test_download_premium(self):
+        for server in self.manga_reader.get_servers():
+            if server.has_login:
+                server.settings.password_manager_enabled = True
+                with self.subTest(server=server.id, method="get_manga_list"):
+                    manga_list = server.get_manga_list()
+                    download_passed = False
+                    for manga_data in manga_list:
+                        server.update_manga_data(manga_data)
+                        chapter_data = next(filter(lambda x: x["premium"], manga_data["chapters"].values()), None)
+                        if chapter_data:
+                            assert server.download_chapter(manga_data, chapter_data, page_limit=1)
+                            assert not server.download_chapter(manga_data, chapter_data, page_limit=1)
+                            download_passed = True
+                            break
+                    assert download_passed
 
 
 class MangaReaderTest(BaseUnitTestClass):

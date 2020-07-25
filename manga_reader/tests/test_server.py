@@ -28,19 +28,3 @@ class TestServer(Server):
         assert not os.path.exists(path)
         image = Image.new('RGB', (100, 100))
         image.save(path, "PNG")
-
-
-class TestServer2(TestServer):
-    id = 'test2'
-    has_login = True
-
-    def get_manga_list(self):
-        for i in range(10):
-            self.session.get('http://httpbin.org/delay/10')
-        return super().get_manga_list()
-
-    def login(self, username, password):
-        return False
-
-    def relogin(self):
-        return False
