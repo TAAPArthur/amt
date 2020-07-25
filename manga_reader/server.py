@@ -65,7 +65,7 @@ class Server:
     def get_page_name_from_index(page_index):
         return '%03d' % page_index
 
-    def needs_authenticated(self):
+    def needs_authentication(self):
         return self.has_login
 
     def download_chapter(self, manga_data, chapter_data, page_limit=None):
@@ -77,10 +77,10 @@ class Server:
 
     def _download_chapter(self, manga_data, chapter_data, page_limit=None):
         logging.info("Starting download of %s %s", manga_data["name"], chapter_data["title"])
-        if chapter_data["premium"] and self.needs_authenticated():
+        if chapter_data["premium"] and self.needs_authentication():
             logging.debug("Server is not authenticated; relogging in")
             if not self.relogin():
-                logging.info("Cannot access chapter %s #%f %s", manga_data["name"], chapter_data["number"], chapter_data["title"])
+                logging.info("Cannot access chapter %s #%s %s", manga_data["name"], str(chapter_data["number"]), chapter_data["title"])
                 return False
         list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
         dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)

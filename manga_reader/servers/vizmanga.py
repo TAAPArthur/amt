@@ -35,7 +35,8 @@ class VizManga(Server):
     def needs_authentication(self):
         r = self.session.get(self.refresh_login_url)
         soup = BeautifulSoup(r.content, "lxml")
-        return bool(soup.select(".o_profile-link"))
+        account = soup.find("div", id="o_account-links-content")
+        return not account or account["logged_in"] == "false"
 
     def login(self, username, password):
         token = self.get_token()
