@@ -138,21 +138,13 @@ class MangaReader:
     def mark_chapters_until_n_as_read(self, manga_data, N):
         """Marks all chapters whose numerical index <=N as read"""
         for chapter in manga_data["chapters"].values():
-            if chapter["number"] <= N:
-                chapter["read"] = True
+            chapter["read"] = chapter["number"] <= N
 
     def get_last_chapter_number(self, manga_data):
         return max(manga_data["chapters"].values(), key=lambda x: x["number"])["number"]
 
     def get_last_read(self, manga_data):
         return max(filter(lambda x: x["read"], manga_data["chapters"].values()), key=lambda x: x["number"], default={"number": -1})["number"]
-
-    def get_progress(self, manga_data):
-        return manga_data["progress"]
-
-    def update_progress(self):
-        for manga_data in self.get_manga_in_library():
-            manga_data["progress"] = self.get_last_read(manga_data)
 
     def mark_up_to_date(self, server_id=None, N=0, force=False):
         for manga_data in self.get_manga_in_library():
@@ -259,5 +251,7 @@ class MangaReader:
                     logging.info("Preparing to update %s", manga_data["name"])
 
             tracker.update(data)
-            self.update_progress()
+
+        for manga_data in self.get_manga_in_library():
+            manga_data["progress"] = self.get_last_read(manga_data)
             self.save_state()

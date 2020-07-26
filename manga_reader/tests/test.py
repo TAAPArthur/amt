@@ -44,6 +44,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.app = TestApplication([TestServer] + SERVERS)
         self.manga_reader = self.app
         self.settings = self.manga_reader.settings
+        self.test_server = self.manga_reader.get_server(TestServer.id)
         assert not self.manga_reader.get_manga_in_library()
 
     def tearDown(self):
@@ -306,6 +307,30 @@ class MangaReaderTest(BaseUnitTestClass):
                 # error if we try to save a page we have already downloaded
                 server.save_chapter_page = None
                 assert not server.download_chapter(manga_data, chapter_data, page_limit=3)
+
+    def test_mark_up_to_date(self):
+        server = self.test_server
+        manga_list = server.get_manga_list()
+        for manga_data in manga_list:
+            self.manga_reader.add_manga(manga_data)
+        self.manga_reader.mark_up_to_date(server.id)
+        for manga_data in manga_list:
+            assert all(map(lambda x: x["read"], manga_data["chapters"].values()))
+        self.manga_reader.mark_up_to_date(server.id, 1)
+        for manga_data in manga_list:
+            assert all(map(lambda x: x["read"], manga_data["chapters"].values()))
+        self.manga_reader.mark_up_to_date(server.id, 1, force=True)
+        for manga_data in manga_list:
+            chapter_list = list(sorted(manga_data["chapters"].values(), key=lambda x: x["number"]))
+            assert all(map(lambda x: x["read"], chapter_list[:-1]))
+            assert not chapter_list[-1]["read"]
+
+    def test_download_chapters_partial(self):
+        server = self.test_server
+        manga_list = server.get_manga_list()
+        for manga_data in manga_list:
+            self.manga_reader.add_manga(manga_data)
+            self.assertEqual(1, self.manga_reader.download_chapters(manga_data, 1))
 
     def _prepare_for_bundle(self):
         server = self.manga_reader.get_server(TestServer.id)
