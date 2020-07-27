@@ -94,7 +94,7 @@ class SettingsTest(BaseUnitTestClass):
         settings.viewers[settings.bundle_format] = "exit 1"
         assert not settings.view(name)
 
-    def test_get_chapter_dir(self):
+    def test_get_chapter_dir_degenerate_name(self):
         settings = Settings(home=TEST_HOME)
         server = TestServer(None, settings)
         manga_data = server.create_manga_data("id", "Manga Name")
@@ -103,9 +103,12 @@ class SettingsTest(BaseUnitTestClass):
         # should yield the same result everytime
         assert dir == settings.get_chapter_dir(manga_data, manga_data["chapters"]["chapter_id"])
 
-        settings.bundle_cmds[settings.bundle_format] = "ls {}; echo {}"
-
-        name = settings.bundle(dir)
+    def test_get_chapter_dir(self):
+        for manga_data in self.test_server.get_manga_list():
+            self.manga_reader.add_manga(manga_data)
+            sorted_paths = sorted([(self.settings.get_chapter_dir(manga_data, chapter_data), chapter_data) for chapter_data in manga_data["chapters"].values()])
+            sorted_chapters_by_number = sorted(manga_data["chapters"].values(), key=lambda x: x["number"])
+            self.assertEqual(sorted_chapters_by_number, list(map(lambda x: x[1], sorted_paths)))
 
 
 class TrackerTest(BaseUnitTestClass):

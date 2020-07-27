@@ -94,7 +94,7 @@ class Settings:
         return os.path.join(self.data_dir, "metadata.json")
 
     def get_chapter_dir(self, manga_data, chapter_data):
-        dir = os.path.join(self.data_dir, manga_data["server_id"], manga_data["name"].replace(" ", "_"), str(chapter_data["number"]))
+        dir = os.path.join(self.data_dir, manga_data["server_id"], manga_data["name"].replace(" ", "_"), "%06.1f" % chapter_data["number"])
         os.makedirs(dir, exist_ok=True)
         return dir
 

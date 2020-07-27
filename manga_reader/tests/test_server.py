@@ -19,7 +19,12 @@ class TestServer(Server):
             self.update_chapter_data(manga_data, id=4, title="Chapter1", number=1),
             self.update_chapter_data(manga_data, id=5, title="Chapter1-1", number="1-1"),
             self.update_chapter_data(manga_data, id=6, title="Chapter1.2", number="1.2"),
-            self.update_chapter_data(manga_data, id=7, title="Chapter1_3", number="1_3"),
+            self.update_chapter_data(manga_data, id=7, title="Chapter10", number="10"),
+            self.update_chapter_data(manga_data, id=8, title="Chapter11", number="11"),
+            self.update_chapter_data(manga_data, id=9, title="Chapter10.5", number="10.5"),
+            self.update_chapter_data(manga_data, id=10, title="Chapter100", number="100"),
+            self.update_chapter_data(manga_data, id=11, title="Chapter1000", number="1000"),
+            self.update_chapter_data(manga_data, id=12, title="Chapter9999", number="9999"),
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
         return [self.create_page_data(url="") for k in range(3)]
