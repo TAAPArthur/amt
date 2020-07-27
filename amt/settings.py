@@ -7,7 +7,7 @@ from datetime import date
 import logging
 
 
-APP_NAME = "manager-reader"
+APP_NAME = "amt"
 
 
 class Settings:

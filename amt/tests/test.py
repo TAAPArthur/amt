@@ -11,9 +11,9 @@ from ..manga_reader import MangaReader, SERVERS
 from ..app import Application
 from ..settings import Settings
 from .test_server import TestServer
-from ..main import parse_args
+from ..args import parse_args
 
-TEST_HOME = "/tmp/manga_reader/test_home/"
+TEST_HOME = "/tmp/amt/test_home/"
 
 
 logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)

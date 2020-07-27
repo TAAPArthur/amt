@@ -1,8 +1,8 @@
-#! /usr/bin/python
 import argparse
+import logging
+
 from .settings import Settings
 from .app import Application
-import logging
 
 
 def parse_args(args=None, app=None):
@@ -81,9 +81,3 @@ def parse_args(args=None, app=None):
 
     if not namespace.no_save:
         app.save()
-
-
-if __name__ == "__main__":
-
-    logging.basicConfig(format='[%(filename)s:%(lineno)s - %(funcName)20s()]%(levelname)s:%(message)s', level=logging.INFO)
-    parse_args()
