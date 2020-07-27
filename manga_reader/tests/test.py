@@ -294,9 +294,12 @@ class MangaReaderTest(BaseUnitTestClass):
                 continue
             with self.subTest(server=server.id):
                 manga_list = server.get_manga_list()
-                manga_data = manga_list[0]
-                self.manga_reader.add_manga(manga_data, no_update=True)
-                chapter_data = self.manga_reader.update_manga(manga_data, download=True, limit=1, page_limit=3)[0]
+                for manga_data in manga_list:
+                    self.manga_reader.add_manga(manga_data, no_update=True)
+                    chapter_list = self.manga_reader.update_manga(manga_data, download=True, limit=1, page_limit=3)
+                    if chapter_list:
+                        chapter_data = chapter_list[0]
+                        break
                 min_chapter = min(manga_data["chapters"].values(), key=lambda x: x["number"])
                 assert min_chapter == chapter_data
                 dir_path = self.manga_reader.settings.get_chapter_dir(manga_data, chapter_data)

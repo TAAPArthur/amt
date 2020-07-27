@@ -103,7 +103,7 @@ class VizManga(Server):
             chapter_number = match.group(2)
             chapter_id = match.group(3)
             chapter_date = None
-            premium = raw_url_maybe[0] != "/"
+            premium = chapter["href"] != raw_url_maybe
             # There could be duplicate elements with the same chapter slug; they refer to the same chapter so skip them
             if chapter_id in slugs:
                 continue
