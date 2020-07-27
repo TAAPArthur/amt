@@ -24,7 +24,10 @@ for _finder, name, _ispkg in pkgutil.iter_modules(servers.__path__, servers.__na
 
 class MangaReader:
 
-    def __init__(self, class_list=SERVERS, settings=None, no_load=False):
+    cookie_hash = None
+    state_hash = None
+
+    def __init__(self, class_list=SERVERS, settings=None):
         self.settings = settings if settings else Settings()
         self._servers = {}
         self.state = {"manga": {}, "bundles": {}}
@@ -33,15 +36,11 @@ class MangaReader:
             logging.debug("Installing cache")
             requests_cache.core.install_cache(expire_after=self.settings.expire_after, allowable_methods=('GET', 'POST'), include_headers=True)
 
-        self.session = None
-        if not no_load:
-            self.load_session()
-            self.load_state()
+        self.load_state()
 
-        self.manga = self.state["manga"]
-        self.bundles = self.state["bundles"]
-        if not self.session:
-            self.session = requests.Session()
+        self.session = requests.Session()
+        self.load_session_cookies()
+
         self.session.headers.update({
             "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",
             "Accept-Language": "en,en-US;q=0.9",
@@ -59,39 +58,75 @@ class MangaReader:
     def get_primary_tracker(self):
         return self.tracker
 
-    def load_session(self):
+    def _set_session_hash(self):
+        """
+        Sets saved cookie_hash
+        @return True iff the hash is different than the already saved one
+
+        """
+        cookie_hash = hash(str(self.session.cookies))
+        if cookie_hash != self.cookie_hash:
+            self.cookie_hash = cookie_hash
+            return True
+        return False
+
+    def load_session_cookies(self):
         """ Load session from disk """
         if self.settings.no_save_session:
             return False
 
-        file_path = os.path.join(self.settings.cache_dir, 'session.pickle')
+        file_path = os.path.join(self.settings.cache_dir, 'cookies.pickle')
         try:
             with open(file_path, 'rb') as f:
-                self.session = pickle.load(f)
+                self.session.cookies = pickle.load(f)
+                self._set_session_hash()
                 return True
         except FileNotFoundError:
-            pass
-        return False
-
-    def save_session(self):
-        """ Save session to disk """
-        if self.settings.no_save_session:
             return False
 
-        file_path = os.path.join(self.settings.cache_dir, 'session.pickle')
+    def save_session_cookies(self, force=False):
+        """ Save session to disk """
+        if self.settings.no_save_session or not self._set_session_hash():
+            return False
+
+        file_path = os.path.join(self.settings.cache_dir, 'cookies.pickle')
         with open(file_path, 'wb') as f:
-            pickle.dump(self.session, f)
+            pickle.dump(self.session.cookies, f)
+        return True
+
+    def _set_state_hash(self, json_str=None):
+        """
+        Sets saved sate_hash
+        @return True iff the hash is different than the already saved one
+
+        """
+
+        if not json_str:
+            json_str = json.dumps(self.state, indent=4, sort_keys=True)
+        state_hash = hash(json_str)
+        if state_hash != self.state_hash:
+            self.state_hash = state_hash
+            return True
+        return False
 
     def load_state(self):
         try:
             with open(self.settings.get_metadata(), 'r') as jsonFile:
                 self.state = json.load(jsonFile)
+                self._set_state_hash()
         except FileNotFoundError:
             self.settings.init()
 
+        self.manga = self.state["manga"]
+        self.bundles = self.state["bundles"]
+
     def save_state(self):
+        json_str = json.dumps(self.state)
+        if not self._set_state_hash(json_str):
+            return False
         with open(self.settings.get_metadata(), 'w') as jsonFile:
-            json.dump(self.state, jsonFile, indent=4)
+            jsonFile.write(json_str)
+        return True
 
     # def sync_with_disk(self):
     # TODO detect files added

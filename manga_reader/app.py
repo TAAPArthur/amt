@@ -6,6 +6,10 @@ import logging
 class Application(MangaReader):
     auto_select = False
 
+    def save(self):
+        self.save_session_cookies()
+        self.save_state()
+
     def print_results(self, results):
         for i, result in enumerate(results):
             print("{:4}| {}:{}\t{}".format(i, result["server_id"], result["id"], result["name"]))
@@ -22,7 +26,7 @@ class Application(MangaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def search_add(self, term, exact=False, nosave=False):
+    def search_add(self, term, exact=False):
         results = self.search_for_manga(term, exact=exact)
         if len(results) == 0:
             logging.warning("Could not find manga %s", term)
@@ -32,8 +36,6 @@ class Application(MangaReader):
         manga_data = self.select_manga(results, "Select manga to add: ")
         if manga_data:
             self.add_manga(manga_data)
-            if not nosave:
-                self.save_state()
         return manga_data
 
     def load_from_tracker(self, user_id=None, user_name=None):
@@ -53,7 +55,7 @@ class Application(MangaReader):
                     manga_data = self.select_manga(known_matching_manga, "Select from known manga: ")
 
                 if not manga_data:
-                    manga_data = self.search_add(entry["name"], exact=True, nosave=True)
+                    manga_data = self.search_add(entry["name"], exact=True)
                 if not manga_data:
                     continue
 
@@ -62,7 +64,6 @@ class Application(MangaReader):
 
             self.mark_chapters_until_n_as_read(manga_data, int(entry["progress"]))
             count += 1
-        self.save_state()
         self.list()
         return count, new_count
 

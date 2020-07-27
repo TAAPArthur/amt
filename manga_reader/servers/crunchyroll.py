@@ -73,7 +73,6 @@ class Crunchyroll(Server):
                                   }).json()
         if 'data' in login:
             self.api_auth_token = login['data']['auth']
-            self.set_session_dirty()
             return True
         return False
 

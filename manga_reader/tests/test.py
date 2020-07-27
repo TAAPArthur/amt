@@ -230,18 +230,27 @@ class MangaReaderTest(BaseUnitTestClass):
     def test_number_servers(self):
         assert len(self.manga_reader.get_servers()) > 2
 
+    def test_save_load_cookies(self):
+        key, value = "Test", "value"
+        self.test_server.session.cookies.set(key, value)
+        assert self.manga_reader.save_session_cookies()
+        self.test_server.session.cookies.set(key, "bad_value")
+        assert self.manga_reader.load_session_cookies()
+        self.assertEqual(value, self.manga_reader.session.cookies.get(key))
+        self.test_server.session.cookies.set(key, "bad_value")
+        assert self.manga_reader.load_session_cookies()
+        assert not self.manga_reader.save_session_cookies()
+
     def test_save_load(self):
         for server in self.manga_reader.get_servers():
             with self.subTest(server=server.id):
                 manga_list = server.get_manga_list()
                 self.manga_reader.add_manga(manga_list[0])
                 old_state = dict(self.manga_reader.state)
-                self.manga_reader.save_state()
+                assert self.manga_reader.save_state()
                 assert old_state == dict(self.manga_reader.state)
-                self.manga_reader.state.clear()
                 self.manga_reader.load_state()
                 assert old_state == self.manga_reader.state
-                self.manga_reader.state.clear()
 
     def test_mark_chapters_until_n_as_read(self):
 
@@ -442,6 +451,13 @@ class ArgsTest(BaseUnitTestClass):
         chapter_id = list(self.manga_reader.get_manga_ids_in_library())[0]
         parse_args(app=self.manga_reader, args=["list-chapters", chapter_id])
         parse_args(app=self.manga_reader, args=["list"])
+
+    def test_search_save(self):
+        assert not len(self.manga_reader.get_manga_in_library())
+        parse_args(app=self.manga_reader, args=["--auto", "search", "manga"])
+        assert len(self.manga_reader.get_manga_in_library())
+        self.app.load_state()
+        assert len(self.manga_reader.get_manga_in_library())
 
     def test_search(self):
         assert not len(self.manga_reader.get_manga_in_library())

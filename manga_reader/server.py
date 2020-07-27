@@ -11,7 +11,6 @@ class Server:
     locale = 'enUS'
     session = None
     settings = None
-    dirty = False
 
     static_pages = False
     has_anime = False
@@ -23,12 +22,6 @@ class Server:
     def __init__(self, session, settings=None):
         self.settings = settings
         self.session = session
-
-    def is_session_dirty(self):
-        return self.dirty
-
-    def set_session_dirty(self, value=True):
-        self.dirty = value
 
     def login(self, username, password):
         return False

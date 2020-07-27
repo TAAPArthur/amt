@@ -9,7 +9,7 @@ def parse_args(args=None, app=None):
 
     app = app if app else Application()
     parser = argparse.ArgumentParser()
-    parser.add_argument('--quiet')
+    parser.add_argument('--no-save', default=False)
     parser.add_argument('--log-level', dest="log_level", default="INFO", choices=logging._levelToName.values())
 
     sub_parsers = parser.add_subparsers(dest="type")
@@ -71,7 +71,6 @@ def parse_args(args=None, app=None):
     elif action == "mark-up-to-date":
         app.mark_up_to_date(namespace.server_id, namespace.N, force=namespace.force)
         app.list()
-        app.save_state()
     elif action == "list-chapters":
         app.list_chapters(namespace.id)
     elif action == "get":
@@ -79,6 +78,9 @@ def parse_args(args=None, app=None):
     elif action == "set":
         print("{} = {}".format(namespace.setting, app.settings.set(namespace.setting, namespace.value)))
         app.settings.save()
+
+    if not namespace.no_save:
+        app.save()
 
 
 if __name__ == "__main__":
