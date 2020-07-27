@@ -59,11 +59,11 @@ class VizManga(Server):
         divs = soup.findAll("a", {"class": "disp-bl pad-b-rg pos-r bg-off-black color-white hover-bg-red"})
         result = []
         for div in divs:
-            slug = div["href"].split("/")[-1]
+            id = div["href"].split("/")[-1]
             name = div.find("div", {"class", "pad-x-rg pad-t-rg pad-b-sm type-sm type-rg--sm type-md--lg type-center line-solid"}).getText().strip()
             cover_url = div.find("img")["data-original"]
 
-            result.append(self.create_manga_data(id=slug, name=name, cover=cover_url))
+            result.append(self.create_manga_data(id=id, name=name, cover=cover_url))
 
         return result
 
