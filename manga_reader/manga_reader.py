@@ -26,11 +26,12 @@ class MangaReader:
 
     cookie_hash = None
     state_hash = None
+    trackers = {}
 
     def __init__(self, class_list=SERVERS, settings=None):
         self.settings = settings if settings else Settings()
         self._servers = {}
-        self.state = {"manga": {}, "bundles": {}}
+        self.state = {"manga": {}, "bundles": {}, "trackers": {}}
 
         if self.settings.cache:
             logging.debug("Installing cache")
@@ -119,6 +120,7 @@ class MangaReader:
 
         self.manga = self.state["manga"]
         self.bundles = self.state["bundles"]
+        self.trackers = self.state["trackers"]
 
     def save_state(self):
         json_str = json.dumps(self.state)
@@ -138,6 +140,8 @@ class MangaReader:
         global_id = self._get_global_id(manga_data)
         if global_id in self.manga:
             raise ValueError("{} {} is already known".format(global_id, manga_data["name"]))
+
+        logging.debug("Adding %s", global_id)
         self.manga[global_id] = manga_data
         return [] if no_update else self.update_manga(manga_data)
 
@@ -271,16 +275,25 @@ class MangaReader:
 
     def is_added(self, tracker_id=None):
         for manga_id in self.get_manga_ids_in_library():
-            if self.settings.get_tracker_info(self.get_primary_tracker().id, manga_id):
+            if self.get_tracker_info(tracker_id, manga_id):
                 return self.manga[manga_id]
         return False
+
+    def get_tracker_info(self, tracker_server_id, manga_id):
+        return self.trackers.get(manga_id, {}).get(tracker_server_id, None)
+
+    def track(self, tracker_server_id, manga_id, tracker_id, tracker_title=None):
+        if manga_id not in self.trackers:
+            self.trackers[manga_id] = {}
+
+        self.trackers[manga_id][tracker_server_id] = (tracker_id, tracker_title)
 
     def sync_progress(self, force=False):
         with requests_cache.disabled():
             data = []
             tracker = self.get_primary_tracker()
             for manga_id, manga_data in self.manga.items():
-                tracker_info = self.settings.get_tracker_info(self.get_primary_tracker().id, manga_id)
+                tracker_info = self.get_tracker_info(self.get_primary_tracker().id, manga_id)
                 if tracker_info and (force or manga_data["progress"] < self.get_last_read(manga_data)):
                     data.append(tracker_info[0], self.get_last_read(manga_data))
                     logging.info("Preparing to update %s", manga_data["name"])

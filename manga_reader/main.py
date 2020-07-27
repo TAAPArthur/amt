@@ -26,7 +26,7 @@ def parse_args(args=None, app=None):
     sub_parsers.add_parser("bundle")
     read_parser = sub_parsers.add_parser("read")
     read_parser.add_argument("name")
-    sub_parsers.add_parser("load")
+    sub_parsers.add_parser("load").add_argument('name', default=None, nargs='?')
     sub_parsers.add_parser("sync-progress").add_argument('--force', default=False)
     sub_parsers.add_parser("list")
     sub_parsers.add_parser("auth")
@@ -55,7 +55,7 @@ def parse_args(args=None, app=None):
         secret = tracker.auth()
         app.settings.store_secret(tracker.id, secret)
     elif action == "load":
-        app.load_from_tracker()
+        app.load_from_tracker(user_name=namespace.name)
     elif action == "sync-progress":
         app.sync_progress(namespace.force)
     elif action == "download":

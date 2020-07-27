@@ -17,7 +17,6 @@ class Application(MangaReader):
     def select_manga(self, results, prompt):
         index = 0
 
-        print(self.auto_select)
         if not self.auto_select and len(results) > 1:
             index = input(prompt)
         try:
@@ -40,7 +39,7 @@ class Application(MangaReader):
 
     def load_from_tracker(self, user_id=None, user_name=None):
         tracker = self.get_primary_tracker()
-        data = tracker.get_tracker_list(id=user_id if user_id else tracker.get_user_info()["id"], user_name=user_name)
+        data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id if user_id else tracker.get_user_info()["id"])
         count = 0
         new_count = 0
         for entry in data:
@@ -52,6 +51,7 @@ class Application(MangaReader):
 
                 known_matching_manga = list(filter(lambda x: x["name"].lower() == entry["name"].lower(), self.get_manga_in_library()))
                 if known_matching_manga:
+                    logging.debug("Checking among known manga")
                     manga_data = self.select_manga(known_matching_manga, "Select from known manga: ")
 
                 if not manga_data:
@@ -59,7 +59,7 @@ class Application(MangaReader):
                 if not manga_data:
                     continue
 
-                self.settings.track(tracker.id, self._get_global_id(manga_data), entry["id"], entry["name"])
+                self.track(tracker.id, self._get_global_id(manga_data), entry["id"], entry["name"])
                 new_count += 1
 
             self.mark_chapters_until_n_as_read(manga_data, int(entry["progress"]))

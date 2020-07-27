@@ -413,17 +413,14 @@ class ApplicationTest(BaseUnitTestClass):
     def test_load_from_tracker(self, input):
         for j in range(3):
             if j == 2:
-                self.settings.trackers.clear()
+                self.app.trackers.clear()
             count, new_count = 0, 0
             for i in range(1, 3):
                 c, n = self.app.load_from_tracker(user_id=i)
                 assert c >= n
                 count += c
                 new_count += n
-            if j == 1:
-                self.assertEqual(0, new_count)
-            else:
-                self.assertEqual(new_count, len(self.manga_reader.get_manga_in_library()))
+            self.assertEqual(new_count, len(self.manga_reader.get_manga_in_library()))
 
 
 class ArgsTest(BaseUnitTestClass):
@@ -458,6 +455,12 @@ class ArgsTest(BaseUnitTestClass):
         assert len(self.manga_reader.get_manga_in_library())
         self.app.load_state()
         assert len(self.manga_reader.get_manga_in_library())
+
+    def test_load(self):
+        parse_args(app=self.manga_reader, args=["--auto", "search", "One Piece"])
+        manga_id = next(iter(self.manga_reader.get_manga_ids_in_library()))
+        parse_args(app=self.manga_reader, args=["--auto", "load", "TAAPAye"])
+        assert self.manga_reader.get_tracker_info(self.manga_reader.get_primary_tracker().id, manga_id)
 
     def test_search(self):
         assert not len(self.manga_reader.get_manga_in_library())
