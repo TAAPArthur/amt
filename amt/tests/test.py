@@ -173,6 +173,12 @@ class ServerTest(BaseUnitTestClass):
                     return_val = server.update_manga_data(manga_data)
                     assert not return_val
                     assert isinstance(manga_data["chapters"], dict)
+                    set_of_numbers = {chapter_data["number"] for chapter_data in manga_data["chapters"].values()}
+                    self.assertEqual(len(set_of_numbers), len(manga_data["chapters"].values()))
+                    if not server.has_gaps:
+                        numbers = sorted(set_of_numbers)
+                        gaps = sum([numbers[i + 1] - numbers[i] > 1 for i in range(len(numbers) - 1)])
+                        self.assertLessEqual(gaps, 1)
 
             with self.subTest(server=server.id, method="download"):
                 manga_data = manga_list[0]

@@ -17,6 +17,7 @@ class Server:
     has_manga = True
     has_login = False
     has_free_chapters = True
+    has_gaps = False
     auto_select = False
 
     def __init__(self, session, settings=None):

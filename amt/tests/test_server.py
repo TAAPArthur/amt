@@ -5,6 +5,7 @@ import os
 
 class TestServer(Server):
     id = 'test'
+    has_gaps = True
 
     def get_manga_list(self):
         return [self.create_manga_data(id=1, name="Manga1"), self.create_manga_data(id=2, name="Manga2")]

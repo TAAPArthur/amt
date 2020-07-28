@@ -116,7 +116,7 @@ class Crunchyroll(Server):
             if raw_date_str:
                 date = raw_date_str.split(' ')[0]
 
-            self.update_chapter_data(manga_data, id=chapter['chapter_id'], number=int(chapter['chapter_id']), title=chapter['locale'][self.locale]['name'], premium=True, date=date)
+            self.update_chapter_data(manga_data, id=chapter['chapter_id'], number=chapter['number'], title=chapter['locale'][self.locale]['name'], premium=True, date=date)
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
         r = self.session.get(self.api_chapter_url.format(self.api_session_id, chapter_data["id"], self.api_auth_token))
