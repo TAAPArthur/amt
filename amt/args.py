@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 
 from .settings import Settings
 from .app import Application
@@ -18,14 +19,15 @@ def parse_args(args=None, app=None):
     search_parsers = sub_parsers.add_parser("search")
     search_parsers.add_argument('arg')
 
+    sub_parsers.add_parser("update")
     sub_parsers.add_parser("download")
     download_parser = sub_parsers.add_parser("download-next")
     download_parser.add_argument('id', choices=app.get_manga_ids_in_library())
     download_parser.add_argument('N', type=int, default=100, nargs='?')
 
-    sub_parsers.add_parser("bundle")
+    sub_parsers.add_parser("bundle").add_argument('name', choices=app.get_all_names(), default=None, nargs='?')
     read_parser = sub_parsers.add_parser("read")
-    read_parser.add_argument("name")
+    read_parser.add_argument("name", choices=os.listdir(app.settings.bundle_dir))
     sub_parsers.add_parser("load").add_argument('name', default=None, nargs='?')
     sub_parsers.add_parser("sync-progress").add_argument('--force', default=False)
     sub_parsers.add_parser("list")
@@ -63,7 +65,7 @@ def parse_args(args=None, app=None):
     elif action == "download-next":
         app.download_chapters(namespace.id, namespace.N)
     elif action == "bundle":
-        print(app.compile_unread_chapters())
+        print(app.bundle_unread_chapters(namespace.name))
     elif action == "read":
         print(app.read_bundle(namespace.name))
     elif action == "list":

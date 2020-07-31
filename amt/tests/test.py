@@ -58,6 +58,15 @@ class BaseUnitTestClass(unittest.TestCase):
         for manga_data in server.get_manga_list():
             self.manga_reader.add_manga(manga_data)
 
+    def add_test_manga(self):
+        manga_list = self.test_server.get_manga_list()
+        for manga_data in manga_list:
+            self.manga_reader.add_manga(manga_data)
+        return manga_list
+
+    def assertAllChaptersRead(self):
+        self.assertTrue(all([x["read"] for manga_data in self.manga_reader.get_manga_in_library() for x in manga_data["chapters"].values()]))
+
 
 class SettingsTest(BaseUnitTestClass):
     def test_settings_save_load(self):
@@ -94,7 +103,7 @@ class SettingsTest(BaseUnitTestClass):
         assert name.endswith("." + settings.bundle_format)
         assert settings.view(name)
 
-        settings.viewers[settings.bundle_format] = "exit 1"
+        settings.viewers[settings.bundle_format] = "exit 1; #{}"
         assert not settings.view(name)
 
     def test_get_chapter_dir_degenerate_name(self):
@@ -366,7 +375,7 @@ class MangaReaderTest(BaseUnitTestClass):
 
         self.assertEqual(num_chapters, self.manga_reader.download_unread_chapters())
 
-        self.settings.bundle_cmds[self.settings.bundle_format] = "echo {{}} > {}/{{}}".format(TEST_HOME)
+        self.settings.bundle_cmds[self.settings.bundle_format] = "echo {} > {}"
         self.settings.viewers[self.settings.bundle_format] = "echo {}"
 
     def test_bundle(self):
@@ -476,3 +485,33 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.manga_reader, args=["--auto", "search", "manga"])
         assert len(self.manga_reader.get_manga_in_library())
         self.assertRaises(ValueError, parse_args, app=self.manga_reader, args=["--auto", "search", "manga"])
+
+    def test_bundle_read(self):
+        self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
+        self.settings.viewers[self.settings.bundle_format] = "ls {}"
+        manga_list = self.add_test_manga()
+        parse_args(app=self.manga_reader, args=["bundle"])
+        assert len(self.app.bundles)
+        name, bundle_data = list(self.app.bundles.items())[0]
+        self.assertTrue(os.path.isabs(name))
+        self.assertTrue(os.path.exists(name))
+        self.assertEqual(len(bundle_data), sum([len(x["chapters"]) for x in manga_list]))
+        parse_args(app=self.manga_reader, args=["read", os.path.basename(name)])
+        self.assertAllChaptersRead()
+
+    def test_bundle_specific(self):
+        self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
+        manga_list = self.add_test_manga()
+        num_chapters = sum([len(x["chapters"]) for x in manga_list])
+        fake_data = self.test_server.create_manga_data("-1", "Fake Data")
+        fake_data["server_id"] = "unique_id"
+        self.test_server.update_chapter_data(fake_data, 1, "Fake chapter", 1)
+        self.manga_reader.add_manga(fake_data, no_update=True)
+        parse_args(app=self.manga_reader, args=["bundle", self.test_server.id])
+        self.assertEqual(len(list(self.app.bundles.values())[0]), num_chapters)
+        self.app.bundles.clear()
+        manga_data = manga_list[0]
+        for name in (manga_data["name"], self.app._get_global_id(manga_data)):
+            parse_args(app=self.manga_reader, args=["bundle", str(name)])
+            self.assertEqual(len(list(self.app.bundles.values())[0]), len(manga_data["chapters"]))
+            self.app.bundles.clear()

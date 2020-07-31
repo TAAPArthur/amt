@@ -77,3 +77,6 @@ class Application(MangaReader):
         results = self.manga[id]["chapters"].values()
         for chapter in results:
             print("{:4}:{}".format(chapter["number"], chapter["title"]))
+
+    def get_all_names(self):
+        return list(self.get_servers_ids()) + list(self.get_manga_ids_in_library()) + [x["name"] for x in self.get_manga_in_library()]

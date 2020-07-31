@@ -22,8 +22,8 @@ class Settings:
     }
     bundle_format = "pdf"
     viewers = {
-        "cbz": "zathura",
-        "pdf": "zathura"
+        "cbz": "zathura {}",
+        "pdf": "zathura {}"
     }
     no_save_session = False
     free_only = False
@@ -33,6 +33,9 @@ class Settings:
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
         self.cache_dir = os.getenv('XDG_CACHE_HOME', os.path.join(home, ".cache", APP_NAME))
         self.data_dir = os.getenv('XDG_DATA_HOME', os.path.join(home, ".local/share", APP_NAME))
+        self.bundle_dir = os.path.join(self.data_dir, "Bundles")
+        self.manga_dir = os.path.join(self.data_dir, "Manga")
+        self.anime_dir = os.path.join(self.data_dir, "Anime")
         self.no_save_session = no_save_session
         if not no_load:
             self.load()
@@ -41,6 +44,9 @@ class Settings:
         os.makedirs(self.config_dir, exist_ok=True)
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
+        os.makedirs(self.bundle_dir, exist_ok=True)
+        os.makedirs(self.manga_dir, exist_ok=True)
+        os.makedirs(self.anime_dir, exist_ok=True)
 
     @classmethod
     def get_members(clazz):
@@ -49,7 +55,6 @@ class Settings:
     def set(self, name, value):
         if isinstance(self.get(name), bool) and not isinstance(value, bool):
             value = value.lower() not in ["false", 0, ""]
-        print(value, type(value))
         setattr(self, name, value)
         return value
 
@@ -82,7 +87,7 @@ class Settings:
         return os.path.join(self.data_dir, "metadata.json")
 
     def get_chapter_dir(self, manga_data, chapter_data):
-        dir = os.path.join(self.data_dir, manga_data["server_id"], manga_data["name"].replace(" ", "_"), "%06.1f" % chapter_data["number"])
+        dir = os.path.join(self.manga_dir, manga_data["server_id"], manga_data["name"].replace(" ", "_"), "%06.1f" % chapter_data["number"])
         os.makedirs(dir, exist_ok=True)
         return dir
 
@@ -113,14 +118,14 @@ class Settings:
         self.store_credentials(server_id, secret, "token")
 
     def bundle(self, img_dirs):
-        name = "{}_{}.{}".format(date.today(), str(hash(str(img_dirs)))[1:8], self.bundle_format)
+        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(date.today(), str(hash(str(img_dirs)))[1:8], self.bundle_format))
         cmd = self.bundle_cmds[self.bundle_format].format(img_dirs, name)
         subprocess.check_call(cmd, shell=self.shell)
         return name
 
     def view(self, name):
         try:
-            subprocess.check_call("{} {}".format(self.viewers[name.split(".")[1]], name), shell=self.shell)
+            subprocess.check_call(self.viewers[name.split(".")[-1]].format(name), shell=self.shell)
             return True
         except CalledProcessError:
             return False

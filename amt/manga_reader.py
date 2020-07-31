@@ -206,9 +206,11 @@ class MangaReader:
     def _create_bundle_data_entry(self, manga_data, chapter_data):
         return dict(manga_id=self._get_global_id(manga_data), chapter_id=chapter_data["id"], manga_name=manga_data["name"], chapter_num=chapter_data["number"])
 
-    def bundle_unread_chapters(self, shuffle=False):
+    def bundle_unread_chapters(self, name=None, shuffle=False):
         unreads = []
         for manga_data in self.get_manga_in_library():
+            if name is not None and name not in (manga_data["server_id"], manga_data["name"], self._get_global_id(manga_data)):
+                continue
             unread_dirs = []
             for chapter in sorted(manga_data["chapters"].values(), key=lambda x: x["number"]):
                 if not chapter["read"]:
@@ -228,7 +230,8 @@ class MangaReader:
         self.bundles[name] = bundle_data
         return name
 
-    def read_bundle(self, bundle_name):
+    def read_bundle(self, name):
+        bundle_name = os.path.join(self.settings.bundle_dir, name)
         if self.settings.view(bundle_name):
             self.mark_bundle_as_read(bundle_name)
             return True

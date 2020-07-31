@@ -12,6 +12,7 @@ class TestServer(Server):
 
     def update_manga_data(self, manga_data):
         manga_id = manga_data["id"]
+        assert manga_id in map(lambda x: x["id"], self.get_manga_list())
         if manga_id == 1:
             self.update_chapter_data(manga_data, id=1, title="Chapter1", number=1, date="2020-07-08"),
             self.update_chapter_data(manga_data, id=2, title="Chapter2", number=2, date="2020-07-09"),
