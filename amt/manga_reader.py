@@ -12,7 +12,6 @@ import pickle
 import pkgutil
 import random
 import requests
-import requests_cache
 
 SERVERS = []
 for _finder, name, _ispkg in pkgutil.iter_modules(servers.__path__, servers.__name__ + '.'):
@@ -33,12 +32,6 @@ class MangaReader:
         self._servers = {}
         self.state = {"manga": {}, "bundles": {}, "trackers": {}}
 
-        if self.settings.cache:
-            logging.debug("Installing cache")
-            requests_cache.core.install_cache(expire_after=self.settings.expire_after, allowable_methods=('GET', 'POST'), include_headers=True)
-
-        self.load_state()
-
         self.session = requests.Session()
         self.load_session_cookies()
 
@@ -48,6 +41,8 @@ class MangaReader:
             "Connection": "keep-alive",
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0"
         })
+
+        self.load_state()
 
         self.tracker = Anilist(self.session, self.settings.get_secret(Anilist.id))
 
@@ -289,16 +284,15 @@ class MangaReader:
         self.trackers[manga_id][tracker_server_id] = (tracker_id, tracker_title)
 
     def sync_progress(self, force=False):
-        with requests_cache.disabled():
-            data = []
-            tracker = self.get_primary_tracker()
-            for manga_id, manga_data in self.manga.items():
-                tracker_info = self.get_tracker_info(self.get_primary_tracker().id, manga_id)
-                if tracker_info and (force or manga_data["progress"] < self.get_last_read(manga_data)):
-                    data.append(tracker_info[0], self.get_last_read(manga_data))
-                    logging.info("Preparing to update %s", manga_data["name"])
+        data = []
+        tracker = self.get_primary_tracker()
+        for manga_id, manga_data in self.manga.items():
+            tracker_info = self.get_tracker_info(self.get_primary_tracker().id, manga_id)
+            if tracker_info and (force or manga_data["progress"] < self.get_last_read(manga_data)):
+                data.append(tracker_info[0], self.get_last_read(manga_data))
+                logging.info("Preparing to update %s", manga_data["name"])
 
-            tracker.update(data)
+        tracker.update(data)
 
         for manga_data in self.get_manga_in_library():
             manga_data["progress"] = self.get_last_read(manga_data)

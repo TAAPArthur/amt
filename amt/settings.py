@@ -25,8 +25,6 @@ class Settings:
         "cbz": "zathura",
         "pdf": "zathura"
     }
-    cache = False
-    expire_after = 60 * 60
     no_save_session = False
     free_only = False
     shell = True

@@ -1,3 +1,8 @@
+from ..args import parse_args
+from .test_server import TestServer
+from ..settings import Settings
+from ..app import Application
+from ..manga_reader import MangaReader, SERVERS
 from PIL import Image
 import logging
 import os
@@ -6,12 +11,10 @@ import time
 import unittest
 from unittest.mock import patch
 import sys
+import requests_cache
 
-from ..manga_reader import MangaReader, SERVERS
-from ..app import Application
-from ..settings import Settings
-from .test_server import TestServer
-from ..args import parse_args
+requests_cache.core.install_cache(backend="memory", include_headers=True)
+
 
 TEST_HOME = "/tmp/amt/test_home/"
 
@@ -180,18 +183,13 @@ class ServerTest(BaseUnitTestClass):
                         gaps = sum([numbers[i + 1] - numbers[i] > 1 for i in range(len(numbers) - 1)])
                         self.assertLessEqual(gaps, 1)
 
+            requests_cache.core.clear()
             with self.subTest(server=server.id, method="download"):
                 manga_data = manga_list[0]
                 chapter_data = list(manga_data["chapters"].values())[0]
                 if not chapter_data["premium"]:
                     assert server.download_chapter(manga_data, chapter_data, page_limit=1)
                 assert not server.download_chapter(manga_data, chapter_data, page_limit=1)
-
-    def test_caching(self):
-        start = time.time()
-        for i in range(10):
-            list(self.manga_reader.get_servers())[0].session.get('http://httpbin.org/delay/1')
-        assert time.time() - start < 5
 
     def test_login_fail(self):
         for server in self.manga_reader.get_servers():

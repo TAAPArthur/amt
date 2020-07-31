@@ -135,7 +135,6 @@ class VizManga(Server):
         real_img_url = r.text.strip()
 
         r = self.session.get(real_img_url, stream=True)
-        assert not r.from_cache
         if r.status_code != 200:
             return None
 

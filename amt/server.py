@@ -1,4 +1,3 @@
-import requests_cache
 import os
 import logging
 import time
@@ -63,13 +62,6 @@ class Server:
         return self.has_login
 
     def download_chapter(self, manga_data, chapter_data, page_limit=None):
-        if not self.static_pages:
-            with self.session.cache_disabled():
-                return self._download_chapter(manga_data, chapter_data, page_limit)
-        else:
-            return self._download_chapter(manga_data, chapter_data, page_limit)
-
-    def _download_chapter(self, manga_data, chapter_data, page_limit=None):
         logging.info("Starting download of %s %s", manga_data["name"], chapter_data["title"])
         if chapter_data["premium"] and self.needs_authentication():
             logging.debug("Server is not authenticated; relogging in")
