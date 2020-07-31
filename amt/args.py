@@ -68,6 +68,8 @@ def parse_args(args=None, app=None):
         print(app.read_bundle(namespace.name))
     elif action == "list":
         app.list()
+    elif action == "update":
+        app.update()
     elif action == "mark-up-to-date":
         app.mark_up_to_date(namespace.server_id, namespace.N, force=namespace.force)
         app.list()

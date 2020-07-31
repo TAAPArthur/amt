@@ -39,7 +39,8 @@ class Dbmultiverse(Server):
 
         for chapter in chapters:
             id = chapter["ch"]
-            self.update_chapter_data(manga_data, id=id, number=int(id), title=chapter.find("h4").getText(), incomplete=id == lastest_chapter)
+            if id != lastest_chapter:
+                self.update_chapter_data(manga_data, id=id, number=int(id), title=chapter.find("h4").getText())
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
         r = self.session.get(self.chapter_url.format(chapter_data["id"]))

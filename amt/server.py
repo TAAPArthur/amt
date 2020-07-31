@@ -102,7 +102,7 @@ class Server:
     def create_manga_data(self, id, name, cover=None):
         return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, chapters={})
 
-    def update_chapter_data(self, manga_data, id, title, number, premium=False, read=False, incomplete=False, date=None):
+    def update_chapter_data(self, manga_data, id, title, number, premium=False, date=None):
         id = str(id)
         special = False
         try:
@@ -111,11 +111,12 @@ class Server:
             special = True
             number = float(number.replace("-", "."))
 
-        new_values = dict(id=id, title=title, number=number, premium=premium, read=read, incomplete=False, special=special, data=date)
+        new_values = dict(id=id, title=title, number=number, premium=premium, special=special, data=date)
         if id in manga_data["chapters"]:
             manga_data["chapters"][id].update(new_values)
         else:
             manga_data["chapters"][id] = new_values
+            manga_data["chapters"][id]["read"] = False
 
     def create_page_data(self, url, id=None, encryption_key=None):
         return dict(url=url, id=id, encryption_key=encryption_key)

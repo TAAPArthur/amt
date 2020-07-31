@@ -327,18 +327,23 @@ class MangaReaderTest(BaseUnitTestClass):
                 server.save_chapter_page = None
                 assert not server.download_chapter(manga_data, chapter_data, page_limit=3)
 
+    def test_preserve_read_status_on_update(self):
+        manga_list = self.add_test_manga()
+        self.manga_reader.mark_up_to_date()
+        for i in range(2):
+            for manga_data in manga_list:
+                assert all(map(lambda x: x["read"], manga_data["chapters"].values()))
+            self.manga_reader.update()
+
     def test_mark_up_to_date(self):
-        server = self.test_server
-        manga_list = server.get_manga_list()
-        for manga_data in manga_list:
-            self.manga_reader.add_manga(manga_data)
-        self.manga_reader.mark_up_to_date(server.id)
+        manga_list = self.add_test_manga()
+        self.manga_reader.mark_up_to_date(self.test_server.id)
         for manga_data in manga_list:
             assert all(map(lambda x: x["read"], manga_data["chapters"].values()))
-        self.manga_reader.mark_up_to_date(server.id, 1)
+        self.manga_reader.mark_up_to_date(self.test_server.id, 1)
         for manga_data in manga_list:
             assert all(map(lambda x: x["read"], manga_data["chapters"].values()))
-        self.manga_reader.mark_up_to_date(server.id, 1, force=True)
+        self.manga_reader.mark_up_to_date(self.test_server.id, 1, force=True)
         for manga_data in manga_list:
             chapter_list = list(sorted(manga_data["chapters"].values(), key=lambda x: x["number"]))
             assert all(map(lambda x: x["read"], chapter_list[:-1]))
