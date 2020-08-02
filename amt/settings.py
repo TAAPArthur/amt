@@ -28,6 +28,7 @@ class Settings:
     no_save_session = False
     free_only = False
     shell = True
+    max_retires = 5
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))

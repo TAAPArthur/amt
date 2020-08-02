@@ -3,6 +3,7 @@ from .server import Server
 from .settings import Settings
 from .tracker import Tracker
 
+from requests.adapters import HTTPAdapter
 import importlib
 import inspect
 import json
@@ -42,6 +43,9 @@ class MangaReader:
         _trackers = []
 
         self.session = requests.Session()
+        if self.settings.max_retires:
+            self.session.mount('http://', HTTPAdapter(max_retries=self.settings.max_retires))
+            self.session.mount('https://', HTTPAdapter(max_retries=self.settings.max_retires))
         self.load_session_cookies()
 
         self.session.headers.update({
