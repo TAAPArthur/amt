@@ -237,8 +237,10 @@ class MangaReader:
             for chapter in sorted(manga_data["chapters"].values(), key=lambda x: x["number"]):
                 if not chapter["read"]:
                     dir_path = self.settings.get_chapter_dir(manga_data, chapter)
-                    unread_dirs.append(("'" + dir_path + "'/*", self._create_bundle_data_entry(manga_data, chapter)))
-            unreads.append(unread_dirs)
+                    if os.path.exists(dir_path):
+                        unread_dirs.append(("'" + dir_path + "'/*", self._create_bundle_data_entry(manga_data, chapter)))
+            if unread_dirs:
+                unreads.append(unread_dirs)
         if not unreads:
             return None
 
