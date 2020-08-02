@@ -10,7 +10,7 @@ def parse_args(args=None, app=None):
 
     app = app if app else Application()
     parser = argparse.ArgumentParser()
-    parser.add_argument('--no-save', default=False)
+    parser.add_argument('--no-save', default=False, action="store_const", const=True,)
     parser.add_argument('--log-level', dest="log_level", default="INFO", choices=logging._levelToName.values())
 
     sub_parsers = parser.add_subparsers(dest="type")
