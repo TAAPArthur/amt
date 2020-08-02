@@ -1,7 +1,7 @@
-from . import servers
+from . import servers, trackers
 from .server import Server
 from .settings import Settings
-from .trackers.anilist import Anilist
+from .tracker import Tracker
 
 import importlib
 import inspect
@@ -14,11 +14,17 @@ import random
 import requests
 
 SERVERS = []
+TRACKERS = []
 for _finder, name, _ispkg in pkgutil.iter_modules(servers.__path__, servers.__name__ + '.'):
     module = importlib.import_module(name)
     for _name, obj in dict(inspect.getmembers(module)).items():
         if inspect.isclass(obj) and issubclass(obj, Server) and obj != Server:
             SERVERS.append(obj)
+for _finder, name, _ispkg in pkgutil.iter_modules(trackers.__path__, trackers.__name__ + '.'):
+    module = importlib.import_module(name)
+    for _name, obj in dict(inspect.getmembers(module)).items():
+        if inspect.isclass(obj) and issubclass(obj, Tracker) and obj != Tracker:
+            TRACKERS.append(obj)
 
 
 class MangaReader:
@@ -26,11 +32,14 @@ class MangaReader:
     cookie_hash = None
     state_hash = None
     trackers = {}
+    _servers = {}
+    _trackers = []
 
-    def __init__(self, class_list=SERVERS, settings=None):
+    def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
         self.settings = settings if settings else Settings()
-        self._servers = {}
         self.state = {"manga": {}, "bundles": {}, "trackers": {}}
+        _servers = {}
+        _trackers = []
 
         self.session = requests.Session()
         self.load_session_cookies()
@@ -43,16 +52,22 @@ class MangaReader:
         })
 
         self.load_state()
+        assert len(tracker_list) <= 2
 
-        self.tracker = Anilist(self.session, self.settings.get_secret(Anilist.id))
-
-        for cls in class_list:
+        for cls in server_list:
             if cls.id:
                 instance = cls(self.session, self.settings)
                 self._servers[instance.id] = instance
+        for cls in tracker_list:
+            if cls.id:
+                instance = cls(self.session, self.settings)
+                self._trackers.append(instance)
 
     def get_primary_tracker(self):
-        return self.tracker
+        return self._trackers[0]
+
+    def get_secondary_trackers(self):
+        return self._trackers[1:]
 
     def _set_session_hash(self):
         """
@@ -271,28 +286,29 @@ class MangaReader:
                 server.download_chapter(manga_data, chapter_data, page_limit)
         return new_chapters
 
-    def is_added(self, tracker_id=None):
+    def is_added(self, tracker_id, tracking_id):
         for manga_id in self.get_manga_ids_in_library():
-            if self.get_tracker_info(tracker_id, manga_id):
+            tacker_info = self.get_tracker_info(manga_id, tracker_id)
+            if tacker_info and tacker_info[0] == tracking_id:
                 return self.manga[manga_id]
         return False
 
-    def get_tracker_info(self, tracker_server_id, manga_id):
-        return self.trackers.get(manga_id, {}).get(tracker_server_id, None)
+    def get_tracker_info(self, manga_id, tracker_id):
+        return self.trackers.get(manga_id, {}).get(tracker_id, None)
 
-    def track(self, tracker_server_id, manga_id, tracker_id, tracker_title=None):
+    def track(self, tracker_id, manga_id, tracking_id, tracker_title=None):
         if manga_id not in self.trackers:
             self.trackers[manga_id] = {}
 
-        self.trackers[manga_id][tracker_server_id] = (tracker_id, tracker_title)
+        self.trackers[manga_id][tracker_id] = (tracking_id, tracker_title)
 
     def sync_progress(self, force=False):
         data = []
         tracker = self.get_primary_tracker()
         for manga_id, manga_data in self.manga.items():
-            tracker_info = self.get_tracker_info(self.get_primary_tracker().id, manga_id)
+            tracker_info = self.get_tracker_info(manga_id=manga_id, tracker_id=self.get_primary_tracker().id)
             if tracker_info and (force or manga_data["progress"] < self.get_last_read(manga_data)):
-                data.append(tracker_info[0], self.get_last_read(manga_data))
+                data.append((tracker_info[0], self.get_last_read(manga_data)))
                 logging.info("Preparing to update %s", manga_data["name"])
 
         tracker.update(data)

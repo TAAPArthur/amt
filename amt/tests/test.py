@@ -1,8 +1,9 @@
 from ..args import parse_args
 from .test_server import TestServer
+from .test_tracker import TestTracker
 from ..settings import Settings
 from ..app import Application
-from ..manga_reader import MangaReader, SERVERS
+from ..manga_reader import MangaReader, SERVERS, TRACKERS
 from PIL import Image
 import logging
 import os
@@ -26,7 +27,7 @@ logger.addHandler(stream_handler)
 
 
 class TestApplication(Application):
-    def __init__(self, class_list):
+    def __init__(self):
         # Save cache in local directory
         os.putenv('XDG_CACHE_HOME', ".")
         stream_handler.stream = sys.stdout
@@ -37,14 +38,14 @@ class TestApplication(Application):
         settings.cache = True
         settings.free_only = True
         settings.password_manager_enabled = False
-        super().__init__(class_list, settings)
+        super().__init__([TestServer] + SERVERS, [TestTracker] + TRACKERS, settings)
         assert len(self.get_servers())
         assert all(self.get_servers())
 
 
 class BaseUnitTestClass(unittest.TestCase):
     def setUp(self):
-        self.app = TestApplication([TestServer] + SERVERS)
+        self.app = TestApplication()
         self.manga_reader = self.app
         self.settings = self.manga_reader.settings
         self.test_server = self.manga_reader.get_server(TestServer.id)
@@ -125,18 +126,12 @@ class SettingsTest(BaseUnitTestClass):
 
 class TrackerTest(BaseUnitTestClass):
     def test_get_list(self):
-
-        tracker = self.manga_reader.get_primary_tracker()
-
-        data = tracker.get_tracker_list(id=1)
-        assert data
-        assert isinstance(data, list)
-        assert isinstance(data[0], dict)
-
-    @patch('builtins.input', return_value='value')
-    def test_auth(self, input):
-        tracker = self.manga_reader.get_primary_tracker()
-        assert "value" == tracker.auth()
+        for tracker in [self.manga_reader.get_primary_tracker()] + self.manga_reader.get_secondary_trackers():
+            with self.subTest(tracker=tracker.id):
+                data = tracker.get_tracker_list(id=1)
+                assert data
+                assert isinstance(data, list)
+                assert isinstance(data[0], dict)
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
@@ -429,16 +424,12 @@ class ApplicationTest(BaseUnitTestClass):
 
     @patch('builtins.input', return_value='0')
     def test_load_from_tracker(self, input):
-        for j in range(3):
-            if j == 2:
-                self.app.trackers.clear()
-            count, new_count = 0, 0
-            for i in range(1, 3):
-                c, n = self.app.load_from_tracker(user_id=i)
-                assert c >= n
-                count += c
-                new_count += n
-            self.assertEqual(new_count, len(self.manga_reader.get_manga_in_library()))
+        c, n = self.app.load_from_tracker(1)
+        assert c
+        self.assertEqual(n, c)
+        c2, n2 = self.app.load_from_tracker(1)
+        self.assertEqual(c, c2)
+        self.assertEqual(0, n2)
 
 
 class ArgsTest(BaseUnitTestClass):
@@ -475,10 +466,19 @@ class ArgsTest(BaseUnitTestClass):
         assert len(self.manga_reader.get_manga_in_library())
 
     def test_load(self):
-        parse_args(app=self.manga_reader, args=["--auto", "search", "One Piece"])
+        parse_args(app=self.manga_reader, args=["--auto", "search", "manga"])
         manga_id = next(iter(self.manga_reader.get_manga_ids_in_library()))
-        parse_args(app=self.manga_reader, args=["--auto", "load", "TAAPAye"])
-        assert self.manga_reader.get_tracker_info(self.manga_reader.get_primary_tracker().id, manga_id)
+        parse_args(app=self.manga_reader, args=["--auto", "load", "test_user"])
+        assert self.manga_reader.get_tracker_info(manga_id, self.manga_reader.get_primary_tracker().id)
+
+    def test_sync_progress(self):
+        parse_args(app=self.manga_reader, args=["--auto", "load"])
+        parse_args(app=self.manga_reader, args=["mark-up-to-date"])
+        parse_args(app=self.manga_reader, args=["sync-progress"])
+        self.manga_reader.manga.clear()
+        parse_args(app=self.manga_reader, args=["--auto", "load"])
+        for manga_data in self.manga_reader.get_manga_in_library():
+            self.assertEqual(self.manga_reader.get_last_chapter_number(manga_data), self.manga_reader.get_last_read(manga_data))
 
     def test_search(self):
         assert not len(self.manga_reader.get_manga_in_library())

@@ -8,7 +8,7 @@ class TestServer(Server):
     has_gaps = True
 
     def get_manga_list(self):
-        return [self.create_manga_data(id=1, name="Manga1"), self.create_manga_data(id=2, name="Manga2")]
+        return [self.create_manga_data(id=1, name="Manga1"), self.create_manga_data(id=2, name="Manga2"), self.create_manga_data(id=3, name="Untracked")]
 
     def update_manga_data(self, manga_data):
         manga_id = manga_data["id"]
@@ -27,6 +27,8 @@ class TestServer(Server):
             self.update_chapter_data(manga_data, id=10, title="Chapter100", number="100"),
             self.update_chapter_data(manga_data, id=11, title="Chapter1000", number="1000"),
             self.update_chapter_data(manga_data, id=12, title="Chapter9999", number="9999"),
+        elif manga_id == 3:
+            self.update_chapter_data(manga_data, id=21, title="Chapter1", number=1, date="2020-07-08"),
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
         return [self.create_page_data(url="") for k in range(3)]

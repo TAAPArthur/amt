@@ -1,7 +1,8 @@
 import logging
+from ..tracker import Tracker
 
 
-class Anilist():
+class Anilist(Tracker):
     id = "Anilist"
     url = 'https://graphql.anilist.co'
     get_list_query = '''
@@ -53,17 +54,13 @@ class Anilist():
     auth_url = "https://anilist.co/api/v2/oauth/authorize?client_id={}&response_type=token"
     client_id = 3793
 
-    def __init__(self, session, accessToken=None):
-        self.session = session
-        self.accessToken = accessToken
-
-    def get_media_dict(self, id, anime, title, progress):
-        return {"id": id, "anime": anime, "name": title, "progress": progress}
+    def _get_access_token(self):
+        return self.settings.get_secret(self.id)
 
     def get_auth_header(self):
-        return {'Authorization': 'Bearer ' + self.accessToken}
+        return {'Authorization': 'Bearer ' + self._get_access_token()}
 
-    def get_user_info(self, user_name=None, id=None):
+    def get_user_info(self):
         response = self.session.post(self.url, json={'query': self.viewer_query}, headers=self.get_auth_header())
         logging.debug("UserInfo %s", response.text)
         return response.json()["data"]["Viewer"]
@@ -74,6 +71,9 @@ class Anilist():
             variables["name"] = user_name
         elif id:
             variables["id"] = id
+        else:
+            user_info = self.get_user_info()
+            variables["id"] = user_info["id"]
         # Make the HTTP Api request
         response = self.session.post(self.url, json={'query': self.get_list_query, 'variables': variables})
         data = response.json()
@@ -85,7 +85,7 @@ class Anilist():
         ) for x in data["data"]["Page"]["mediaList"]]
 
     def update(self, list_of_updates):
-        if not self.accessToken:
+        if not self._get_access_token():
             logging.error("Access token is not set")
             return
 

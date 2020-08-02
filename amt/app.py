@@ -39,17 +39,17 @@ class Application(MangaReader):
 
     def load_from_tracker(self, user_id=None, user_name=None):
         tracker = self.get_primary_tracker()
-        data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id if user_id else tracker.get_user_info()["id"])
+        data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         count = 0
         new_count = 0
         for entry in data:
             if entry["anime"]:
                 logging.warning("Anime is not yet supported %s", entry)
                 continue
-            manga_data = self.is_added(entry["id"])
+            manga_data = self.is_added(tracker.id, entry["id"])
             if not manga_data:
 
-                known_matching_manga = list(filter(lambda x: x["name"].lower() == entry["name"].lower(), self.get_manga_in_library()))
+                known_matching_manga = list(filter(lambda x: x["name"].lower().replace(" ", "") == entry["name"].lower().replace(" ", ""), self.get_manga_in_library()))
                 if known_matching_manga:
                     logging.debug("Checking among known manga")
                     manga_data = self.select_manga(known_matching_manga, "Select from known manga: ")
@@ -57,10 +57,13 @@ class Application(MangaReader):
                 if not manga_data:
                     manga_data = self.search_add(entry["name"], exact=True)
                 if not manga_data:
+                    logging.info("Could not find manga %s", entry["name"])
                     continue
 
                 self.track(tracker.id, self._get_global_id(manga_data), entry["id"], entry["name"])
                 new_count += 1
+            else:
+                logging.debug("Already tracking %s %d", manga_data["name"], entry["progress"])
 
             self.mark_chapters_until_n_as_read(manga_data, int(entry["progress"]))
             count += 1
