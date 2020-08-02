@@ -12,6 +12,7 @@ def parse_args(args=None, app=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--no-save', default=False, action="store_const", const=True,)
     parser.add_argument('--log-level', dest="log_level", default="INFO", choices=logging._levelToName.values())
+    parser.add_argument('-u', dest="update", default=False, action="store_const", const=True,)
 
     sub_parsers = parser.add_subparsers(dest="type")
     parser.add_argument('--auto', action="store_const", const=True, default=False)
@@ -20,16 +21,19 @@ def parse_args(args=None, app=None):
     search_parsers.add_argument('arg')
 
     sub_parsers.add_parser("update")
-    sub_parsers.add_parser("download").add_argument('-u', dest="update", default=False, action="store_const", const=True,)
+    sub_parsers.add_parser("download")
     download_parser = sub_parsers.add_parser("download-next")
     download_parser.add_argument('id', choices=app.get_manga_ids_in_library())
     download_parser.add_argument('N', type=int, default=100, nargs='?')
 
-    sub_parsers.add_parser("bundle").add_argument('name', choices=app.get_all_names(), default=None, nargs='?')
+    bundle_parser = sub_parsers.add_parser("bundle")
+    bundle_parser.add_argument("-s", '--shuffle', default=False, action="store_const", const=True)
+    bundle_parser.add_argument('name', choices=app.get_all_names(), default=None, nargs='?')
+
     read_parser = sub_parsers.add_parser("read")
     read_parser.add_argument("name", choices=os.listdir(app.settings.bundle_dir))
     sub_parsers.add_parser("load").add_argument('name', default=None, nargs='?')
-    sub_parsers.add_parser("sync-progress").add_argument('--force', default=False)
+    sub_parsers.add_parser("sync").add_argument('--force', default=False)
     sub_parsers.add_parser("list")
     sub_parsers.add_parser("auth")
     chapter_parsers = sub_parsers.add_parser("list-chapters")
@@ -48,6 +52,8 @@ def parse_args(args=None, app=None):
 
     namespace = parser.parse_args(args)
     logging.getLogger().setLevel(namespace.log_level)
+    if namespace.update:
+        app.update(download=True)
     action = namespace.type
     app.auto_select = namespace.auto
     if action == "search":
@@ -58,16 +64,14 @@ def parse_args(args=None, app=None):
         app.settings.store_secret(tracker.id, secret)
     elif action == "load":
         app.load_from_tracker(user_name=namespace.name)
-    elif action == "sync-progress":
+    elif action == "sync":
         app.sync_progress(namespace.force)
     elif action == "download":
-        if namespace.update:
-            app.update()
         app.download_unread_chapters()
     elif action == "download-next":
         app.download_chapters_by_id(namespace.id, namespace.N)
     elif action == "bundle":
-        print(app.bundle_unread_chapters(namespace.name))
+        print(app.bundle_unread_chapters(namespace.name, namespace.shuffle))
     elif action == "read":
         print(app.read_bundle(namespace.name))
     elif action == "list":

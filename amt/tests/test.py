@@ -474,7 +474,7 @@ class ArgsTest(BaseUnitTestClass):
     def test_sync_progress(self):
         parse_args(app=self.manga_reader, args=["--auto", "load"])
         parse_args(app=self.manga_reader, args=["mark-up-to-date"])
-        parse_args(app=self.manga_reader, args=["sync-progress"])
+        parse_args(app=self.manga_reader, args=["sync"])
         self.manga_reader.manga.clear()
         parse_args(app=self.manga_reader, args=["--auto", "load"])
         for manga_data in self.manga_reader.get_manga_in_library():
@@ -483,7 +483,7 @@ class ArgsTest(BaseUnitTestClass):
     def test_download(self):
         manga_list = self.add_test_manga(True)
         assert len(manga_list[0]["chapters"]) == 0
-        parse_args(app=self.manga_reader, args=["download", "-u"])
+        parse_args(app=self.manga_reader, args=["-u", "download"])
         assert len(manga_list[0]["chapters"])
         self.assertEqual(0, self.app.download_chapters(manga_list[0]))
 
