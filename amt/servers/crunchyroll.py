@@ -48,6 +48,10 @@ class Crunchyroll(Server):
         ).json()['data']
         self.api_session_id = data['session_id']
 
+    def _store_login_data(self, data):
+        self.api_auth_token = data['data']['auth']
+        self.is_non_premium_account = not data['data']["user"]['premium']
+
     def needs_authentication(self):
         """
         Retrieves API session ID and authentication token
@@ -57,7 +61,7 @@ class Crunchyroll(Server):
         data = r.json()
 
         if 'data' in data:
-            self.api_auth_token = ''.join(data['data']['auth'])
+            self._store_login_data(data)
             return False
 
         return True
@@ -72,7 +76,7 @@ class Crunchyroll(Server):
                                       'password': password
                                   }).json()
         if 'data' in login:
-            self.api_auth_token = login['data']['auth']
+            self._store_login_data(login)
             return True
         return False
 

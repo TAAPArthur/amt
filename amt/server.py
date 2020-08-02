@@ -18,6 +18,7 @@ class Server:
     has_free_chapters = True
     has_gaps = False
     auto_select = False
+    is_non_premium_account = False
 
     def __init__(self, session, settings=None):
         self.settings = settings
@@ -63,11 +64,16 @@ class Server:
 
     def download_chapter(self, manga_data, chapter_data, page_limit=None):
         logging.info("Starting download of %s %s", manga_data["name"], chapter_data["title"])
-        if chapter_data["premium"] and self.needs_authentication():
-            logging.debug("Server is not authenticated; relogging in")
-            if not self.relogin():
-                logging.info("Cannot access chapter %s #%s %s", manga_data["name"], str(chapter_data["number"]), chapter_data["title"])
+        if chapter_data["premium"]:
+            if self.needs_authentication():
+                logging.debug("Server is not authenticated; relogging in")
+                if not self.relogin():
+                    logging.info("Cannot access chapter %s #%s %s because credentials are invalid", manga_data["name"], str(chapter_data["number"]), chapter_data["title"])
+                    return False
+            if self.is_non_premium_account:
+                logging.info("Cannot access chapter %s #%s %s because account is not premium", manga_data["name"], str(chapter_data["number"]), chapter_data["title"])
                 return False
+
         list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
         dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)
         logging.debug("Starting download for %d pages", len(list_of_pages))
