@@ -211,6 +211,9 @@ class MangaReader:
         """Downloads all chapters that are not read"""
         return sum([self.download_chapters(manga_data) for manga_data in self.get_manga_in_library()])
 
+    def download_chapters_by_id(self, manga_id, num=0):
+        self.download_chapters(self.manga[manga_id], num=num)
+
     def download_chapters(self, manga_data, num=0):
         last_read = self.get_last_read(manga_data)
         server = self.get_server(manga_data["server_id"])

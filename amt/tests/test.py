@@ -59,10 +59,10 @@ class BaseUnitTestClass(unittest.TestCase):
         for manga_data in server.get_manga_list():
             self.manga_reader.add_manga(manga_data)
 
-    def add_test_manga(self):
+    def add_test_manga(self, no_update=False):
         manga_list = self.test_server.get_manga_list()
         for manga_data in manga_list:
-            self.manga_reader.add_manga(manga_data)
+            self.manga_reader.add_manga(manga_data, no_update=no_update)
         return manga_list
 
     def assertAllChaptersRead(self):
@@ -479,6 +479,27 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.manga_reader, args=["--auto", "load"])
         for manga_data in self.manga_reader.get_manga_in_library():
             self.assertEqual(self.manga_reader.get_last_chapter_number(manga_data), self.manga_reader.get_last_read(manga_data))
+
+    def test_download(self):
+        manga_list = self.add_test_manga(True)
+        assert len(manga_list[0]["chapters"]) == 0
+        parse_args(app=self.manga_reader, args=["download", "-u"])
+        assert len(manga_list[0]["chapters"])
+        self.assertEqual(0, self.app.download_chapters(manga_list[0]))
+
+    def test_download_next(self):
+        manga_list = self.add_test_manga()
+        for id, manga_data in self.manga_reader.manga.items():
+            server = self.app.get_server(manga_data["server_id"])
+            chapter = sorted(manga_data["chapters"].values(), key=lambda x: x["number"])[0]
+            parse_args(app=self.manga_reader, args=["download-next", id, "1"])
+            self.assertEqual(0, server.download_chapter(manga_data, chapter))
+
+    def test_update(self):
+        manga_list = self.add_test_manga(True)
+        assert len(manga_list[0]["chapters"]) == 0
+        parse_args(app=self.manga_reader, args=["update"])
+        assert len(manga_list[0]["chapters"])
 
     def test_search(self):
         assert not len(self.manga_reader.get_manga_in_library())

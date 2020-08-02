@@ -20,7 +20,7 @@ def parse_args(args=None, app=None):
     search_parsers.add_argument('arg')
 
     sub_parsers.add_parser("update")
-    sub_parsers.add_parser("download")
+    sub_parsers.add_parser("download").add_argument('-u', dest="update", default=False, action="store_const", const=True,)
     download_parser = sub_parsers.add_parser("download-next")
     download_parser.add_argument('id', choices=app.get_manga_ids_in_library())
     download_parser.add_argument('N', type=int, default=100, nargs='?')
@@ -61,9 +61,11 @@ def parse_args(args=None, app=None):
     elif action == "sync-progress":
         app.sync_progress(namespace.force)
     elif action == "download":
+        if namespace.update:
+            app.update()
         app.download_unread_chapters()
     elif action == "download-next":
-        app.download_chapters(namespace.id, namespace.N)
+        app.download_chapters_by_id(namespace.id, namespace.N)
     elif action == "bundle":
         print(app.bundle_unread_chapters(namespace.name))
     elif action == "read":
