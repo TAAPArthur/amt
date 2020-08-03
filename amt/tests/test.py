@@ -33,9 +33,7 @@ class TestApplication(Application):
         stream_handler.stream = sys.stdout
         settings = Settings(home=TEST_HOME)
         settings.init()
-        settings.expire_after = 7 * 24 * 60 * 60
         settings.shell = True
-        settings.cache = True
         settings.free_only = True
         settings.password_manager_enabled = False
         super().__init__([TestServer] + SERVERS, [TestTracker] + TRACKERS, settings)
