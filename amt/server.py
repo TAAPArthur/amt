@@ -112,7 +112,7 @@ class Server:
         id = str(id)
         special = False
         try:
-            number = int(number)
+            number = float(number)
         except ValueError:
             special = True
             number = float(number.replace("-", "."))
