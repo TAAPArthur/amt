@@ -118,7 +118,7 @@ class VizManga(Server):
             self.update_chapter_data(manga_data, id=chapter_id, number=chapter_number, premium=premium, title=title, date=chapter_date)
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
-        chapter_url = self.api_chapter_url.format(manga_data["id"], chapter_data["number"], chapter_data["id"])
+        chapter_url = self.api_chapter_url.format(manga_data["id"], str(chapter_data["number"]).replace(".", "-"), chapter_data["id"])
         match = self.page_regex.search(self.session.get(chapter_url).text)
         num_pages = int(match.group(1)) + 1
 
