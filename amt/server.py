@@ -24,6 +24,19 @@ class Server:
         self.settings = settings
         self.session = session
 
+    def _request(self, get, url, **kwargs):
+        logging.info(url)
+        r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
+        if r.status_code != 200:
+            logging.warning(r)
+        return r
+
+    def session_get(self, url, **kwargs):
+        return self._request(True, url ** kwargs)
+
+    def session_post(self, url, **kwargs):
+        return self._request(False, url ** kwargs)
+
     def login(self, username, password):
         return False
 

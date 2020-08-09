@@ -29,7 +29,7 @@ class Mangaplus(Server):
     manga_url = base_url + '/titles/{0}'
 
     def get_manga_list(self):
-        r = self.session.get(self.api_most_populars_url)
+        r = self.session_get(self.api_most_populars_url)
         resp_data = loads(MangaplusResponse, r.content)
         if resp_data.error:
             return None
@@ -43,7 +43,7 @@ class Mangaplus(Server):
         return results
 
     def search(self, term):
-        r = self.session.get(self.api_search_url)
+        r = self.session_get(self.api_search_url)
 
         resp_data = loads(MangaplusResponse, r.content)
         if resp_data.error:
@@ -62,7 +62,7 @@ class Mangaplus(Server):
         return results
 
     def update_manga_data(self, manga_data):
-        r = self.session.get(self.api_manga_url.format(manga_data['id']))
+        r = self.session_get(self.api_manga_url.format(manga_data['id']))
 
         resp = loads(MangaplusResponse, r.content)
         if resp.error:
@@ -86,7 +86,7 @@ class Mangaplus(Server):
                 self.update_chapter_data(manga_data, id=chapter.id, title='{0} - {1}'.format(chapter.name, chapter.subtitle), number=number, date=chapter.start_timestamp)
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
-        r = self.session.get(self.api_chapter_url.format(chapter_data["id"]))
+        r = self.session_get(self.api_chapter_url.format(chapter_data["id"]))
         resp = loads(MangaplusResponse, r.content)
         if resp.error:
             return None
@@ -100,7 +100,7 @@ class Mangaplus(Server):
         return pages
 
     def save_chapter_page(self, page_data, path):
-        r = self.session.get(page_data['url'])
+        r = self.session_get(page_data['url'])
         if r.status_code != 200:
             return None
 

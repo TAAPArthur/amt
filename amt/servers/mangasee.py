@@ -18,13 +18,13 @@ class Mangasee(Server):
     page_regex = re.compile(r"vm.CurChapter = (.*);")
 
     def get_manga_list(self):
-        r = self.session.post(self.manga_list_url)
+        r = self.session_post(self.manga_list_url)
         data = r.json()
         return [self.create_manga_data(manga_data["i"], manga_data["s"]) for manga_data in data]
 
     def update_manga_data(self, manga_data):
 
-        r = self.session.get(self.manga_url.format(manga_data['id']))
+        r = self.session_get(self.manga_url.format(manga_data['id']))
         if r.status_code != 200:
             return None
         match = self.chapter_regex.search(r.text)
@@ -36,7 +36,7 @@ class Mangasee(Server):
             self.update_chapter_data(manga_data, id, str(number), number)
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
-        r = self.session.get(self.chapter_url.format(manga_data["id"], chapter_data["number"]))
+        r = self.session_get(self.chapter_url.format(manga_data["id"], chapter_data["number"]))
         match = self.page_regex.search(r.text)
         page_text = match.group(1)
         page_data = json.loads(page_text)
@@ -48,7 +48,7 @@ class Mangasee(Server):
         return pages
 
     def save_chapter_page(self, page_data, path):
-        r = self.session.get(page_data["url"])
+        r = self.session_get(page_data["url"])
         if r.status_code == 200:
             with open(path, 'wb') as fp:
                 fp.write(r.content)

@@ -28,12 +28,12 @@ class VizManga(Server):
     page_regex = re.compile(r"var pages\s*=\s*(\d*);")
 
     def get_token(self):
-        auth_token = self.session.get(self.refresh_login_url)
+        auth_token = self.session_get(self.refresh_login_url)
         token = re.search(r'AUTH_TOKEN\s*=\s*"(.+?)"', auth_token.text)
         return token.group(1)
 
     def needs_authentication(self):
-        r = self.session.get(self.refresh_login_url)
+        r = self.session_get(self.refresh_login_url)
         soup = BeautifulSoup(r.content, "lxml")
         account = soup.find("div", id="o_account-links-content")
         return not account or account["logged_in"] == "false"
@@ -41,7 +41,7 @@ class VizManga(Server):
     def login(self, username, password):
         token = self.get_token()
 
-        r = self.session.post(
+        r = self.session_post(
             self.login_url,
             data={
                 "login": username,
@@ -52,7 +52,7 @@ class VizManga(Server):
         return r.status_code == 200
 
     def get_manga_list(self):
-        r = self.session.get(self.api_series_url)
+        r = self.session_get(self.api_series_url)
 
         soup = BeautifulSoup(r.content, "lxml")
         divs = soup.findAll("a", {"class": "disp-bl pad-b-rg pos-r bg-off-black color-white hover-bg-red"})
@@ -67,7 +67,7 @@ class VizManga(Server):
         return result
 
     def update_manga_data(self, manga_data):
-        r = self.session.get(self.api_chapters_url.format(manga_data["id"]))
+        r = self.session_get(self.api_chapters_url.format(manga_data["id"]))
         soup = BeautifulSoup(r.content, "lxml")
 
         authors = []
@@ -119,7 +119,7 @@ class VizManga(Server):
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
         chapter_url = self.api_chapter_url.format(manga_data["id"], str(chapter_data["number"]).replace(".", "-"), chapter_data["id"])
-        match = self.page_regex.search(self.session.get(chapter_url).text)
+        match = self.page_regex.search(self.session_get(chapter_url).text)
         num_pages = int(match.group(1)) + 1
 
         pages = []
@@ -128,13 +128,13 @@ class VizManga(Server):
         return pages
 
     def save_chapter_page(self, page_data, path):
-        r = self.session.get(page_data["url"], headers={"Referer": "https://www.viz.com"})
+        r = self.session_get(page_data["url"], headers={"Referer": "https://www.viz.com"})
         if r.status_code != 200:
             logging.warning("Could not load page_data['url']; Response code %d", r.status_code)
             return
         real_img_url = r.text.strip()
 
-        r = self.session.get(real_img_url, stream=True)
+        r = self.session_get(real_img_url, stream=True)
         if r.status_code != 200:
             return None
 
