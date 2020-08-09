@@ -32,10 +32,10 @@ class Server:
         return r
 
     def session_get(self, url, **kwargs):
-        return self._request(True, url ** kwargs)
+        return self._request(True, url, **kwargs)
 
     def session_post(self, url, **kwargs):
-        return self._request(False, url ** kwargs)
+        return self._request(False, url, **kwargs)
 
     def login(self, username, password):
         return False
