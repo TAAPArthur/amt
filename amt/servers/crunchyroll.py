@@ -21,7 +21,7 @@ class Crunchyroll(Server):
     api_chapters_url = api_base_url + '/chapters?series_id={}'
 
     api_auth_token = None
-    api_session_id = None
+    _api_session_id = None
     possible_page_url_keys = ['encrypted_mobile_image_url', 'encrypted_composed_image_url']
     page_url_key = possible_page_url_keys[0]
 
@@ -33,10 +33,10 @@ class Crunchyroll(Server):
         # Don't know why 66 is special
         return bytes(b ^ 66 for b in buffer)
 
-    def _get_session_id(self):
+    def get_session_id(self):
         if 'session_id' in self.session.cookies:
-            self.api_session_id = self.session.cookies['session_id']
-            return
+            self._api_session_id = self.session.cookies['session_id']
+            return self._api_session_id
 
         data = self.session_post(
             self.start_session_url,
@@ -46,7 +46,8 @@ class Crunchyroll(Server):
                 'access_token': self._access_token,
             }
         ).json()['data']
-        self.api_session_id = data['session_id']
+        self._api_session_id = data['session_id']
+        return self._api_session_id
 
     def _store_login_data(self, data):
         self.api_auth_token = data['data']['auth']
@@ -56,8 +57,8 @@ class Crunchyroll(Server):
         """
         Retrieves API session ID and authentication token
         """
-        self._get_session_id()
-        r = self.session_get(self.api_auth_url.format(self.api_session_id))
+
+        r = self.session_get(self.api_auth_url.format(self.get_session_id()))
         data = r.json()
 
         if 'data' in data:
@@ -67,11 +68,9 @@ class Crunchyroll(Server):
         return True
 
     def login(self, username, password):
-        self._get_session_id()
-
         login = self.session_post(self.login_url,
                                   data={
-                                      'session_id': self.api_session_id,
+                                      'session_id': self.get_session_id(),
                                       'account': username,
                                       'password': password
                                   }).json()
@@ -123,7 +122,7 @@ class Crunchyroll(Server):
             self.update_chapter_data(manga_data, id=chapter['chapter_id'], number=chapter['number'], title=chapter['locale'][self.locale]['name'], premium=True, date=date)
 
     def get_manga_chapter_data(self, manga_data, chapter_data):
-        r = self.session_get(self.api_chapter_url.format(self.api_session_id, chapter_data["id"], self.api_auth_token))
+        r = self.session_get(self.api_chapter_url.format(self.get_session_id(), chapter_data["id"], self.api_auth_token))
         raw_pages = r.json()['pages']
         raw_pages.sort(key=lambda x: int(x['number']))
         pages = [self.create_page_data(url=page['locale'][self.locale][self.page_url_key]) for page in raw_pages if page["locale"]]
