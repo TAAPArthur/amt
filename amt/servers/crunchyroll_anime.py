@@ -22,7 +22,7 @@ class CrunchyrollAnime(Crunchyroll):
         r = self.session_get(self.search_series.format(self.get_session_id(), term))
         data = r.json()["data"]
         media_data = []
-        for item in data:
+        for item in data[:5]:
             r = self.session_get(self.series_url.format(self.get_session_id(), item["series_id"]))
             season_data = r.json()["data"]
             season_number_to_name_id_list = {}
