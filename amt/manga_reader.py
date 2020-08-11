@@ -38,7 +38,7 @@ class MangaReader:
 
     def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
         self.settings = settings if settings else Settings()
-        self.state = {"manga": {}, "bundles": {}, "trackers": {}}
+        self.state = {"media": {}, "bundles": {}, "trackers": {}}
         _servers = {}
         _trackers = []
 
@@ -132,7 +132,7 @@ class MangaReader:
         except FileNotFoundError:
             self.settings.init()
 
-        self.manga = self.state["manga"]
+        self.media = self.state["media"]
         self.bundles = self.state["bundles"]
         self.trackers = self.state["trackers"]
 
@@ -147,23 +147,23 @@ class MangaReader:
     # def sync_with_disk(self):
     # TODO detect files added
 
-    def _get_global_id(self, manga_data):
-        return str(manga_data["server_id"]) + ":" + str(manga_data["id"])
+    def _get_global_id(self, media_data):
+        return str(media_data["server_id"]) + ":" + str(media_data["id"])
 
-    def add_manga(self, manga_data, no_update=False):
-        global_id = self._get_global_id(manga_data)
-        if global_id in self.manga:
-            raise ValueError("{} {} is already known".format(global_id, manga_data["name"]))
+    def add_media(self, media_data, no_update=False):
+        global_id = self._get_global_id(media_data)
+        if global_id in self.media:
+            raise ValueError("{} {} is already known".format(global_id, media_data["name"]))
 
         logging.debug("Adding %s", global_id)
-        self.manga[global_id] = manga_data
-        return [] if no_update else self.update_manga(manga_data)
+        self.media[global_id] = media_data
+        return [] if no_update else self.update_media(media_data)
 
-    def remove_manga(self, manga_data=None, id=None):
+    def remove_media(self, media_data=None, id=None):
         if id:
-            del self.manga[id]
+            del self.media[id]
         else:
-            del self.manga[self._get_global_id(manga_data)]
+            del self.media[self._get_global_id(media_data)]
 
     def get_servers(self):
         return self._servers.values()
@@ -174,13 +174,13 @@ class MangaReader:
     def get_server(self, id):
         return self._servers[id]
 
-    def get_manga_in_library(self):
-        return self.manga.values()
+    def get_media_in_library(self):
+        return self.media.values()
 
-    def get_manga_ids_in_library(self):
-        return self.manga.keys()
+    def get_media_ids_in_library(self):
+        return self.media.keys()
 
-    def search_for_manga(self, term, exact=False):
+    def search_for_media(self, term, exact=False):
         result = []
         for server in self.get_servers():
             result += server.search(term)
@@ -188,57 +188,57 @@ class MangaReader:
             result = list(filter(lambda x: x["name"] == term, result))
         return result
 
-    def mark_chapters_until_n_as_read(self, manga_data, N):
+    def mark_chapters_until_n_as_read(self, media_data, N):
         """Marks all chapters whose numerical index <=N as read"""
-        for chapter in manga_data["chapters"].values():
+        for chapter in media_data["chapters"].values():
             chapter["read"] = chapter["number"] <= N
 
-    def get_last_chapter_number(self, manga_data):
-        return max(manga_data["chapters"].values(), key=lambda x: x["number"])["number"]
+    def get_last_chapter_number(self, media_data):
+        return max(media_data["chapters"].values(), key=lambda x: x["number"])["number"]
 
-    def get_last_read(self, manga_data):
-        return max(filter(lambda x: x["read"], manga_data["chapters"].values()), key=lambda x: x["number"], default={"number": -1})["number"]
+    def get_last_read(self, media_data):
+        return max(filter(lambda x: x["read"], media_data["chapters"].values()), key=lambda x: x["number"], default={"number": -1})["number"]
 
     def mark_up_to_date(self, server_id=None, N=0, force=False):
-        for manga_data in self.get_manga_in_library():
-            if not server_id or manga_data["server_id"] == server_id:
-                last_read = self.get_last_chapter_number(manga_data) - N
+        for media_data in self.get_media_in_library():
+            if not server_id or media_data["server_id"] == server_id:
+                last_read = self.get_last_chapter_number(media_data) - N
                 if not force:
-                    last_read = max(self.get_last_read(manga_data), last_read)
-                self.mark_chapters_until_n_as_read(manga_data, last_read)
+                    last_read = max(self.get_last_read(media_data), last_read)
+                self.mark_chapters_until_n_as_read(media_data, last_read)
 
     def download_unread_chapters(self):
         """Downloads all chapters that are not read"""
-        return sum([self.download_chapters(manga_data) for manga_data in self.get_manga_in_library()])
+        return sum([self.download_chapters(media_data) for media_data in self.get_media_in_library()])
 
-    def download_chapters_by_id(self, manga_id, num=0):
-        self.download_chapters(self.manga[manga_id], num=num)
+    def download_chapters_by_id(self, media_id, num=0):
+        self.download_chapters(self.media[media_id], num=num)
 
-    def download_chapters(self, manga_data, num=0):
-        last_read = self.get_last_read(manga_data)
-        server = self.get_server(manga_data["server_id"])
+    def download_chapters(self, media_data, num=0):
+        last_read = self.get_last_read(media_data)
+        server = self.get_server(media_data["server_id"])
         counter = 0
-        for chapter in sorted(manga_data["chapters"].values(), key=lambda x: x["number"]):
-            if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(manga_data, chapter):
+        for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
+            if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(media_data, chapter):
                 counter += 1
                 if counter == num:
                     break
         return counter
 
-    def _create_bundle_data_entry(self, manga_data, chapter_data):
-        return dict(manga_id=self._get_global_id(manga_data), chapter_id=chapter_data["id"], manga_name=manga_data["name"], chapter_num=chapter_data["number"])
+    def _create_bundle_data_entry(self, media_data, chapter_data):
+        return dict(media_id=self._get_global_id(media_data), chapter_id=chapter_data["id"], media_name=media_data["name"], chapter_num=chapter_data["number"])
 
     def bundle_unread_chapters(self, name=None, shuffle=False):
         unreads = []
-        for manga_data in self.get_manga_in_library():
-            if name is not None and name not in (manga_data["server_id"], manga_data["name"], self._get_global_id(manga_data)):
+        for media_data in self.get_media_in_library():
+            if name is not None and name not in (media_data["server_id"], media_data["name"], self._get_global_id(media_data)):
                 continue
             unread_dirs = []
-            for chapter in sorted(manga_data["chapters"].values(), key=lambda x: x["number"]):
+            for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
                 if not chapter["read"]:
-                    dir_path = self.settings.get_chapter_dir(manga_data, chapter)
+                    dir_path = self.settings.get_chapter_dir(media_data, chapter)
                     if os.path.exists(dir_path):
-                        unread_dirs.append(("'" + dir_path + "'/*", self._create_bundle_data_entry(manga_data, chapter)))
+                        unread_dirs.append(("'" + dir_path + "'/*", self._create_bundle_data_entry(media_data, chapter)))
             if unread_dirs:
                 unreads.append(unread_dirs)
         if not unreads:
@@ -264,64 +264,64 @@ class MangaReader:
     def mark_bundle_as_read(self, bundle_name, remove=False):
         bundled_data = self.bundles[bundle_name]
         for bundle in bundled_data:
-            self.manga[bundle["manga_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
+            self.media[bundle["media_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
     def update(self, download=False):
         new_chapters = []
-        for manga_data in self.get_manga_in_library():
-            new_chapters += self.update_manga(manga_data, download)
+        for media_data in self.get_media_in_library():
+            new_chapters += self.update_media(media_data, download)
         return new_chapters
 
-    def update_manga(self, manga_data, download=False, limit=None, page_limit=None):
+    def update_media(self, media_data, download=False, limit=None, page_limit=None):
         """
         Return set of updated chapters or a False-like value
         """
-        server = self.get_server(manga_data["server_id"])
+        server = self.get_server(media_data["server_id"])
 
         def get_chapter_ids(chapters):
             return {x for x in chapters if not chapters[x]["premium"]} if self.settings.free_only else set(chapters.keys())
 
-        chapter_ids = get_chapter_ids(manga_data["chapters"])
+        chapter_ids = get_chapter_ids(media_data["chapters"])
 
-        server.update_manga_data(manga_data)
+        server.update_media_data(media_data)
 
-        current_chapter_ids = get_chapter_ids(manga_data["chapters"])
+        current_chapter_ids = get_chapter_ids(media_data["chapters"])
         new_chapter_ids = current_chapter_ids - chapter_ids
 
-        new_chapters = sorted([manga_data["chapters"][x] for x in new_chapter_ids], key=lambda x: x["number"])
+        new_chapters = sorted([media_data["chapters"][x] for x in new_chapter_ids], key=lambda x: x["number"])
         assert len(new_chapter_ids) == len(new_chapters)
         if download:
             for chapter_data in new_chapters[:limit]:
-                server.download_chapter(manga_data, chapter_data, page_limit)
+                server.download_chapter(media_data, chapter_data, page_limit)
         return new_chapters
 
     def is_added(self, tracker_id, tracking_id):
-        for manga_id in self.get_manga_ids_in_library():
-            tacker_info = self.get_tracker_info(manga_id, tracker_id)
+        for media_id in self.get_media_ids_in_library():
+            tacker_info = self.get_tracker_info(media_id, tracker_id)
             if tacker_info and tacker_info[0] == tracking_id:
-                return self.manga[manga_id]
+                return self.media[media_id]
         return False
 
-    def get_tracker_info(self, manga_id, tracker_id):
-        return self.trackers.get(manga_id, {}).get(tracker_id, None)
+    def get_tracker_info(self, media_id, tracker_id):
+        return self.trackers.get(media_id, {}).get(tracker_id, None)
 
-    def track(self, tracker_id, manga_id, tracking_id, tracker_title=None):
-        if manga_id not in self.trackers:
-            self.trackers[manga_id] = {}
+    def track(self, tracker_id, media_id, tracking_id, tracker_title=None):
+        if media_id not in self.trackers:
+            self.trackers[media_id] = {}
 
-        self.trackers[manga_id][tracker_id] = (tracking_id, tracker_title)
+        self.trackers[media_id][tracker_id] = (tracking_id, tracker_title)
 
     def sync_progress(self, force=False):
         data = []
         tracker = self.get_primary_tracker()
-        for manga_id, manga_data in self.manga.items():
-            tracker_info = self.get_tracker_info(manga_id=manga_id, tracker_id=self.get_primary_tracker().id)
-            if tracker_info and (force or manga_data["progress"] < self.get_last_read(manga_data)):
-                data.append((tracker_info[0], self.get_last_read(manga_data)))
-                logging.info("Preparing to update %s", manga_data["name"])
+        for media_id, media_data in self.media.items():
+            tracker_info = self.get_tracker_info(media_id=media_id, tracker_id=self.get_primary_tracker().id)
+            if tracker_info and (force or media_data["progress"] < self.get_last_read(media_data)):
+                data.append((tracker_info[0], self.get_last_read(media_data)))
+                logging.info("Preparing to update %s", media_data["name"])
 
         tracker.update(data)
 
-        for manga_data in self.get_manga_in_library():
-            manga_data["progress"] = self.get_last_read(manga_data)
+        for media_data in self.get_media_in_library():
+            media_data["progress"] = self.get_last_read(media_data)
             self.save_state()

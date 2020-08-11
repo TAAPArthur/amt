@@ -35,8 +35,7 @@ class Settings:
         self.cache_dir = os.getenv('XDG_CACHE_HOME', os.path.join(home, ".cache", APP_NAME))
         self.data_dir = os.getenv('XDG_DATA_HOME', os.path.join(home, ".local/share", APP_NAME))
         self.bundle_dir = os.path.join(self.data_dir, "Bundles")
-        self.manga_dir = os.path.join(self.data_dir, "Manga")
-        self.anime_dir = os.path.join(self.data_dir, "Anime")
+        self.media_dir = os.path.join(self.data_dir, "Media")
         self.no_save_session = no_save_session
         if not no_load:
             self.load()
@@ -46,8 +45,7 @@ class Settings:
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.bundle_dir, exist_ok=True)
-        os.makedirs(self.manga_dir, exist_ok=True)
-        os.makedirs(self.anime_dir, exist_ok=True)
+        os.makedirs(self.media_dir, exist_ok=True)
 
     @classmethod
     def get_members(clazz):
@@ -88,7 +86,7 @@ class Settings:
         return os.path.join(self.data_dir, "metadata.json")
 
     def get_chapter_dir(self, manga_data, chapter_data):
-        dir = os.path.join(self.manga_dir, manga_data["server_id"], manga_data["name"].replace(" ", "_"), "%06.1f" % chapter_data["number"])
+        dir = os.path.join(self.media_dir, manga_data["server_id"], manga_data["name"].replace(" ", "_"), "%06.1f" % chapter_data["number"])
         os.makedirs(dir, exist_ok=True)
         return dir
 

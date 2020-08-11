@@ -14,7 +14,7 @@ class Application(MangaReader):
         for i, result in enumerate(results):
             print("{:4}| {}:{}\t{}".format(i, result["server_id"], result["id"], result["name"]))
 
-    def select_manga(self, results, prompt):
+    def select_media(self, results, prompt):
         index = 0
 
         if not self.auto_select and len(results) > 1:
@@ -26,16 +26,16 @@ class Application(MangaReader):
             return None
 
     def search_add(self, term, exact=False):
-        results = self.search_for_manga(term, exact=exact)
+        results = self.search_for_media(term, exact=exact)
         if len(results) == 0:
-            logging.warning("Could not find manga %s", term)
+            logging.warning("Could not find media %s", term)
             return
         self.print_results(results)
 
-        manga_data = self.select_manga(results, "Select manga to add: ")
-        if manga_data:
-            self.add_manga(manga_data)
-        return manga_data
+        media_data = self.select_media(results, "Select media to add: ")
+        if media_data:
+            self.add_media(media_data)
+        return media_data
 
     def load_from_tracker(self, user_id=None, user_name=None):
         tracker = self.get_primary_tracker()
@@ -46,40 +46,40 @@ class Application(MangaReader):
             if entry["anime"]:
                 logging.warning("Anime is not yet supported %s", entry)
                 continue
-            manga_data = self.is_added(tracker.id, entry["id"])
-            if not manga_data:
+            media_data = self.is_added(tracker.id, entry["id"])
+            if not media_data:
 
-                known_matching_manga = list(filter(lambda x: x["name"].lower().replace(" ", "") == entry["name"].lower().replace(" ", ""), self.get_manga_in_library()))
-                if known_matching_manga:
-                    logging.debug("Checking among known manga")
-                    manga_data = self.select_manga(known_matching_manga, "Select from known manga: ")
+                known_matching_media = list(filter(lambda x: x["name"].lower().replace(" ", "") == entry["name"].lower().replace(" ", ""), self.get_media_in_library()))
+                if known_matching_media:
+                    logging.debug("Checking among known media")
+                    media_data = self.select_media(known_matching_media, "Select from known media: ")
 
-                if not manga_data:
-                    manga_data = self.search_add(entry["name"], exact=True)
-                if not manga_data:
-                    logging.info("Could not find manga %s", entry["name"])
+                if not media_data:
+                    media_data = self.search_add(entry["name"], exact=True)
+                if not media_data:
+                    logging.info("Could not find media %s", entry["name"])
                     continue
 
-                self.track(tracker.id, self._get_global_id(manga_data), entry["id"], entry["name"])
+                self.track(tracker.id, self._get_global_id(media_data), entry["id"], entry["name"])
                 new_count += 1
             else:
-                logging.debug("Already tracking %s %d", manga_data["name"], entry["progress"])
+                logging.debug("Already tracking %s %d", media_data["name"], entry["progress"])
 
-            self.mark_chapters_until_n_as_read(manga_data, int(entry["progress"]))
+            self.mark_chapters_until_n_as_read(media_data, int(entry["progress"]))
             count += 1
         self.list()
         return count, new_count
 
     def list(self):
-        for i, result in enumerate(self.get_manga_in_library()):
+        for i, result in enumerate(self.get_media_in_library()):
             last_chapter_num = self.get_last_chapter_number(result)
             last_read = self.get_last_read(result)
             print("{:4}| {}:{}\t{} {}/{}".format(i, result["server_id"], result["id"], result["name"], last_read, last_chapter_num))
 
     def list_chapters(self, id):
-        results = self.manga[id]["chapters"].values()
+        results = self.media[id]["chapters"].values()
         for chapter in results:
             print("{:4}:{}".format(chapter["number"], chapter["title"]))
 
     def get_all_names(self):
-        return list(self.get_servers_ids()) + list(self.get_manga_ids_in_library()) + [x["name"] for x in self.get_manga_in_library()]
+        return list(self.get_servers_ids()) + list(self.get_media_ids_in_library()) + [x["name"] for x in self.get_media_in_library()]
