@@ -23,7 +23,7 @@ def parse_args(args=None, app=None):
     sub_parsers.add_parser("update")
     sub_parsers.add_parser("download")
     download_parser = sub_parsers.add_parser("download-next")
-    download_parser.add_argument('id', choices=app.get_manga_ids_in_library())
+    download_parser.add_argument('id', choices=app.get_media_ids_in_library())
     download_parser.add_argument('N', type=int, default=100, nargs='?')
 
     bundle_parser = sub_parsers.add_parser("bundle")
@@ -37,7 +37,7 @@ def parse_args(args=None, app=None):
     sub_parsers.add_parser("list")
     sub_parsers.add_parser("auth")
     chapter_parsers = sub_parsers.add_parser("list-chapters")
-    chapter_parsers.add_argument('id', choices=app.get_manga_ids_in_library())
+    chapter_parsers.add_argument('id', choices=app.get_media_ids_in_library())
 
     mark_parsers = sub_parsers.add_parser("mark-up-to-date")
     mark_parsers.add_argument('--force', default=False)

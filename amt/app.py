@@ -1,4 +1,4 @@
-from .manga_reader import MangaReader
+from .media_reader import MangaReader
 
 import logging
 

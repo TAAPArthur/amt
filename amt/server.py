@@ -13,7 +13,7 @@ class Server:
 
     static_pages = False
     has_anime = False
-    has_manga = True
+    has_media = True
     has_login = False
     has_free_chapters = True
     has_gaps = False
@@ -50,21 +50,21 @@ class Server:
         logging.warning("Could not load credentials")
         return False
 
-    def get_manga_list(self):
+    def get_media_list(self):
         """
-        Returns full list of manga sorted by rank
+        Returns full list of media sorted by rank
         """
         raise NotImplementedError
 
     def search(self, term):
         term_lower = term.lower()
-        return list(filter(lambda x: term_lower in x['name'].lower(), self.get_manga_list()))
+        return list(filter(lambda x: term_lower in x['name'].lower(), self.get_media_list()))
 
-    def update_manga_data(self, manga_data):
+    def update_media_data(self, media_data):
         """
-        Returns manga data from API
+        Returns media data from API
 
-        Initial data should contain at least manga's slug (provided by search)
+        Initial data should contain at least media's slug (provided by search)
         """
         raise NotImplementedError
 
@@ -75,20 +75,20 @@ class Server:
     def needs_authentication(self):
         return self.has_login
 
-    def download_chapter(self, manga_data, chapter_data, page_limit=None):
-        logging.info("Starting download of %s %s", manga_data["name"], chapter_data["title"])
+    def download_chapter(self, media_data, chapter_data, page_limit=None):
+        logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         if chapter_data["premium"]:
             if self.needs_authentication():
                 logging.debug("Server is not authenticated; relogging in")
                 if not self.relogin():
-                    logging.info("Cannot access chapter %s #%s %s because credentials are invalid", manga_data["name"], str(chapter_data["number"]), chapter_data["title"])
+                    logging.info("Cannot access chapter %s #%s %s because credentials are invalid", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                     return False
             if self.is_non_premium_account:
-                logging.info("Cannot access chapter %s #%s %s because account is not premium", manga_data["name"], str(chapter_data["number"]), chapter_data["title"])
+                logging.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                 return False
 
-        list_of_pages = self.get_manga_chapter_data(manga_data, chapter_data)
-        dir_path = self.settings.get_chapter_dir(manga_data, chapter_data)
+        list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         logging.debug("Starting download for %d pages", len(list_of_pages))
         downloaded_page = False
         for index, page_data in enumerate(list_of_pages[:page_limit]):
@@ -101,12 +101,12 @@ class Server:
                 self.save_chapter_page(page_data, temp_full_path)
                 os.rename(temp_full_path, full_path)
                 downloaded_page = True
-        logging.info("%s %d %s is downloaded", manga_data["name"], chapter_data["number"], chapter_data["title"])
+        logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
         return downloaded_page
 
-    def get_manga_chapter_data(self, manga_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data):
         """
-        Returns manga chapter data
+        Returns media chapter data
 
         Currently, only pages are expected.
         """
@@ -118,10 +118,10 @@ class Server:
         """
         raise NotImplementedError
 
-    def create_manga_data(self, id, name, cover=None):
+    def create_media_data(self, id, name, cover=None):
         return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, chapters={})
 
-    def update_chapter_data(self, manga_data, id, title, number, premium=False, date=None):
+    def update_chapter_data(self, media_data, id, title, number, premium=False, date=None):
         id = str(id)
         special = False
         try:
@@ -131,11 +131,11 @@ class Server:
             number = float(number.replace("-", "."))
 
         new_values = dict(id=id, title=title, number=number, premium=premium, special=special, data=date)
-        if id in manga_data["chapters"]:
-            manga_data["chapters"][id].update(new_values)
+        if id in media_data["chapters"]:
+            media_data["chapters"][id].update(new_values)
         else:
-            manga_data["chapters"][id] = new_values
-            manga_data["chapters"][id]["read"] = False
+            media_data["chapters"][id] = new_values
+            media_data["chapters"][id]["read"] = False
 
     def create_page_data(self, url, id=None, encryption_key=None):
         return dict(url=url, id=id, encryption_key=encryption_key)

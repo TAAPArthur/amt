@@ -7,21 +7,21 @@ class Dbmultiverse(Server):
     name = 'Dragon Ball Multiverse'
 
     base_url = 'https://www.dragonball-multiverse.com'
-    manga_url = base_url + '/en/chapters.html'
+    media_url = base_url + '/en/chapters.html'
     chapter_url = base_url + '/en/chapters.html?chapter={}'
     page_url = base_url + '/en/page-{0}.html'
     cover_url = base_url + '/image.php?comic=page&num=0&lg=en&ext=jpg&small=1&pw=8f3722a594856af867d55c57f31ee103'
 
-    synopsis = "Dragon Ball Multiverse (\"DBM\"), the sequel of the manga, is a dojinshi (manga created by non-professionals, using a universe and characters which are not theirs), made by Salagir and Gogeta Jr, from France."
+    synopsis = "Dragon Ball Multiverse (\"DBM\"), the sequel of the media, is a dojinshi (media created by non-professionals, using a universe and characters which are not theirs), made by Salagir and Gogeta Jr, from France."
 
     static_pages = True
 
-    def get_manga_list(self):
-        return [self.create_manga_data(id=1, name="Dragon Ball Multiverse (DBM)")]
+    def get_media_list(self):
+        return [self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM)")]
 
-    def update_manga_data(self, manga_data):
+    def update_media_data(self, media_data):
 
-        r = self.session_get(self.manga_url)
+        r = self.session_get(self.media_url)
 
         soup = BeautifulSoup(r.text, "lxml")
 
@@ -29,7 +29,7 @@ class Dbmultiverse(Server):
         chapters.sort(key=lambda x: int(x["ch"]))
         lastest_chapter = int(chapters[-1]["ch"])
 
-        manga_data["info"] = dict(
+        media_data["info"] = dict(
             authors=['Gogeta Jr', 'Asura', 'Salagir'],
             genres=['Shounen'],
             status='ongoing',
@@ -40,9 +40,9 @@ class Dbmultiverse(Server):
         for chapter in chapters:
             id = chapter["ch"]
             if id != lastest_chapter:
-                self.update_chapter_data(manga_data, id=id, number=int(id), title=chapter.find("h4").getText())
+                self.update_chapter_data(media_data, id=id, number=int(id), title=chapter.find("h4").getText())
 
-    def get_manga_chapter_data(self, manga_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data):
         r = self.session_get(self.chapter_url.format(chapter_data["id"]))
 
         soup = BeautifulSoup(r.text, "lxml")

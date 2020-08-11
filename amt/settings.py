@@ -15,7 +15,7 @@ class Settings:
     password_manager_enabled = True
     password_save_cmd = "tpm insert {}"
     password_load_cmd = "tpm show {}"
-    manga_viewer_cmd = ""
+    media_viewer_cmd = ""
     bundle_cmds = {
         "cbz": "zip {:2} {:1}",
         "pdf": "convert {:1} {:2}"
@@ -85,8 +85,8 @@ class Settings:
     def get_metadata(self):
         return os.path.join(self.data_dir, "metadata.json")
 
-    def get_chapter_dir(self, manga_data, chapter_data):
-        dir = os.path.join(self.media_dir, manga_data["server_id"], manga_data["name"].replace(" ", "_"), "%06.1f" % chapter_data["number"])
+    def get_chapter_dir(self, media_data, chapter_data):
+        dir = os.path.join(self.media_dir, media_data["server_id"], media_data["name"].replace(" ", "_"), "%06.1f" % chapter_data["number"])
         os.makedirs(dir, exist_ok=True)
         return dir
 

@@ -5,23 +5,23 @@ import logging
 
 from ..server import Server
 
-# Improved from https://github.com/manga-py/manga-py
+# Improved from https://github.com/media-py/media-py
 
 
 class VizManga(Server):
-    id = "vizmanga"
+    id = "vizmedia"
     lang = "en"
     locale = "enUS"
 
     has_login = True
 
     base_url = "http://www.viz.com"
-    login_url = base_url + "/manga/try_manga_login"
+    login_url = base_url + "/media/try_media_login"
     refresh_login_url = base_url + "/account/refresh_login_links"
     login_url = base_url + "/account/try_login"
     api_series_url = base_url + "/shonenjump"
     api_chapters_url = base_url + "/shonenjump/chapters/{}"
-    api_chapter_data_url = base_url + "/manga/get_manga_url?device_id=3&manga_id={}&page={}"
+    api_chapter_data_url = base_url + "/media/get_media_url?device_id=3&media_id={}&page={}"
     api_chapter_url = base_url + "/shonenjump/{}-chapter-{}/chapter/{}"
 
     chapter_regex = re.compile(r"/shonenjump/(.*)-chapter-([\d\-]*)/chapter/(\d*)")
@@ -51,7 +51,7 @@ class VizManga(Server):
             })
         return r.status_code == 200
 
-    def get_manga_list(self):
+    def get_media_list(self):
         r = self.session_get(self.api_series_url)
 
         soup = BeautifulSoup(r.content, "lxml")
@@ -62,27 +62,27 @@ class VizManga(Server):
             name = div.find("div", {"class", "pad-x-rg pad-t-rg pad-b-sm type-sm type-rg--sm type-md--lg type-center line-solid"}).getText().strip()
             cover_url = div.find("img")["data-original"]
 
-            result.append(self.create_manga_data(id=id, name=name, cover=cover_url))
+            result.append(self.create_media_data(id=id, name=name, cover=cover_url))
 
         return result
 
-    def update_manga_data(self, manga_data):
-        r = self.session_get(self.api_chapters_url.format(manga_data["id"]))
+    def update_media_data(self, media_data):
+        r = self.session_get(self.api_chapters_url.format(media_data["id"]))
         soup = BeautifulSoup(r.content, "lxml")
 
         authors = []
         synopsis = ""
-        manga_info = soup.find("section", {"id": "series-intro"})
-        if manga_info:
-            author_element = manga_info.find("span", {"class": "disp-bl--bm mar-b-md"})
+        media_info = soup.find("section", {"id": "series-intro"})
+        if media_info:
+            author_element = media_info.find("span", {"class": "disp-bl--bm mar-b-md"})
             authors = author_element.getText().split(",") if author_element else ""
-            synposis_element = manga_info.find("h4")
+            synposis_element = media_info.find("h4")
             synopsis = synposis_element.getText().strip() if synposis_element else ""
 
         ongoing = soup.find("div", {"class": "section_future_chapter"})
         status = "ongoing" if ongoing else "complete"
 
-        manga_data["info"] = dict(
+        media_data["info"] = dict(
             authors=authors,
             scanlators=[],
             genres=[],
@@ -115,10 +115,10 @@ class VizManga(Server):
             # so we"ll just use the chapter number as the title
             title = chapter_number
 
-            self.update_chapter_data(manga_data, id=chapter_id, number=chapter_number, premium=premium, title=title, date=chapter_date)
+            self.update_chapter_data(media_data, id=chapter_id, number=chapter_number, premium=premium, title=title, date=chapter_date)
 
-    def get_manga_chapter_data(self, manga_data, chapter_data):
-        chapter_url = self.api_chapter_url.format(manga_data["id"], str(chapter_data["number"]).replace(".", "-"), chapter_data["id"])
+    def get_media_chapter_data(self, media_data, chapter_data):
+        chapter_url = self.api_chapter_url.format(media_data["id"], str(chapter_data["number"]).replace(".", "-"), chapter_data["id"])
         match = self.page_regex.search(self.session_get(chapter_url).text)
         num_pages = int(match.group(1)) + 1
 
