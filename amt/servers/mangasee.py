@@ -6,13 +6,13 @@ from ..server import Server
 
 
 class Mangasee(Server):
-    id = 'mediasee'
+    id = 'mangasee'
 
-    base_url = "https://mediasee123.com"
+    base_url = "https://mangasee123.com"
     media_list_url = base_url + "/_search.php"
-    media_url = base_url + '/media/{0}'
+    manga_url = base_url + '/manga/{0}'
     chapter_url = base_url + '/read-online/{0}-chapter-{1}-page-1.html'
-    page_url = "https://s3.mediabeast.com/media/{}/{}-{:03d}.png"
+    page_url = "https://s3.mangabeast.com/manga/{}/{}-{:03d}.png"
 
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
     page_regex = re.compile(r"vm.CurChapter = (.*);")
@@ -24,7 +24,7 @@ class Mangasee(Server):
 
     def update_media_data(self, media_data):
 
-        r = self.session_get(self.media_url.format(media_data['id']))
+        r = self.session_get(self.manga_url.format(media_data['id']))
         if r.status_code != 200:
             return None
         match = self.chapter_regex.search(r.text)

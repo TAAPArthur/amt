@@ -5,23 +5,23 @@ import logging
 
 from ..server import Server
 
-# Improved from https://github.com/media-py/media-py
+# Improved from https://github.com/manga-py/manga-py
 
 
 class VizManga(Server):
-    id = "vizmedia"
+    id = "vizmanga"
     lang = "en"
     locale = "enUS"
 
     has_login = True
 
     base_url = "http://www.viz.com"
-    login_url = base_url + "/media/try_media_login"
+    login_url = base_url + "/manga/try_manga_login"
     refresh_login_url = base_url + "/account/refresh_login_links"
     login_url = base_url + "/account/try_login"
     api_series_url = base_url + "/shonenjump"
     api_chapters_url = base_url + "/shonenjump/chapters/{}"
-    api_chapter_data_url = base_url + "/media/get_media_url?device_id=3&media_id={}&page={}"
+    api_chapter_data_url = base_url + "/manga/get_manga_url?device_id=3&manga_id={}&page={}"
     api_chapter_url = base_url + "/shonenjump/{}-chapter-{}/chapter/{}"
 
     chapter_regex = re.compile(r"/shonenjump/(.*)-chapter-([\d\-]*)/chapter/(\d*)")

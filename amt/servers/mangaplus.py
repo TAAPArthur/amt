@@ -17,7 +17,7 @@ RE_ENCRYPTION_KEY = re.compile('.{1,2}')
 
 
 class Mangaplus(Server):
-    id = 'mediaplus'
+    id = 'mangaplus'
     lang = 'en'
 
     base_url = 'https://mediaplus.shueisha.co.jp'
@@ -25,7 +25,7 @@ class Mangaplus(Server):
     api_search_url = api_url + '/title_list/all'
     api_most_populars_url = api_url + '/title_list/ranking'
     api_media_url = api_url + '/title_detail?title_id={0}'
-    api_chapter_url = api_url + '/media_viewer?chapter_id={0}&split=yes&img_quality=high'
+    api_chapter_url = api_url + '/manga_viewer?chapter_id={0}&split=yes&img_quality=high'
     media_url = base_url + '/titles/{0}'
 
     def get_media_list(self):

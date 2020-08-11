@@ -9,12 +9,12 @@ class Crunchyroll(Server):
     has_free_chapters = False
 
     base_url = 'https://www.crunchyroll.com'
-    media_url = base_url + '/comics/media/{0}/volumes'
+    manga_url = base_url + '/comics/manga/{0}/volumes'
 
     start_session_url = 'https://api.crunchyroll.com/start_session.0.json'
     login_url = 'https://api.crunchyroll.com/login.0.json'
 
-    api_base_url = 'https://api-media.crunchyroll.com'
+    api_base_url = 'https://api-manga.crunchyroll.com'
     api_auth_url = api_base_url + '/cr_authenticate?auth=&session_id={}&version=0&format=json'
     api_series_url = api_base_url + '/series?sort=popular'
     api_chapter_url = api_base_url + '/list_chapter?session_id={}&chapter_id={}&auth={}'
@@ -109,7 +109,7 @@ class Crunchyroll(Server):
             status='ongoing',
             synopsis=resp_data['locale'][self.locale]['description'],
             cover=resp_data['locale'][self.locale]['thumb_url'],
-            # url=self.media_url.format(resp_data['url'][1:]),
+            # url=self.manga_url.format(resp_data['url'][1:]),
         )
 
         # Chapters

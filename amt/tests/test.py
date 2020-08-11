@@ -408,7 +408,7 @@ class ApplicationTest(BaseUnitTestClass):
 
     @patch('builtins.input', return_value='0')
     def test_search_add(self, input):
-        media_data = self.app.search_add("media")
+        media_data = self.app.search_add("manga")
         assert(media_data)
         assert media_data in self.media_reader.get_media_in_library()
 
@@ -458,13 +458,13 @@ class ArgsTest(BaseUnitTestClass):
 
     def test_search_save(self):
         assert not len(self.media_reader.get_media_in_library())
-        parse_args(app=self.media_reader, args=["--auto", "search", "media"])
+        parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         assert len(self.media_reader.get_media_in_library())
         self.app.load_state()
         assert len(self.media_reader.get_media_in_library())
 
     def test_load(self):
-        parse_args(app=self.media_reader, args=["--auto", "search", "media"])
+        parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         media_id = next(iter(self.media_reader.get_media_ids_in_library()))
         parse_args(app=self.media_reader, args=["--auto", "load", "test_user"])
         assert self.media_reader.get_tracker_info(media_id, self.media_reader.get_primary_tracker().id)
@@ -501,9 +501,9 @@ class ArgsTest(BaseUnitTestClass):
 
     def test_search(self):
         assert not len(self.media_reader.get_media_in_library())
-        parse_args(app=self.media_reader, args=["--auto", "search", "media"])
+        parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         assert len(self.media_reader.get_media_in_library())
-        self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["--auto", "search", "media"])
+        self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["--auto", "search", "manga"])
 
     def test_bundle_read(self):
         self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
