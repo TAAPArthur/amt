@@ -180,9 +180,9 @@ class MangaReader:
     def get_media_ids_in_library(self):
         return self.media.keys()
 
-    def search_for_media(self, term, exact=False):
+    def search_for_media(self, term, media_type=None, exact=False):
         result = []
-        for server in self.get_servers():
+        for server in filter(lambda x: media_type is None or media_type | x.media_type, self.get_servers()):
             result += server.search(term)
         if exact:
             result = list(filter(lambda x: x["name"] == term, result))

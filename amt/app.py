@@ -1,4 +1,5 @@
 from .media_reader import MangaReader
+from .server import ANIME, NOT_ANIME
 
 import logging
 
@@ -12,7 +13,7 @@ class Application(MangaReader):
 
     def print_results(self, results):
         for i, result in enumerate(results):
-            print("{:4}| {}:{}\t{}".format(i, result["server_id"], result["id"], result["name"]))
+            print("{:4}| {}:{}\t{} {}".format(i, result["server_id"], result["id"], result["name"], result["media_type"]))
 
     def select_media(self, results, prompt):
         index = 0
@@ -25,8 +26,8 @@ class Application(MangaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def search_add(self, term, exact=False):
-        results = self.search_for_media(term, exact=exact)
+    def search_add(self, term, media_type=None, exact=False):
+        results = self.search_for_media(term, media_type=media_type, exact=exact)
         if len(results) == 0:
             logging.warning("Could not find media %s", term)
             return
@@ -42,20 +43,23 @@ class Application(MangaReader):
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         count = 0
         new_count = 0
+
+        def clean_name(x):
+            return x.lower().replace(" ", "")
+
         for entry in data:
-            if entry["anime"]:
-                logging.warning("Anime is not yet supported %s", entry)
-                continue
+            media_type = ANIME if entry["anime"] else NOT_ANIME
             media_data = self.is_added(tracker.id, entry["id"])
             if not media_data:
+                clean_entry_name = clean_name(entry["name"])
 
-                known_matching_media = list(filter(lambda x: x["name"].lower().replace(" ", "") == entry["name"].lower().replace(" ", ""), self.get_media_in_library()))
+                known_matching_media = list(filter(lambda x: media_type | x["media_type"] and clean_entry_name == clean_name(x["name"]), self.get_media_in_library()))
                 if known_matching_media:
                     logging.debug("Checking among known media")
                     media_data = self.select_media(known_matching_media, "Select from known media: ")
 
                 if not media_data:
-                    media_data = self.search_add(entry["name"], exact=True)
+                    media_data = self.search_add(entry["name"], media_type=media_type, exact=True)
                 if not media_data:
                     logging.info("Could not find media %s", entry["name"])
                     continue
