@@ -118,8 +118,8 @@ class Server:
         """
         raise NotImplementedError
 
-    def create_media_data(self, id, name, cover=None):
-        return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, chapters={})
+    def create_media_data(self, id, name, season_ids=None, cover=None):
+        return dict(server_id=self.id, id=id, name=name, cover=None, progress=0, season_ids=season_ids, chapters={})
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, date=None):
         id = str(id)
