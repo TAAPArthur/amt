@@ -78,15 +78,37 @@ class Server:
 
     @staticmethod
     def get_page_name_from_index(page_index):
-        return '%03d' % page_index
+        return '%04d' % page_index
 
     def needs_authentication(self):
         return self.has_login
 
+    @staticmethod
+    def get_download_marker():
+        return ".downloaded"
+
+    @staticmethod
+    def mark_download_complete(dir_path):
+        full_path = os.path.join(dir_path, Server.get_download_marker())
+        open(full_path, 'w').close()
+
+    @staticmethod
+    def is_fully_downloaded(dir_path):
+        full_path = os.path.join(dir_path, Server.get_download_marker())
+        return os.path.exists(full_path)
+
+    def get_dir(self, media_data, chapter_data):
+        return self.settings.get_chapter_dir(media_data, chapter_data)
+
     def download_chapter(self, media_data, chapter_data, page_limit=None):
+        dir_path = self.get_dir(media_data, chapter_data)
+        if Server.is_fully_downloaded(dir_path):
+            logging.debug("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
+            return False
+
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         if chapter_data["premium"]:
-            if self.needs_authentication():
+            if not self.is_non_premium_account and self.needs_authentication():
                 logging.debug("Server is not authenticated; relogging in")
                 if not self.relogin():
                     logging.info("Cannot access chapter %s #%s %s because credentials are invalid", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
@@ -96,7 +118,6 @@ class Server:
                 return False
 
         list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
-        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         logging.debug("Starting download for %d pages", len(list_of_pages))
         downloaded_page = False
         for index, page_data in enumerate(list_of_pages[:page_limit]):
@@ -109,7 +130,9 @@ class Server:
                 self.save_chapter_page(page_data, temp_full_path)
                 os.rename(temp_full_path, full_path)
                 downloaded_page = True
+        Server.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
+
         return downloaded_page
 
     def get_media_chapter_data(self, media_data, chapter_data):
