@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 
+from .server import MANGA, ANIME, NOT_ANIME
 from .settings import Settings
 from .app import Application
 
@@ -28,7 +29,11 @@ def parse_args(args=None, app=None):
 
     bundle_parser = sub_parsers.add_parser("bundle")
     bundle_parser.add_argument("-s", '--shuffle', default=False, action="store_const", const=True)
-    bundle_parser.add_argument('name', choices=app.get_all_names(), default=None, nargs='?')
+    bundle_parser.add_argument('name', choices=app.get_all_names(MANGA), default=None, nargs='?')
+
+    bundle_parser = sub_parsers.add_parser("play")
+    bundle_parser.add_argument("-s", '--shuffle', default=False, action="store_const", const=True)
+    bundle_parser.add_argument('name', choices=app.get_all_names(ANIME), default=None, nargs='?')
 
     read_parser = sub_parsers.add_parser("read")
     read_parser.add_argument("name", choices=os.listdir(app.settings.bundle_dir))
@@ -71,7 +76,9 @@ def parse_args(args=None, app=None):
     elif action == "download-next":
         app.download_chapters_by_id(namespace.id, namespace.N)
     elif action == "bundle":
-        print(app.bundle_unread_chapters(namespace.name, namespace.shuffle))
+        print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle))
+    elif action == "play":
+        print(app.play(name=namespace.name, shuffle=namespace.shuffle))
     elif action == "read":
         print(app.read_bundle(namespace.name))
     elif action == "list":

@@ -2,6 +2,7 @@ from . import servers, trackers
 from .server import Server
 from .settings import Settings
 from .tracker import Tracker
+from .server import MANGA, ANIME, NOT_ANIME
 
 from requests.adapters import HTTPAdapter
 import importlib
@@ -228,27 +229,33 @@ class MangaReader:
     def _create_bundle_data_entry(self, media_data, chapter_data):
         return dict(media_id=self._get_global_id(media_data), chapter_id=chapter_data["id"], media_name=media_data["name"], chapter_num=chapter_data["number"])
 
-    def bundle_unread_chapters(self, name=None, shuffle=False):
-        unreads = []
-        for media_data in self.get_media_in_library():
+    def _get_unreads(self, media_type, name=None, shuffle=False):
+        media = self.get_media_in_library()
+        if shuffle:
+            random.shuffle(media)
+        for media_data in media:
             if name is not None and name not in (media_data["server_id"], media_data["name"], self._get_global_id(media_data)):
                 continue
-            unread_dirs = []
+            if media_data["media_type"] | media_type == 0:
+                continue
+
+            server = self.get_server(media_data["server_id"])
             for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
                 if not chapter["read"]:
-                    dir_path = self.settings.get_chapter_dir(media_data, chapter)
-                    if os.path.exists(dir_path):
-                        unread_dirs.append(("'" + dir_path + "'/*", self._create_bundle_data_entry(media_data, chapter)))
-            if unread_dirs:
-                unreads.append(unread_dirs)
-        if not unreads:
+                    yield server, media_data, chapter
+
+    def bundle_unread_chapters(self, name=None, shuffle=False):
+        unreads = []
+        paths = []
+        bundle_data = []
+        for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle):
+            dir_path = server.get_dir(media_data, chapter)
+            if Server.is_fully_downloaded(dir_path):
+                paths.append(get_children(dir_path))
+                bundle_data.append(self._create_bundle_data_entry(media_data, chapter))
+        if not paths:
             return None
 
-        if shuffle:
-            random.shuffle(unreads)
-
-        paths = [x[0] for chapters in unreads for x in chapters]
-        bundle_data = [x[1] for chapters in unreads for x in chapters]
         logging.info("Bundling %s", paths)
         name = self.settings.bundle(" ".join(paths))
         self.bundles[name] = bundle_data
@@ -266,13 +273,32 @@ class MangaReader:
         for bundle in bundled_data:
             self.media[bundle["media_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
-    def update(self, download=False):
+    def play(self, name=None, shuffle=False, cont=False):
+        def get_urls():
+            for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
+                dir_path = server.get_dir(media_data, chapter)
+                if server.is_fully_downloaded(dir_path):
+                    print(get_children(dir_path))
+                    pass
+                else:
+                    yield server.get_stream_url(media_data, chapter), chapter
+
+        for url, chapter in get_urls():
+            if self.settings.view(url):
+                chapter["read"] = True
+                if not cont:
+                    break
+            else:
+                break
+
+    def update(self, download=False, media_type_to_download=MANGA):
+        logging.info("Updating: download %s", download)
         new_chapters = []
         for media_data in self.get_media_in_library():
-            new_chapters += self.update_media(media_data, download)
+            new_chapters += self.update_media(media_data, download, media_type_to_download=media_type_to_download)
         return new_chapters
 
-    def update_media(self, media_data, download=False, limit=None, page_limit=None):
+    def update_media(self, media_data, download=False, media_type_to_download=MANGA, limit=None, page_limit=None):
         """
         Return set of updated chapters or a False-like value
         """

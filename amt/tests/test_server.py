@@ -1,14 +1,16 @@
 from ..server import Server
 from PIL import Image
 import os
+from ..server import ANIME
 
 
 class TestServer(Server):
-    id = 'test'
+    id = 'test_server_manga'
     has_gaps = True
+    _prefix = "Manga"
 
     def get_media_list(self):
-        return [self.create_media_data(id=1, name="Manga1"), self.create_media_data(id=2, name="Manga2"), self.create_media_data(id=3, name="Untracked")]
+        return [self.create_media_data(id=1, name=self._prefix + "1"), self.create_media_data(id=2, name=self._prefix + "2"), self.create_media_data(id=3, name="Untracked")]
 
     def update_media_data(self, media_data):
         media_id = media_data["id"]
@@ -37,3 +39,9 @@ class TestServer(Server):
         assert not os.path.exists(path)
         image = Image.new('RGB', (100, 100))
         image.save(path, "PNG")
+
+
+class TestAnimeServer(TestServer):
+    id = 'test_server_anime'
+    media_type = ANIME
+    _prefix = "Anime"

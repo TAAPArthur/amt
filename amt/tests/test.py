@@ -1,5 +1,5 @@
 from ..args import parse_args
-from .test_server import TestServer
+from .test_server import TestServer, TestAnimeServer
 from .test_tracker import TestTracker
 from ..settings import Settings
 from ..app import Application
@@ -358,8 +358,8 @@ class MangaReaderTest(BaseUnitTestClass):
             self.media_reader.add_media(media_data)
             self.assertEqual(1, self.media_reader.download_chapters(media_data, 1))
 
-    def _prepare_for_bundle(self):
-        server = self.media_reader.get_server(TestServer.id)
+    def _prepare_for_bundle(self, id=TestServer.id):
+        server = self.media_reader.get_server(id)
         media_list = server.get_media_list()
         num_chapters = 0
         for media_data in media_list:
@@ -369,7 +369,8 @@ class MangaReaderTest(BaseUnitTestClass):
         self.assertEqual(num_chapters, self.media_reader.download_unread_chapters())
 
         self.settings.bundle_cmds[self.settings.bundle_format] = "echo {} > {}"
-        self.settings.viewers[self.settings.bundle_format] = "echo {}"
+        for x in self.settings.viewers:
+            self.settings.viewers[x] = "echo {}"
 
     def test_bundle(self):
         self._prepare_for_bundle()
@@ -392,6 +393,23 @@ class MangaReaderTest(BaseUnitTestClass):
         self._prepare_for_bundle()
         self.settings.viewers[self.settings.bundle_format] = "exit 1; echo {};"
         assert not self.media_reader.read_bundle("none.{}".format(self.settings.bundle_format))
+        assert not any([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
+
+    def test_bundle_anime(self):
+        self._prepare_for_bundle(TestAnimeServer.id)
+        self.assertFalse(self.media_reader.bundle_unread_chapters())
+
+    def test_play_anime(self):
+        self._prepare_for_bundle(TestAnimeServer.id)
+        self.media_reader.play(cont=True)
+        assert all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
+
+    def test_play_anime_single(self):
+        self._prepare_for_bundle(TestAnimeServer.id)
+        self.media_reader.play()
+        media_data = list(self.media_reader.get_media_in_library())[0]
+        assert all([x["read"] for x in media_data["chapters"].values()])
+        self.media_reader.remove_media(media_data)
         assert not any([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
 
 
@@ -509,6 +527,8 @@ class ArgsTest(BaseUnitTestClass):
         self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
         self.settings.viewers[self.settings.bundle_format] = "ls {}"
         media_list = self.add_test_media()
+
+        self.app.download_unread_chapters()
         parse_args(app=self.media_reader, args=["bundle"])
         assert len(self.app.bundles)
         name, bundle_data = list(self.app.bundles.items())[0]
@@ -521,6 +541,7 @@ class ArgsTest(BaseUnitTestClass):
     def test_bundle_specific(self):
         self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
         media_list = self.add_test_media()
+        self.app.download_unread_chapters()
         num_chapters = sum([len(x["chapters"]) for x in media_list])
         fake_data = self.test_server.create_media_data("-1", "Fake Data")
         fake_data["server_id"] = "unique_id"

@@ -122,9 +122,13 @@ class Settings:
         subprocess.check_call(cmd, shell=self.shell)
         return name
 
+    @staticmethod
+    def _get_viewer(path):
+        return path.split("?")[0].split(".")[-1]
+
     def view(self, name):
         try:
-            subprocess.check_call(self.viewers[name.split(".")[-1]].format(name), shell=self.shell)
+            subprocess.check_call(self.viewers[self._get_viewer(name)].format(name), shell=self.shell)
             return True
         except CalledProcessError:
             return False
