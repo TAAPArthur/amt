@@ -23,8 +23,12 @@ class Settings:
     bundle_format = "pdf"
     viewers = {
         "cbz": "zathura {}",
-        "pdf": "zathura {}"
+        "pdf": "zathura {}",
+        "m3u8": "mpv {}",
+        "mp4": "mpv {}",
+        "ts": "cat {} | mpv -"
     }
+    stream_player = "mpv {}"
     no_save_session = False
     free_only = False
     shell = True
