@@ -31,9 +31,10 @@ def parse_args(args=None, app=None):
     bundle_parser.add_argument("-s", '--shuffle', default=False, action="store_const", const=True)
     bundle_parser.add_argument('name', choices=app.get_all_names(MANGA), default=None, nargs='?')
 
-    bundle_parser = sub_parsers.add_parser("play")
-    bundle_parser.add_argument("-s", '--shuffle', default=False, action="store_const", const=True)
-    bundle_parser.add_argument('name', choices=app.get_all_names(ANIME), default=None, nargs='?')
+    play_parser = sub_parsers.add_parser("play")
+    play_parser.add_argument("-s", '--shuffle', default=False, action="store_const", const=True)
+    play_parser.add_argument("-c", '--cont', default=False, action="store_const", const=True)
+    play_parser.add_argument('name', choices=app.get_all_names(ANIME), default=None, nargs='?')
 
     read_parser = sub_parsers.add_parser("read")
     read_parser.add_argument("name", choices=os.listdir(app.settings.bundle_dir))
@@ -78,7 +79,7 @@ def parse_args(args=None, app=None):
     elif action == "bundle":
         print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle))
     elif action == "play":
-        print(app.play(name=namespace.name, shuffle=namespace.shuffle))
+        print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle))
     elif action == "read":
         print(app.read_bundle(namespace.name))
     elif action == "list":

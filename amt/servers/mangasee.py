@@ -27,8 +27,6 @@ class Mangasee(Server):
     def update_media_data(self, media_data):
 
         r = self.session_get(self.manga_url.format(media_data['id']))
-        if r.status_code != 200:
-            return None
         match = self.chapter_regex.search(r.text)
         chapters_text = match.group(1)
         chapter_list = json.loads(chapters_text)
@@ -54,5 +52,3 @@ class Mangasee(Server):
         if r.status_code == 200:
             with open(path, 'wb') as fp:
                 fp.write(r.content)
-        else:
-            assert False

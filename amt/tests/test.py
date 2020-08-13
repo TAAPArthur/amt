@@ -65,6 +65,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader = self.app
         self.settings = self.media_reader.settings
         self.test_server = self.media_reader.get_server(TestServer.id)
+        self.test_anime_server = self.media_reader.get_server(TestAnimeServer.id)
         assert not self.media_reader.get_media_in_library()
 
     def tearDown(self):
@@ -75,14 +76,14 @@ class BaseUnitTestClass(unittest.TestCase):
         for media_data in server.get_media_list():
             self.media_reader.add_media(media_data)
 
-    def add_test_media(self, no_update=False):
-        media_list = self.test_server.get_media_list()
+    def add_test_media(self, server=None, no_update=False):
+        media_list = server.get_media_list() if server else self.test_server.get_media_list() + self.test_anime_server.get_media_list()
         for media_data in media_list:
             self.media_reader.add_media(media_data, no_update=no_update)
         return media_list
 
-    def assertAllChaptersRead(self):
-        self.assertTrue(all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()]))
+    def assertAllChaptersRead(self, media_type):
+        self.assertTrue(all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values() if media_data["media_type"] & media_type]))
 
     def verify_download(self, media_data, chapter_data):
         dir_path = self.media_reader.settings.get_chapter_dir(media_data, chapter_data)
@@ -95,6 +96,11 @@ class BaseUnitTestClass(unittest.TestCase):
                 if not file_name.startswith("."):
                     with open(os.path.join(dirpath, file_name), "rb") as img_file:
                         Image.open(img_file)
+
+    def verify_unique_numbers(self, chapters):
+        set_of_numbers = {chapter_data["number"] for chapter_data in chapters.values()}
+        self.assertEqual(len(set_of_numbers), len(chapters.values()))
+        return set_of_numbers
 
 
 class RealBaseUnitTestClass(BaseUnitTestClass):
@@ -282,7 +288,7 @@ class MangaReaderTest(BaseUnitTestClass):
             self.media_reader.update()
 
     def test_mark_up_to_date(self):
-        media_list = self.add_test_media()
+        media_list = self.add_test_media(self.test_server)
         self.media_reader.mark_up_to_date(self.test_server.id)
         for media_data in media_list:
             assert all(map(lambda x: x["read"], media_data["chapters"].values()))
@@ -299,8 +305,9 @@ class MangaReaderTest(BaseUnitTestClass):
         server = self.test_server
         media_list = server.get_media_list()
         for media_data in media_list:
-            self.media_reader.add_media(media_data)
-            self.assertEqual(1, self.media_reader.download_chapters(media_data, 1))
+            with self.subTest(media_id=media_data["id"], name=media_data["name"]):
+                self.media_reader.add_media(media_data)
+                self.assertEqual(1, self.media_reader.download_chapters(media_data, 1))
 
     def _prepare_for_bundle(self, id=TestServer.id, no_download=False):
         server = self.media_reader.get_server(id)
@@ -444,7 +451,7 @@ class ArgsTest(BaseUnitTestClass):
             self.assertEqual(self.media_reader.get_last_chapter_number(media_data), self.media_reader.get_last_read(media_data))
 
     def test_download(self):
-        media_list = self.add_test_media(True)
+        media_list = self.add_test_media(no_update=True)
         assert len(media_list[0]["chapters"]) == 0
         parse_args(app=self.media_reader, args=["-u", "download"])
         assert len(media_list[0]["chapters"])
@@ -459,7 +466,7 @@ class ArgsTest(BaseUnitTestClass):
             self.assertEqual(0, server.download_chapter(media_data, chapter))
 
     def test_update(self):
-        media_list = self.add_test_media(True)
+        media_list = self.add_test_media(no_update=True)
         assert len(media_list[0]["chapters"]) == 0
         parse_args(app=self.media_reader, args=["update"])
         assert len(media_list[0]["chapters"])
@@ -473,7 +480,7 @@ class ArgsTest(BaseUnitTestClass):
     def test_bundle_read(self):
         self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
         self.settings.viewers[self.settings.bundle_format] = "ls {}"
-        media_list = self.add_test_media()
+        media_list = self.add_test_media(self.test_server)
 
         self.app.download_unread_chapters()
         parse_args(app=self.media_reader, args=["bundle"])
@@ -483,11 +490,11 @@ class ArgsTest(BaseUnitTestClass):
         self.assertTrue(os.path.exists(name))
         self.assertEqual(len(bundle_data), sum([len(x["chapters"]) for x in media_list]))
         parse_args(app=self.media_reader, args=["read", os.path.basename(name)])
-        self.assertAllChaptersRead()
+        self.assertAllChaptersRead(MANGA)
 
     def test_bundle_specific(self):
         self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
-        media_list = self.add_test_media()
+        media_list = self.add_test_media(self.test_server)
         self.app.download_unread_chapters()
         num_chapters = sum([len(x["chapters"]) for x in media_list])
         fake_data = self.test_server.create_media_data("-1", "Fake Data")
@@ -502,6 +509,12 @@ class ArgsTest(BaseUnitTestClass):
             parse_args(app=self.media_reader, args=["bundle", str(name)])
             self.assertEqual(len(list(self.app.bundles.values())[0]), len(media_data["chapters"]))
             self.app.bundles.clear()
+
+    def test_play(self):
+        self.settings.viewers[self.settings.bundle_format] = "ls {}"
+        media_list = self.add_test_media(self.test_anime_server)
+        parse_args(app=self.media_reader, args=["play", "-c"])
+        self.assertAllChaptersRead(ANIME)
 
 
 class ServerTest(RealBaseUnitTestClass):
@@ -527,8 +540,7 @@ class ServerTest(RealBaseUnitTestClass):
                     return_val = server.update_media_data(media_data)
                     assert not return_val
                     assert isinstance(media_data["chapters"], dict)
-                    set_of_numbers = {chapter_data["number"] for chapter_data in media_data["chapters"].values()}
-                    self.assertEqual(len(set_of_numbers), len(media_data["chapters"].values()))
+                    set_of_numbers = self.verify_unique_numbers(media_data["chapters"])
                     if not server.has_gaps:
                         numbers = sorted(set_of_numbers)
                         gaps = sum([numbers[i + 1] - numbers[i] > 1 for i in range(len(numbers) - 1)])
