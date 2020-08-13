@@ -53,7 +53,7 @@ class Application(MangaReader):
             if not media_data:
                 clean_entry_name = clean_name(entry["name"])
 
-                known_matching_media = list(filter(lambda x: media_type | x["media_type"] and clean_entry_name == clean_name(x["name"]), self.get_media_in_library()))
+                known_matching_media = list(filter(lambda x: media_type & x["media_type"] and clean_entry_name == clean_name(x["name"]), self.get_media_in_library()))
                 if known_matching_media:
                     logging.debug("Checking among known media")
                     media_data = self.select_media(known_matching_media, "Select from known media: ")
@@ -87,10 +87,10 @@ class Application(MangaReader):
 
     def _get_all_names(self, media_type=None):
         for id in self.get_servers_ids():
-            if not media_type or self.get_server(id).media_type | media_type:
+            if not media_type or self.get_server(id).media_type & media_type:
                 yield id
         for id, media in self.media.items():
-            if not media_type or media["media_type"] | media_type:
+            if not media_type or media["media_type"] & media_type:
                 yield id
                 yield media["name"]
 

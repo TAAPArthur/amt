@@ -187,7 +187,7 @@ class MangaReader:
 
     def search_for_media(self, term, media_type=None, exact=False):
         result = []
-        for server in filter(lambda x: media_type is None or media_type | x.media_type, self.get_servers()):
+        for server in filter(lambda x: media_type is None or media_type & x.media_type, self.get_servers()):
             result += server.search(term)
         if exact:
             result = list(filter(lambda x: x["name"] == term, result))
@@ -236,11 +236,12 @@ class MangaReader:
     def _get_unreads(self, media_type, name=None, shuffle=False):
         media = self.get_media_in_library()
         if shuffle:
+            media = list(media)
             random.shuffle(media)
         for media_data in media:
             if name is not None and name not in (media_data["server_id"], media_data["name"], self._get_global_id(media_data)):
                 continue
-            if media_data["media_type"] | media_type == 0:
+            if media_data["media_type"] & media_type == 0:
                 continue
 
             server = self.get_server(media_data["server_id"])
@@ -292,7 +293,8 @@ class MangaReader:
                 if not cont:
                     break
             else:
-                break
+                return False
+        return True
 
     def update(self, download=False, media_type_to_download=MANGA):
         logging.info("Updating: download %s", download)
@@ -319,7 +321,7 @@ class MangaReader:
 
         new_chapters = sorted([media_data["chapters"][x] for x in new_chapter_ids], key=lambda x: x["number"])
         assert len(new_chapter_ids) == len(new_chapters)
-        if download and (media_type_to_download is None or media_type_to_download | media_data["media_type"]):
+        if download and (media_type_to_download is None or media_type_to_download & media_data["media_type"]):
             for chapter_data in new_chapters[:limit]:
                 server.download_chapter(media_data, chapter_data, page_limit)
         return new_chapters

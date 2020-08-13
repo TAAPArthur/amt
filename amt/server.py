@@ -149,6 +149,9 @@ class Server:
         """
         raise NotImplementedError
 
+    def get_stream_url(self, media_data, chapter_data):
+        raise NotImplementedError
+
     def create_media_data(self, id, name, season_ids=None, media_type=None, cover=None):
         return dict(server_id=self.id, id=id, name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, chapters={})
 
