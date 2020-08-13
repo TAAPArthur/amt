@@ -154,7 +154,7 @@ class MangaReader:
     # TODO detect files added
 
     def _get_global_id(self, media_data):
-        return str(media_data["server_id"]) + ":" + str(media_data["id"])
+        return str(media_data["server_id"]) + ":" + str(media_data["id"]) + ("S" + media_data["season_number"] if media_data["season_number"] != "" else "")
 
     def add_media(self, media_data, no_update=False):
         global_id = self._get_global_id(media_data)

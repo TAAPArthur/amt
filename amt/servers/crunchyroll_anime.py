@@ -35,9 +35,9 @@ class CrunchyrollAnime(Crunchyroll):
                     season_number_to_name_id_list[season_number][0] = "{} S{}".format(item['name'], season_number)
                     season_number_to_name_id_list[season_number][1].append(season["collection_id"])
                 else:
-                    season_number_to_name_id_list[season_number] = [season["name"], [season["collection_id"]]]
-            for name, season_id_list in season_number_to_name_id_list.values():
-                media_data.append(self.create_media_data(id=item['series_id'], name=item['name'], season_ids=season_id_list))
+                    season_number_to_name_id_list[season_number] = [season["name"], [season["collection_id"]], season_number]
+            for name, season_id_list, season_number in season_number_to_name_id_list.values():
+                media_data.append(self.create_media_data(id=item['series_id'], name=item['name'], season_ids=season_id_list, season_number=season_number))
 
         return media_data
 

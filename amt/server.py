@@ -151,8 +151,8 @@ class Server:
     def get_stream_url(self, media_data, chapter_data):
         raise NotImplementedError
 
-    def create_media_data(self, id, name, season_ids=None, media_type=None, cover=None):
-        return dict(server_id=self.id, id=id, name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, chapters={})
+    def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, cover=None):
+        return dict(server_id=self.id, id=id, name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, season_number=season_number, chapters={})
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, date=None):
         id = str(id)

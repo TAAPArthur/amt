@@ -582,6 +582,19 @@ class PremiumTest(RealBaseUnitTestClass):
                     assert download_passed
 
 
+class InterestingMediaTest(RealBaseUnitTestClass):
+    interesting_media = ["Gintama"]
+
+    def test_search_media(self):
+        for media in self.interesting_media:
+            media_data = self.media_reader.search_for_media(media)
+            assert media_data
+            for data in media_data:
+                self.media_reader.add_media(data)
+                self.verify_unique_numbers(data["chapters"])
+            self.assertEqual(len(self.media_reader.get_media_in_library()), len(media_data))
+
+
 class TrackerTest(RealBaseUnitTestClass):
 
     def test_get_list(self):
