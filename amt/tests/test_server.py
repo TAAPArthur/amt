@@ -11,7 +11,7 @@ class TestServer(Server):
     _prefix = "Manga"
 
     def get_media_list(self):
-        return [self.create_media_data(id=1, name=self._prefix + "1"), self.create_media_data(id=2, name=self._prefix + "2"), self.create_media_data(id=3, name="Untracked")]
+        return [self.create_media_data(id=1, name=self._prefix + "1"), self.create_media_data(id=2, name=self._prefix + "2"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\"d,.?)(][:;_-=")]
 
     def update_media_data(self, media_data):
         media_id = media_data["id"]
@@ -32,6 +32,8 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=12, title="Chapter9999", number="9999"),
         elif media_id == 3:
             self.update_chapter_data(media_data, id=21, title="Chapter1", number=1, date="2020-07-08"),
+        elif media_id == 4:
+            self.update_chapter_data(media_data, id=22, title="Chapter1", number=1, date="1998-08-10"),
 
     def get_media_chapter_data(self, media_data, chapter_data):
         return [self.create_page_data(url="") for k in range(3)]
