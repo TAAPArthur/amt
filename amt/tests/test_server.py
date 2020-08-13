@@ -45,3 +45,6 @@ class TestAnimeServer(TestServer):
     id = 'test_server_anime'
     media_type = ANIME
     _prefix = "Anime"
+
+    def get_stream_url(self, media_data, chapter_data):
+        return "url.m3u8"

@@ -1,20 +1,23 @@
 import inspect
-from inspect import findsource
-from ..args import parse_args
-from .test_server import TestServer, TestAnimeServer
-from .test_tracker import TestTracker
-from ..settings import Settings
-from ..app import Application
-from ..media_reader import MangaReader, SERVERS, TRACKERS
-from PIL import Image
 import logging
 import os
 import shutil
+import sys
 import time
 import unittest
+from inspect import findsource
 from unittest.mock import patch
-import sys
+
 import requests_cache
+from PIL import Image
+
+from ..app import Application
+from ..args import parse_args
+from ..media_reader import SERVERS, TRACKERS, MangaReader
+from ..server import ANIME, MANGA, Server
+from ..settings import Settings
+from .test_server import TestAnimeServer, TestServer
+from .test_tracker import TestTracker
 
 requests_cache.core.install_cache(backend="memory", include_headers=True)
 
@@ -22,30 +25,43 @@ requests_cache.core.install_cache(backend="memory", include_headers=True)
 TEST_HOME = "/tmp/amt/test_home/"
 
 
-logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)
+logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.WARN)
 logger = logging.getLogger()
 stream_handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(stream_handler)
 
 
 class TestApplication(Application):
-    def __init__(self):
+    def __init__(self, real=False):
         # Save cache in local directory
         os.putenv('XDG_CACHE_HOME', ".")
-        stream_handler.stream = sys.stdout
         settings = Settings(home=TEST_HOME)
         settings.init()
         settings.shell = True
         settings.free_only = True
         settings.password_manager_enabled = False
-        super().__init__([TestServer] + SERVERS, [TestTracker] + TRACKERS, settings)
+        servers = [TestServer, TestAnimeServer]
+        if real:
+            servers += SERVERS
+
+        super().__init__(servers, [TestTracker] + TRACKERS, settings)
         assert len(self.get_servers())
         assert all(self.get_servers())
 
 
 class BaseUnitTestClass(unittest.TestCase):
+    real = False
+
+    def __init__(self, methodName='runTest'):
+        stream_handler.stream = sys.stdout
+        super().__init__(methodName=methodName)
+        self.init()
+
+    def init(self):
+        pass
+
     def setUp(self):
-        self.app = TestApplication()
+        self.app = TestApplication(self.real)
         self.media_reader = self.app
         self.settings = self.media_reader.settings
         self.test_server = self.media_reader.get_server(TestServer.id)
@@ -67,6 +83,23 @@ class BaseUnitTestClass(unittest.TestCase):
 
     def assertAllChaptersRead(self):
         self.assertTrue(all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()]))
+
+    def verify_download(self, media_data, chapter_data):
+        dir_path = self.media_reader.settings.get_chapter_dir(media_data, chapter_data)
+        assert Server.is_fully_downloaded(dir_path)
+        if media_data["media_type"] == MANGA:
+            dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
+
+            assert filenames
+            for file_name in filenames:
+                if not file_name.startswith("."):
+                    with open(os.path.join(dirpath, file_name), "rb") as img_file:
+                        Image.open(img_file)
+
+
+class RealBaseUnitTestClass(BaseUnitTestClass):
+    def init(self):
+        self.real = True
 
 
 class SettingsTest(BaseUnitTestClass):
@@ -313,19 +346,12 @@ class MangaReaderTest(BaseUnitTestClass):
                 media_list = server.get_media_list()
                 for media_data in media_list:
                     self.media_reader.add_media(media_data, no_update=True)
-                    chapter_list = self.media_reader.update_media(media_data, download=True, limit=1, page_limit=3)
+                    chapter_list = self.media_reader.update_media(media_data, download=True, media_type_to_download=None, limit=1, page_limit=3)
                     if chapter_list:
                         chapter_data = chapter_list[0]
                         break
                 min_chapter = min(media_data["chapters"].values(), key=lambda x: x["number"])
                 assert min_chapter == chapter_data
-                dir_path = self.media_reader.settings.get_chapter_dir(media_data, chapter_data)
-
-                dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
-                assert filenames
-                for file_name in filenames:
-                    with open(os.path.join(dirpath, file_name), "rb") as img_file:
-                        Image.open(img_file)
 
                 # error if we try to save a page we have already downloaded
                 server.save_chapter_page = None
@@ -360,7 +386,7 @@ class MangaReaderTest(BaseUnitTestClass):
             self.media_reader.add_media(media_data)
             self.assertEqual(1, self.media_reader.download_chapters(media_data, 1))
 
-    def _prepare_for_bundle(self, id=TestServer.id):
+    def _prepare_for_bundle(self, id=TestServer.id, no_download=False):
         server = self.media_reader.get_server(id)
         media_list = server.get_media_list()
         num_chapters = 0
@@ -368,7 +394,8 @@ class MangaReaderTest(BaseUnitTestClass):
             self.media_reader.add_media(media_data)
             num_chapters += len(media_data["chapters"])
 
-        self.assertEqual(num_chapters, self.media_reader.download_unread_chapters())
+        if not no_download:
+            self.assertEqual(num_chapters, self.media_reader.download_unread_chapters())
 
         self.settings.bundle_cmds[self.settings.bundle_format] = "echo {} > {}"
         for x in self.settings.viewers:
@@ -385,6 +412,7 @@ class MangaReaderTest(BaseUnitTestClass):
         names = set()
         for i in range(10):
             names.add(self.media_reader.bundle_unread_chapters(shuffle=True))
+        assert names
         assert all(names)
         assert len(names) > 1
 
@@ -402,17 +430,18 @@ class MangaReaderTest(BaseUnitTestClass):
         self.assertFalse(self.media_reader.bundle_unread_chapters())
 
     def test_play_anime(self):
-        self._prepare_for_bundle(TestAnimeServer.id)
-        self.media_reader.play(cont=True)
+        self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
+        assert self.media_reader.play(cont=True)
+
         assert all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
 
     def test_play_anime_single(self):
-        self._prepare_for_bundle(TestAnimeServer.id)
-        self.media_reader.play()
-        media_data = list(self.media_reader.get_media_in_library())[0]
-        assert all([x["read"] for x in media_data["chapters"].values()])
-        self.media_reader.remove_media(media_data)
-        assert not any([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
+        self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
+        assert self.media_reader.play()
+        read_dist = [((x["id"], x["number"]), x["read"]) for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()]
+        read_dist.sort()
+        self.assertEqual(1, sum(map(lambda x: x[1], read_dist)))
+        self.assertTrue(read_dist[0][1])
 
 
 class ApplicationTest(BaseUnitTestClass):
