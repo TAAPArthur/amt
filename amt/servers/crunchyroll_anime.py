@@ -63,7 +63,6 @@ class CrunchyrollAnime(Crunchyroll):
                 match = self.bandwidth_regex.search(line)
                 if match:
                     bandwidth = match.group(1)
-                    print("bandwidth", bandwidth)
             elif line:
                 url_bandwidth_tuples.append((bandwidth, line))
         url_bandwidth_tuples.sort()
