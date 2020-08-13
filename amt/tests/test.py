@@ -1,3 +1,5 @@
+import inspect
+from inspect import findsource
 from ..args import parse_args
 from .test_server import TestServer, TestAnimeServer
 from .test_tracker import TestTracker
@@ -555,3 +557,14 @@ class ArgsTest(BaseUnitTestClass):
             parse_args(app=self.media_reader, args=["bundle", str(name)])
             self.assertEqual(len(list(self.app.bundles.values())[0]), len(media_data["chapters"]))
             self.app.bundles.clear()
+
+
+def load_tests(loader, tests, pattern):
+    clazzes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
+    test_cases = [c for _, c in clazzes if issubclass(c, BaseUnitTestClass) and c != BaseUnitTestClass]
+    test_cases.sort(key=lambda f: findsource(f)[1])
+    suite = unittest.TestSuite()
+    for test_class in test_cases:
+        tests = loader.loadTestsFromTestCase(test_class)
+        suite.addTests(tests)
+    return suite
