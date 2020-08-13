@@ -29,6 +29,10 @@ for _finder, name, _ispkg in pkgutil.iter_modules(trackers.__path__, trackers.__
             TRACKERS.append(obj)
 
 
+def get_children(abs_path):
+    return "'{}'/*".format(abs_path)
+
+
 class MangaReader:
 
     cookie_hash = None
@@ -278,7 +282,6 @@ class MangaReader:
             for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
                 dir_path = server.get_dir(media_data, chapter)
                 if server.is_fully_downloaded(dir_path):
-                    print(get_children(dir_path))
                     pass
                 else:
                     yield server.get_stream_url(media_data, chapter), chapter
@@ -316,7 +319,7 @@ class MangaReader:
 
         new_chapters = sorted([media_data["chapters"][x] for x in new_chapter_ids], key=lambda x: x["number"])
         assert len(new_chapter_ids) == len(new_chapters)
-        if download:
+        if download and (media_type_to_download is None or media_type_to_download | media_data["media_type"]):
             for chapter_data in new_chapters[:limit]:
                 server.download_chapter(media_data, chapter_data, page_limit)
         return new_chapters

@@ -85,5 +85,14 @@ class Application(MangaReader):
         for chapter in results:
             print("{:4}:{}".format(chapter["number"], chapter["title"]))
 
-    def get_all_names(self):
-        return list(self.get_servers_ids()) + list(self.get_media_ids_in_library()) + [x["name"] for x in self.get_media_in_library()]
+    def _get_all_names(self, media_type=None):
+        for id in self.get_servers_ids():
+            if not media_type or self.get_server(id).media_type | media_type:
+                yield id
+        for id, media in self.media.items():
+            if not media_type or media["media_type"] | media_type:
+                yield id
+                yield media["name"]
+
+    def get_all_names(self, media_type=None):
+        return list(self._get_all_names(media_type))
