@@ -1,7 +1,9 @@
-from bs4 import BeautifulSoup
-import re
-import requests
 import json
+import re
+
+import requests
+from bs4 import BeautifulSoup
+
 from ..server import Server
 
 

@@ -1,11 +1,10 @@
-from pathlib import Path
 import json
+import logging
 import os
 import subprocess
-from subprocess import CalledProcessError
 from datetime import date
-import logging
-
+from pathlib import Path
+from subprocess import CalledProcessError
 
 APP_NAME = "amt"
 

@@ -1,6 +1,7 @@
-from .crunchyroll import Crunchyroll
-from ..server import ANIME
 import re
+
+from ..server import ANIME
+from .crunchyroll import Crunchyroll
 
 
 class CrunchyrollAnime(Crunchyroll):

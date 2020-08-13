@@ -2,9 +2,9 @@ import argparse
 import logging
 import os
 
-from .server import MANGA, ANIME, NOT_ANIME
-from .settings import Settings
 from .app import Application
+from .server import ANIME, MANGA, NOT_ANIME
+from .settings import Settings
 
 
 def parse_args(args=None, app=None):

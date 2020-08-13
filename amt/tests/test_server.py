@@ -1,7 +1,8 @@
-from ..server import Server
-from PIL import Image
 import os
-from ..server import ANIME
+
+from PIL import Image
+
+from ..server import ANIME, Server
 
 
 class TestServer(Server):

@@ -1,10 +1,3 @@
-from . import servers, trackers
-from .server import Server
-from .settings import Settings
-from .tracker import Tracker
-from .server import MANGA, ANIME, NOT_ANIME
-
-from requests.adapters import HTTPAdapter
 import importlib
 import inspect
 import json
@@ -13,7 +6,14 @@ import os
 import pickle
 import pkgutil
 import random
+
 import requests
+from requests.adapters import HTTPAdapter
+
+from . import servers, trackers
+from .server import ANIME, MANGA, NOT_ANIME, Server
+from .settings import Settings
+from .tracker import Tracker
 
 SERVERS = []
 TRACKERS = []

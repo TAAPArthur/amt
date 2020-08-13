@@ -1,7 +1,8 @@
-from PIL import Image
-from bs4 import BeautifulSoup
-import re
 import logging
+import re
+
+from bs4 import BeautifulSoup
+from PIL import Image
 
 from ..server import Server
 

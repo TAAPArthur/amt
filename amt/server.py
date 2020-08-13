@@ -1,8 +1,7 @@
-from enum import Enum
 import logging
 import os
 import time
-
+from enum import Enum
 
 MANGA = 1
 NOVEL = 2

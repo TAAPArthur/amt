@@ -1,7 +1,7 @@
+import logging
+
 from .media_reader import MangaReader
 from .server import ANIME, NOT_ANIME
-
-import logging
 
 
 class Application(MangaReader):
