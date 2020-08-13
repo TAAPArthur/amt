@@ -373,17 +373,17 @@ class ApplicationTest(BaseUnitTestClass):
 
     @patch('builtins.input', return_value='0')
     def test_search_add(self, input):
-        media_data = self.app.search_add("manga")
+        media_data = self.app.search_add("a")
         assert(media_data)
         assert media_data in self.media_reader.get_media_in_library()
 
     @patch('builtins.input', return_value='a')
     def test_search_add_nan(self, input):
-        assert not self.app.search_add("media")
+        assert not self.app.search_add("a")
 
     @patch('builtins.input', return_value='1000')
     def test_search_add_out_or_range(self, input):
-        assert not self.app.search_add("media")
+        assert not self.app.search_add("a")
 
     @patch('builtins.input', return_value='0')
     def test_load_from_tracker(self, input):
