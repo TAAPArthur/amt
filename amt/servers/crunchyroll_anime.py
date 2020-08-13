@@ -1,17 +1,19 @@
 from .crunchyroll import Crunchyroll
+from ..server import ANIME
 import re
 
 
 class CrunchyrollAnime(Crunchyroll):
     id = 'crunchyroll_anime'
 
+    has_free_chapters = True
     api_base_url = 'http://api.crunchyroll.com'
     search_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}&filter=prefix:{}"
     list_media = api_base_url + "/list_media.0.json?media_type=anime&session_id={}&series_id={}"
     stream_url = api_base_url + "/info.0.json?fields=media.stream_data&locale=enUS&session_id={}&media_id={}"
     bandwidth_regex = re.compile(r"BANDWIDTH=([0-9]*),")
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
-    anime = True
+    media_type = ANIME
 
     extension = "ts"
 
@@ -69,3 +71,8 @@ class CrunchyrollAnime(Crunchyroll):
         m3u8_url = url_bandwidth_tuples[0][1]
         r = self.session_get(m3u8_url)
         return [self.create_page_data(url=line) for line in r.text.splitlines() if not line.startswith("#")]
+
+    def save_chapter_page(self, page_data, path):
+        r = self.session_get(page_data["url"])
+        with open(path, 'wb') as fp:
+            fp.write(r.content)
