@@ -157,16 +157,6 @@ class SettingsTest(BaseUnitTestClass):
             self.assertEqual(sorted_chapters_by_number, list(map(lambda x: x[1], sorted_paths)))
 
 
-class TrackerTest(BaseUnitTestClass):
-    def test_get_list(self):
-        for tracker in [self.media_reader.get_primary_tracker()] + self.media_reader.get_secondary_trackers():
-            with self.subTest(tracker=tracker.id):
-                data = tracker.get_tracker_list(id=1)
-                assert data
-                assert isinstance(data, list)
-                assert isinstance(data[0], dict)
-
-
 class ServerWorkflowsTest(BaseUnitTestClass):
 
     def test_media_reader_add_remove_media(self):
@@ -190,86 +180,12 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
     def test_search_for_media(self):
         servers = set()
-        for term in ["a", "e", "i", "o", "u"]:
+        for term in ["a", "e"]:
             servers |= {x["server_id"] for x in self.media_reader.search_for_media(term)}
         assert len(self.media_reader.get_servers()) == len(servers)
 
 
-class ServerTest(BaseUnitTestClass):
-    def test_get_media_list(self):
-        for server in self.media_reader.get_servers():
-            with self.subTest(server=server.id, method="get_media_list"):
-                media_list = server.get_media_list()
-                assert isinstance(media_list, list)
-                assert all([isinstance(x, dict) for x in media_list])
-            with self.subTest(server=server.id, method="search"):
-                search_media_list = server.search("a")
-                assert isinstance(search_media_list, list)
-                assert all([isinstance(x, dict) for x in search_media_list])
-
-            for i in (0, -1):
-                media_data = media_list[i]
-                with self.subTest(server=server.id, method="update_media_data", i=i):
-                    return_val = server.update_media_data(media_data)
-                    assert not return_val
-                    assert isinstance(media_data["chapters"], dict)
-                    set_of_numbers = {chapter_data["number"] for chapter_data in media_data["chapters"].values()}
-                    self.assertEqual(len(set_of_numbers), len(media_data["chapters"].values()))
-                    if not server.has_gaps:
-                        numbers = sorted(set_of_numbers)
-                        gaps = sum([numbers[i + 1] - numbers[i] > 1 for i in range(len(numbers) - 1)])
-                        self.assertLessEqual(gaps, 1)
-
-            requests_cache.core.clear()
-            with self.subTest(server=server.id, method="download"):
-                media_data = media_list[0]
-                chapter_data = list(media_data["chapters"].values())[0]
-                if not chapter_data["premium"]:
-                    assert server.download_chapter(media_data, chapter_data, page_limit=1)
-                assert not server.download_chapter(media_data, chapter_data, page_limit=1)
-
-    def test_login_fail(self):
-        for server in self.media_reader.get_servers():
-            if not server.has_login:
-                continue
-
-            with self.subTest(server=server.id, method="login"):
-                assert not server.login("A", "B")
-
-            server.settings.password_manager_enabled = False
-            with self.subTest(server=server.id, method="relogin"):
-                assert not server.relogin()
-
-            server.settings.password_manager_enabled = True
-            server.settings.password_load_cmd = r"echo -e A\\tB"
-            with self.subTest(server=server.id, method="relogin"):
-                assert not server.relogin()
-
-
-@unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
-class PremiumTest(BaseUnitTestClass):
-    def test_download_premium(self):
-        for server in self.media_reader.get_servers():
-            if server.has_login:
-                server.settings.password_manager_enabled = True
-                with self.subTest(server=server.id, method="get_media_list"):
-                    media_list = server.get_media_list()
-                    download_passed = False
-                    for media_data in media_list:
-                        server.update_media_data(media_data)
-                        chapter_data = next(filter(lambda x: x["premium"], media_data["chapters"].values()), None)
-                        if chapter_data:
-                            assert server.download_chapter(media_data, chapter_data, page_limit=1)
-                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)
-                            download_passed = True
-                            break
-                    assert download_passed
-
-
 class MangaReaderTest(BaseUnitTestClass):
-
-    def test_number_servers(self):
-        assert len(self.media_reader.get_servers()) > 2
 
     def test_save_load_cookies(self):
         key, value = "Test", "value"
@@ -588,9 +504,98 @@ class ArgsTest(BaseUnitTestClass):
             self.app.bundles.clear()
 
 
+class ServerTest(RealBaseUnitTestClass):
+
+    def test_number_servers(self):
+        assert len(self.media_reader.get_servers()) > 2
+
+    def test_get_media_list(self):
+        for server in self.media_reader.get_servers():
+            with self.subTest(server=server.id, method="get_media_list"):
+                media_list = server.get_media_list()
+                assert isinstance(media_list, list)
+                assert all([isinstance(x, dict) for x in media_list])
+                assert all([x["media_type"] == server.media_type for x in media_list])
+            with self.subTest(server=server.id, method="search"):
+                search_media_list = server.search("a")
+                assert isinstance(search_media_list, list)
+                assert all([isinstance(x, dict) for x in search_media_list])
+
+            for i in (0, -1):
+                media_data = media_list[i]
+                with self.subTest(server=server.id, method="update_media_data", i=i):
+                    return_val = server.update_media_data(media_data)
+                    assert not return_val
+                    assert isinstance(media_data["chapters"], dict)
+                    set_of_numbers = {chapter_data["number"] for chapter_data in media_data["chapters"].values()}
+                    self.assertEqual(len(set_of_numbers), len(media_data["chapters"].values()))
+                    if not server.has_gaps:
+                        numbers = sorted(set_of_numbers)
+                        gaps = sum([numbers[i + 1] - numbers[i] > 1 for i in range(len(numbers) - 1)])
+                        self.assertLessEqual(gaps, 1)
+
+            with self.subTest(server=server.id, method="download"):
+                media_data = media_list[0]
+                chapter_data = list(media_data["chapters"].values())[0]
+                if not chapter_data["premium"]:
+                    assert server.download_chapter(media_data, chapter_data, page_limit=1)
+                    self.verify_download(media_data, chapter_data)
+                assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+
+    def test_login_fail(self):
+        for server in self.media_reader.get_servers():
+            if not server.has_login:
+                continue
+
+            with self.subTest(server=server.id, method="login"):
+                assert not server.login("A", "B")
+
+            server.settings.password_manager_enabled = False
+            with self.subTest(server=server.id, method="relogin"):
+                assert not server.relogin()
+
+            server.settings.password_manager_enabled = True
+            server.settings.password_load_cmd = r"echo -e A\\tB"
+            with self.subTest(server=server.id, method="relogin"):
+                assert not server.relogin()
+
+
+@unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
+class PremiumTest(RealBaseUnitTestClass):
+    def test_download_premium(self):
+        for server in self.media_reader.get_servers():
+            if server.has_login:
+                server.settings.password_manager_enabled = True
+                with self.subTest(server=server.id, method="get_media_list"):
+                    media_list = server.get_media_list()
+                    download_passed = False
+                    for media_data in media_list:
+                        server.update_media_data(media_data)
+                        chapter_data = next(filter(lambda x: x["premium"], media_data["chapters"].values()), None)
+                        if chapter_data:
+                            assert server.download_chapter(media_data, chapter_data, page_limit=1)
+                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+
+                            self.verify_download(media_data, chapter_data)
+                            download_passed = True
+                            break
+                    assert download_passed
+
+
+class TrackerTest(RealBaseUnitTestClass):
+
+    def test_get_list(self):
+        for tracker in [self.media_reader.get_primary_tracker()] + self.media_reader.get_secondary_trackers():
+            with self.subTest(tracker=tracker.id):
+                data = tracker.get_tracker_list(id=1)
+                assert data
+                assert isinstance(data, list)
+                assert isinstance(data[0], dict)
+
+
 def load_tests(loader, tests, pattern):
     clazzes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
-    test_cases = [c for _, c in clazzes if issubclass(c, BaseUnitTestClass) and c != BaseUnitTestClass]
+    test_cases = [c for _, c in clazzes if issubclass(c, BaseUnitTestClass)]
     test_cases.sort(key=lambda f: findsource(f)[1])
     suite = unittest.TestSuite()
     for test_class in test_cases:
