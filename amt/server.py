@@ -149,14 +149,17 @@ class Server:
     def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, cover=None):
         return dict(server_id=self.id, id=id, name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, season_number=season_number, chapters={})
 
-    def update_chapter_data(self, media_data, id, title, number, premium=False, date=None):
+    def update_chapter_data(self, media_data, id, title, number, premium=False, special=False, date=None):
         id = str(id)
-        special = False
-        try:
-            number = float(number)
-        except ValueError:
-            special = True
-            number = float(number.replace("-", "."))
+        if isinstance(number, str):
+            if number.isalpha():
+                logging.info("Chapter number %s is not valid; skipping", number)
+                return False
+            try:
+                number = int(number)
+            except ValueError:
+                special = True
+                number = float(number.replace("-", "."))
 
         new_values = dict(id=id, title=title, number=number, premium=premium, special=special, data=date)
         if id in media_data["chapters"]:
@@ -164,6 +167,7 @@ class Server:
         else:
             media_data["chapters"][id] = new_values
             media_data["chapters"][id]["read"] = False
+        return True
 
     def create_page_data(self, url, id=None, encryption_key=None):
         return dict(url=url, id=id, encryption_key=encryption_key)
