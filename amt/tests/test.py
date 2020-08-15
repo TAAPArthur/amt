@@ -568,8 +568,8 @@ class ServerTest(RealBaseUnitTestClass):
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
 class PremiumTest(RealBaseUnitTestClass):
-    def setup(self):
-        super().init()
+    def setUp(self):
+        super().setUp()
         self.settings.password_manager_enabled = True
 
     def test_download_premium(self):
