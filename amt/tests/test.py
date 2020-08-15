@@ -8,7 +8,6 @@ import unittest
 from inspect import findsource
 from unittest.mock import patch
 
-import requests_cache
 from PIL import Image
 
 from ..app import Application
@@ -18,9 +17,6 @@ from ..server import ANIME, MANGA, Server
 from ..settings import Settings
 from .test_server import TestAnimeServer, TestServer
 from .test_tracker import TestTracker
-
-requests_cache.core.install_cache(backend="memory", include_headers=True)
-
 
 TEST_HOME = "/tmp/amt/test_home/"
 
