@@ -3,8 +3,6 @@ import logging
 from .media_reader import MangaReader
 from .server import ANIME, NOT_ANIME
 
-METADATA_VERSION = 1
-
 
 class Application(MangaReader):
     auto_select = False
@@ -99,22 +97,19 @@ class Application(MangaReader):
     def get_all_names(self, media_type=None):
         return list(self._get_all_names(media_type))
 
-    def is_state_deprecated(self):
-        return self.state.get("verison", None) != METADATA_VERSION
-
     def upgrade_state(self):
         media = self.get_media_in_library()
 
         def _upgrade_dict(current_dict, new_dict):
             for removed_key in current_dict.keys() - new_dict.keys():
                 current_dict.pop(removed_key)
-            for new_key in new_data.keys() - current_dict.keys():
+            for new_key in new_dict.keys() - current_dict.keys():
                 current_dict[new_key] = new_dict[new_key]
 
         for media_data in media:
             server = self.get_server(media_data["server_id"])
-            new_data = list(filter(lambda x: x["id"] == media_data["id"], server.search(media_data["title"])))[0]
+            new_data = list(filter(lambda x: x["id"] == media_data["id"], server.search(media_data["name"])))[0]
             _upgrade_dict(media_data, new_data)
             self.update_media(new_data)
-            for chapter_id in new_data["chapters"]:
+            for chapter_id in media_data["chapters"]:
                 _upgrade_dict(media_data["chapters"][chapter_id], new_data["chapters"][chapter_id])

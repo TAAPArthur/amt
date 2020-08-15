@@ -515,14 +515,38 @@ class ArgsTest(BaseUnitTestClass):
         media_list = self.add_test_media(self.test_anime_server)
         removed_key = "removed_key"
         media_list[0][removed_key] = False
-        media_list[1].pop("number")
-        media_list[2].pop("special")
-        media_list[3]["special"] = 10
+        media_list[1].pop("media_type")
+        next(iter(media_list[2]["chapters"].values()))["number"] = 1
+        next(iter(media_list[3]["chapters"].values()))["special"] = 10
         parse_args(app=self.media_reader, args=["upgrade"])
         assert removed_key not in media_list[0]
-        assert "number" in media_list[1]
-        assert "special" in media_list[2]
-        assert 10 == media_list[3]["special"]
+        assert "media_type" in media_list[1]
+        assert next(iter(media_list[2]["chapters"].values()))["number"] == 1
+        assert next(iter(media_list[3]["chapters"].values()))["special"] == 10
+
+    def test_auto_upgrade_disabled_broken(self):
+        media_list = self.add_test_media(self.test_anime_server)
+        media_list[1].pop("media_type")
+        upgraded = False
+
+        def _upgrade_state():
+            upgraded = True
+
+        self.app.upgrade_state = _upgrade_state
+        for b in (True, False):
+            self.settings.auto_upgrade_state = b
+            try:
+                parse_args(app=self.media_reader, args=["list"])
+                assert False
+            except KeyError:
+                assert not upgraded
+
+    def test_auto_upgrade_seamless(self):
+        self.settings.max_retires = 10
+        media_list = self.add_test_media(self.test_anime_server)
+        media_list[1].pop("media_type")
+        parse_args(app=self.media_reader, args=["set", "max_retires", "1"])
+        self.assertEqual(self.settings.max_retires, 1)
 
 
 class ServerTest(RealBaseUnitTestClass):

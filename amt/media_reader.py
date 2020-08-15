@@ -118,7 +118,6 @@ class MangaReader:
         """
         Sets saved sate_hash
         @return True iff the hash is different than the already saved one
-
         """
 
         if not json_str:
@@ -142,7 +141,7 @@ class MangaReader:
         self.trackers = self.state["trackers"]
 
     def save_state(self):
-        json_str = json.dumps(self.state)
+        json_str = json.dumps(self.state, indent=4, sort_keys=True)
         if not self._set_state_hash(json_str):
             return False
         with open(self.settings.get_metadata(), 'w') as jsonFile:
