@@ -10,7 +10,6 @@ NOT_ANIME = MANGA | NOVEL
 
 
 class Server:
-    enabled = True
     id = None
     lang = 'en'
     locale = 'enUS'
@@ -18,7 +17,6 @@ class Server:
     settings = None
     media_type = MANGA
 
-    static_pages = False
     has_login = False
     has_gaps = False
     is_non_premium_account = False
