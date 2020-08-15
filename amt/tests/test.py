@@ -574,10 +574,13 @@ class ServerTest(RealBaseUnitTestClass):
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
 class PremiumTest(RealBaseUnitTestClass):
+    def setup(self):
+        super().init()
+        self.settings.password_manager_enabled = True
+
     def test_download_premium(self):
         for server in self.media_reader.get_servers():
             if server.has_login:
-                server.settings.password_manager_enabled = True
                 with self.subTest(server=server.id, method="get_media_list"):
                     media_list = server.get_media_list()
                     download_passed = False
@@ -592,6 +595,14 @@ class PremiumTest(RealBaseUnitTestClass):
                             download_passed = True
                             break
                     assert download_passed
+
+    def test_get_list(self):
+        for tracker in [self.media_reader.get_primary_tracker()] + self.media_reader.get_secondary_trackers():
+            with self.subTest(tracker=tracker.id):
+                data = tracker.get_tracker_list(id=1)
+                assert data
+                assert isinstance(data, list)
+                assert isinstance(data[0], dict)
 
 
 class InterestingMediaTest(RealBaseUnitTestClass):
@@ -608,6 +619,10 @@ class InterestingMediaTest(RealBaseUnitTestClass):
 
 
 class TrackerTest(RealBaseUnitTestClass):
+
+    def test_num_trackers(self):
+        assert self.media_reader.get_primary_tracker()
+        assert self.media_reader.get_secondary_trackers()
 
     def test_get_list(self):
         for tracker in [self.media_reader.get_primary_tracker()] + self.media_reader.get_secondary_trackers():
