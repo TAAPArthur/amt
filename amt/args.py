@@ -21,6 +21,9 @@ def parse_args(args=None, app=None):
     search_parsers = sub_parsers.add_parser("search")
     search_parsers.add_argument('arg')
 
+    remove_parsers = sub_parsers.add_parser("remove")
+    remove_parsers.add_argument('id', choices=app.get_media_ids_in_library())
+
     sub_parsers.add_parser("update")
     sub_parsers.add_parser("download")
     download_parser = sub_parsers.add_parser("download-next")
@@ -64,6 +67,8 @@ def parse_args(args=None, app=None):
     app.auto_select = namespace.auto
     if action == "search":
         app.search_add(namespace.arg)
+    elif action == "remove":
+        app.remove(namespace.id)
     elif action == "auth":
         tracker = app.get_primary_tracker()
         secret = tracker.auth()

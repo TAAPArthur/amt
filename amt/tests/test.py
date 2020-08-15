@@ -467,6 +467,11 @@ class ArgsTest(BaseUnitTestClass):
         assert len(self.media_reader.get_media_in_library())
         self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["--auto", "search", "manga"])
 
+    def test_remove(self):
+        parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
+        media_data = list(self.media_reader.get_media_in_library())[0]
+        parse_args(app=self.media_reader, args=["remove", self.app._get_global_id(media_data)])
+
     def test_bundle_read(self):
         self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
         self.settings.viewers[self.settings.bundle_format] = "ls {}"
