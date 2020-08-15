@@ -7,6 +7,15 @@ from .server import ANIME, MANGA, NOT_ANIME
 from .settings import Settings
 
 
+def gen_auto_complete(parser):
+    """ Support autocomplete via argcomplete if installed"""
+    try:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    except ImportError:
+        pass
+
+
 def parse_args(args=None, app=None):
 
     app = app if app else Application()
@@ -59,6 +68,8 @@ def parse_args(args=None, app=None):
     set_settings_parsers = sub_parsers.add_parser("set")
     set_settings_parsers.add_argument('setting', choices=Settings.get_members())
     set_settings_parsers.add_argument('value')
+
+    gen_auto_complete(parser)
 
     namespace = parser.parse_args(args)
     logging.getLogger().setLevel(namespace.log_level)
