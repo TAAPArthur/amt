@@ -71,6 +71,9 @@ def parse_args(args=None, app=None):
 
     gen_auto_complete(parser)
 
+    if self.settings.auto_upgrade_state and app.is_state_deprecated():
+        app.upgrade_state()
+
     namespace = parser.parse_args(args)
     logging.getLogger().setLevel(namespace.log_level)
     if namespace.update:
@@ -104,7 +107,7 @@ def parse_args(args=None, app=None):
     elif action == "update":
         app.update()
     elif action == "upgrade":
-        app.upgrade()
+        app.upgrade_state()
     elif action == "mark-up-to-date":
         app.mark_up_to_date(namespace.server_id, namespace.N, force=namespace.force)
         app.list()

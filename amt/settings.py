@@ -11,6 +11,7 @@ APP_NAME = "amt"
 
 class Settings:
 
+    auto_upgrade_state = True
     password_manager_enabled = True
     password_save_cmd = "tpm insert {}"
     password_load_cmd = "tpm show {}"
