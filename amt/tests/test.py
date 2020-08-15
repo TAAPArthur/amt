@@ -511,6 +511,19 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.media_reader, args=["play", "-c"])
         self.assertAllChaptersRead(ANIME)
 
+    def test_upgrade(self):
+        media_list = self.add_test_media(self.test_anime_server)
+        removed_key = "removed_key"
+        media_list[0][removed_key] = False
+        media_list[1].pop("number")
+        media_list[2].pop("special")
+        media_list[3]["special"] = 10
+        parse_args(app=self.media_reader, args=["upgrade"])
+        assert removed_key not in media_list[0]
+        assert "number" in media_list[1]
+        assert "special" in media_list[2]
+        assert 10 == media_list[3]["special"]
+
 
 class ServerTest(RealBaseUnitTestClass):
 

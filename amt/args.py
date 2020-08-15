@@ -24,6 +24,7 @@ def parse_args(args=None, app=None):
     remove_parsers = sub_parsers.add_parser("remove")
     remove_parsers.add_argument('id', choices=app.get_media_ids_in_library())
 
+    sub_parsers.add_parser("upgrade")
     sub_parsers.add_parser("update")
     sub_parsers.add_parser("download")
     download_parser = sub_parsers.add_parser("download-next")
@@ -91,6 +92,8 @@ def parse_args(args=None, app=None):
         app.list()
     elif action == "update":
         app.update()
+    elif action == "upgrade":
+        app.upgrade()
     elif action == "mark-up-to-date":
         app.mark_up_to_date(namespace.server_id, namespace.N, force=namespace.force)
         app.list()

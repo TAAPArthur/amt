@@ -161,7 +161,7 @@ class Server:
                 special = True
                 number = float(number.replace("-", "."))
 
-        new_values = dict(id=id, title=title, number=number, premium=premium, special=special, data=date)
+        new_values = dict(id=id, title=title, number=number, premium=premium, special=special, date=date)
         if id in media_data["chapters"]:
             media_data["chapters"][id].update(new_values)
         else:
