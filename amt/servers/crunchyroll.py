@@ -14,7 +14,7 @@ class Crunchyroll(Server):
     login_url = 'https://api.crunchyroll.com/login.0.json'
 
     api_base_url = 'https://api-manga.crunchyroll.com'
-    api_auth_url = api_base_url + '/cr_authenticate?auth=&session_id={}&version=0&format=json'
+    api_auth_url = api_base_url + '/cr_authenticate?session_id={}&version=0&format=json'
     api_series_url = api_base_url + '/series?sort=popular'
     api_chapter_url = api_base_url + '/list_chapter?session_id={}&chapter_id={}&auth={}'
     api_chapters_url = api_base_url + '/chapters?series_id={}'
@@ -56,7 +56,6 @@ class Crunchyroll(Server):
         """
         Retrieves API session ID and authentication token
         """
-
         r = self.session_get(self.api_auth_url.format(self.get_session_id()))
         data = r.json()
 

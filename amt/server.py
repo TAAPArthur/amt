@@ -11,6 +11,7 @@ NOT_ANIME = MANGA | NOVEL
 
 class Server:
     id = None
+    alias = None
     lang = 'en'
     locale = 'enUS'
     session = None
@@ -42,7 +43,7 @@ class Server:
         return False
 
     def relogin(self):
-        credential = self.settings.get_credentials(self.id)
+        credential = self.settings.get_credentials(self.id if not self.alias else self.alias)
         if credential:
             logged_in = self.login(credential[0], credential[1])
             if not logged_in:
