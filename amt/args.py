@@ -90,7 +90,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     if action == "search":
         app.search_add(namespace.arg)
     elif action == "remove":
-        app.remove(namespace.id)
+        app.remove_media(id=namespace.id)
     elif action == "auth":
         tracker = app.get_primary_tracker()
         secret = tracker.auth()
