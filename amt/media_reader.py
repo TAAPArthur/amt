@@ -30,7 +30,6 @@ for _finder, name, _ispkg in pkgutil.iter_modules(trackers.__path__, trackers.__
 
 
 def get_children(abs_path):
-    print(abs_path)
     return "'_{}_'/*".format(abs_path.replace("'", r"'\''"))
 
 
