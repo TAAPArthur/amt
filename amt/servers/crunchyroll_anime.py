@@ -7,7 +7,6 @@ from .crunchyroll import Crunchyroll
 class CrunchyrollAnime(Crunchyroll):
     id = 'crunchyroll_anime'
 
-    has_free_chapters = True
     api_base_url = 'http://api.crunchyroll.com'
     search_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}&filter=prefix:{}"
     list_media = api_base_url + "/list_media.0.json?media_type=anime&session_id={}&series_id={}"

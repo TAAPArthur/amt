@@ -19,12 +19,8 @@ class Server:
     media_type = MANGA
 
     static_pages = False
-    has_anime = False
-    has_media = True
     has_login = False
-    has_free_chapters = True
     has_gaps = False
-    auto_select = False
     is_non_premium_account = False
 
     def __init__(self, session, settings=None):

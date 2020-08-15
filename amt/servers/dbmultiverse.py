@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+
 from ..server import Server
 
 
@@ -13,8 +14,6 @@ class Dbmultiverse(Server):
     cover_url = base_url + '/image.php?comic=page&num=0&lg=en&ext=jpg&small=1&pw=8f3722a594856af867d55c57f31ee103'
 
     synopsis = "Dragon Ball Multiverse (\"DBM\"), the sequel of the media, is a dojinshi (media created by non-professionals, using a universe and characters which are not theirs), made by Salagir and Gogeta Jr, from France."
-
-    static_pages = True
 
     def get_media_list(self):
         return [self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM)")]

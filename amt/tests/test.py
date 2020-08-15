@@ -221,12 +221,8 @@ class MangaReaderTest(BaseUnitTestClass):
             with self.subTest(server=server.id):
                 self.media_reader.media.clear()
                 media_list = server.get_media_list()
-                media_data = None
-                for media_data in media_list:
-                    self.media_reader.add_media(media_data)
-                    if len(media_data["chapters"]) > 2:
-                        break
-                    self.media_reader.remove_media(media_data)
+                media_data = media_list[0]
+                self.media_reader.add_media(media_data)
                 assert len(media_data["chapters"]) > 2
                 last_chapter_num = max(media_data["chapters"].values(), key=lambda x: x["number"])["number"]
                 last_chapter_num_read = last_chapter_num - 1
@@ -262,8 +258,6 @@ class MangaReaderTest(BaseUnitTestClass):
 
     def test_update_download(self):
         for server in self.media_reader.get_servers():
-            if not server.has_free_chapters:
-                continue
             with self.subTest(server=server.id):
                 media_list = server.get_media_list()
                 for media_data in media_list:
