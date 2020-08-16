@@ -22,6 +22,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app = app if app else Application()
         parser = argparse.ArgumentParser()
         parser.add_argument('--no-save', default=False, action="store_const", const=True,)
+        parser.add_argument('--clear-cookies', default=False, action="store_const", const=True,)
         parser.add_argument('--log-level', dest="log_level", default="INFO", choices=logging._levelToName.values())
         parser.add_argument('-u', dest="update", default=False, action="store_const", const=True,)
 
@@ -90,6 +91,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
     logging.getLogger().setLevel(namespace.log_level)
     if namespace.update:
         app.update(download=True)
+
+    if namespace.clear_cookies:
+        app.session.cookies.clear()
     action = namespace.type
     app.auto_select = namespace.auto
     if action == "search":
