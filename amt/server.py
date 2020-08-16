@@ -21,6 +21,7 @@ class Server:
     has_login = False
     has_gaps = False
     is_non_premium_account = False
+    extension = "jpeg"
 
     def __init__(self, session, settings=None):
         self.settings = settings
@@ -115,8 +116,8 @@ class Server:
         logging.debug("Starting download for %d pages", len(list_of_pages))
         downloaded_page = False
         for index, page_data in enumerate(list_of_pages[:page_limit]):
-            temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp.png")
-            full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + ".png")
+            temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp." + self.extension)
+            full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + self.extension)
 
             if os.path.exists(full_path):
                 logging.debug("Page %s already download", full_path)

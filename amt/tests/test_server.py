@@ -41,7 +41,7 @@ class TestServer(Server):
     def save_chapter_page(self, page_data, path):
         assert not os.path.exists(path)
         image = Image.new('RGB', (100, 100))
-        image.save(path, "PNG")
+        image.save(path, self.extension)
 
 
 class TestAnimeServer(TestServer):

@@ -91,10 +91,13 @@ class BaseUnitTestClass(unittest.TestCase):
             dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
 
             assert filenames
+
+            server = self.media_reader.get_server(media_data["server_id"])
             for file_name in filenames:
                 if not file_name.startswith("."):
                     with open(os.path.join(dirpath, file_name), "rb") as img_file:
-                        Image.open(img_file)
+                        img = Image.open(img_file)
+                        self.assertEqual(server.extension, img.format.lower())
 
     def verify_unique_numbers(self, chapters):
         set_of_numbers = {chapter_data["number"] for chapter_data in chapters.values()}
