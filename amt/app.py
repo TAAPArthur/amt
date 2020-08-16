@@ -101,15 +101,15 @@ class Application(MangaReader):
         media = self.get_media_in_library()
 
         def _upgrade_dict(current_dict, new_dict):
-            for removed_key in current_dict.keys() - new_dict.keys():
-                current_dict.pop(removed_key)
+            for old_key in current_dict.keys() - new_dict.keys():
+                logging.info("Removing old key %s", old_key)
+                current_dict.pop(old_key)
             for new_key in new_dict.keys() - current_dict.keys():
+                logging.info("Adding new key %s", new_key)
                 current_dict[new_key] = new_dict[new_key]
 
         for media_data in media:
             server = self.get_server(media_data["server_id"])
             new_data = list(filter(lambda x: x["id"] == media_data["id"], server.search(media_data["name"])))[0]
             _upgrade_dict(media_data, new_data)
-            self.update_media(new_data)
-            for chapter_id in media_data["chapters"]:
-                _upgrade_dict(media_data["chapters"][chapter_id], new_data["chapters"][chapter_id])
+            self.update_media(media_data)

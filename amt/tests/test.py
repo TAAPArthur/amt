@@ -523,37 +523,35 @@ class ArgsTest(BaseUnitTestClass):
         removed_key = "removed_key"
         media_list[0][removed_key] = False
         media_list[1].pop("media_type")
-        next(iter(media_list[2]["chapters"].values()))["number"] = 1
-        next(iter(media_list[3]["chapters"].values()))["special"] = 10
+        next(iter(media_list[3]["chapters"].values()))["progress"] = 10
         parse_args(app=self.media_reader, args=["upgrade"])
         assert removed_key not in media_list[0]
         assert "media_type" in media_list[1]
-        assert next(iter(media_list[2]["chapters"].values()))["number"] == 1
-        assert next(iter(media_list[3]["chapters"].values()))["special"] == 10
+        assert next(iter(media_list[3]["chapters"].values()))["progress"] == 10
 
     def test_auto_upgrade_disabled_broken(self):
         media_list = self.add_test_media(self.test_anime_server)
         media_list[1].pop("media_type")
-        upgraded = False
 
         def _upgrade_state():
-            upgraded = True
-
+            pass
         self.app.upgrade_state = _upgrade_state
         for b in (True, False):
             self.settings.auto_upgrade_state = b
-            try:
-                parse_args(app=self.media_reader, args=["list"])
-                assert False
-            except KeyError:
-                assert not upgraded
+            self.assertRaises(KeyError, parse_args, app=self.media_reader, args=["list"])
+            assert "media_type" not in media_list[1]
 
     def test_auto_upgrade_seamless(self):
         self.settings.max_retires = 10
         media_list = self.add_test_media(self.test_anime_server)
         media_list[1].pop("media_type")
+        assert self.app.save_state()
         parse_args(app=self.media_reader, args=["set", "max_retires", "1"])
         self.assertEqual(self.settings.max_retires, 1)
+        self.app.state.clear()
+        self.app.load_state()
+        for media_data in self.app.get_media_in_library():
+            assert "media_type" in media_data
 
 
 class ServerTest(RealBaseUnitTestClass):
