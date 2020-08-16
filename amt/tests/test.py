@@ -406,6 +406,12 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.media_reader, args=["set", "password_manager_enabled", "true"])
         self.assertEqual(self.settings.password_manager_enabled, True)
 
+    def test_set_settings_int(self):
+        parse_args(app=self.media_reader, args=["set", "max_retires", "1"])
+        self.assertEqual(self.settings.max_retires, 1)
+        parse_args(app=self.media_reader, args=["set", "max_retires", "2"])
+        self.assertEqual(self.settings.max_retires, 2)
+
     def test_set_settings(self):
         parse_args(app=self.media_reader, args=["set", "bundle_format", "jpg"])
         self.assertEqual(self.settings.bundle_format, "jpg")

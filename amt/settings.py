@@ -58,6 +58,9 @@ class Settings:
     def set(self, name, value):
         if isinstance(self.get(name), bool) and not isinstance(value, bool):
             value = value.lower() not in ["false", 0, ""]
+
+        if isinstance(value, str) and (isinstance(self.get(name), int) or isinstance(value, float)):
+            value = type(self.get(name))(value)
         setattr(self, name, value)
         return value
 
