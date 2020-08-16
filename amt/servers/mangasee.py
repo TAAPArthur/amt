@@ -14,10 +14,11 @@ class Mangasee(Server):
     media_list_url = base_url + "/_search.php"
     manga_url = base_url + '/manga/{0}'
     chapter_url = base_url + '/read-online/{0}-chapter-{1}-page-1.html'
-    page_url = "https://s3.mangabeast.com/manga/{}/{}-{:03d}.png"
+    page_url = "https://{}/manga/{}/{}-{:03d}.png"
 
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
     page_regex = re.compile(r"vm.CurChapter = (.*);")
+    domain_regex = re.compile(r'vm.CurPathName = "(.*)";')
 
     def get_media_list(self):
         r = self.session_post(self.media_list_url)
@@ -40,11 +41,13 @@ class Mangasee(Server):
         match = self.page_regex.search(r.text)
         page_text = match.group(1)
         page_data = json.loads(page_text)
+        match = self.domain_regex.search(r.text)
+        domain = match.group(1)
 
         pages = []
         for i in range(int(page_data["Page"])):
             number_str = "{:04d}".format(int(chapter_data["number"])) if chapter_data["number"] % 1 == 0 else "{:06.1f}".format(chapter_data["number"])
-            pages.append(self.create_page_data(url=self.page_url.format(media_data["id"], number_str, i + 1)))
+            pages.append(self.create_page_data(url=self.page_url.format(domain, media_data["id"], number_str, i + 1)))
         return pages
 
     def save_chapter_page(self, page_data, path):
