@@ -15,18 +15,18 @@ from .server import ANIME, MANGA, NOT_ANIME, Server
 from .settings import Settings
 from .tracker import Tracker
 
-SERVERS = []
-TRACKERS = []
+SERVERS = set()
+TRACKERS = set()
 for _finder, name, _ispkg in pkgutil.iter_modules(servers.__path__, servers.__name__ + '.'):
     module = importlib.import_module(name)
-    for _name, obj in dict(inspect.getmembers(module)).items():
-        if inspect.isclass(obj) and issubclass(obj, Server) and obj != Server:
-            SERVERS.append(obj)
+    for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
+        if issubclass(obj, Server) and obj != Server and obj.id:
+            SERVERS.add(obj)
 for _finder, name, _ispkg in pkgutil.iter_modules(trackers.__path__, trackers.__name__ + '.'):
     module = importlib.import_module(name)
-    for _name, obj in dict(inspect.getmembers(module)).items():
-        if inspect.isclass(obj) and issubclass(obj, Tracker) and obj != Tracker:
-            TRACKERS.append(obj)
+    for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
+        if issubclass(obj, Tracker) and obj != Tracker and obj.id:
+            TRACKERS.add(obj)
 
 
 def get_children(abs_path):

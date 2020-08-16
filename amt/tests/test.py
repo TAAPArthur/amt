@@ -44,7 +44,8 @@ class TestApplication(Application):
 
         super().__init__(servers, trackers, settings)
         assert len(self.get_servers()) == len(servers)
-        assert all(self.get_servers()) == len(trackers)
+        assert len(self.get_trackers()) == len(trackers)
+        assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
 
 class BaseUnitTestClass(unittest.TestCase):
@@ -660,7 +661,6 @@ class TrackerTest(RealBaseUnitTestClass):
     def test_num_trackers(self):
         assert self.media_reader.get_primary_tracker()
         assert self.media_reader.get_secondary_trackers()
-        self.assertEqual(len(self.media_reader.get_trackers()), len(self.media_reader.get_secondary_trackers()))
 
     def test_get_list(self):
         for tracker in self.media_reader.get_trackers():
