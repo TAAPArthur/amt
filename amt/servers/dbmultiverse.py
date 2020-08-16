@@ -49,15 +49,15 @@ class Dbmultiverse(Server):
 
         pages = []
         for page in page_info:
-            r = self.session_get(self.page_url.format(page["title"]))
-            soup = BeautifulSoup(r.text, "lxml")
-            img = soup.find("img", {"id": "balloonsimg"})
-            url = img["src"] if img else soup.find('div', id='balloonsimg').get('style').split(';')[0].split(':')[1][4:-1]
-            pages.append(self.create_page_data(url=self.base_url + url))
+            pages.append(self.create_page_data(url=self.page_url.format(page["title"])))
         return pages
 
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"])
+        soup = BeautifulSoup(r.text, "lxml")
+        img = soup.find("img", {"id": "balloonsimg"})
+        url = img["src"] if img else soup.find('div', id='balloonsimg').get('style').split(';')[0].split(':')[1][4:-1]
+        r = self.session_get(self.base_url + url)
 
         with open(path, 'wb') as fp:
             fp.write(r.content)
