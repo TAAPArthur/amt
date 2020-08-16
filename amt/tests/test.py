@@ -99,6 +99,7 @@ class BaseUnitTestClass(unittest.TestCase):
         return set_of_numbers
 
 
+@unittest.skipIf(os.getenv("QUICK"), "Real servers are disabled")
 class RealBaseUnitTestClass(BaseUnitTestClass):
     def init(self):
         self.real = True
