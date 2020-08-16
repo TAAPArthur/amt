@@ -117,6 +117,8 @@ class Application(MangaReader):
 
         for media_data in media:
             server = self.get_server(media_data["server_id"])
-            new_data = list(filter(lambda x: x["id"] == media_data["id"], server.search(media_data["name"])))[0]
+            new_data = server.create_media_data(media_data["id"], media_data["name"])
             _upgrade_dict(media_data, new_data)
-            self.update_media(media_data)
+            for chapter_data in media_data["chapters"].values():
+                server.update_chapter_data(new_data, chapter_data["id"], chapter_data["title"], chapter_data["number"])
+                _upgrade_dict(chapter_data, new_data["chapters"][chapter_data["id"]])
