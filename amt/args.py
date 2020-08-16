@@ -52,7 +52,12 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         read_parser = sub_parsers.add_parser("read")
         read_parser.add_argument("name", choices=os.listdir(app.settings.bundle_dir))
-        sub_parsers.add_parser("load").add_argument('name', default=None, nargs='?')
+
+        load_parser = sub_parsers.add_parser("load")
+        load_parser.add_argument('name', default=None, nargs='?')
+        load_parser.add_argument('--lenient', action="store_const", const=True, default=False)
+        load_parser.add_argument('--local-only', action="store_const", const=True, default=False)
+
         sub_parsers.add_parser("sync").add_argument('--force', default=False)
         sub_parsers.add_parser("list")
         sub_parsers.add_parser("auth")
@@ -96,7 +101,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         secret = tracker.auth()
         app.settings.store_secret(tracker.id, secret)
     elif action == "load":
-        app.load_from_tracker(user_name=namespace.name)
+        app.load_from_tracker(user_name=namespace.name, exact=not namespace.lenient, local_only=namespace.local_only)
     elif action == "sync":
         app.sync_progress(namespace.force)
     elif action == "download":

@@ -37,12 +37,14 @@ class TestApplication(Application):
         settings.free_only = True
         settings.password_manager_enabled = False
         servers = [TestServer, TestAnimeServer]
+        trackers = [TestTracker]
         if real:
             servers += SERVERS
+            trackers += TRACKERS
 
-        super().__init__(servers, [TestTracker] + TRACKERS, settings)
-        assert len(self.get_servers())
-        assert all(self.get_servers())
+        super().__init__(servers, trackers, settings)
+        assert len(self.get_servers()) == len(servers)
+        assert all(self.get_servers()) == len(trackers)
 
 
 class BaseUnitTestClass(unittest.TestCase):
@@ -433,10 +435,21 @@ class ArgsTest(BaseUnitTestClass):
         assert len(self.media_reader.get_media_in_library())
 
     def test_load(self):
-        parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
+        parse_args(app=self.media_reader, args=["--auto", "search", "InProgress"])
+        assert len(self.media_reader.get_media_ids_in_library()) == 1
         media_id = next(iter(self.media_reader.get_media_ids_in_library()))
-        parse_args(app=self.media_reader, args=["--auto", "load", "test_user"])
+        media_data = next(iter(self.media_reader.get_media_in_library()))
+        parse_args(app=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
         assert self.media_reader.get_tracker_info(media_id, self.media_reader.get_primary_tracker().id)
+        self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
+
+    def test_load_add_new_media(self):
+        parse_args(app=self.media_reader, args=["--auto", "load", "test_user"])
+        assert len(self.media_reader.get_media_in_library()) > 1
+        for media_data in self.media_reader.get_media_in_library():
+            assert self.media_reader.get_tracker_info(self.app._get_global_id(media_data), self.media_reader.get_primary_tracker().id)
+            if media_data["progress"]:
+                self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
 
     def test_sync_progress(self):
         parse_args(app=self.media_reader, args=["--auto", "load"])
@@ -634,7 +647,7 @@ class PremiumTest(RealBaseUnitTestClass):
                     assert download_passed
 
     def test_get_list(self):
-        for tracker in [self.media_reader.get_primary_tracker()] + self.media_reader.get_secondary_trackers():
+        for tracker in self.media_reader.get_trackers():
             with self.subTest(tracker=tracker.id):
                 data = tracker.get_tracker_list(id=1)
                 assert data
@@ -647,14 +660,27 @@ class TrackerTest(RealBaseUnitTestClass):
     def test_num_trackers(self):
         assert self.media_reader.get_primary_tracker()
         assert self.media_reader.get_secondary_trackers()
+        self.assertEqual(len(self.media_reader.get_trackers()), len(self.media_reader.get_secondary_trackers()))
 
     def test_get_list(self):
-        for tracker in [self.media_reader.get_primary_tracker()] + self.media_reader.get_secondary_trackers():
+        for tracker in self.media_reader.get_trackers():
             with self.subTest(tracker=tracker.id):
                 data = tracker.get_tracker_list(id=1)
                 assert data
                 assert isinstance(data, list)
                 assert isinstance(data[0], dict)
+
+    def test_no_auth(self):
+        self.settings.password_manager_enabled = False
+        for tracker in self.media_reader.get_trackers():
+            if tracker.id != TestTracker.id:
+                with self.subTest(tracker=tracker.id):
+                    try:
+                        print(tracker)
+                        tracker.update([])
+                        assert False
+                    except ValueError:
+                        pass
 
 
 class InterestingMediaTest(RealBaseUnitTestClass):

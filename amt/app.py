@@ -38,7 +38,7 @@ class Application(MangaReader):
             self.add_media(media_data)
         return media_data
 
-    def load_from_tracker(self, user_id=None, user_name=None):
+    def load_from_tracker(self, user_id=None, user_name=None, exact=True, local_only=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         count = 0
@@ -53,13 +53,18 @@ class Application(MangaReader):
             if not media_data:
                 clean_entry_name = clean_name(entry["name"])
 
-                known_matching_media = list(filter(lambda x: media_type & x["media_type"] and clean_entry_name == clean_name(x["name"]), self.get_media_in_library()))
+                known_matching_media = list(filter(lambda x: media_type & x["media_type"] and (
+                    clean_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(clean_entry_name)
+                ), self.get_media_in_library()))
                 if known_matching_media:
                     logging.debug("Checking among known media")
                     media_data = self.select_media(known_matching_media, "Select from known media: ")
 
-                if not media_data:
-                    media_data = self.search_add(entry["name"], media_type=media_type, exact=True)
+                if not local_only:
+                    if not media_data:
+                        media_data = self.search_add(entry["name"], media_type=media_type, exact=True)
+                    if not exact:
+                        media_data = self.search_add(entry["name"].split(":")[0], media_type=media_type, exact=False)
                 if not media_data:
                     logging.info("Could not find media %s", entry["name"])
                     continue
@@ -69,6 +74,8 @@ class Application(MangaReader):
             else:
                 logging.debug("Already tracking %s %d", media_data["name"], entry["progress"])
 
+            if entry["progress"] > media_data["progress"]:
+                media_data["progress"] = entry["progress"]
             self.mark_chapters_until_n_as_read(media_data, int(entry["progress"]))
             count += 1
         self.list()

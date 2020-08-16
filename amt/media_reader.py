@@ -44,8 +44,8 @@ class MangaReader:
     def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
         self.settings = settings if settings else Settings()
         self.state = {"media": {}, "bundles": {}, "trackers": {}}
-        _servers = {}
-        _trackers = []
+        self._servers = {}
+        self._trackers = []
 
         self.session = requests.Session()
         if self.settings.max_retires:
@@ -77,6 +77,9 @@ class MangaReader:
 
     def get_secondary_trackers(self):
         return self._trackers[1:]
+
+    def get_trackers(self):
+        return self._trackers
 
     def _set_session_hash(self):
         """
@@ -348,10 +351,9 @@ class MangaReader:
             tracker_info = self.get_tracker_info(media_id=media_id, tracker_id=self.get_primary_tracker().id)
             if tracker_info and (force or media_data["progress"] < self.get_last_read(media_data)):
                 data.append((tracker_info[0], self.get_last_read(media_data)))
+                media_data["progress"] = self.get_last_read(media_data)
                 logging.info("Preparing to update %s", media_data["name"])
 
-        tracker.update(data)
-
-        for media_data in self.get_media_in_library():
-            media_data["progress"] = self.get_last_read(media_data)
-            self.save_state()
+        if data:
+            tracker.update(data)
+        return True if data else False

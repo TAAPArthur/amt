@@ -1,4 +1,5 @@
 import logging
+
 from ..tracker import Tracker
 
 
@@ -87,7 +88,7 @@ class Anilist(Tracker):
     def update(self, list_of_updates):
         if not self._get_access_token():
             logging.error("Access token is not set")
-            return
+            raise ValueError
 
         for id, progress in list_of_updates:
             variables = {"id": id, "progress": progress}

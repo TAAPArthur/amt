@@ -8,8 +8,8 @@ class TestTracker(Tracker):
         [True, "Anime1", 0],
         [False, "MangaUnknown", 1],
         [False, "AnimeUnknown", 1],
-        [False, "Manga2", 1],
-        [True, "Anime2", 1],
+        [False, "MangaInProgress", 1],
+        [True, "AnimeInProgress", 1],
         [False, "MangaUnknown2", 1],
         [False, "AnimeUnknown2", 1],
     ]
