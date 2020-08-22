@@ -289,12 +289,13 @@ class MangaReaderTest(BaseUnitTestClass):
         self.media_reader.mark_up_to_date(self.test_server.id)
         for media_data in media_list:
             assert all(map(lambda x: x["read"], media_data["chapters"].values()))
-        self.media_reader.mark_up_to_date(self.test_server.id, 1)
+        self.media_reader.mark_up_to_date(self.test_server.id, N=1)
         for media_data in media_list:
             assert all(map(lambda x: x["read"], media_data["chapters"].values()))
-        self.media_reader.mark_up_to_date(self.test_server.id, 1, force=True)
+        self.media_reader.mark_up_to_date(self.test_server.id, N=1, force=True)
         for media_data in media_list:
             chapter_list = list(sorted(media_data["chapters"].values(), key=lambda x: x["number"]))
+            print(list(map(lambda x: (x["read"], x["number"]), chapter_list)))
             assert all(map(lambda x: x["read"], chapter_list[:-1]))
             assert not chapter_list[-1]["read"]
 
@@ -467,16 +468,25 @@ class ArgsTest(BaseUnitTestClass):
     def test_download(self):
         media_list = self.add_test_media(no_update=True)
         assert len(media_list[0]["chapters"]) == 0
-        parse_args(app=self.media_reader, args=["-u", "download"])
+        parse_args(app=self.media_reader, args=["-u", "download-unread"])
         assert len(media_list[0]["chapters"])
         self.assertEqual(0, self.app.download_chapters(media_list[0]))
+
+    def test_download_specific(self):
+        media_list = self.add_test_media()
+        media_data = media_list[0]
+        media_id = self.app._get_global_id(media_data)
+        chapters = self.app._get_sorted_chapters(media_data)
+        parse_args(app=self.media_reader, args=["download", media_id, str(chapters[1]["number"]), str(chapters[-2]["number"])])
+        for chapter_data in chapters[1:-2]:
+            self.verify_download(media_data, chapter_data)
 
     def test_download_next(self):
         media_list = self.add_test_media()
         for id, media_data in self.media_reader.media.items():
             server = self.app.get_server(media_data["server_id"])
             chapter = sorted(media_data["chapters"].values(), key=lambda x: x["number"])[0]
-            parse_args(app=self.media_reader, args=["download-next", id, "1"])
+            parse_args(app=self.media_reader, args=["download-unread", "--limit", "1", id])
             self.assertEqual(0, server.download_chapter(media_data, chapter))
 
     def test_update(self):

@@ -187,6 +187,26 @@ class MangaReader:
     def get_media_ids_in_library(self):
         return self.media.keys()
 
+    def _get_media(self, media_type, name=None, shuffle=False):
+        media = self.get_media_in_library()
+        if shuffle:
+            media = list(media)
+            random.shuffle(media)
+        for media_data in media:
+            if name is not None and name not in (media_data["server_id"], media_data["name"], self._get_global_id(media_data)):
+                continue
+            if media_type and media_data["media_type"] & media_type == 0:
+                continue
+            yield media_data
+
+    def _get_unreads(self, media_type, name=None, shuffle=False):
+
+        for media_data in self._get_media(media_type, name, shuffle):
+            server = self.get_server(media_data["server_id"])
+            for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
+                if not chapter["read"]:
+                    yield server, media_data, chapter
+
     def search_for_media(self, term, media_type=None, exact=False):
         result = []
         for server in filter(lambda x: media_type is None or media_type & x.media_type, self.get_servers()):
@@ -206,50 +226,41 @@ class MangaReader:
     def get_last_read(self, media_data):
         return max(filter(lambda x: x["read"], media_data["chapters"].values()), key=lambda x: x["number"], default={"number": -1})["number"]
 
-    def mark_up_to_date(self, server_id=None, N=0, force=False):
-        for media_data in self.get_media_in_library():
-            if not server_id or media_data["server_id"] == server_id:
-                last_read = self.get_last_chapter_number(media_data) - N
-                if not force:
-                    last_read = max(self.get_last_read(media_data), last_read)
-                self.mark_chapters_until_n_as_read(media_data, last_read)
+    def mark_up_to_date(self, name=None, media_type=None, N=0, force=False):
+        for media_data in self._get_media(media_type=media_type, name=name):
+            last_read = self.get_last_chapter_number(media_data) - N
+            if not force:
+                last_read = max(self.get_last_read(media_data), last_read)
+            print(force, self.get_last_read(media_data), last_read, N, len(media_data["chapters"]))
+            self.mark_chapters_until_n_as_read(media_data, last_read)
 
-    def download_unread_chapters(self):
+    def download_unread_chapters(self, name=None, media_type=None, limit=0):
         """Downloads all chapters that are not read"""
-        return sum([self.download_chapters(media_data) for media_data in self.get_media_in_library()])
+        return sum([self.download_chapters(media_data, limit) for _, media_data, _ in self._get_unreads(media_type, name=name)])
 
-    def download_chapters_by_id(self, media_id, num=0):
-        self.download_chapters(self.media[media_id], num=num)
+    def _get_sorted_chapters(self, media_data):
+        return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
 
-    def download_chapters(self, media_data, num=0):
+    def download_specific_chapters(self, media_id, start=0, end=0):
+        media_data = self.media[media_id]
+        server = self.get_server(media_data["server_id"])
+        for chapter in self._get_sorted_chapters(media_data):
+            if start <= chapter["number"] and (not end or chapter["number"] <= end):
+                server.download_chapter(media_data, chapter)
+
+    def download_chapters(self, media_data, limit=0):
         last_read = self.get_last_read(media_data)
         server = self.get_server(media_data["server_id"])
         counter = 0
         for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
             if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(media_data, chapter):
                 counter += 1
-                if counter == num:
+                if counter == limit:
                     break
         return counter
 
     def _create_bundle_data_entry(self, media_data, chapter_data):
         return dict(media_id=self._get_global_id(media_data), chapter_id=chapter_data["id"], media_name=media_data["name"], chapter_num=chapter_data["number"])
-
-    def _get_unreads(self, media_type, name=None, shuffle=False):
-        media = self.get_media_in_library()
-        if shuffle:
-            media = list(media)
-            random.shuffle(media)
-        for media_data in media:
-            if name is not None and name not in (media_data["server_id"], media_data["name"], self._get_global_id(media_data)):
-                continue
-            if media_data["media_type"] & media_type == 0:
-                continue
-
-            server = self.get_server(media_data["server_id"])
-            for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
-                if not chapter["read"]:
-                    yield server, media_data, chapter
 
     def bundle_unread_chapters(self, name=None, shuffle=False):
         unreads = []

@@ -38,7 +38,7 @@ class Application(MangaReader):
             self.add_media(media_data)
         return media_data
 
-    def load_from_tracker(self, user_id=None, user_name=None, exact=True, local_only=False):
+    def load_from_tracker(self, user_id=None, user_name=None, exact=True, local_only=False, update_progress_only=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         count = 0
@@ -51,6 +51,8 @@ class Application(MangaReader):
             media_type = ANIME if entry["anime"] else NOT_ANIME
             media_data = self.is_added(tracker.id, entry["id"])
             if not media_data:
+                if update_progress_only:
+                    continue
                 clean_entry_name = clean_name(entry["name"])
 
                 known_matching_media = list(filter(lambda x: media_type & x["media_type"] and (
