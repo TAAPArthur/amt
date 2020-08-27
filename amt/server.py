@@ -144,7 +144,10 @@ class Server:
         """
         raise NotImplementedError
 
-    def get_stream_url(self, media_data, chapter_data):
+    def can_stream_url(self, url):
+        return False
+
+    def get_stream_url(self, media_id=None, chapter_id=None, url=None):
         raise NotImplementedError
 
     def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, cover=None):

@@ -60,6 +60,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         read_parser = sub_parsers.add_parser("read", help="Open a saved bundle for reading. If the command exits with status 0, then the container chapters will be marked read")
         read_parser.add_argument("name", choices=os.listdir(app.settings.bundle_dir), help="Name of the bundle")
 
+        steam_parser = sub_parsers.add_parser("stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
+        steam_parser.add_argument("url")
+
         play_parser = sub_parsers.add_parser("play", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
         play_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
         play_parser.add_argument("-c", "--cont", default=False, action="store_const", const=True, help="Keep playing until all streams have =been consumed or the player exists with non-zero status")
@@ -157,6 +160,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.update()
     elif action == "upgrade":
         app.upgrade_state()
+    elif action == "stream":
+        app.stream(namespace.url)
 
     if not namespace.no_save:
         app.save()

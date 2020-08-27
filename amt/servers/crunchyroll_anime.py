@@ -16,6 +16,8 @@ class CrunchyrollAnime(Crunchyroll):
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
     media_type = ANIME
 
+    stream_url_regex = re.compile(r"https://www.crunchyroll.com/[^/]*/.*-\d+$")
+
     extension = "ts"
 
     def get_media_list(self):
@@ -46,15 +48,17 @@ class CrunchyrollAnime(Crunchyroll):
 
                 self.update_chapter_data(media_data, id=chapter['media_id'], number=chapter['episode_number'], title=chapter['name'], premium=not chapter["free_available"], special=special)
 
-    def get_stream_url(self, media_data, chapter_data):
-        r = self.session_get(self.stream_url.format(self.get_session_id(), chapter_data["id"]))
+    def can_stream_url(self, url):
+        print(url, "https://crunchyroll.com/")
+        return url.startswith("https://www.crunchyroll.com/")
+
+    def get_stream_url(self, media_id=None, chapter_id=None, url=None):
+        if url:
+            chapter_id = url.split("-")[-1]
+        r = self.session_get(self.stream_url.format(self.get_session_id(), chapter_id))
         stream = r.json()["data"]["stream_data"]["streams"][0]
 
-        return stream["url"]
-
-    def get_media_chapter_data(self, media_data, chapter_data):
-        r = self.session_get(self.get_stream_url(media_data, chapter_data))
-
+        r = self.session_get(stream["url"])
         bandwidth = None
         url_bandwidth_tuples = []
         for line in r.text.splitlines():
@@ -64,9 +68,11 @@ class CrunchyrollAnime(Crunchyroll):
                     bandwidth = match.group(1)
             elif line:
                 url_bandwidth_tuples.append((bandwidth, line))
-        url_bandwidth_tuples.sort()
+        url_bandwidth_tuples.sort(reverse=True)
+        return url_bandwidth_tuples[0][1]
 
-        m3u8_url = url_bandwidth_tuples[0][1]
+    def get_media_chapter_data(self, media_data, chapter_data):
+        m3u8_url = self.get_stream_url(chapter_id=chapter_data["id"])
         r = self.session_get(m3u8_url)
         return [self.create_page_data(url=line) for line in r.text.splitlines() if not line.startswith("#")]
 

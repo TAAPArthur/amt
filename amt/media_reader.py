@@ -291,6 +291,17 @@ class MangaReader:
         for bundle in bundled_data:
             self.media[bundle["media_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
+    def stream(self, url, passthrough=False):
+        for server in self.get_servers():
+            if server.can_stream_url(url):
+                streamable_url = server.get_stream_url(url=url)
+                logging.info("Streaming %s", streamable_url)
+                self.settings.view("'{}'".format(streamable_url))
+                return
+        if passthrough:
+            self.settings.view("'{}'".format(url))
+        logging.error("Could not find any matching server")
+
     def play(self, name=None, shuffle=False, cont=False):
         def get_urls():
             for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
@@ -298,7 +309,7 @@ class MangaReader:
                 if server.is_fully_downloaded(dir_path):
                     pass
                 else:
-                    yield server.get_stream_url(media_data, chapter), chapter
+                    yield server.get_stream_url(media_data["id"], chapter["id"]), chapter
 
         for url, chapter in get_urls():
             if self.settings.view(url):
