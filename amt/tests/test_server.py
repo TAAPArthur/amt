@@ -17,10 +17,10 @@ class TestServer(Server):
         media_id = media_data["id"]
         assert media_id in map(lambda x: x["id"], self.get_media_list())
         if media_id == 1:
-            self.update_chapter_data(media_data, id=0, title="Chapter0", number=0, date="2020-08-08"),
-            self.update_chapter_data(media_data, id=1, title="Chapter1", number=1, date="2020-07-08"),
-            self.update_chapter_data(media_data, id=2, title="Chapter2", number=2, date="2020-07-09"),
-            self.update_chapter_data(media_data, id=3, title="Chapter3", number=3, date="2020-07-10")
+            self.update_chapter_data(media_data, id=0, title="Chapter0", number=0, date="2020-08-08", premium=self.has_login),
+            self.update_chapter_data(media_data, id=1, title="Chapter1", number=1, date="2020-07-08", premium=self.has_login),
+            self.update_chapter_data(media_data, id=2, title="Chapter2", number=2, date="2020-07-09", premium=self.has_login),
+            self.update_chapter_data(media_data, id=3, title="Chapter3", number=3, date="2020-07-10", premium=self.has_login)
         elif media_id == 2:
             self.update_chapter_data(media_data, id=4, title="Chapter1", number=1),
             self.update_chapter_data(media_data, id=5, title="Chapter1-1", number="1-1"),
@@ -47,6 +47,18 @@ class TestServer(Server):
         assert not os.path.exists(path)
         image = Image.new('RGB', (100, 100))
         image.save(path, self.extension)
+
+
+class TestServerLogin(TestServer):
+    id = 'test_server_login'
+    counter = 0
+    fail_login = False
+    has_login = True
+
+    def login(self, username, password):
+        print("logging in")
+        TestServerLogin.counter += 1
+        return not TestServerLogin.fail_login
 
 
 class TestAnimeServer(TestServer):

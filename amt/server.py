@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from enum import Enum
+from functools import lru_cache
 
 MANGA = 1
 NOVEL = 2
@@ -43,6 +44,7 @@ class Server:
     def login(self, username, password):
         return False
 
+    @lru_cache
     def relogin(self):
         credential = self.settings.get_credentials(self.id if not self.alias else self.alias)
         if credential:

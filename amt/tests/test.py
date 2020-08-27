@@ -15,7 +15,7 @@ from ..args import parse_args
 from ..media_reader import SERVERS, TRACKERS, MangaReader
 from ..server import ANIME, MANGA, Server
 from ..settings import Settings
-from .test_server import TestAnimeServer, TestServer
+from .test_server import TestAnimeServer, TestServer, TestServerLogin
 from .test_tracker import TestTracker
 
 TEST_HOME = "/tmp/amt/test_home/"
@@ -36,7 +36,7 @@ class TestApplication(Application):
         settings.shell = True
         settings.free_only = True
         settings.password_manager_enabled = False
-        servers = [TestServer, TestAnimeServer]
+        servers = [TestServer, TestAnimeServer, TestServerLogin]
         trackers = [TestTracker]
         if real:
             servers += SERVERS
@@ -192,6 +192,20 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         for term in ["a", "e"]:
             servers |= {x["server_id"] for x in self.media_reader.search_for_media(term)}
         assert len(self.media_reader.get_servers()) == len(servers)
+
+    def test_bad_login(self):
+
+        TestServerLogin.fail_login = True
+        server = self.media_reader.get_server(TestServerLogin.id)
+        server.settings.password_manager_enabled = True
+        server.settings.password_load_cmd = r"echo -e A\\tB"
+
+        for media in server.get_media_list():
+            server.update_media_data(media)
+            for chapter in media["chapters"].values():
+
+                server.download_chapter(media, chapter)
+        self.assertEqual(1, TestServerLogin.counter)
 
 
 class MangaReaderTest(BaseUnitTestClass):
