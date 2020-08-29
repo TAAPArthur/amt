@@ -70,6 +70,7 @@ class BaseUnitTestClass(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
+        self.app.session.close()
 
     def add_arbitrary_media(self):
         server = self.media_reader.get_server(TestServer.id)
@@ -236,7 +237,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         self.assertEqual(1, TestServerLogin.counter)
 
 
-class MangaReaderTest(BaseUnitTestClass):
+class MediaReaderTest(BaseUnitTestClass):
 
     def test_save_load_cookies(self):
         key, value = "Test", "value"
@@ -337,7 +338,6 @@ class MangaReaderTest(BaseUnitTestClass):
         self.media_reader.mark_up_to_date(self.test_server.id, N=1, force=True)
         for media_data in media_list:
             chapter_list = list(sorted(media_data["chapters"].values(), key=lambda x: x["number"]))
-            print(list(map(lambda x: (x["read"], x["number"]), chapter_list)))
             assert all(map(lambda x: x["read"], chapter_list[:-1]))
             assert not chapter_list[-1]["read"]
 
@@ -675,6 +675,7 @@ class ServerTest(RealBaseUnitTestClass):
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id, method="get_media_list"):
                 media_list = server.get_media_list()
+                assert media_list
                 assert isinstance(media_list, list)
                 assert all([isinstance(x, dict) for x in media_list])
                 assert all([x["media_type"] == server.media_type for x in media_list])
@@ -811,7 +812,6 @@ class TrackerTest(RealBaseUnitTestClass):
             if tracker.id != TestTracker.id:
                 with self.subTest(tracker=tracker.id):
                     try:
-                        print(tracker)
                         tracker.update([])
                         assert False
                     except ValueError:

@@ -155,6 +155,7 @@ class MangaReader:
         json_str = json.dumps(self.state, indent=4, sort_keys=True)
         if not self._set_state_hash(json_str):
             return False
+        logging.info("Persisting state")
         with open(self.settings.get_metadata(), 'w') as jsonFile:
             jsonFile.write(json_str)
         return True

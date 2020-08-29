@@ -1,10 +1,10 @@
+import re
 from dataclasses import dataclass
 from enum import IntEnum
-import re
 from typing import List
-import unidecode
 
-from pure_protobuf.dataclasses_ import loads, field, message
+import unidecode
+from pure_protobuf.dataclasses_ import field, loads, message
 from pure_protobuf.types import int32
 
 from ..server import Server
