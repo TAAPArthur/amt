@@ -9,11 +9,26 @@ class TestServer(Server):
     id = 'test_server_manga'
     has_gaps = True
     _prefix = "Manga"
+    _throw_error = False
+    _error_thrown = False
+
+    def maybe_inject_error(self):
+        if self._throw_error:
+            self._error_thrown = True
+            raise Exception("Injected Error from {}".format(self.id))
+
+    def inject_error(self):
+        self._throw_error = True
+
+    def was_error_thrown(self):
+        return self._error_thrown
 
     def get_media_list(self):
+        self.maybe_inject_error()
         return [self.create_media_data(id=1, name=self._prefix + "1"), self.create_media_data(id=2, name=self._prefix + "InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-=")]
 
     def update_media_data(self, media_data):
+        self.maybe_inject_error()
         media_id = media_data["id"]
         assert media_id in map(lambda x: x["id"], self.get_media_list())
         if media_id == 1:
@@ -41,9 +56,11 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=26, title="Chapter1", number=0, date="1998-08-10"),
 
     def get_media_chapter_data(self, media_data, chapter_data):
+        self.maybe_inject_error()
         return [self.create_page_data(url="") for k in range(3)]
 
     def save_chapter_page(self, page_data, path):
+        self.maybe_inject_error()
         assert not os.path.exists(path)
         image = Image.new('RGB', (100, 100))
         image.save(path, self.extension)

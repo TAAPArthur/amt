@@ -414,6 +414,29 @@ class ApplicationTest(BaseUnitTestClass):
         self.assertEqual(0, n2)
 
 
+class ApplicationTestWithErrors(BaseUnitTestClass):
+    def setUp(self):
+        super().setUp()
+        self.app.auto_select = True
+
+    def test_search_with_error(self):
+        self.test_server.inject_error()
+        assert self.app.search_add("a")
+        assert self.test_server.was_error_thrown()
+
+    def test_update_with_error(self):
+        self.add_test_media(no_update=True)
+        self.test_server.inject_error()
+        assert self.app.update()
+        assert self.test_server.was_error_thrown()
+
+    def test_download_with_error(self):
+        self.add_test_media()
+        self.test_server.inject_error()
+        assert self.app.download_unread_chapters()
+        assert self.test_server.was_error_thrown()
+
+
 class ArgsTest(BaseUnitTestClass):
     @patch('builtins.input', return_value='0')
     def test_arg(self, input):

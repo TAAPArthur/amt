@@ -6,6 +6,7 @@ import os
 import pickle
 import pkgutil
 import random
+from collections import deque
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -31,6 +32,17 @@ for _finder, name, _ispkg in pkgutil.iter_modules(trackers.__path__, trackers.__
 
 def get_children(abs_path):
     return "'{}'/*".format(abs_path.replace("'", r"'\''"))
+
+
+def for_each(func, media_list):
+    results = deque()
+    for media_data in media_list:
+        try:
+            result = func(media_data)
+            results.append(result) if isinstance(result, int) else results.extend(result)
+        except Exception as e:
+            logging.info(e)
+    return results
 
 
 class MangaReader:
@@ -208,12 +220,11 @@ class MangaReader:
                     yield server, media_data, chapter
 
     def search_for_media(self, term, media_type=None, exact=False):
-        result = []
-        for server in filter(lambda x: media_type is None or media_type & x.media_type, self.get_servers()):
-            result += server.search(term)
+        def func(x): return x.search(term)
+        results = for_each(func, filter(lambda x: media_type is None or media_type & x.media_type, self.get_servers()))
         if exact:
-            result = list(filter(lambda x: x["name"] == term, result))
-        return result
+            results = list(filter(lambda x: x["name"] == term, results))
+        return results
 
     def mark_chapters_until_n_as_read(self, media_data, N):
         """Marks all chapters whose numerical index <=N as read"""
@@ -236,7 +247,8 @@ class MangaReader:
 
     def download_unread_chapters(self, name=None, media_type=None, limit=0):
         """Downloads all chapters that are not read"""
-        return sum([self.download_chapters(media_data, limit) for _, media_data, _ in self._get_unreads(media_type, name=name)])
+        def func(media_data): return self.download_chapters(media_data, limit)
+        return sum(for_each(func, map(lambda x: x[1], self._get_unreads(media_type, name=name))))
 
     def _get_sorted_chapters(self, media_data):
         return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
@@ -322,10 +334,8 @@ class MangaReader:
 
     def update(self, download=False, media_type_to_download=MANGA):
         logging.info("Updating: download %s", download)
-        new_chapters = []
-        for media_data in self.get_media_in_library():
-            new_chapters += self.update_media(media_data, download, media_type_to_download=media_type_to_download)
-        return new_chapters
+        def func(x): return self.update_media(x, download, media_type_to_download=media_type_to_download)
+        return for_each(func, self.get_media_in_library())
 
     def update_media(self, media_data, download=False, media_type_to_download=MANGA, limit=None, page_limit=None):
         """
