@@ -1,3 +1,5 @@
+import logging
+
 from ..server import Server
 
 
@@ -33,10 +35,12 @@ class Crunchyroll(Server):
         return bytes(b ^ 66 for b in buffer)
 
     def get_session_id(self):
+        if Crunchyroll._api_session_id:
+            return Crunchyroll._api_session_id
         if 'session_id' in self.session.cookies:
-            self._api_session_id = self.session.cookies['session_id']
-            return self._api_session_id
-
+            Crunchyroll._api_session_id = self.session.cookies['session_id']
+            if not self.needs_authentication():
+                return Crunchyroll._api_session_id
         data = self.session_post(
             self.start_session_url,
             data={
@@ -45,24 +49,21 @@ class Crunchyroll(Server):
                 'access_token': self._access_token,
             }
         ).json()['data']
-        self._api_session_id = data['session_id']
-        return self._api_session_id
+        Crunchyroll._api_session_id = data['session_id']
+        return Crunchyroll._api_session_id
 
     def _store_login_data(self, data):
         self.api_auth_token = data['data']['auth']
         self.is_non_premium_account = not data['data']["user"]['premium']
 
     def needs_authentication(self):
-        """
-        Retrieves API session ID and authentication token
-        """
         r = self.session_get(self.api_auth_url.format(self.get_session_id()))
         data = r.json()
-
         if 'data' in data:
             self._store_login_data(data)
             return False
-
+        if data["code"] == "bad_session":
+            logging.info("Session is invalid %s", data)
         return True
 
     def login(self, username, password):

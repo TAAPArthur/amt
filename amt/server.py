@@ -78,6 +78,14 @@ class Server:
         return '%04d' % page_index
 
     def needs_authentication(self):
+        """
+        Checks if the user is logged in
+        If the user is logged into a non-premium account,
+        is_non_premium_account should be set to False
+
+        If the user is not logged in (and needs to login to access all content),
+        this method should return true.
+        """
         return self.has_login
 
     @staticmethod
@@ -108,7 +116,7 @@ class Server:
             if not self.is_non_premium_account and self.needs_authentication():
                 logging.debug("Server is not authenticated; relogging in")
                 if not self.relogin():
-                    logging.info("Cannot access chapter %s #%s %s because credentials are invalid", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
+                    logging.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                     return False
             if self.is_non_premium_account:
                 logging.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])

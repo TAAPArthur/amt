@@ -598,7 +598,6 @@ class ArgsTest(BaseUnitTestClass):
 
 
 class ServerTest(RealBaseUnitTestClass):
-
     def test_number_servers(self):
         assert len(self.media_reader.get_servers()) > 2
 
@@ -650,6 +649,20 @@ class ServerTest(RealBaseUnitTestClass):
             server.settings.password_load_cmd = r"echo -e A\\tB"
             with self.subTest(server=server.id, method="relogin"):
                 assert not server.relogin()
+
+
+class ServerSpecificTest(RealBaseUnitTestClass):
+    def test_crunchyroll_session(self):
+        from ..servers.crunchyroll import Crunchyroll
+        server = self.media_reader.get_server(Crunchyroll.id)
+        bad_session = "bad_session"
+        server.session.cookies['session_id'] = bad_session
+        session = server.get_session_id()
+        assert bad_session != session
+        assert session == server.get_session_id()
+        assert not server.api_auth_token
+        assert server.needs_authentication()
+        assert not server.api_auth_token
 
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
