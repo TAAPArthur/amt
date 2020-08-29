@@ -14,6 +14,7 @@ from ..app import Application
 from ..args import parse_args
 from ..media_reader import SERVERS, TRACKERS, MangaReader
 from ..server import ANIME, MANGA, Server
+from ..servers.custom import CustomServer
 from ..settings import Settings
 from .test_server import TestAnimeServer, TestServer, TestServerLogin
 from .test_tracker import TestTracker
@@ -109,6 +110,27 @@ class BaseUnitTestClass(unittest.TestCase):
 class RealBaseUnitTestClass(BaseUnitTestClass):
     def init(self):
         self.real = True
+
+    def setUp(self):
+        super().setUp()
+        self.setup_customer_server_data()
+
+    def setup_customer_server_data(self):
+
+        dir = self.settings.get_server_dir(CustomServer.id)
+        image = Image.new('RGB', (100, 100))
+        for media_name in ["A", "B", "C"]:
+            parent_dir = os.path.join(dir, media_name)
+            for chapter_name in ["01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]:
+                chapter_dir = os.path.join(parent_dir, chapter_name)
+                os.makedirs(chapter_dir)
+                image.save(os.path.join(chapter_dir, "image"), "jpeg")
+
+        for bundled_media_name in ["A_Bundled", "B_Bundled", "C_Bundled"]:
+            parent_dir = os.path.join(dir, bundled_media_name)
+            os.makedirs(parent_dir)
+            for chapter_name in ["10", "Episode 2", "NaN"]:
+                image.save(os.path.join(parent_dir, chapter_name), "jpeg")
 
 
 class SettingsTest(BaseUnitTestClass):
@@ -686,6 +708,11 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         assert not server.api_auth_token
         assert server.needs_authentication()
         assert not server.api_auth_token
+
+    def test_custom_bundle(self):
+        server = self.media_reader.get_server(CustomServer.id)
+        self.add_test_media(server)
+        self.assertTrue(self.media_reader.bundle_unread_chapters())
 
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
