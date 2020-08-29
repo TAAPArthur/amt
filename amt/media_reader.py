@@ -299,13 +299,23 @@ class MangaReader:
         for bundle in bundled_data:
             self.media[bundle["media_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
-    def stream(self, url, passthrough=False):
+    def stream(self, url, add=False, cont=True, passthrough=False):
         for server in self.get_servers():
             if server.can_stream_url(url):
-                streamable_url = server.get_stream_url(url=url)
-                logging.info("Streaming %s", streamable_url)
-                self.settings.view("'{}'".format(streamable_url))
+                known = server.is_url_for_known_media(url, {media["id"]: media for media in self.get_media_in_library() if media["server_id"] == server.id})
+                if add:
+                    self.add_media(server.get_media_data_from_url(url))
+                else:
+                    streamable_url = server.get_stream_url(url=url)
+                    logging.info("Streaming %s", streamable_url)
+                    print(known)
+                    if self.settings.view(streamable_url) and known:
+                        known[1]["read"] = True
+                        if cont:
+                            self.play(name=self._get_global_id(known[0]), cont=cont)
                 return
+        if add:
+            raise Exception("Could not find media to add")
         if passthrough:
             self.settings.view("'{}'".format(url))
         logging.error("Could not find any matching server")

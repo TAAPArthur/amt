@@ -24,7 +24,7 @@ class Settings:
     viewers = {
         "cbz": "zathura {}",
         "pdf": "zathura {}",
-        "m3u8": "mpv {}",
+        "m3u8": "mpv '{}'",
         "mp4": "mpv {}",
         "ts": "cat {} | mpv -"
     }

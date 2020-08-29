@@ -157,14 +157,20 @@ class Server:
         """
         raise NotImplementedError
 
+    def is_url_for_known_media(self, url, known_media):
+        return False
+
     def can_stream_url(self, url):
         return False
 
     def get_stream_url(self, media_id=None, chapter_id=None, url=None):
+        return False
+
+    def get_media_data_from_url(self, url):
         raise NotImplementedError
 
-    def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, cover=None):
-        return dict(server_id=self.id, id=id, name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, season_number=season_number, chapters={})
+    def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, alt_id=None, cover=None):
+        return dict(server_id=self.id, id=id, alt_id=alt_id, name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, season_number=season_number, chapters={})
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, special=False, date=None):
         id = str(id)

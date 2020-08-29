@@ -82,6 +82,21 @@ class TestAnimeServer(TestServer):
     id = 'test_server_anime'
     media_type = ANIME
     _prefix = "Anime"
+    stream_url = "test_url"
 
-    def get_stream_url(self, media_data, chapter_data):
+    def can_stream_url(self, url):
+        return url == TestAnimeServer.stream_url
+
+    def is_url_for_known_media(self, url, known_media):
+        print(self.can_stream_url(url), self.get_media_list()[1]["id"] in known_media, known_media)
+
+        media_id = self.get_media_list()[1]["id"]
+        if self.can_stream_url(url) and media_id in known_media:
+            return known_media[media_id], list(known_media[media_id]["chapters"].values())[0]
+
+    def get_media_data_from_url(self, url):
+        assert self.can_stream_url(url)
+        return self.get_media_list()[1]
+
+    def get_stream_url(self, media_id=None, chapter_id=None, url=None):
         return "url.m3u8"

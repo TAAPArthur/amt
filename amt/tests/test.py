@@ -85,6 +85,9 @@ class BaseUnitTestClass(unittest.TestCase):
     def assertAllChaptersRead(self, media_type):
         self.assertTrue(all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values() if media_data["media_type"] & media_type]))
 
+    def getNumChaptersRead(self, media_type=ANIME | MANGA):
+        return sum([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values() if media_data["media_type"] & media_type])
+
     def verify_download(self, media_data, chapter_data):
         server = self.media_reader.get_server(media_data["server_id"])
         if server.external:
@@ -607,6 +610,25 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.media_reader, args=["play", "-c"])
         self.assertAllChaptersRead(ANIME)
 
+    def test_stream(self):
+        self.settings.viewers[self.settings.bundle_format] = "echo {}"
+        parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
+        assert not len(self.media_reader.get_media_in_library())
+
+    def test_stream_add(self):
+        assert not len(self.media_reader.get_media_in_library())
+        self.settings.viewers[self.settings.bundle_format] = "echo {}"
+        parse_args(app=self.media_reader, args=["stream", "--add", TestAnimeServer.stream_url])
+        assert len(self.media_reader.get_media_in_library()) == 1
+        parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
+        print(self.media_reader.get_media_in_library())
+        self.assertEqual(1, self.getNumChaptersRead())
+
+    def test_stream_passthrough(self):
+        self.settings.viewers[self.settings.bundle_format] = "echo {}"
+        self.settings.passthrough = True
+        parse_args(app=self.media_reader, args=["stream", "youtube.com"])
+
     def test_upgrade(self):
         media_list = self.add_test_media(self.test_anime_server)
         removed_key = "removed_key"
@@ -697,6 +719,24 @@ class ServerTest(RealBaseUnitTestClass):
             server.settings.password_load_cmd = r"echo -e A\\tB"
             with self.subTest(server=server.id, method="relogin"):
                 assert not server.relogin()
+
+
+class ServerStreamTest(RealBaseUnitTestClass):
+    streamable_urls = [
+        (269787, "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209")
+    ]
+
+    def test_media_steam(self):
+        for media_id, season_id, chapter_id, url in self.streamable_urls:
+            servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
+            assert servers
+            for server in servers:
+                with self.subTest(url=url, server=server.id):
+                    media_data = server.get_media_data_from_url(url)
+                    assert media_data
+                    self.assertEqual(str(media_id), str(media_data["id"]))
+                    self.assertTrue(season_id in media_data["season_ids"])
+                    self.assertTrue(chapter_id in media_data["chapters"])
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):
