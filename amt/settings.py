@@ -92,8 +92,14 @@ class Settings:
     def get_metadata(self):
         return os.path.join(self.data_dir, "metadata.json")
 
+    def get_server_dir(self, server_id):
+        return os.path.join(self.media_dir, server_id)
+
+    def get_media_dir(self, media_data):
+        return os.path.join(self.get_server_dir(media_data["server_id"]), media_data["name"].replace(" ", "_"))
+
     def get_chapter_dir(self, media_data, chapter_data):
-        dir = os.path.join(self.media_dir, media_data["server_id"], media_data["name"].replace(" ", "_"), "%06.1f" % chapter_data["number"])
+        dir = os.path.join(self.get_media_dir(media_data), "%06.1f" % chapter_data["number"])
         os.makedirs(dir, exist_ok=True)
         return dir
 

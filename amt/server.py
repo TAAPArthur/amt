@@ -18,6 +18,7 @@ class Server:
     session = None
     settings = None
     media_type = MANGA
+    external = False
 
     has_login = False
     has_gaps = False
@@ -97,19 +98,21 @@ class Server:
         full_path = os.path.join(dir_path, Server.get_download_marker())
         open(full_path, 'w').close()
 
-    @staticmethod
-    def is_fully_downloaded(dir_path):
-        full_path = os.path.join(dir_path, Server.get_download_marker())
+    def is_fully_downloaded(self, dir_path):
+        full_path = os.path.join(dir_path, self.get_download_marker())
         return os.path.exists(full_path)
 
     def get_dir(self, media_data, chapter_data):
         return self.settings.get_chapter_dir(media_data, chapter_data)
 
+    def get_children(self, media_data, chapter_data):
+        return "'{}'/*".format(self.get_dir(media_data, chapter_data).replace("'", r"'\''"))
+
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         dir_path = self.get_dir(media_data, chapter_data)
-        if Server.is_fully_downloaded(dir_path):
+        if self.is_fully_downloaded(dir_path):
             logging.debug("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
-            return False
+            return True, False
 
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         if chapter_data["premium"]:
@@ -117,10 +120,10 @@ class Server:
                 logging.debug("Server is not authenticated; relogging in")
                 if not self.relogin():
                     logging.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
-                    return False
+                    return False, False
             if self.is_non_premium_account:
                 logging.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
-                return False
+                return False, False
 
         list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
         logging.debug("Starting download for %d pages", len(list_of_pages))
@@ -138,7 +141,7 @@ class Server:
         Server.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
 
-        return downloaded_page
+        return True, downloaded_page
 
     def get_media_chapter_data(self, media_data, chapter_data):
         """

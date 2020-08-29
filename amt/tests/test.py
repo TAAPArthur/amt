@@ -86,8 +86,11 @@ class BaseUnitTestClass(unittest.TestCase):
         self.assertTrue(all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values() if media_data["media_type"] & media_type]))
 
     def verify_download(self, media_data, chapter_data):
+        server = self.media_reader.get_server(media_data["server_id"])
+        if server.external:
+            return
         dir_path = self.media_reader.settings.get_chapter_dir(media_data, chapter_data)
-        assert Server.is_fully_downloaded(dir_path)
+        assert server.is_fully_downloaded(dir_path)
         if media_data["media_type"] == MANGA:
             dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
 
@@ -310,7 +313,7 @@ class MangaReaderTest(BaseUnitTestClass):
 
                 # error if we try to save a page we have already downloaded
                 server.save_chapter_page = None
-                assert not server.download_chapter(media_data, chapter_data, page_limit=3)
+                assert not server.download_chapter(media_data, chapter_data, page_limit=3)[1]
 
     def test_preserve_read_status_on_update(self):
         media_list = self.add_test_media()
@@ -546,7 +549,7 @@ class ArgsTest(BaseUnitTestClass):
             server = self.app.get_server(media_data["server_id"])
             chapter = sorted(media_data["chapters"].values(), key=lambda x: x["number"])[0]
             parse_args(app=self.media_reader, args=["download-unread", "--limit", "1", id])
-            self.assertEqual(0, server.download_chapter(media_data, chapter))
+            self.assertEqual(0, server.download_chapter(media_data, chapter)[1])
 
     def test_update(self):
         media_list = self.add_test_media(no_update=True)
@@ -674,9 +677,9 @@ class ServerTest(RealBaseUnitTestClass):
                 media_data = media_list[0]
                 chapter_data = list(media_data["chapters"].values())[0]
                 if not chapter_data["premium"]:
-                    assert server.download_chapter(media_data, chapter_data, page_limit=1)
+                    assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=1)[1]
                     self.verify_download(media_data, chapter_data)
-                assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+                assert not server.download_chapter(media_data, chapter_data, page_limit=1)[1]
 
     def test_login_fail(self):
         for server in self.media_reader.get_servers():
@@ -731,8 +734,8 @@ class PremiumTest(RealBaseUnitTestClass):
                         server.update_media_data(media_data)
                         chapter_data = next(filter(lambda x: x["premium"], media_data["chapters"].values()), None)
                         if chapter_data:
-                            assert server.download_chapter(media_data, chapter_data, page_limit=1)
-                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+                            assert server.download_chapter(media_data, chapter_data, page_limit=1)[1]
+                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)[1]
 
                             self.verify_download(media_data, chapter_data)
                             download_passed = True

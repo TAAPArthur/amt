@@ -30,10 +30,6 @@ for _finder, name, _ispkg in pkgutil.iter_modules(trackers.__path__, trackers.__
             TRACKERS.add(obj)
 
 
-def get_children(abs_path):
-    return "'{}'/*".format(abs_path.replace("'", r"'\''"))
-
-
 def for_each(func, media_list):
     results = deque()
     for media_data in media_list:
@@ -265,7 +261,7 @@ class MangaReader:
         server = self.get_server(media_data["server_id"])
         counter = 0
         for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
-            if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(media_data, chapter):
+            if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(media_data, chapter)[1]:
                 counter += 1
                 if counter == limit:
                     break
@@ -280,8 +276,8 @@ class MangaReader:
         bundle_data = []
         for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle):
             dir_path = server.get_dir(media_data, chapter)
-            if Server.is_fully_downloaded(dir_path):
-                paths.append(get_children(dir_path))
+            if server.is_fully_downloaded(dir_path):
+                paths.append(server.get_children(media_data, chapter))
                 bundle_data.append(self._create_bundle_data_entry(media_data, chapter))
         if not paths:
             return None
