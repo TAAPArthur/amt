@@ -77,7 +77,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         chapter_parsers = sub_parsers.add_parser("list-chapters")
         chapter_parsers.add_argument("id", choices=app.get_media_ids_in_library())
 
-        # crendentials
+        # credentials
         sub_parsers.add_parser("login")
 
         # trackers and progress

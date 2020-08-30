@@ -196,7 +196,7 @@ class MangaReader:
     def get_media_ids_in_library(self):
         return self.media.keys()
 
-    def _get_media(self, media_type, name=None, shuffle=False):
+    def _get_media(self, media_type=ALL_MEDIA, name=None, shuffle=False):
         media = self.get_media_in_library()
         if shuffle:
             media = list(media)
@@ -280,8 +280,7 @@ class MangaReader:
         paths = []
         bundle_data = []
         for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle):
-            dir_path = server.get_dir(media_data, chapter)
-            if server.is_fully_downloaded(dir_path):
+            if server.download_chapter(media_data, chapter)[0]:
                 paths.append(server.get_children(media_data, chapter))
                 bundle_data.append(self._create_bundle_data_entry(media_data, chapter))
         if not paths:
@@ -313,7 +312,6 @@ class MangaReader:
                 else:
                     streamable_url = server.get_stream_url(url=url)
                     logging.info("Streaming %s", streamable_url)
-                    print(known)
                     if self.settings.view(streamable_url) and known:
                         known[1]["read"] = True
                         if cont:

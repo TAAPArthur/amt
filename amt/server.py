@@ -8,6 +8,7 @@ MANGA = 1
 NOVEL = 2
 ANIME = 4
 NOT_ANIME = MANGA | NOVEL
+ALL_MEDIA = NOT_ANIME | ANIME
 
 
 class Server:
@@ -35,6 +36,10 @@ class Server:
         if r.status_code != 200:
             logging.warning(r)
         return r
+
+    @lru_cache
+    def session_get_cache(self, url):
+        return self._request(True, url)
 
     def session_get(self, url, **kwargs):
         return self._request(True, url, **kwargs)

@@ -22,7 +22,7 @@ from .test_tracker import TestTracker
 TEST_HOME = "/tmp/amt/test_home/"
 
 
-logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.WARN)
+logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)
 logger = logging.getLogger()
 stream_handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(stream_handler)
@@ -108,8 +108,9 @@ class BaseUnitTestClass(unittest.TestCase):
                         self.assertEqual(server.extension, img.format.lower())
 
     def verify_unique_numbers(self, chapters):
-        set_of_numbers = {chapter_data["number"] for chapter_data in chapters.values()}
-        self.assertEqual(len(set_of_numbers), len(chapters.values()))
+        list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values() if not chapter_data["special"]])
+        set_of_numbers = sorted(list(set(list_of_numbers)))
+        self.assertEqual(set_of_numbers, list_of_numbers)
         return set_of_numbers
 
 
@@ -136,7 +137,7 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
         for bundled_media_name in ["A_Bundled", "B_Bundled", "C_Bundled"]:
             parent_dir = os.path.join(dir, bundled_media_name)
             os.makedirs(parent_dir)
-            for chapter_name in ["10", "Episode 2", "NaN"]:
+            for chapter_name in ["10", "Episode 2", "NotANumber"]:
                 image.save(os.path.join(parent_dir, chapter_name), "jpeg")
 
 
@@ -837,16 +838,18 @@ class TrackerTest(RealBaseUnitTestClass):
 
 
 class InterestingMediaTest(RealBaseUnitTestClass):
-    interesting_media = ["Gintama"]
+    interesting_media = ["Gintama", "One Piece"]
 
     def test_search_media(self):
         for media in self.interesting_media:
-            media_data = self.media_reader.search_for_media(media)
-            assert media_data
-            for data in media_data:
-                self.media_reader.add_media(data)
-                self.verify_unique_numbers(data["chapters"])
-            self.assertEqual(len(self.media_reader.get_media_in_library()), len(media_data))
+            with self.subTest(media_name=media):
+                self.media_reader.media.clear()
+                media_data = self.media_reader.search_for_media(media)
+                assert media_data
+                for data in media_data:
+                    self.media_reader.add_media(data)
+                    self.verify_unique_numbers(data["chapters"])
+                self.assertEqual(len(self.media_reader.get_media_in_library()), len(media_data))
 
 
 def load_tests(loader, tests, pattern):

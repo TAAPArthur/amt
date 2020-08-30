@@ -54,18 +54,23 @@ class Application(MangaReader):
                 if update_progress_only:
                     continue
                 clean_entry_name = clean_name(entry["name"])
+                prefix_entry_name = clean_entry_name.split(":")[0]
 
                 known_matching_media = list(filter(lambda x: media_type & x["media_type"] and (
                     clean_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(clean_entry_name)
                 ), self.get_media_in_library()))
+                if not known_matching_media and not exact:
+                    known_matching_media = list(filter(lambda x: media_type & x["media_type"] and (
+                        prefix_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(prefix_entry_name)
+                    ), self.get_media_in_library()))
                 if known_matching_media:
                     logging.debug("Checking among known media")
                     media_data = self.select_media(known_matching_media, "Select from known media: ")
 
-                if not local_only:
+                elif not local_only:
                     if not media_data:
                         media_data = self.search_add(entry["name"], media_type=media_type, exact=True)
-                    if not exact:
+                    if not media_data and not exact:
                         media_data = self.search_add(entry["name"].split(":")[0], media_type=media_type, exact=False)
                 if not media_data:
                     logging.info("Could not find media %s", entry["name"])

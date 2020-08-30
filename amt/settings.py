@@ -18,7 +18,7 @@ class Settings:
     media_viewer_cmd = ""
     bundle_cmds = {
         "cbz": "zip {:2} {:1}",
-        "pdf": "convert {:1} {:2}"
+        "pdf": "convert -density 100 -units PixelsPerInch {:1} {:2}"
     }
     bundle_format = "pdf"
     viewers = {
