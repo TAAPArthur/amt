@@ -70,13 +70,6 @@ class Mangaplus(Server):
 
         resp_data = resp.success.title_detail
 
-        media_data["info"] = dict(
-            authors=[resp_data.title.author],
-            publisher=['Shueisha'],
-            status="ongoing" if resp_data.is_simul_related else "completed",
-            synopsis=resp_data.synopsis,
-        )
-
         for chapters in (resp_data.first_chapters, resp_data.last_chapters):
             for chapter in chapters:
                 try:

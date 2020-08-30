@@ -100,17 +100,6 @@ class Crunchyroll(Server):
         resp_data = json_data['series']
         chapters = json_data['chapters']
 
-        media_data
-        media_data["info"] = dict(
-            authors=[],
-            scanlators=[],
-            genres=[],
-            status='ongoing',
-            synopsis=resp_data['locale'][self.locale]['description'],
-            cover=resp_data['locale'][self.locale]['thumb_url'],
-            # url=self.manga_url.format(resp_data['url'][1:]),
-        )
-
         # Chapters
         for chapter in chapters:
             date = None

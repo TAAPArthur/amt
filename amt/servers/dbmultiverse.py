@@ -13,10 +13,8 @@ class Dbmultiverse(Server):
     page_url = base_url + '/en/page-{0}.html'
     cover_url = base_url + '/image.php?comic=page&num=0&lg=en&ext=jpg&small=1&pw=8f3722a594856af867d55c57f31ee103'
 
-    synopsis = "Dragon Ball Multiverse (\"DBM\"), the sequel of the media, is a dojinshi (media created by non-professionals, using a universe and characters which are not theirs), made by Salagir and Gogeta Jr, from France."
-
     def get_media_list(self):
-        return [self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM)")]
+        return [self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM)", cover=self.cover_url)]
 
     def update_media_data(self, media_data):
 
@@ -27,14 +25,6 @@ class Dbmultiverse(Server):
         chapters = soup.findAll("div", {"class": "cadrelect chapters"})
         chapters.sort(key=lambda x: int(x["ch"]))
         lastest_chapter = int(chapters[-1]["ch"])
-
-        media_data["info"] = dict(
-            authors=['Gogeta Jr', 'Asura', 'Salagir'],
-            genres=['Shounen'],
-            status='ongoing',
-            synopsis=self.synopsis,
-            cover=self.cover_url,
-        )
 
         for chapter in chapters:
             id = chapter["ch"]

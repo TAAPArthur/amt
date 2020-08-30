@@ -71,30 +71,8 @@ class VizManga(Server):
         r = self.session_get(self.api_chapters_url.format(media_data["id"]))
         soup = BeautifulSoup(r.content, "lxml")
 
-        authors = []
-        synopsis = ""
-        media_info = soup.find("section", {"id": "series-intro"})
-        if media_info:
-            author_element = media_info.find("span", {"class": "disp-bl--bm mar-b-md"})
-            authors = author_element.getText().split(",") if author_element else ""
-            synposis_element = media_info.find("h4")
-            synopsis = synposis_element.getText().strip() if synposis_element else ""
-
-        ongoing = soup.find("div", {"class": "section_future_chapter"})
-        status = "ongoing" if ongoing else "complete"
-
-        media_data["info"] = dict(
-            authors=authors,
-            scanlators=[],
-            genres=[],
-            status=status,
-            synopsis=synopsis,
-        )
-
         # Chapters
         chapters = soup.findAll("a", {"class": "o_chapter-container"})
-        if ongoing:
-            chapters.reverse()
         slugs = set()
         for chapter in chapters:
             raw_url_maybe = chapter["data-target-url"]
