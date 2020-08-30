@@ -169,8 +169,8 @@ class Server:
     def get_media_data_from_url(self, url):
         raise NotImplementedError
 
-    def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, dir_name=None, cover=None):
-        return dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else name.replace(" ", "_"), name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, season_number=season_number, chapters={})
+    def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, dir_name=None, offset=0, cover=None):
+        return dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else name.replace(" ", "_"), name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, season_number=season_number, offset=offset, chapters={})
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, special=False, date=None):
         id = str(id)
@@ -183,6 +183,8 @@ class Server:
             except ValueError:
                 special = True
                 number = float(number.replace("-", "."))
+        if media_data["offset"]:
+            number -= media_data["offset"]
 
         new_values = dict(id=id, title=title, number=number, premium=premium, special=special, date=date)
         if id in media_data["chapters"]:

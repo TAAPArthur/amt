@@ -560,6 +560,17 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.media_reader, args=["update"])
         assert len(media_list[0]["chapters"])
 
+    def test_offset(self):
+        media_list = self.add_test_media()
+        media_data = media_list[0]
+        chapters = media_data["chapters"]
+        list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values()])
+        offset_list = list(map(lambda x: x - 1, list_of_numbers))
+        parse_args(app=self.media_reader, args=["offset", self.app._get_global_id(media_data), "1"])
+        parse_args(app=self.media_reader, args=["update"])
+        self.assertEqual(offset_list, sorted([chapter_data["number"] for chapter_data in chapters.values()]))
+        self.verify_unique_numbers(media_data["chapters"])
+
     def test_search(self):
         assert not len(self.media_reader.get_media_in_library())
         parse_args(app=self.media_reader, args=["--auto", "search", "manga"])

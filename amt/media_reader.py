@@ -12,7 +12,7 @@ import requests
 from requests.adapters import HTTPAdapter
 
 from . import servers, trackers
-from .server import ANIME, MANGA, NOT_ANIME, Server
+from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
 from .settings import Settings
 from .tracker import Tracker
 
@@ -233,6 +233,10 @@ class MangaReader:
 
     def get_last_read(self, media_data):
         return max(filter(lambda x: x["read"], media_data["chapters"].values()), key=lambda x: x["number"], default={"number": -1})["number"]
+
+    def offset(self, name, offset):
+        for media_data in self._get_media(name=name):
+            media_data["offset"] = offset
 
     def mark_up_to_date(self, name=None, media_type=None, N=0, force=False):
         for media_data in self._get_media(media_type=media_type, name=name):

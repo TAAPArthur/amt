@@ -99,6 +99,10 @@ def parse_args(args=None, app=None, already_upgraded=False):
         mark_parsers.add_argument("name", default=None, choices=app.get_all_names(), nargs="?")
         mark_parsers.add_argument("N", type=int, default=0, nargs="?", help="Consider the last N chapters as not up-to-date")
 
+        offset_parser = sub_parsers.add_parser("offset")
+        offset_parser.add_argument("name", default=None, choices=app.get_all_names())
+        offset_parser.add_argument("N", type=int, default=0, nargs="?", help="Decrease the chapter number reported by the server by N")
+
         # settings
         get_settings_parsers = sub_parsers.add_parser("get")
         get_settings_parsers.add_argument("setting", choices=Settings.get_members())
@@ -168,6 +172,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.settings.save()
     elif action == "sync":
         app.sync_progress(namespace.force)
+    elif action == "offset":
+        app.offset(namespace.name, offset=namespace.N)
     elif action == "update":
         app.update()
     elif action == "upgrade":
