@@ -1,7 +1,7 @@
 import logging
 import os
 
-from ..server import Server
+from ..server import ANIME, MANGA, NOT_ANIME, Server
 
 
 def get_number(file_name, index):
@@ -14,9 +14,10 @@ def get_number(file_name, index):
 class CustomServer(Server):
     id = 'custom_server'
     external = True
+    media_type = NOT_ANIME | ANIME
 
     def get_media_list(self):
-        return [self.create_media_data(dir, dir) for dir in os.listdir(self.settings.get_server_dir(self.id))]
+        return [self.create_media_data(dir, dir) for dir in os.listdir(self.settings.get_server_dir(self.id))] if os.path.exists(self.settings.get_server_dir(self.id)) else []
 
     def update_media_data(self, media_data):
         root = self.settings.get_media_dir(media_data)
