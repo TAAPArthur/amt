@@ -96,7 +96,7 @@ class Settings:
         return os.path.join(self.media_dir, server_id)
 
     def get_media_dir(self, media_data):
-        return os.path.join(self.get_server_dir(media_data["server_id"]), media_data["name"].replace(" ", "_"))
+        return os.path.join(self.get_server_dir(media_data["server_id"]), media_data["name"])
 
     def get_chapter_dir(self, media_data, chapter_data):
         dir = os.path.join(self.get_media_dir(media_data), "%06.1f" % chapter_data["number"])

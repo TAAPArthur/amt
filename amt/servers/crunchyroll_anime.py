@@ -35,7 +35,7 @@ class CrunchyrollAnime(Crunchyroll):
             season_data = r.json()["data"]
             unique_seasons = len(set(map(lambda x: x["season"], season_data))) == len(season_data)
             for season in season_data:
-                media_data.append(self.create_media_data(id=item['series_id'], name=season["name"], season_ids=[season["collection_id"]], season_number=season["season"] if unique_seasons else season["collection_id"], alt_id=item["url"].split("/")[-1]))
+                media_data.append(self.create_media_data(id=item['series_id'], name=season["name"], season_ids=[season["collection_id"]], season_number=season["season"] if unique_seasons else season["collection_id"], dir_name=item_alt_id))
 
         return media_data
 
