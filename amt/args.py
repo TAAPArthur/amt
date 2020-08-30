@@ -75,6 +75,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         chapter_parsers = sub_parsers.add_parser("list-chapters")
         chapter_parsers.add_argument("id", choices=app.get_media_ids_in_library())
 
+        # crendentials
+        sub_parsers.add_parser("login")
+
         # trackers and progress
         sub_parsers.add_parser("auth")
 
@@ -151,6 +154,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         print(app.read_bundle(namespace.name))
     elif action == "remove":
         app.remove_media(id=namespace.id)
+    elif action == "login":
+        app.test_login()
     elif action == "search":
         app.search_add(namespace.term, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact)
     elif action == "set":

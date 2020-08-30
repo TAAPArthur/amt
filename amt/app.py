@@ -106,6 +106,15 @@ class Application(MangaReader):
     def get_all_names(self, media_type=None):
         return list(self._get_all_names(media_type))
 
+    def test_login(self):
+        failures = False
+        for server in self.get_servers():
+            if server.has_login:
+                if server.needs_authentication() and not server.relogin():
+                    print("Failed to login into {}" % server.id)
+                    failures = True
+        return failures
+
     def upgrade_state(self):
         media = self.get_media_in_library()
 

@@ -791,6 +791,13 @@ class PremiumTest(RealBaseUnitTestClass):
                 assert isinstance(data, list)
                 assert isinstance(data[0], dict)
 
+    def test_test_login(self):
+        parse_args(app=self.media_reader, args=["login"])
+        assert self.app.test_login() == 0
+        for server in self.media_reader.get_servers():
+            if server.has_login:
+                assert not server.needs_authentication()
+
 
 class TrackerTest(RealBaseUnitTestClass):
 
