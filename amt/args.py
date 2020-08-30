@@ -71,6 +71,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         play_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
 
         # info
+        server_list_parser = sub_parsers.add_parser("server-list")
+        server_list_parser.add_argument("id", choices=app.get_servers_ids())
         sub_parsers.add_parser("list")
         chapter_parsers = sub_parsers.add_parser("list-chapters")
         chapter_parsers.add_argument("id", choices=app.get_media_ids_in_library())
@@ -141,6 +143,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
     elif action == "list":
         app.list()
+
+    elif action == "server-list":
+        app.list_server_media(namespace.id)
     elif action == "list-chapters":
         app.list_chapters(namespace.id)
     elif action == "load":
