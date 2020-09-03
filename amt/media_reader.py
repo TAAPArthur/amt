@@ -177,9 +177,8 @@ class MangaReader:
 
     def remove_media(self, media_data=None, id=None):
         if id:
-            del self.media[id]
-        else:
-            del self.media[self._get_global_id(media_data)]
+            media_data = self._get_single_media(id)
+        del self.media[self._get_global_id(media_data)]
 
     def get_servers(self):
         return self._servers.values()
@@ -207,6 +206,9 @@ class MangaReader:
             if media_type and media_data["media_type"] & media_type == 0:
                 continue
             yield media_data
+
+    def _get_single_media(self, name=None):
+        return next(self._get_media(name=name))
 
     def _get_unreads(self, media_type, name=None, shuffle=False):
 
@@ -254,8 +256,8 @@ class MangaReader:
     def _get_sorted_chapters(self, media_data):
         return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
 
-    def download_specific_chapters(self, media_id, start=0, end=0):
-        media_data = self.media[media_id]
+    def download_specific_chapters(self, name, start=0, end=0):
+        media_data = self._get_single_media(name)
         server = self.get_server(media_data["server_id"])
         for chapter in self._get_sorted_chapters(media_data):
             if start <= chapter["number"] and (not end or chapter["number"] <= end):

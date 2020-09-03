@@ -106,17 +106,21 @@ class Application(MangaReader):
         for chapter in results:
             print("{:4}:{}".format(chapter["number"], chapter["title"]))
 
-    def _get_all_names(self, media_type=None):
-        for id in self.get_servers_ids():
-            if not media_type or self.get_server(id).media_type & media_type:
-                yield id
+    def _get_all_names(self, media_type=None, disallow_servers=False):
+        if not disallow_servers:
+            for id in self.get_servers_ids():
+                if not media_type or self.get_server(id).media_type & media_type:
+                    yield id
         for id, media in self.media.items():
             if not media_type or media["media_type"] & media_type:
                 yield id
                 yield media["name"]
 
-    def get_all_names(self, media_type=None):
-        return list(self._get_all_names(media_type))
+    def get_all_names(self, media_type=None, disallow_servers=False):
+        return list(self._get_all_names(media_type, disallow_servers))
+
+    def get_all_single_names(self, media_type=None):
+        return self.get_all_names(media_type=media_type, disallow_servers=True)
 
     def test_login(self):
         failures = False

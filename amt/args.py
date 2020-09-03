@@ -37,7 +37,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         search_parsers.add_argument("term", help="The string to search by")
 
         remove_parsers = sub_parsers.add_parser("remove", description="Remove media")
-        remove_parsers.add_argument("id", choices=app.get_media_ids_in_library(), help="Global id of media to remove")
+        remove_parsers.add_argument("id", choices=app.get_all_single_names(), help="Global id of media to remove")
 
         # update and download
         sub_parsers.add_parser("update", description="Update all media")
@@ -47,7 +47,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         download_parser.add_argument("name", choices=app.get_all_names(), default=None, nargs="?", help="Download only series determined by name")
 
         download_specific_parser = sub_parsers.add_parser("download", help="Used to download specific chapters")
-        download_specific_parser.add_argument("id", choices=app.get_media_ids_in_library())
+        download_specific_parser.add_argument("id", choices=app.get_all_single_names())
 
         download_specific_parser.add_argument("start", type=float, default=0, help="Starting chapter (inclusive)")
         download_specific_parser.add_argument("end", type=float, default=None, help="Ending chapter (inclusive)")
@@ -78,7 +78,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         chapter_parsers.add_argument("id", choices=app.get_media_ids_in_library())
 
         # credentials
-        sub_parsers.add_parser("login")
+        sub_parsers.add_parser("login", description="Relogin to all servers")
 
         # trackers and progress
         sub_parsers.add_parser("auth")
@@ -139,47 +139,46 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.settings.store_secret(tracker.id, secret)
     elif action == "bundle":
         print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle))
-    elif action == "download-unread":
-        app.download_unread_chapters(namespace.name, limit=namespace.limit)
     elif action == "download":
         app.download_specific_chapters(namespace.id, namespace.start, namespace.end)
+    elif action == "download-unread":
+        app.download_unread_chapters(namespace.name, limit=namespace.limit)
     elif action == "get":
         print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
     elif action == "list":
         app.list()
-
-    elif action == "server-list":
-        app.list_server_media(namespace.id)
     elif action == "list-chapters":
         app.list_chapters(namespace.id)
     elif action == "load":
         app.load_from_tracker(user_name=namespace.name, exact=not namespace.lenient, local_only=namespace.local_only, update_progress_only=namespace.progress_only)
+    elif action == "login":
+        app.test_login()
     elif action == "mark-up-to-date":
         app.mark_up_to_date(namespace.name, media_type=namespace.manga_only or namespace.anime_only, N=namespace.N, force=namespace.force)
         app.list()
+    elif action == "offset":
+        app.offset(namespace.name, offset=namespace.N)
     elif action == "play":
         print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle))
     elif action == "read":
         print(app.read_bundle(namespace.name))
     elif action == "remove":
         app.remove_media(id=namespace.id)
-    elif action == "login":
-        app.test_login()
     elif action == "search":
         app.search_add(namespace.term, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact)
+    elif action == "server-list":
+        app.list_server_media(namespace.id)
     elif action == "set":
         print("{} = {}".format(namespace.setting, app.settings.set(namespace.setting, namespace.value)))
         app.settings.save()
+    elif action == "stream":
+        app.stream(namespace.url, add=namespace.add, cont=namespace.cont)
     elif action == "sync":
         app.sync_progress(namespace.force)
-    elif action == "offset":
-        app.offset(namespace.name, offset=namespace.N)
     elif action == "update":
         app.update()
     elif action == "upgrade":
         app.upgrade_state()
-    elif action == "stream":
-        app.stream(namespace.url, add=namespace.add, cont=namespace.cont)
 
     if not namespace.no_save:
         app.save()
