@@ -5,6 +5,9 @@ from enum import Enum
 from functools import lru_cache
 from shlex import quote
 
+import m3u8
+from Crypto.Cipher import AES
+
 MANGA = 1
 NOVEL = 2
 ANIME = 4
@@ -80,6 +83,12 @@ class Server:
         """
         raise NotImplementedError
 
+    def get_media_chapter_data(self, media_data, chapter_data):
+        raise NotImplementedError
+
+    def save_chapter_page(self, page_data, path):
+        raise NotImplementedError
+
     @staticmethod
     def get_page_name_from_index(page_index):
         return '%04d' % page_index
@@ -99,8 +108,7 @@ class Server:
     def get_download_marker():
         return ".downloaded"
 
-    @staticmethod
-    def mark_download_complete(dir_path):
+    def mark_download_complete(self, dir_path):
         full_path = os.path.join(dir_path, Server.get_download_marker())
         open(full_path, 'w').close()
 
@@ -146,24 +154,25 @@ class Server:
                 self.save_chapter_page(page_data, temp_full_path)
                 os.rename(temp_full_path, full_path)
                 downloaded_page = True
-        Server.mark_download_complete(dir_path)
+        self.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
 
         return True, downloaded_page
 
-    def get_media_chapter_data(self, media_data, chapter_data):
-        """
-        Returns media chapter data
+    def get_stream_data(self, media_data, chapter_data):
+        assert media_data["media_type"] == ANIME
+        m3u8_url = self.get_stream_url(chapter_data=chapter_data)
+        return [self.create_page_data(url=segment.uri, encryption_key=segment.key) for segment in m3u8.load(m3u8_url).segments]
 
-        Currently, only pages are expected.
-        """
-        raise NotImplementedError
-
-    def save_chapter_page(self, page_data, path):
-        """
-        Returns chapter page scan (image) content
-        """
-        raise NotImplementedError
+    def save_stream(self, page_data, path):
+        r = self.session_get(page_data["url"])
+        content = r.content
+        key = page_data["encryption_key"]
+        if key:
+            key_bytes = self.session_get_cache(page_data["encryption_key"].uri).content
+            content = AES.new(key_bytes, AES.MODE_CBC, key.iv).decrypt(content)
+        with open(path, 'wb') as fp:
+            fp.write(content)
 
     def is_url_for_known_media(self, url, known_media):
         return False
@@ -171,7 +180,7 @@ class Server:
     def can_stream_url(self, url):
         return False
 
-    def get_stream_url(self, media=None, chapter=None, url=None):
+    def get_stream_url(self, media_data=None, chapter_data=None, url=None, raw=False):
         return False
 
     def get_media_data_from_url(self, url):

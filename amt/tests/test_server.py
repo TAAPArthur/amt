@@ -1,4 +1,6 @@
 import os
+import subprocess
+from shlex import quote
 
 from PIL import Image
 
@@ -82,6 +84,8 @@ class TestAnimeServer(TestServer):
     media_type = ANIME
     _prefix = "Anime"
     stream_url = "test_url"
+    extension = "ts"
+    TEST_VIDEO_PATH = ""
 
     def can_stream_url(self, url):
         return url == TestAnimeServer.stream_url
@@ -97,5 +101,11 @@ class TestAnimeServer(TestServer):
         assert self.can_stream_url(url)
         return self.get_media_list()[1]
 
-    def get_stream_url(self, media_id=None, chapter_id=None, url=None):
+    def get_stream_url(self, media_id=None, chapter_id=None, url=None, raw=False):
         return "url.m3u8"
+
+    def save_chapter_page(self, page_data, path):
+        self.maybe_inject_error()
+        assert not os.path.exists(path)
+        os.link(TestAnimeServer.TEST_VIDEO_PATH, path)
+        #subprocess.check_call(["ffmpeg", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", path])

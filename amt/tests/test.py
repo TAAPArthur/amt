@@ -2,6 +2,7 @@ import inspect
 import logging
 import os
 import shutil
+import subprocess
 import sys
 import time
 import unittest
@@ -19,7 +20,8 @@ from ..settings import Settings
 from .test_server import TestAnimeServer, TestServer, TestServerLogin
 from .test_tracker import TestTracker
 
-TEST_HOME = "/tmp/amt/test_home/"
+TEST_BASE = "/tmp/amt/"
+TEST_HOME = TEST_BASE + "test_home/"
 
 
 logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)
@@ -50,6 +52,8 @@ class TestApplication(Application):
 
         self.settings.anime_viewer = "echo {}"
         self.settings.manga_viewer = "[ -f {} ]"
+        self.settings.segment_viewer = "ls {}"
+        self.settings.page_viewer = "ls {}"
         self.settings.bundle_cmds[self.settings.bundle_format] = "ls {}; touch {}"
 
 
@@ -97,19 +101,17 @@ class BaseUnitTestClass(unittest.TestCase):
         server = self.media_reader.get_server(media_data["server_id"])
         if server.external:
             return
-        dir_path = self.media_reader.settings.get_chapter_dir(media_data, chapter_data)
         assert server.is_fully_downloaded(media_data, chapter_data)
-        if media_data["media_type"] == MANGA:
-            dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
-
-            assert filenames
-
-            server = self.media_reader.get_server(media_data["server_id"])
+        dir_path = self.media_reader.settings.get_media_dir(media_data)
+        for dirpath, dirnames, filenames in os.walk(dir_path):
             for file_name in filenames:
                 if not file_name.startswith("."):
-                    with open(os.path.join(dirpath, file_name), "rb") as img_file:
-                        img = Image.open(img_file)
-                        self.assertEqual(server.extension, img.format.lower())
+                    if media_data["media_type"] == MANGA:
+                        with open(os.path.join(dirpath, file_name), "rb") as img_file:
+                            img = Image.open(img_file)
+                            self.assertEqual(server.extension, img.format.lower())
+                    elif media_data["media_type"] == ANIME:
+                        subprocess.check_call(["ffprobe", os.path.join(dir_path, dirpath, file_name)])
 
     def verify_unique_numbers(self, chapters):
         list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values() if not chapter_data["special"]])
@@ -847,6 +849,10 @@ class InterestingMediaTest(RealBaseUnitTestClass):
 
 
 def load_tests(loader, tests, pattern):
+
+    os.makedirs(TEST_HOME, exist_ok=True)
+    TestAnimeServer.TEST_VIDEO_PATH = TEST_BASE + "test_video.mp4"
+    subprocess.check_call(["ffmpeg", "-y", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", TestAnimeServer.TEST_VIDEO_PATH])
     clazzes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
     test_cases = [c for _, c in clazzes if issubclass(c, BaseUnitTestClass)]
     test_cases.sort(key=lambda f: findsource(f)[1])

@@ -25,6 +25,7 @@ class Settings:
     anime_viewer = "mpv {}"
     manga_viewer = "zathura {}"
     page_viewer = "sxiv {}"
+    segment_viewer = "cat {} | mpv -"
 
     no_save_session = False
     free_only = False
@@ -149,3 +150,9 @@ class Settings:
 
     def open_anime_viewer(self, name):
         return self._open_viewer(self.anime_viewer, name)
+
+    def open_segment_viewer(self, name):
+        return self._open_viewer(self.segment_viewer, name)
+
+    def open_page_viewer(self, name):
+        return self._open_viewer(self.page_viewer, name)

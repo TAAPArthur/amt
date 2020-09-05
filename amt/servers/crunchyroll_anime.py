@@ -98,11 +98,7 @@ class CrunchyrollAnime(Crunchyroll):
         return url_bandwidth_tuples[0][1]
 
     def get_media_chapter_data(self, media_data, chapter_data):
-        m3u8_url = self.get_stream_url(chapter_id=chapter_data["id"])
-        r = self.session_get(m3u8_url)
-        return [self.create_page_data(url=line) for line in r.text.splitlines() if not line.startswith("#")]
+        return self.get_stream_data(media_data, chapter_data)
 
     def save_chapter_page(self, page_data, path):
-        r = self.session_get(page_data["url"])
-        with open(path, 'wb') as fp:
-            fp.write(r.content)
+        return self.save_stream(page_data, path)
