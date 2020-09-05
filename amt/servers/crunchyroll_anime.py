@@ -65,7 +65,6 @@ class CrunchyrollAnime(Crunchyroll):
         chapter_id = match.group(2)
         media_list = self.search(media_name_prefix_hint, media_name_hint) or self.search(media_name_prefix_hint[0], media_name_hint)
         for media_data in media_list:
-            print(media_data)
             self.update_media_data(media_data)
             if chapter_id in media_data["chapters"]:
                 return media_data
@@ -90,7 +89,7 @@ class CrunchyrollAnime(Crunchyroll):
             if line.startswith("#"):
                 match = self.bandwidth_regex.search(line)
                 if match:
-                    bandwidth = match.group(1)
+                    bandwidth = int(match.group(1))
             elif line:
                 url_bandwidth_tuples.append((bandwidth, line))
         url_bandwidth_tuples.sort(reverse=True)
