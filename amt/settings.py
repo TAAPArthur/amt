@@ -4,6 +4,7 @@ import os
 import subprocess
 from datetime import date
 from pathlib import Path
+from shlex import quote
 from subprocess import CalledProcessError
 
 APP_NAME = "amt"
@@ -15,20 +16,16 @@ class Settings:
     password_manager_enabled = True
     password_save_cmd = "tpm insert {}"
     password_load_cmd = "tpm show {}"
-    media_viewer_cmd = ""
     bundle_cmds = {
         "cbz": "zip {:2} {:1}",
         "pdf": "convert -density 100 -units PixelsPerInch {:1} {:2}"
     }
     bundle_format = "pdf"
-    viewers = {
-        "cbz": "zathura {}",
-        "pdf": "zathura {}",
-        "m3u8": "mpv '{}'",
-        "mp4": "mpv {}",
-        "ts": "cat {} | mpv -"
-    }
-    stream_player = "mpv {}"
+
+    anime_viewer = "mpv {}"
+    manga_viewer = "zathura {}"
+    page_viewer = "sxiv {}"
+
     no_save_session = False
     free_only = False
     shell = True
@@ -113,7 +110,6 @@ class Settings:
                 return login, password
             except subprocess.CalledProcessError:
                 logging.info("Unable to load credentials for %s", server_id)
-                pass
 
     def store_credentials(self, server_id, username, password):
         """Stores the username, password for the given server_id"""
@@ -139,9 +135,17 @@ class Settings:
     def _get_viewer(path):
         return path.split("?")[0].split(".")[-1]
 
-    def view(self, name):
+    def _open_viewer(self, viewer, name):
         try:
-            subprocess.check_call(self.viewers[self._get_viewer(name)].format(name), shell=self.shell)
+            full_cmd = viewer.format(name)
+            logging.info("Running cmd %s: %s shell = %s", viewer, full_cmd, self.shell)
+            subprocess.check_call(full_cmd, shell=self.shell)
             return True
         except CalledProcessError:
             return False
+
+    def open_manga_viewer(self, name):
+        return self._open_viewer(self.manga_viewer, name)
+
+    def open_anime_viewer(self, name):
+        return self._open_viewer(self.anime_viewer, name)

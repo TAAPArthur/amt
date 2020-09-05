@@ -295,7 +295,7 @@ class MangaReader:
 
     def read_bundle(self, name):
         bundle_name = os.path.join(self.settings.bundle_dir, name)
-        if self.settings.view(bundle_name):
+        if self.settings.open_manga_viewer(bundle_name):
             self.mark_bundle_as_read(bundle_name)
             return True
         return False
@@ -314,7 +314,7 @@ class MangaReader:
                 else:
                     streamable_url = server.get_stream_url(url=url)
                     logging.info("Streaming %s", streamable_url)
-                    if self.settings.view(streamable_url) and known:
+                    if self.settings.open_anime_viewer(streamable_url) and known:
                         known[1]["read"] = True
                         if cont:
                             self.play(name=self._get_global_id(known[0]), cont=cont)
@@ -322,20 +322,19 @@ class MangaReader:
         if add:
             raise Exception("Could not find media to add")
         if passthrough:
-            self.settings.view("'{}'".format(url))
+            self.settings.open_anime_viewer(url)
         logging.error("Could not find any matching server")
 
     def play(self, name=None, shuffle=False, cont=False):
         def get_urls():
             for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
-                dir_path = server.get_dir(media_data, chapter)
-                if server.is_fully_downloaded(dir_path):
-                    pass
+                if server.is_fully_downloaded(media_data, chapter):
+                    yield server.get_children(media_data, chapter), chapter
                 else:
                     yield server.get_stream_url(media_data["id"], chapter["id"]), chapter
 
         for url, chapter in get_urls():
-            if self.settings.view(url):
+            if self.settings.open_anime_viewer(url):
                 chapter["read"] = True
                 if not cont:
                     break

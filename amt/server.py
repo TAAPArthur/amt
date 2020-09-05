@@ -3,6 +3,7 @@ import os
 import time
 from enum import Enum
 from functools import lru_cache
+from shlex import quote
 
 MANGA = 1
 NOVEL = 2
@@ -103,19 +104,19 @@ class Server:
         full_path = os.path.join(dir_path, Server.get_download_marker())
         open(full_path, 'w').close()
 
-    def is_fully_downloaded(self, dir_path):
+    def _get_dir(self, media_data, chapter_data):
+        return self.settings.get_chapter_dir(media_data, chapter_data)
+
+    def is_fully_downloaded(self, media_data, chapter_data):
+        dir_path = self._get_dir(media_data, chapter_data)
         full_path = os.path.join(dir_path, self.get_download_marker())
         return os.path.exists(full_path)
 
-    def get_dir(self, media_data, chapter_data):
-        return self.settings.get_chapter_dir(media_data, chapter_data)
-
     def get_children(self, media_data, chapter_data):
-        return "'{}'/*".format(self.get_dir(media_data, chapter_data).replace("'", r"'\''"))
+        return "{}/*".format(quote(self._get_dir(media_data, chapter_data)))
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
-        dir_path = self.get_dir(media_data, chapter_data)
-        if self.is_fully_downloaded(dir_path):
+        if self.is_fully_downloaded(media_data, chapter_data):
             logging.debug("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
             return True, False
 
@@ -133,6 +134,8 @@ class Server:
         list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
         logging.debug("Starting download for %d pages", len(list_of_pages))
         downloaded_page = False
+
+        dir_path = self._get_dir(media_data, chapter_data)
         for index, page_data in enumerate(list_of_pages[:page_limit]):
             temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp." + self.extension)
             full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + self.extension)

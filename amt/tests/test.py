@@ -48,6 +48,10 @@ class TestApplication(Application):
         assert len(self.get_trackers()) == len(trackers)
         assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
+        self.settings.anime_viewer = "echo {}"
+        self.settings.manga_viewer = "[ -f {} ]"
+        self.settings.bundle_cmds[self.settings.bundle_format] = "ls {}; touch {}"
+
 
 class BaseUnitTestClass(unittest.TestCase):
     real = False
@@ -94,7 +98,7 @@ class BaseUnitTestClass(unittest.TestCase):
         if server.external:
             return
         dir_path = self.media_reader.settings.get_chapter_dir(media_data, chapter_data)
-        assert server.is_fully_downloaded(dir_path)
+        assert server.is_fully_downloaded(media_data, chapter_data)
         if media_data["media_type"] == MANGA:
             dirpath, dirnames, filenames = list(os.walk(dir_path))[0]
 
@@ -137,56 +141,48 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
         for bundled_media_name in ["A_Bundled", "B_Bundled", "C_Bundled"]:
             parent_dir = os.path.join(dir, bundled_media_name)
             os.makedirs(parent_dir)
-            for chapter_name in ["10", "Episode 2", "NotANumber"]:
+            for chapter_name in ["10", "Episode 2"]:
                 image.save(os.path.join(parent_dir, chapter_name), "jpeg")
 
 
 class SettingsTest(BaseUnitTestClass):
     def test_settings_save_load(self):
-        settings = Settings(home=TEST_HOME)
-        settings.media_viewer_cmd = "dummy_cmd"
-        settings.save()
+        self.settings.password_save_cmd = "dummy_cmd"
+        self.settings.save()
 
-        settings = Settings(home=TEST_HOME)
-        assert settings.media_viewer_cmd == "dummy_cmd"
+        assert Settings(home=TEST_HOME).password_save_cmd == "dummy_cmd"
 
     def test_credentials(self):
-        settings = Settings(home=TEST_HOME)
-        settings.password_manager_enabled = True
-        settings.password_load_cmd = "cat {}{}".format(TEST_HOME, "{}")
-        settings.password_save_cmd = r"cat - >> {}{}".format(TEST_HOME, "{}")
+        self.settings.password_manager_enabled = True
+        self.settings.password_load_cmd = "cat {}{}".format(TEST_HOME, "{}")
+        self.settings.password_save_cmd = r"cat - >> {}{}".format(TEST_HOME, "{}")
         server_id = "test"
-        assert not settings.get_credentials(server_id)
+        assert not self.settings.get_credentials(server_id)
         username, password = "user", "pass"
-        settings.store_credentials(server_id, username, password)
-        assert (username, password) == settings.get_credentials(server_id)
+        self.settings.store_credentials(server_id, username, password)
+        assert (username, password) == self.settings.get_credentials(server_id)
         tracker_id = "test-tracker"
-        assert not settings.get_credentials(tracker_id)
-        assert not settings.get_secret(tracker_id)
+        assert not self.settings.get_credentials(tracker_id)
+        assert not self.settings.get_secret(tracker_id)
         secret = "MySecret"
-        settings.store_secret(tracker_id, secret)
-        assert secret == settings.get_secret(tracker_id)
+        self.settings.store_secret(tracker_id, secret)
+        assert secret == self.settings.get_secret(tracker_id)
 
     def test_bundle(self):
-        settings = Settings(home=TEST_HOME)
-        settings.bundle_format = "pdf"
-        settings.bundle_cmds[settings.bundle_format] = "echo {} {}"
-        settings.viewers[settings.bundle_format] = "echo {}"
-        name = settings.bundle("")
-        assert name.endswith("." + settings.bundle_format)
-        assert settings.view(name)
+        name = self.settings.bundle("")
+        assert name.endswith("." + self.settings.bundle_format)
+        assert self.settings.open_manga_viewer(name)
 
-        settings.viewers[settings.bundle_format] = "exit 1; #{}"
-        assert not settings.view(name)
+        self.settings.manga_viewer = "exit 1; #{}"
+        assert not self.settings.open_manga_viewer(name)
 
     def test_get_chapter_dir_degenerate_name(self):
-        settings = Settings(home=TEST_HOME)
-        server = TestServer(None, settings)
+        server = TestServer(None, self.settings)
         media_data = server.create_media_data("id", "Manga Name")
         server.update_chapter_data(media_data, "chapter_id", title="Degenerate Chapter Title ~//\\\\!@#$%^&*()", number="1-2")
-        dir = settings.get_chapter_dir(media_data, media_data["chapters"]["chapter_id"])
+        dir = self.settings.get_chapter_dir(media_data, media_data["chapters"]["chapter_id"])
         # should yield the same result everytime
-        assert dir == settings.get_chapter_dir(media_data, media_data["chapters"]["chapter_id"])
+        assert dir == self.settings.get_chapter_dir(media_data, media_data["chapters"]["chapter_id"])
 
     def test_get_chapter_dir(self):
         for media_data in self.test_server.get_media_list():
@@ -194,6 +190,9 @@ class SettingsTest(BaseUnitTestClass):
             sorted_paths = sorted([(self.settings.get_chapter_dir(media_data, chapter_data), chapter_data) for chapter_data in media_data["chapters"].values()])
             sorted_chapters_by_number = sorted(media_data["chapters"].values(), key=lambda x: x["number"])
             self.assertEqual(sorted_chapters_by_number, list(map(lambda x: x[1], sorted_paths)))
+
+    def test_open_viewer_fail(self):
+        assert not self.settings.open_anime_viewer("'")
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
@@ -361,10 +360,6 @@ class MediaReaderTest(BaseUnitTestClass):
         if not no_download:
             self.assertEqual(num_chapters, self.media_reader.download_unread_chapters())
 
-        self.settings.bundle_cmds[self.settings.bundle_format] = "echo {} > {}"
-        for x in self.settings.viewers:
-            self.settings.viewers[x] = "echo {}"
-
     def test_bundle(self):
         self._prepare_for_bundle()
         name = self.media_reader.bundle_unread_chapters()
@@ -385,7 +380,7 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def test_bundle_fail(self):
         self._prepare_for_bundle()
-        self.settings.viewers[self.settings.bundle_format] = "exit 1; echo {};"
+        self.settings.manga_viewer = "exit 1; # {};"
         assert not self.media_reader.read_bundle("none.{}".format(self.settings.bundle_format))
         assert not any([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
 
@@ -584,8 +579,7 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.media_reader, args=["remove", self.app._get_global_id(media_data)])
 
     def test_bundle_read(self):
-        self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
-        self.settings.viewers[self.settings.bundle_format] = "ls {}"
+        self.settings.manga_viewer = "[ -f {} ]"
         media_list = self.add_test_media(self.test_server)
 
         self.app.download_unread_chapters()
@@ -599,7 +593,6 @@ class ArgsTest(BaseUnitTestClass):
         self.assertAllChaptersRead(MANGA)
 
     def test_bundle_specific(self):
-        self.settings.bundle_cmds[self.settings.bundle_format] = "echo {}; touch {}"
         media_list = self.add_test_media(self.test_server)
         self.app.download_unread_chapters()
         num_chapters = sum([len(x["chapters"]) for x in media_list])
@@ -617,19 +610,16 @@ class ArgsTest(BaseUnitTestClass):
             self.app.bundles.clear()
 
     def test_play(self):
-        self.settings.viewers[self.settings.bundle_format] = "ls {}"
         media_list = self.add_test_media(self.test_anime_server)
         parse_args(app=self.media_reader, args=["play", "-c"])
         self.assertAllChaptersRead(ANIME)
 
     def test_stream(self):
-        self.settings.viewers[self.settings.bundle_format] = "echo {}"
         parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
         assert not len(self.media_reader.get_media_in_library())
 
     def test_stream_add(self):
         assert not len(self.media_reader.get_media_in_library())
-        self.settings.viewers[self.settings.bundle_format] = "echo {}"
         parse_args(app=self.media_reader, args=["stream", "--add", TestAnimeServer.stream_url])
         assert len(self.media_reader.get_media_in_library()) == 1
         parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
@@ -637,7 +627,6 @@ class ArgsTest(BaseUnitTestClass):
         self.assertEqual(1, self.getNumChaptersRead())
 
     def test_stream_passthrough(self):
-        self.settings.viewers[self.settings.bundle_format] = "echo {}"
         self.settings.passthrough = True
         parse_args(app=self.media_reader, args=["stream", "youtube.com"])
 
