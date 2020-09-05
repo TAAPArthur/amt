@@ -68,7 +68,13 @@ def parse_args(args=None, app=None, already_upgraded=False):
         play_parser = sub_parsers.add_parser("play", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
         play_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
         play_parser.add_argument("-c", "--cont", default=False, action="store_const", const=True, help="Keep playing until all streams have =been consumed or the player exists with non-zero status")
+
         play_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
+
+        stream_url_parser = sub_parsers.add_parser("get-stream-url", help="Gets the steaming url for the media")
+        stream_url_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
+        stream_url_parser.add_argument("-r", "--raw", default=False, action="store_const", const=True, help="Get the stream url without any extra processing")
+        stream_url_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
 
         # info
         server_list_parser = sub_parsers.add_parser("server-list")
@@ -158,6 +164,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.list()
     elif action == "offset":
         app.offset(namespace.name, offset=namespace.N)
+    elif action == "get-stream-url":
+        app.get_stream_url(name=namespace.name, shuffle=namespace.shuffle)
     elif action == "play":
         print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle))
     elif action == "read":

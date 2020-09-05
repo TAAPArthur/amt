@@ -391,7 +391,6 @@ class MediaReaderTest(BaseUnitTestClass):
     def test_play_anime(self):
         self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
         assert self.media_reader.play(cont=True)
-
         assert all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
 
     def test_play_anime_single(self):
@@ -613,6 +612,11 @@ class ArgsTest(BaseUnitTestClass):
         media_list = self.add_test_media(self.test_anime_server)
         parse_args(app=self.media_reader, args=["play", "-c"])
         self.assertAllChaptersRead(ANIME)
+
+    def test_get_stream_url(self):
+        media_list = self.add_test_media(self.test_anime_server)
+        parse_args(app=self.media_reader, args=["get-stream-url"])
+        assert not self.getNumChaptersRead(ANIME)
 
     def test_stream(self):
         parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])

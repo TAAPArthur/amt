@@ -76,11 +76,13 @@ class CrunchyrollAnime(Crunchyroll):
                 return media, media["chapters"][chapter_id]
         return False
 
-    def get_stream_url(self, media_id=None, chapter_id=None, url=None):
+    def get_stream_url(self, media_id=None, chapter_id=None, url=None, raw=False):
         if url:
             chapter_id = url.split("-")[-1]
         r = self.session_get(self.stream_url.format(self.get_session_id(), chapter_id))
         stream = r.json()["data"]["stream_data"]["streams"][0]
+        if raw:
+            return stream["url"]
 
         r = self.session_get(stream["url"])
         bandwidth = None
