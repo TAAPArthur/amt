@@ -193,6 +193,8 @@ class Server:
                 number = float(number.replace("-", "."))
         if media_data["offset"]:
             number -= media_data["offset"]
+        if number % 1 == 0:
+            number = int(number)
 
         new_values = dict(id=id, title=title, number=number, premium=premium, special=special, date=date)
         if id in media_data["chapters"]:
