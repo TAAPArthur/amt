@@ -1,23 +1,19 @@
 import logging
 import os
+import re
+from shlex import quote
 
 from ..server import ANIME, MANGA, NOT_ANIME, Server
-
-
-def get_number(file_name, index):
-    try:
-        return float(file_name.split(" ")[0])
-    except ValueError:
-        return index
 
 
 class CustomServer(Server):
     id = 'custom_server'
     external = True
     media_type = NOT_ANIME | ANIME
+    number_regex = re.compile(r"(\d+\.?\d*)")
 
     def get_media_list(self):
-        return [self.create_media_data(dir, dir) for dir in os.listdir(self.settings.get_server_dir(self.id))] if os.path.exists(self.settings.get_server_dir(self.id)) else []
+        return [self.create_media_data(dir, dir, dir_name=dir) for dir in os.listdir(self.settings.get_server_dir(self.id))] if os.path.exists(self.settings.get_server_dir(self.id)) else []
 
     def update_media_data(self, media_data):
         root = self.settings.get_media_dir(media_data)
@@ -30,7 +26,7 @@ class CustomServer(Server):
             self.update_chapter_data(media_data, dirName, dirName, float(self.number_regex.search(dirName).group(1)))
 
     def is_fully_downloaded(self, media_data, chapter_data):
-        return True
+        return os.path.exists(os.path.join(self.settings.get_media_dir(media_data), chapter_data["id"]))
 
     def get_children(self, media_data, chapter_data):
         chapter = os.path.join(self.settings.get_media_dir(media_data), chapter_data["id"])
