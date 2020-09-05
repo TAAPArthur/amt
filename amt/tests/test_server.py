@@ -73,7 +73,6 @@ class TestServerLogin(TestServer):
     has_login = True
 
     def login(self, username, password):
-        print("logging in")
         TestServerLogin.counter += 1
         return not TestServerLogin.fail_login
 

@@ -706,6 +706,7 @@ class ServerTest(RealBaseUnitTestClass):
                 assert not server.download_chapter(media_data, chapter_data, page_limit=1)[1]
 
     def test_login_fail(self):
+        TestServerLogin.fail_login = True
         for server in self.media_reader.get_servers():
             if not server.has_login:
                 continue
