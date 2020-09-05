@@ -327,7 +327,7 @@ class MangaReader:
 
     def get_stream_url(self, name=None, shuffle=False, raw=False):
         for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
-            print(server.get_stream_url(media_data["id"], chapter["id"], raw=raw))
+            print(server.get_stream_url(media_data, chapter, raw=raw))
 
     def play(self, name=None, shuffle=False, cont=False):
         def get_urls():

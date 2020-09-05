@@ -171,7 +171,7 @@ class Server:
     def can_stream_url(self, url):
         return False
 
-    def get_stream_url(self, media_id=None, chapter_id=None, url=None):
+    def get_stream_url(self, media=None, chapter=None, url=None):
         return False
 
     def get_media_data_from_url(self, url):
