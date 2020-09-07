@@ -6,6 +6,8 @@ from PIL import Image
 
 from ..server import ANIME, Server
 
+TEST_BASE = "/tmp/amt/"
+
 
 class TestServer(Server):
     id = 'test_server_manga'
@@ -101,11 +103,17 @@ class TestAnimeServer(TestServer):
         assert self.can_stream_url(url)
         return self.get_media_list()[1]
 
-    def get_stream_url(self, media_id=None, chapter_id=None, url=None, raw=False):
+    def get_stream_url(self, media_data=None, chapter_data=None, url=None, raw=False):
+        assert isinstance(media_data, dict) if media_data else True
+        assert isinstance(chapter_data, dict) if chapter_data else True
+        assert isinstance(url, str) if url else True
         return "url.m3u8"
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()
         assert not os.path.exists(path)
+        if not TestAnimeServer.TEST_VIDEO_PATH:
+            os.makedirs(TEST_BASE, exist_ok=True)
+            TestAnimeServer.TEST_VIDEO_PATH = TEST_BASE + "test_video.mp4"
+            subprocess.check_call(["ffmpeg", "-y", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", TestAnimeServer.TEST_VIDEO_PATH])
         os.link(TestAnimeServer.TEST_VIDEO_PATH, path)
-        #subprocess.check_call(["ffmpeg", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", path])

@@ -17,10 +17,10 @@ from ..media_reader import SERVERS, TRACKERS, MangaReader
 from ..server import ANIME, MANGA, Server
 from ..servers.custom import CustomServer
 from ..settings import Settings
-from .test_server import TestAnimeServer, TestServer, TestServerLogin
+from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
+                          TestServerLogin)
 from .test_tracker import TestTracker
 
-TEST_BASE = "/tmp/amt/"
 TEST_HOME = TEST_BASE + "test_home/"
 
 
@@ -392,6 +392,11 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def test_play_anime(self):
         self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
+        assert self.media_reader.play(cont=True)
+        assert all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
+
+    def test_play_anime_downloaded(self):
+        self._prepare_for_bundle(TestAnimeServer.id, no_download=False)
         assert self.media_reader.play(cont=True)
         assert all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
 
@@ -850,9 +855,6 @@ class InterestingMediaTest(RealBaseUnitTestClass):
 
 def load_tests(loader, tests, pattern):
 
-    os.makedirs(TEST_HOME, exist_ok=True)
-    TestAnimeServer.TEST_VIDEO_PATH = TEST_BASE + "test_video.mp4"
-    subprocess.check_call(["ffmpeg", "-y", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", TestAnimeServer.TEST_VIDEO_PATH])
     clazzes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
     test_cases = [c for _, c in clazzes if issubclass(c, BaseUnitTestClass)]
     test_cases.sort(key=lambda f: findsource(f)[1])
