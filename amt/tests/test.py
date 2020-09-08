@@ -542,11 +542,17 @@ class ArgsTest(BaseUnitTestClass):
     def test_download_specific(self):
         media_list = self.add_test_media()
         media_data = media_list[0]
-        media_id = self.app._get_global_id(media_data)
         chapters = self.app._get_sorted_chapters(media_data)
-        parse_args(app=self.media_reader, args=["download", media_id, str(chapters[1]["number"]), str(chapters[-2]["number"])])
+        parse_args(app=self.media_reader, args=["download", self.app._get_global_id(media_data), str(chapters[1]["number"]), str(chapters[-2]["number"])])
         for chapter_data in chapters[1:-2]:
             self.verify_download(media_data, chapter_data)
+
+    def test_download_specific_single(self):
+        media_list = self.add_test_media()
+        media_data = media_list[0]
+        chapters = self.app._get_sorted_chapters(media_data)
+        parse_args(app=self.media_reader, args=["download", self.app._get_global_id(media_data), str(chapters[1]["number"])])
+        self.verify_download(media_data, chapters[1])
 
     def test_download_next(self):
         media_list = self.add_test_media()
