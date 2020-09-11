@@ -81,7 +81,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         server_list_parser.add_argument("id", choices=app.get_servers_ids())
         sub_parsers.add_parser("list")
         chapter_parsers = sub_parsers.add_parser("list-chapters")
-        chapter_parsers.add_argument("id", choices=app.get_media_ids_in_library())
+        chapter_parsers.add_argument("name", choices=app.get_all_names())
 
         # credentials
         sub_parsers.add_parser("login", description="Relogin to all servers")
@@ -154,7 +154,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "list":
         app.list()
     elif action == "list-chapters":
-        app.list_chapters(namespace.id)
+        app.list_chapters(namespace.name)
     elif action == "load":
         app.load_from_tracker(user_name=namespace.name, exact=not namespace.lenient, local_only=namespace.local_only, update_progress_only=namespace.progress_only)
     elif action == "login":
