@@ -263,6 +263,8 @@ class MangaReader:
         for chapter in self._get_sorted_chapters(media_data):
             if start <= chapter["number"] and (not end or chapter["number"] <= end):
                 server.download_chapter(media_data, chapter)
+                if end is None:
+                    break
 
     def download_chapters(self, media_data, limit=0):
         last_read = self.get_last_read(media_data)

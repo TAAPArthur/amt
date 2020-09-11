@@ -554,6 +554,11 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.media_reader, args=["download", self.app._get_global_id(media_data), str(chapters[1]["number"])])
         self.verify_download(media_data, chapters[1])
 
+        server = self.media_reader.get_server(media_data["server_id"])
+        for chapter_data in chapters:
+            if chapter_data != chapters[1]:
+                assert not server.is_fully_downloaded(media_data, chapter_data)
+
     def test_download_next(self):
         media_list = self.add_test_media()
         for id, media_data in self.media_reader.media.items():
