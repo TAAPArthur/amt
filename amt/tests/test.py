@@ -193,9 +193,6 @@ class SettingsTest(BaseUnitTestClass):
             sorted_chapters_by_number = sorted(media_data["chapters"].values(), key=lambda x: x["number"])
             self.assertEqual(sorted_chapters_by_number, list(map(lambda x: x[1], sorted_paths)))
 
-    def test_open_viewer_fail(self):
-        assert not self.settings.open_anime_viewer("'")
-
 
 class ServerWorkflowsTest(BaseUnitTestClass):
 

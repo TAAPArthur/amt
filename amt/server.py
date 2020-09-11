@@ -3,7 +3,6 @@ import os
 import time
 from enum import Enum
 from functools import lru_cache
-from shlex import quote
 
 import m3u8
 from Crypto.Cipher import AES
@@ -121,7 +120,7 @@ class Server:
         return os.path.exists(full_path)
 
     def get_children(self, media_data, chapter_data):
-        return "{}/*".format(quote(self._get_dir(media_data, chapter_data)))
+        return "{}/*".format(self._get_dir(media_data, chapter_data))
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         if self.is_fully_downloaded(media_data, chapter_data):

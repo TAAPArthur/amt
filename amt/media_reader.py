@@ -292,7 +292,7 @@ class MangaReader:
             return None
 
         logging.info("Bundling %s", paths)
-        name = self.settings.bundle(" ".join(paths))
+        name = self.settings.bundle(paths)
         self.bundles[name] = bundle_data
         return name
 

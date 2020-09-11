@@ -107,7 +107,7 @@ class TestAnimeServer(TestServer):
         assert isinstance(media_data, dict) if media_data else True
         assert isinstance(chapter_data, dict) if chapter_data else True
         assert isinstance(url, str) if url else True
-        return "url.m3u8"
+        return "url.m3u8?key=1&&false"
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()

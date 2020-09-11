@@ -128,17 +128,23 @@ class Settings:
         self.store_credentials(server_id, secret, "token")
 
     def bundle(self, img_dirs):
-        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(date.today(), str(hash(str(img_dirs)))[1:8], self.bundle_format))
-        cmd = self.bundle_cmds[self.bundle_format].format(img_dirs, name)
+        arg = " ".join(map(Settings._smart_quote, img_dirs))
+        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(date.today(), str(hash(arg))[1:8], self.bundle_format))
+        cmd = self.bundle_cmds[self.bundle_format].format(arg, name)
+        logging.info("Running cmd %s shell = %s", cmd, self.shell)
         subprocess.check_call(cmd, shell=self.shell)
         return name
 
     @staticmethod
-    def _get_viewer(path):
-        return path.split("?")[0].split(".")[-1]
+    def _smart_quote(name):
+        return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
 
     def _open_viewer(self, viewer, name):
         try:
+            if isinstance(name, str):
+                name = Settings._smart_quote(name)
+            else:
+                name = " ".join(map(Settings._smart_quote, name))
             full_cmd = viewer.format(name)
             logging.info("Running cmd %s: %s shell = %s", viewer, full_cmd, self.shell)
             subprocess.check_call(full_cmd, shell=self.shell)
