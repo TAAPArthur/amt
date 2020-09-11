@@ -10,6 +10,7 @@ from collections import deque
 
 import requests
 from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 
 from . import servers, trackers
 from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
@@ -57,8 +58,8 @@ class MangaReader:
 
         self.session = requests.Session()
         if self.settings.max_retires:
-            self.session.mount('http://', HTTPAdapter(max_retries=self.settings.max_retires))
-            self.session.mount('https://', HTTPAdapter(max_retries=self.settings.max_retires))
+            for prefix in ('http://', 'https://'):
+                self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retires, status_forcelist=self.settings.status_to_retry)))
         self.load_session_cookies()
 
         self.session.headers.update({
