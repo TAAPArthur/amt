@@ -25,11 +25,8 @@ def import_sub_classes(m, base_class, results):
     for _finder, name, _ispkg in pkgutil.iter_modules(m.__path__, m.__name__ + '.'):
         module = importlib.import_module(name)
         for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
-            try:
-                if issubclass(obj, base_class) and obj.id:
-                    results.add(obj)
-            except Exception as e:
-                logging.warning(e)
+            if issubclass(obj, base_class) and obj.id:
+                results.add(obj)
 
 
 import_sub_classes(servers, Server, SERVERS)

@@ -1,6 +1,7 @@
 import inspect
 import logging
 import os
+import pkgutil
 import shutil
 import subprocess
 import sys
