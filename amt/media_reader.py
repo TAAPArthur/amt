@@ -71,9 +71,6 @@ class MangaReader:
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0"
         })
 
-        self.load_state()
-        assert len(tracker_list) <= 2
-
         for cls in server_list:
             if cls.id:
                 instance = cls(self.session, self.settings)
@@ -82,6 +79,7 @@ class MangaReader:
             if cls.id:
                 instance = cls(self.session, self.settings)
                 self._trackers.append(instance)
+        self.load_state()
 
     def get_primary_tracker(self):
         return self._trackers[0]
@@ -150,14 +148,14 @@ class MangaReader:
         except FileNotFoundError:
             self.settings.init()
 
-        for key in self.state["media"]:
+        for key in list(self.state["media"].keys()):
             if self.state["media"][key]["server_id"] not in self._servers:
-                self.state["disabled_media"] = self.state["media"][key]
+                self.state["disabled_media"][key] = self.state["media"][key]
                 del self.state["media"][key]
 
-        for key in self.state["disabled_media"]:
+        for key in list(self.state["disabled_media"].keys()):
             if self.state["disabled_media"][key]["server_id"] in self._servers:
-                self.state["media"] = self.state["disabled_media"][key]
+                self.state["media"]["key"] = self.state["disabled_media"][key]
                 del self.state["disabled_media"][key]
 
         self.media = self.state["media"]

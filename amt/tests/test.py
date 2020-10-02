@@ -270,6 +270,17 @@ class MediaReaderTest(BaseUnitTestClass):
                 self.media_reader.load_state()
                 assert old_state == self.media_reader.state
 
+    def test_save_load_disabled(self):
+        self.add_test_media()
+        assert self.media_reader.save_state()
+        temp = self.media_reader._servers
+        self.media_reader._servers = {}
+        self.media_reader.load_state()
+        assert not len(self.media_reader.media)
+        self.media_reader._servers = temp
+        self.media_reader.load_state()
+        assert len(self.media_reader.media)
+
     def test_mark_chapters_until_n_as_read(self):
 
         for server in self.media_reader.get_servers():
