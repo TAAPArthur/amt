@@ -19,16 +19,21 @@ from .tracker import Tracker
 
 SERVERS = set()
 TRACKERS = set()
-for _finder, name, _ispkg in pkgutil.iter_modules(servers.__path__, servers.__name__ + '.'):
-    module = importlib.import_module(name)
-    for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
-        if issubclass(obj, Server) and obj != Server and obj.id:
-            SERVERS.add(obj)
-for _finder, name, _ispkg in pkgutil.iter_modules(trackers.__path__, trackers.__name__ + '.'):
-    module = importlib.import_module(name)
-    for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
-        if issubclass(obj, Tracker) and obj != Tracker and obj.id:
-            TRACKERS.add(obj)
+
+
+def import_sub_classes(m, base_class, results):
+    for _finder, name, _ispkg in pkgutil.iter_modules(m.__path__, m.__name__ + '.'):
+        module = importlib.import_module(name)
+        for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
+            try:
+                if issubclass(obj, base_class) and obj.id:
+                    results.add(obj)
+            except Exception as e:
+                logging.warning(e)
+
+
+import_sub_classes(servers, Server, SERVERS)
+import_sub_classes(trackers, Tracker, TRACKERS)
 
 
 def for_each(func, media_list):

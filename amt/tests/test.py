@@ -11,12 +11,15 @@ from unittest.mock import patch
 
 from PIL import Image
 
+from .. import tests
 from ..app import Application
 from ..args import parse_args
-from ..media_reader import SERVERS, TRACKERS, MangaReader
+from ..media_reader import SERVERS, TRACKERS, MangaReader, import_sub_classes
 from ..server import ANIME, MANGA, Server
 from ..servers.custom import CustomServer
 from ..settings import Settings
+from ..tracker import Tracker
+from . import test_server
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
                           TestServerLogin)
 from .test_tracker import TestTracker
@@ -29,6 +32,12 @@ logger = logging.getLogger()
 stream_handler = logging.StreamHandler(sys.stdout)
 logger.addHandler(stream_handler)
 
+TEST_SERVERS = set()
+TEST_TRACKERS = set()
+
+import_sub_classes(tests, TestServer, TEST_SERVERS)
+import_sub_classes(tests, TestTracker, TEST_TRACKERS)
+
 
 class TestApplication(Application):
     def __init__(self, real=False):
@@ -39,8 +48,8 @@ class TestApplication(Application):
         settings.shell = True
         settings.free_only = True
         settings.password_manager_enabled = False
-        servers = [TestServer, TestAnimeServer, TestServerLogin]
-        trackers = [TestTracker]
+        servers = list(TEST_SERVERS)
+        trackers = list(TEST_TRACKERS)
         if real:
             servers += SERVERS
             trackers += TRACKERS
