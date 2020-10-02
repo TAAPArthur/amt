@@ -57,7 +57,7 @@ class MangaReader:
 
     def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
         self.settings = settings if settings else Settings()
-        self.state = {"media": {}, "bundles": {}, "trackers": {}}
+        self.state = {"media": {}, "bundles": {}, "trackers": {}, "disabled_media": {}}
         self._servers = {}
         self._trackers = []
 
@@ -152,6 +152,16 @@ class MangaReader:
                 self._set_state_hash()
         except FileNotFoundError:
             self.settings.init()
+
+        for key in self.state["media"]:
+            if self.state["media"][key]["server_id"] not in self._servers:
+                self.state["disabled_media"] = self.state["media"][key]
+                del self.state["media"][key]
+
+        for key in self.state["disabled_media"]:
+            if self.state["disabled_media"][key]["server_id"] in self._servers:
+                self.state["media"] = self.state["disabled_media"][key]
+                del self.state["disabled_media"][key]
 
         self.media = self.state["media"]
         self.bundles = self.state["bundles"]
