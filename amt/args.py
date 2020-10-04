@@ -46,6 +46,14 @@ def parse_args(args=None, app=None, already_upgraded=False):
         download_parser.add_argument("--limit", type=int, default=0, help="How many chapters will be downloaded per series")
         download_parser.add_argument("name", choices=app.get_all_names(), default=None, nargs="?", help="Download only series determined by name")
 
+        get_specific_parser = sub_parsers.add_parser("get-media", help="Used to download specific chapters")
+        get_specific_parser.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
+        get_specific_parser.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        get_specific_parser.add_argument("--stream", action="store_const", const=True, default=False, help="Stream instead of download")
+        get_specific_parser.add_argument("name")
+        get_specific_parser.add_argument("start", type=float, default=0, help="Starting chapter (inclusive)")
+        get_specific_parser.add_argument("end", type=float, nargs="?", default=None, help="Ending chapter (inclusive)")
+
         download_specific_parser = sub_parsers.add_parser("download", help="Used to download specific chapters")
         download_specific_parser.add_argument("id", choices=app.get_all_single_names())
 
@@ -149,11 +157,14 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "bundle":
         print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle))
     elif action == "download":
-        app.download_specific_chapters(namespace.id, namespace.start, namespace.end)
+        app.download_specific_chapters(namespace.id, start=namespace.start, end=namespace.end)
     elif action == "download-unread":
         app.download_unread_chapters(namespace.name, limit=namespace.limit)
     elif action == "get":
         print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
+
+    elif action == "get-media":
+        app.get_media(namespace.name, media_type=namespace.manga_only or namespace.anime_only, stream=namespace.stream, start=namespace.start, end=namespace.end)
     elif action == "list":
         app.list()
     elif action == "list-chapters":

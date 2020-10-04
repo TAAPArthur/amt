@@ -270,12 +270,16 @@ class MangaReader:
     def _get_sorted_chapters(self, media_data):
         return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
 
-    def download_specific_chapters(self, name, start=0, end=0):
+    def download_specific_chapters(self, name=None, media_data=None, start=0, end=0):
         media_data = self._get_single_media(name)
         server = self.get_server(media_data["server_id"])
+        for chapter in self.get_chapters_in_range(media_data, start=start, end=end):
+            server.download_chapter(media_data, chapter)
+
+    def get_chapters_in_range(self, media_data, start=0, end=0):
         for chapter in self._get_sorted_chapters(media_data):
             if start <= chapter["number"] and (not end or chapter["number"] <= end):
-                server.download_chapter(media_data, chapter)
+                yield chapter
                 if end is None:
                     break
 

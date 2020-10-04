@@ -38,6 +38,23 @@ class Application(MangaReader):
             self.add_media(media_data)
         return media_data
 
+    def get_media(self, term, media_type=None, stream=False, start=0, end=0):
+        results = self.search_for_media(term, media_type=media_type, exact=False)
+        self.print_results(results)
+        media_data = self.select_media(results, "Select media to add: ")
+        if media_data:
+            self.update_media(media_data)
+            server = self.get_server(media_data["server_id"])
+
+            for chapter in self.get_chapters_in_range(media_data, start=start, end=end):
+                if stream:
+                    url = server.get_stream_url(media_data, chapter)
+                    self.stream(url)
+                else:
+                    server.download_chapter(media_data, chapter)
+        else:
+            logging.info("Could not find media")
+
     def load_from_tracker(self, user_id=None, user_name=None, exact=True, local_only=False, update_progress_only=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
