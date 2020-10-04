@@ -6,6 +6,7 @@ from functools import lru_cache
 
 import m3u8
 from Crypto.Cipher import AES
+from PIL import Image
 
 MANGA = 1
 NOVEL = 2
@@ -153,6 +154,11 @@ class Server:
                 self.save_chapter_page(page_data, temp_full_path)
                 os.rename(temp_full_path, full_path)
                 downloaded_page = True
+        if self.settings.force_odd_pages and self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2:
+            full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
+            image = Image.new('RGB', (100, 100))
+            image.save(full_path, "jpeg")
+
         self.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
 

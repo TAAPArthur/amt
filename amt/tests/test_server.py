@@ -61,7 +61,7 @@ class TestServer(Server):
 
     def get_media_chapter_data(self, media_data, chapter_data):
         self.maybe_inject_error()
-        return [self.create_page_data(url="") for k in range(3)]
+        return [self.create_page_data(url="") for k in range(int(media_data["id"])+3)]
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()
