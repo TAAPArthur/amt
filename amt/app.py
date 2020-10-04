@@ -82,8 +82,8 @@ class Application(MangaReader):
                 logging.debug("Already tracking %s %d", media_data["name"], entry["progress"])
 
             if entry["progress"] > media_data["progress"]:
-                media_data["progress"] = entry["progress"]
-            self.mark_chapters_until_n_as_read(media_data, int(entry["progress"]))
+                self.mark_chapters_until_n_as_read(media_data, entry["progress"])
+            media_data["progress"] = entry["progress"]
             count += 1
         self.list()
         return count, new_count

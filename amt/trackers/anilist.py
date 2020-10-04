@@ -91,8 +91,8 @@ class Anilist(Tracker):
             raise ValueError
 
         for id, progress in list_of_updates:
-            variables = {"id": id, "progress": progress}
-            logging.debug("Updating %d to %d", id, progress)
+            variables = {"id": id, "progress": int(progress)}
+            logging.debug("Updating %d to %d", id, int(progress))
             response = self.session.post(self.url, json={'query': self.update_list_query, 'variables': variables}, headers=self.get_auth_header())
             logging.debug(response.text)
 

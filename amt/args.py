@@ -96,7 +96,10 @@ def parse_args(args=None, app=None, already_upgraded=False):
         load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media")
 
         sync_parser = sub_parsers.add_parser("sync", description="Attempts to update tracker with current progress")
-        sync_parser .add_argument("--force", default=False, help="Allow progress to decrease")
+        sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
+        sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
+        sync_parser.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
+        sync_parser.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
 
         mark_parsers = sub_parsers.add_parser("mark-up-to-date", description="Mark all known chapters as read")
         mark_parsers.add_argument("--force", default=False, help="Allow chapters to be marked as unread")
@@ -182,11 +185,11 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "stream":
         app.stream(namespace.url, add=namespace.add, cont=namespace.cont)
     elif action == "sync":
-        app.sync_progress(namespace.force)
+        app.sync_progress(force=namespace.force, media_type=namespace.manga_only or namespace.anime_only, dry_run=namespace.dry_run)
     elif action == "update":
         app.update()
     elif action == "upgrade":
         app.upgrade_state()
 
-    if not namespace.no_save:
+    if not namespace.no_save and "dry_run" not in namespace:
         app.save()

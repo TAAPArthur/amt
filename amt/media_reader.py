@@ -236,10 +236,13 @@ class MangaReader:
             results = list(filter(lambda x: x["name"] == term, results))
         return results
 
-    def mark_chapters_until_n_as_read(self, media_data, N):
+    def mark_chapters_until_n_as_read(self, media_data, N, force=False):
         """Marks all chapters whose numerical index <=N as read"""
         for chapter in media_data["chapters"].values():
-            chapter["read"] = chapter["number"] <= N
+            if chapter["number"] <= N:
+                chapter["read"] = True
+            elif force:
+                chapter["read"] = False
 
     def get_last_chapter_number(self, media_data):
         return max(media_data["chapters"].values(), key=lambda x: x["number"])["number"]
@@ -257,7 +260,7 @@ class MangaReader:
             if not force:
                 last_read = max(self.get_last_read(media_data), last_read)
             print(force, self.get_last_read(media_data), last_read, N, len(media_data["chapters"]))
-            self.mark_chapters_until_n_as_read(media_data, last_read)
+            self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
     def download_unread_chapters(self, name=None, media_type=None, limit=0):
         """Downloads all chapters that are not read"""
@@ -397,16 +400,17 @@ class MangaReader:
 
         self.trackers[media_id][tracker_id] = (tracking_id, tracker_title)
 
-    def sync_progress(self, force=False):
+    def sync_progress(self, force=False, media_type=None, dry_run=False):
         data = []
         tracker = self.get_primary_tracker()
         for media_id, media_data in self.media.items():
-            tracker_info = self.get_tracker_info(media_id=media_id, tracker_id=self.get_primary_tracker().id)
-            if tracker_info and (force or media_data["progress"] < self.get_last_read(media_data)):
-                data.append((tracker_info[0], self.get_last_read(media_data)))
-                media_data["progress"] = self.get_last_read(media_data)
-                logging.info("Preparing to update %s", media_data["name"])
+            if not media_type or media_data["media_type"] == media_type:
+                tracker_info = self.get_tracker_info(media_id=media_id, tracker_id=self.get_primary_tracker().id)
+                if tracker_info and (force or media_data["progress"] < self.get_last_read(media_data)):
+                    data.append((tracker_info[0], self.get_last_read(media_data)))
+                    media_data["progress"] = self.get_last_read(media_data)
+                    logging.info("Preparing to update %s to %d", media_data["name"], media_data["progress"])
 
-        if data:
+        if data and not dry_run:
             tracker.update(data)
         return True if data else False
