@@ -40,7 +40,7 @@ def for_each(func, media_list):
             result = func(media_data)
             results.append(result) if isinstance(result, int) else results.extend(result)
         except Exception as e:
-            logging.info(e)
+            logging.error(e)
     return results
 
 

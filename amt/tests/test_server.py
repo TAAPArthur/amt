@@ -36,7 +36,6 @@ class TestServer(Server):
         media_id = media_data["id"]
         assert media_id in map(lambda x: x["id"], self.get_media_list())
         if media_id == 1:
-            self.update_chapter_data(media_data, id=0, title="Chapter0", number=0, date="2020-08-08", premium=self.has_login),
             self.update_chapter_data(media_data, id=1, title="Chapter1", number=1, date="2020-07-08", premium=self.has_login),
             self.update_chapter_data(media_data, id=2, title="Chapter2", number=2, date="2020-07-09", premium=self.has_login),
             self.update_chapter_data(media_data, id=3, title="Chapter3", number=3, date="2020-07-10", premium=self.has_login)
@@ -61,7 +60,7 @@ class TestServer(Server):
 
     def get_media_chapter_data(self, media_data, chapter_data):
         self.maybe_inject_error()
-        return [self.create_page_data(url="") for k in range(int(media_data["id"])+3)]
+        return [self.create_page_data(url="") for k in range(int(media_data["id"]) + 3)]
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()

@@ -208,22 +208,24 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
     def test_media_reader_add_remove_media(self):
         for server in self.media_reader.get_servers():
-            media_list = server.get_media_list()
-            assert media_list
-            selected_media = media_list[0]
-            self.media_reader.add_media(selected_media)
-            my_media_list = list(self.media_reader.get_media_in_library())
-            assert 1 == len(my_media_list)
-            assert my_media_list[0]["id"] == selected_media["id"]
-            self.media_reader.remove_media(media_data=selected_media)
-            assert 0 == len(self.media_reader.get_media_in_library())
+            with self.subTest(server=server.id):
+                media_list = server.get_media_list()
+                assert media_list
+                selected_media = media_list[0]
+                self.media_reader.add_media(selected_media)
+                my_media_list = list(self.media_reader.get_media_in_library())
+                assert 1 == len(my_media_list)
+                assert my_media_list[0]["id"] == selected_media["id"]
+                self.media_reader.remove_media(media_data=selected_media)
+                assert 0 == len(self.media_reader.get_media_in_library())
 
     def test_search_media(self):
         for server in self.media_reader.get_servers():
-            media_data = server.get_media_list()[0]
-            name = media_data["name"]
-            assert media_data == list(server.search(name))[0]
-            assert server.search(name[:3])
+            with self.subTest(server=server.id):
+                media_data = server.get_media_list()[0]
+                name = media_data["name"]
+                assert media_data == list(server.search(name))[0]
+                assert server.search(name[:3])
 
     def test_search_for_media(self):
         servers = set()
