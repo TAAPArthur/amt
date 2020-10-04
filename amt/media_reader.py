@@ -153,7 +153,7 @@ class MangaReader:
                 self.state["disabled_media"][key] = self.state["media"][key]
                 del self.state["media"][key]
 
-        for key in list(self.state["disabled_media"].keys()):
+        for key in list(self.state.get("disabled_media", {}).keys()):
             if self.state["disabled_media"][key]["server_id"] in self._servers:
                 self.state["media"]["key"] = self.state["disabled_media"][key]
                 del self.state["disabled_media"][key]
