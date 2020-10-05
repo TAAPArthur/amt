@@ -8,6 +8,8 @@ import m3u8
 from Crypto.Cipher import AES
 from PIL import Image
 
+from .job import Job
+
 MANGA = 1
 NOVEL = 2
 ANIME = 4
@@ -123,6 +125,18 @@ class Server:
     def get_children(self, media_data, chapter_data):
         return "{}/*".format(self._get_dir(media_data, chapter_data))
 
+    def _download_page(self, media_data, chapter_data, dir_path, index, page_data):
+        temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp." + page_data["ext"])
+        full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + page_data["ext"])
+
+        logging.warn("downloading %s", full_path)
+        if os.path.exists(full_path):
+            logging.debug("Page %s already download", full_path)
+        else:
+            self.save_chapter_page(page_data, temp_full_path)
+            os.rename(temp_full_path, full_path)
+            downloaded_page = True
+
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         if self.is_fully_downloaded(media_data, chapter_data):
             logging.debug("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
@@ -144,16 +158,11 @@ class Server:
         downloaded_page = False
 
         dir_path = self._get_dir(media_data, chapter_data)
+        job = Job(self.settings.threads)
         for index, page_data in enumerate(list_of_pages[:page_limit]):
-            temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp." + self.extension)
-            full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + self.extension)
+            job.add(lambda index=index, page_data=page_data: self._download_page(media_data, chapter_data, dir_path, index, page_data))
+        job.run()
 
-            if os.path.exists(full_path):
-                logging.debug("Page %s already download", full_path)
-            else:
-                self.save_chapter_page(page_data, temp_full_path)
-                os.rename(temp_full_path, full_path)
-                downloaded_page = True
         if self.settings.force_odd_pages and self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2:
             full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
             image = Image.new('RGB', (100, 100))
@@ -162,7 +171,7 @@ class Server:
         self.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
 
-        return True, downloaded_page
+        return True, True
 
     def get_stream_data(self, media_data, chapter_data):
         assert media_data["media_type"] == ANIME

@@ -22,6 +22,8 @@ class Settings:
     }
     bundle_format = "pdf"
 
+    threads = 8
+
     anime_viewer = "mpv {}"
     manga_viewer = "zathura {}"
     page_viewer = "sxiv {}"

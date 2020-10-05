@@ -60,6 +60,7 @@ class TestApplication(Application):
         assert len(self.get_trackers()) == len(trackers)
         assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
+        self.settings.threads = 0
         self.settings.anime_viewer = "echo {}"
         self.settings.manga_viewer = "[ -f {} ]"
         self.settings.segment_viewer = "ls {}"
@@ -115,11 +116,12 @@ class BaseUnitTestClass(unittest.TestCase):
         dir_path = self.media_reader.settings.get_media_dir(media_data)
         for dirpath, dirnames, filenames in os.walk(dir_path):
             for file_name in filenames:
+                assert len(filenames) > 2
                 if not file_name.startswith("."):
                     if media_data["media_type"] == MANGA:
                         with open(os.path.join(dirpath, file_name), "rb") as img_file:
                             img = Image.open(img_file)
-                            self.assertEqual(server.extension, img.format.lower())
+                            self.assertEqual(file_name.split(".")[-1].replace("jpg", "jpeg"), img.format.lower())
                     elif media_data["media_type"] == ANIME:
                         subprocess.check_call(["ffprobe", os.path.join(dir_path, dirpath, file_name)])
 
@@ -715,7 +717,9 @@ class ServerTest(RealBaseUnitTestClass):
         assert len(self.media_reader.get_servers()) > 2
 
     def test_get_media_list(self):
+
         for server in self.media_reader.get_servers():
+            server.settings.threads = 8
             with self.subTest(server=server.id, method="get_media_list"):
                 media_list = server.get_media_list()
                 assert media_list
@@ -741,11 +745,11 @@ class ServerTest(RealBaseUnitTestClass):
 
             with self.subTest(server=server.id, method="download"):
                 media_data = media_list[0]
-                chapter_data = list(media_data["chapters"].values())[0]
-                if not chapter_data["premium"]:
-                    assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=1)[1]
+                for chapter_data in filter(lambda x: not x["premium"], media_data["chapters"].values()):
+                    assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=8)[1]
                     self.verify_download(media_data, chapter_data)
-                assert not server.download_chapter(media_data, chapter_data, page_limit=1)[1]
+                    assert not server.download_chapter(media_data, chapter_data, page_limit=1)[1]
+                    break
 
     def test_login_fail(self):
         TestServerLogin.fail_login = True
