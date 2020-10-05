@@ -1,0 +1,9 @@
+requests
+pure_protobuf
+Unidecode
+argcomplete
+m3u8
+beautifulsoup4
+dataclasses
+Pillow
+pycryptodome
