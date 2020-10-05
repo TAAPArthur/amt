@@ -227,5 +227,5 @@ class Server:
             media_data["chapters"][id]["read"] = False
         return True
 
-    def create_page_data(self, url, id=None, encryption_key=None):
-        return dict(url=url, id=id, encryption_key=encryption_key)
+    def create_page_data(self, url, id=None, encryption_key=None, ext=None):
+        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext or self.extension)
