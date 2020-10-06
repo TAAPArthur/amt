@@ -40,9 +40,12 @@ def parse_args(args=None, app=None, already_upgraded=False):
         remove_parsers.add_argument("id", choices=app.get_all_single_names(), help="Global id of media to remove")
 
         # update and download
-        sub_parsers.add_parser("update", description="Update all media")
+        update_parser = sub_parsers.add_parser("update", description="Update all media")
+        update_parser.add_argument("--download", "-d", action="store_const", const=True, default=False, help="Update and download")
 
         download_parser = sub_parsers.add_parser("download-unread", help="Downloads all chapters that have not been read")
+        download_parser.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
+        download_parser.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
         download_parser.add_argument("--limit", type=int, default=0, help="How many chapters will be downloaded per series")
         download_parser.add_argument("name", choices=app.get_all_names(), default=None, nargs="?", help="Download only series determined by name")
 
@@ -165,7 +168,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "download":
         app.download_specific_chapters(namespace.id, start=namespace.start, end=namespace.end)
     elif action == "download-unread":
-        app.download_unread_chapters(namespace.name, limit=namespace.limit)
+        app.download_unread_chapters(namespace.name, media_type=namespace.manga_only or namespace.anime_only, limit=namespace.limit)
     elif action == "get":
         print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
 
@@ -206,7 +209,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=namespace.manga_only or namespace.anime_only, dry_run=namespace.dry_run)
     elif action == "update":
-        app.update()
+        app.update(download=namespace.download)
     elif action == "upgrade":
         app.upgrade_state()
 
