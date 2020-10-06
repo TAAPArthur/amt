@@ -66,7 +66,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         bundle_parser.add_argument("name", choices=app.get_all_names(MANGA), default=None, nargs="?")
 
         read_parser = sub_parsers.add_parser("read", help="Open a saved bundle for reading. If the command exits with status 0, then the container chapters will be marked read")
-        read_parser.add_argument("name", choices=os.listdir(app.settings.bundle_dir), help="Name of the bundle")
+        read_parser.add_argument("name", default=None, nargs="?", choices=os.listdir(app.settings.bundle_dir), help="Name of the bundle")
 
         steam_parser = sub_parsers.add_parser("stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
         steam_parser.add_argument("--add", default=False, action="store_const", const=True)

@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import subprocess
-from datetime import date
+from datetime import datetime
 from pathlib import Path
 from shlex import quote
 from subprocess import CalledProcessError
@@ -132,7 +132,7 @@ class Settings:
 
     def bundle(self, img_dirs):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
-        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(date.today(), str(hash(arg))[1:8], self.bundle_format))
+        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'), str(hash(arg))[1:8], self.bundle_format))
         cmd = self.bundle_cmds[self.bundle_format].format(arg, name)
         logging.info("Running cmd %s shell = %s", cmd, self.shell)
         subprocess.check_call(cmd, shell=self.shell)

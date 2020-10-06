@@ -314,7 +314,8 @@ class MangaReader:
         return name
 
     def read_bundle(self, name):
-        bundle_name = os.path.join(self.settings.bundle_dir, name)
+
+        bundle_name = os.path.join(self.settings.bundle_dir, name) if name else max(self.bundles.keys())
         if self.settings.open_manga_viewer(bundle_name):
             self.mark_bundle_as_read(bundle_name)
             return True

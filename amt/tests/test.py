@@ -631,6 +631,13 @@ class ArgsTest(BaseUnitTestClass):
         parse_args(app=self.media_reader, args=["read", os.path.basename(name)])
         self.assertAllChaptersRead(MANGA)
 
+    def test_bundle_read_simple(self):
+        self.settings.manga_viewer = "[ -f {} ]"
+        media_list = self.add_test_media(self.test_server)
+        parse_args(app=self.media_reader, args=["bundle"])
+        parse_args(app=self.media_reader, args=["read"])
+        self.assertAllChaptersRead(MANGA)
+
     def test_bundle_specific(self):
         media_list = self.add_test_media(self.test_server)
         self.app.download_unread_chapters()
