@@ -84,6 +84,12 @@ def parse_args(args=None, app=None, already_upgraded=False):
         stream_url_parser.add_argument("-r", "--raw", default=False, action="store_const", const=True, help="Get the stream url without any extra processing")
         stream_url_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
 
+        # external
+        import_parser = sub_parsers.add_parser("import")
+        import_parser.add_argument("--no-copy", action="store_const", const=True, default=False, help="Moves instead of copying files")
+        import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
+        import_parser.add_argument("file", nargs='+')
+
         # info
         server_list_parser = sub_parsers.add_parser("server-list")
         server_list_parser.add_argument("id", choices=app.get_servers_ids())
@@ -193,6 +199,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "set":
         print("{} = {}".format(namespace.setting, app.settings.set(namespace.setting, namespace.value)))
         app.settings.save()
+    elif action == "import":
+        app.import_media(namespace.file, no_copy=namespace.no_copy, name=namespace.name)
     elif action == "stream":
         app.stream(namespace.url, add=namespace.add, cont=namespace.cont)
     elif action == "sync":

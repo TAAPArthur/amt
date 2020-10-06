@@ -681,6 +681,31 @@ class ArgsTest(BaseUnitTestClass):
         self.settings.passthrough = True
         parse_args(app=self.media_reader, args=["stream", "youtube.com"])
 
+    def test_import(self):
+
+        self.media_reader._servers[CustomServer.id] = CustomServer(self.media_reader.session, settings=self.media_reader.settings)
+        image = Image.new('RGB', (100, 100))
+        path = os.path.join(TEST_HOME, "00-file.jpg")
+        path2 = os.path.join(TEST_HOME, "10.0 file3.jpg")
+        path3 = os.path.join(TEST_HOME, "test-dir")
+        os.mkdir(path3)
+        path_file = os.path.join(path3, "10.0 file3.jpg")
+        image.save(path)
+        image.save(path2)
+        image.save(path_file)
+        print(path)
+        parse_args(app=self.media_reader, args=["import", path])
+        parse_args(app=self.media_reader, args=["update"])
+        print(self.media_reader.media)
+        assert 1 == len(self.media_reader.get_media_in_library())
+        assert os.path.exists(path)
+        parse_args(app=self.media_reader, args=["import", "--no-copy", "--name", "testMedia", path2])
+        assert 2 == len(self.media_reader.get_media_in_library())
+        assert not os.path.exists(path2)
+
+        parse_args(app=self.media_reader, args=["import", path3])
+        assert 3 == len(self.media_reader.get_media_in_library())
+
     def test_upgrade(self):
         media_list = self.add_test_media(self.test_anime_server)
         removed_key = "removed_key"
