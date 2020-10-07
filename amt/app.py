@@ -3,8 +3,10 @@ import os
 import shutil
 
 from .media_reader import MangaReader
-from .server import ANIME, NOT_ANIME
-from .servers.custom import CustomServer
+from .server import ANIME, MANGA, NOT_ANIME, NOVEL
+from .servers.custom import get_local_server_id
+
+TYPE_NAMES = {MANGA: "Manga", NOVEL: "Novel", ANIME: "Anime"}
 
 
 class Application(MangaReader):
@@ -16,7 +18,7 @@ class Application(MangaReader):
 
     def print_results(self, results):
         for i, result in enumerate(results):
-            print("{:4}| {}:{}\t{} {}".format(i, result["server_id"], result["id"], result["name"], result["media_type"]))
+            print("{:4}| {}:{}\t{} ({})".format(i, result["server_id"], result["id"], result["name"], TYPE_NAMES[result["media_type"]]))
 
     def select_media(self, results, prompt):
         index = 0
