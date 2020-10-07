@@ -14,6 +14,7 @@ class Mangasee(Server):
     media_list_url = base_url + "/_search.php"
     manga_url = base_url + '/manga/{0}'
     chapter_url = base_url + '/read-online/{0}-chapter-{1}-page-1.html'
+    chapter_url_n = base_url + '/read-online/{0}-chapter-{1}-index-{2}-page-1.html'
     page_url = "https://{}/manga/{}/{}-{:03d}.png"
 
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
@@ -39,6 +40,12 @@ class Mangasee(Server):
     def get_media_chapter_data(self, media_data, chapter_data):
         r = self.session_get(self.chapter_url.format(media_data["id"], chapter_data["number"]))
         match = self.page_regex.search(r.text)
+        if not match:
+            for i in range(1, 10):
+                r = self.session_get(self.chapter_url_n.format(media_data["id"], chapter_data["number"], i))
+                match = self.page_regex.search(r.text)
+                if match:
+                    break
         page_text = match.group(1)
         page_data = json.loads(page_text)
         match = self.domain_regex.search(r.text)
