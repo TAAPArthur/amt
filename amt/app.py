@@ -172,19 +172,25 @@ class Application(MangaReader):
                 server.update_chapter_data(new_data, chapter_data["id"], chapter_data["title"], chapter_data["number"])
                 _upgrade_dict(chapter_data, new_data["chapters"][chapter_data["id"]])
 
-    def import_media(self, files, no_copy=False, name=None):
+    def import_media(self, files, media_type, no_copy=False, name=None):
         func = shutil.move if no_copy else shutil.copy2
 
-        custom_server_dir = self.settings.get_server_dir(CustomServer.id)
+        local_server_id = get_local_server_id(media_type)
+        custom_server_dir = self.settings.get_server_dir(local_server_id)
         os.makedirs(custom_server_dir, exist_ok=True)
         assert os.path.exists(custom_server_dir)
         for file in files:
             if os.path.isdir(file):
-                shutil.move(file, os.path.join(custom_server_dir, name or ""))
+                if no_copy:
+                    shutil.move(file, os.path.join(custom_server_dir, name or ""))
+                else:
+                    shutil.copytree(file, os.path.join(custom_server_dir, name or ""))
+                    if name:
+                        os.rename(os.path.join(custom_server_dir, os.path.basename(file)), os.path.join(custom_server_dir, name))
             else:
                 path = os.path.join(custom_server_dir, name or os.path.basename(os.path.dirname(file)))
                 os.makedirs(path, exist_ok=True)
                 func(file, os.path.join(path, os.path.basename(file)))
-        for media_data in self.get_server(CustomServer.id).get_media_list():
+        for media_data in self.get_server(local_server_id).get_media_list():
             if self._get_global_id(media_data) not in self.media:
                 self.add_media(media_data)

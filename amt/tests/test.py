@@ -12,12 +12,12 @@ from unittest.mock import patch
 
 from PIL import Image
 
-from .. import tests
+from .. import servers, tests, trackers
 from ..app import Application
 from ..args import parse_args
 from ..media_reader import SERVERS, TRACKERS, MangaReader, import_sub_classes
-from ..server import ANIME, MANGA, Server
-from ..servers.custom import CustomServer
+from ..server import ANIME, MANGA, NOVEL, Server
+from ..servers.custom import CustomServer, get_local_server_id
 from ..settings import Settings
 from ..tracker import Tracker
 from . import test_server
@@ -35,13 +35,15 @@ logger.addHandler(stream_handler)
 
 TEST_SERVERS = set()
 TEST_TRACKERS = set()
+LOCAL_SERVERS = set()
 
 import_sub_classes(tests, TestServer, TEST_SERVERS)
 import_sub_classes(tests, TestTracker, TEST_TRACKERS)
+import_sub_classes(servers, CustomServer, LOCAL_SERVERS)
 
 
 class TestApplication(Application):
-    def __init__(self, real=False):
+    def __init__(self, real=False, local=False):
         # Save cache in local directory
         os.putenv('XDG_CACHE_HOME', ".")
         settings = Settings(home=TEST_HOME)
@@ -54,6 +56,8 @@ class TestApplication(Application):
         if real:
             servers += SERVERS
             trackers += TRACKERS
+        elif local:
+            servers += LOCAL_SERVERS
 
         super().__init__(servers, trackers, settings)
         assert len(self.get_servers()) == len(servers)
@@ -70,6 +74,7 @@ class TestApplication(Application):
 
 class BaseUnitTestClass(unittest.TestCase):
     real = False
+    local = False
 
     def __init__(self, methodName='runTest'):
         stream_handler.stream = sys.stdout
@@ -80,7 +85,7 @@ class BaseUnitTestClass(unittest.TestCase):
         pass
 
     def setUp(self):
-        self.app = TestApplication(self.real)
+        self.app = TestApplication(self.real, self.local)
         self.media_reader = self.app
         self.settings = self.media_reader.settings
         self.test_server = self.media_reader.get_server(TestServer.id)
@@ -132,6 +137,11 @@ class BaseUnitTestClass(unittest.TestCase):
         return set_of_numbers
 
 
+class MinimalUnitTestClass(BaseUnitTestClass):
+    def init(self):
+        self.local = True
+
+
 @unittest.skipIf(os.getenv("QUICK"), "Real servers are disabled")
 class RealBaseUnitTestClass(BaseUnitTestClass):
     def init(self):
@@ -143,20 +153,22 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
 
     def setup_customer_server_data(self):
 
-        dir = self.settings.get_server_dir(CustomServer.id)
-        image = Image.new('RGB', (100, 100))
-        for media_name in ["A", "B", "C"]:
-            parent_dir = os.path.join(dir, media_name)
-            for chapter_name in ["01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]:
-                chapter_dir = os.path.join(parent_dir, chapter_name)
-                os.makedirs(chapter_dir)
-                image.save(os.path.join(chapter_dir, "image"), "jpeg")
+        for media_type in (MANGA, ANIME, NOVEL):
+            local_server_id = get_local_server_id(media_type)
+            dir = self.settings.get_server_dir(local_server_id)
+            image = Image.new('RGB', (100, 100))
+            for media_name in ["A", "B", "C"]:
+                parent_dir = os.path.join(dir, media_name)
+                for chapter_name in ["01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]:
+                    chapter_dir = os.path.join(parent_dir, chapter_name)
+                    os.makedirs(chapter_dir)
+                    image.save(os.path.join(chapter_dir, "image"), "jpeg")
 
-        for bundled_media_name in ["A_Bundled", "B_Bundled", "C_Bundled"]:
-            parent_dir = os.path.join(dir, bundled_media_name)
-            os.makedirs(parent_dir)
-            for chapter_name in ["10", "Episode 2"]:
-                image.save(os.path.join(parent_dir, chapter_name), "jpeg")
+            for bundled_media_name in ["A_Bundled", "B_Bundled", "C_Bundled"]:
+                parent_dir = os.path.join(dir, bundled_media_name)
+                os.makedirs(parent_dir)
+                for chapter_name in ["10", "Episode 2"]:
+                    image.save(os.path.join(parent_dir, chapter_name), "jpeg")
 
 
 class SettingsTest(BaseUnitTestClass):
@@ -489,7 +501,7 @@ class ApplicationTestWithErrors(BaseUnitTestClass):
         assert self.test_server.was_error_thrown()
 
 
-class ArgsTest(BaseUnitTestClass):
+class ArgsTest(MinimalUnitTestClass):
     @patch('builtins.input', return_value='0')
     def test_arg(self, input):
         parse_args(app=self.media_reader, args=["auth"])
@@ -683,28 +695,31 @@ class ArgsTest(BaseUnitTestClass):
 
     def test_import(self):
 
-        self.media_reader._servers[CustomServer.id] = CustomServer(self.media_reader.session, settings=self.media_reader.settings)
         image = Image.new('RGB', (100, 100))
         path = os.path.join(TEST_HOME, "00-file.jpg")
-        path2 = os.path.join(TEST_HOME, "10.0 file3.jpg")
-        path3 = os.path.join(TEST_HOME, "test-dir")
-        os.mkdir(path3)
-        path_file = os.path.join(path3, "10.0 file3.jpg")
+        path2 = os.path.join(TEST_HOME, "test-dir")
+        os.mkdir(path2)
+        path_file = os.path.join(path2, "10.0 file3.jpg")
+        path3 = os.path.join(TEST_HOME, "11.0 file4.jpg")
         image.save(path)
-        image.save(path2)
         image.save(path_file)
+        image.save(path3)
         print(path)
         parse_args(app=self.media_reader, args=["import", path])
-        parse_args(app=self.media_reader, args=["update"])
-        print(self.media_reader.media)
         assert 1 == len(self.media_reader.get_media_in_library())
         assert os.path.exists(path)
         parse_args(app=self.media_reader, args=["import", "--no-copy", "--name", "testMedia", path2])
         assert 2 == len(self.media_reader.get_media_in_library())
+        assert any([x["name"] == "testMedia" for x in self.media_reader.get_media_in_library()])
         assert not os.path.exists(path2)
 
-        parse_args(app=self.media_reader, args=["import", path3])
-        assert 3 == len(self.media_reader.get_media_in_library())
+        for i, media_type in enumerate(["--novel", "--manga", "--anime"]):
+            print(i, media_type)
+            name = "name" + str(i)
+            parse_args(app=self.media_reader, args=["import", "--name", name, media_type, path3])
+            assert any([x["name"] == name for x in self.media_reader.get_media_in_library()])
+            self.assertEqual(3 + i, len(self.media_reader.get_media_in_library()))
+            assert os.path.exists(path3)
 
     def test_upgrade(self):
         media_list = self.add_test_media(self.test_anime_server)
@@ -834,7 +849,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         assert not server.api_auth_token
 
     def test_custom_bundle(self):
-        server = self.media_reader.get_server(CustomServer.id)
+        server = self.media_reader.get_server(get_local_server_id(MANGA))
         self.add_test_media(server)
         self.assertTrue(self.media_reader.bundle_unread_chapters())
 

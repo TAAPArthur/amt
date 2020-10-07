@@ -3,13 +3,22 @@ import os
 import re
 from shlex import quote
 
-from ..server import ANIME, MANGA, NOT_ANIME, Server
+from ..server import ANIME, MANGA, NOVEL, Server
+
+
+def get_local_server_id(media_type):
+    if media_type == ANIME:
+        return CustomServer.id
+    elif media_type == MANGA:
+        return LocalMangaServer.id
+    elif media_type == NOVEL:
+        return LocalLightNovelServer.id
 
 
 class CustomServer(Server):
     id = 'custom_server'
     external = True
-    media_type = NOT_ANIME | ANIME
+    media_type = ANIME
     number_regex = re.compile(r"(\d+\.?\d*)")
 
     def get_media_list(self):
@@ -17,8 +26,6 @@ class CustomServer(Server):
 
     def update_media_data(self, media_data):
         root = self.settings.get_media_dir(media_data)
-        print(os.listdir(root))
-
         _, dirNames, fileNames = next(os.walk(root))
         dirNames.sort()
         fileNames.sort()
@@ -37,3 +44,13 @@ class CustomServer(Server):
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         return True, False
+
+
+class LocalMangaServer(CustomServer):
+    id = 'local_manga'
+    media_type = MANGA
+
+
+class LocalLightNovelServer(CustomServer):
+    id = 'local_novels'
+    media_type = NOVEL

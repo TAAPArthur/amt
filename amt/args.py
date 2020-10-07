@@ -3,7 +3,7 @@ import logging
 import os
 
 from .app import Application
-from .server import ANIME, MANGA, NOT_ANIME
+from .server import ANIME, MANGA, NOT_ANIME, NOVEL
 from .settings import Settings
 
 
@@ -90,6 +90,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         # external
         import_parser = sub_parsers.add_parser("import")
         import_parser.add_argument("--no-copy", action="store_const", const=True, default=False, help="Moves instead of copying files")
+        import_parser.add_argument("--manga", action="store_const", const=MANGA, default=None, help="Filter for Manga")
+        import_parser.add_argument("--novel", "--light-novel-only", action="store_const", const=NOVEL, default=None, help="Filter for Novels")
+        import_parser.add_argument("--anime", action="store_const", const=ANIME, default=None, help="Filter for Anime")
         import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
         import_parser.add_argument("file", nargs='+')
 
@@ -203,7 +206,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         print("{} = {}".format(namespace.setting, app.settings.set(namespace.setting, namespace.value)))
         app.settings.save()
     elif action == "import":
-        app.import_media(namespace.file, no_copy=namespace.no_copy, name=namespace.name)
+        app.import_media(namespace.file, media_type=namespace.manga or namespace.anime or namespace.novel or ANIME, no_copy=namespace.no_copy, name=namespace.name)
     elif action == "stream":
         app.stream(namespace.url, add=namespace.add, cont=namespace.cont)
     elif action == "sync":
