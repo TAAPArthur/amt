@@ -200,6 +200,9 @@ class Server:
     def get_media_data_from_url(self, url):
         raise NotImplementedError
 
+    def get_media_title(self, media_data, chapter):
+        return "{}: #{} {}".format(media_data["name"], chapter["number"], chapter["title"])
+
     def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, dir_name=None, offset=0, cover=None):
         return dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else name.replace(" ", "_"), name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, season_number=season_number, offset=offset, chapters={})
 

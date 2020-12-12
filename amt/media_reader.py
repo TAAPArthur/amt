@@ -335,7 +335,7 @@ class MangaReader:
                 else:
                     streamable_url = server.get_stream_url(url=url)
                     logging.info("Streaming %s", streamable_url)
-                    if self.settings.open_anime_viewer(streamable_url) and known:
+                    if self.settings.open_anime_viewer(streamable_url, server.get_media_title(known[0], known[1])if known else url) and known:
                         known[1]["read"] = True
                         if cont:
                             self.play(name=self._get_global_id(known[0]), cont=cont)
@@ -343,7 +343,7 @@ class MangaReader:
         if add:
             raise Exception("Could not find media to add")
         if passthrough:
-            self.settings.open_anime_viewer(url)
+            self.settings.open_anime_viewer(url, url)
         logging.error("Could not find any matching server")
 
     def get_stream_url(self, name=None, shuffle=False, raw=False):
@@ -352,7 +352,7 @@ class MangaReader:
 
     def play(self, name=None, shuffle=False, cont=False):
         for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
-            success = self.settings.open_segment_viewer(server.get_children(media_data, chapter)) if server.is_fully_downloaded(media_data, chapter) else self.settings.open_anime_viewer(server.get_stream_url(media_data, chapter))
+            success = self.settings.open_segment_viewer(server.get_children(media_data, chapter)) if server.is_fully_downloaded(media_data, chapter) else self.settings.open_anime_viewer(server.get_stream_url(media_data, chapter), server.get_media_title(media_data, chapter))
             if success:
                 chapter["read"] = True
                 if not cont:
