@@ -171,7 +171,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "download-unread":
         app.download_unread_chapters(namespace.name, media_type=namespace.manga_only or namespace.anime_only, limit=namespace.limit)
     elif action == "get-media":
-        app.get_media(namespace.local or namespace.name, media_type=namespace.manga_only or namespace.anime_only, stream=namespace.stream, start=namespace.start, end=namespace.end)
+        app.get_media(namespace.name, media_type=namespace.manga_only or namespace.anime_only, stream=namespace.stream, start=namespace.start, end=namespace.end)
     elif action == "list":
         app.list()
     elif action == "list-chapters":
