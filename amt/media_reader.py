@@ -188,7 +188,7 @@ class MangaReader:
 
     def remove_media(self, media_data=None, id=None):
         if id:
-            media_data = self._get_single_media(id)
+            media_data = self._get_single_media(name=id)
         del self.media[self._get_global_id(media_data)]
 
     def get_servers(self):
@@ -218,8 +218,11 @@ class MangaReader:
                 continue
             yield media_data
 
-    def _get_single_media(self, name=None):
-        return next(self._get_media(name=name))
+    def _get_single_media(self, media_type=ALL_MEDIA, name=None):
+        try:
+            return next(self._get_media(media_type=media_type, name=name))
+        except StopIteration:
+            return None
 
     def _get_unreads(self, media_type, name=None, shuffle=False):
 

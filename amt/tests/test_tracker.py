@@ -3,16 +3,18 @@ from ..tracker import Tracker
 
 class TestTracker(Tracker):
     id = "TestTracker"
-    media_list = [
-        [False, "Manga1", 0],
-        [True, "Anime1", 0],
-        [False, "MangaUnknown", 1],
-        [False, "AnimeUnknown", 1],
-        [False, "MangaInProgress", 1],
-        [True, "AnimeInProgress", 1],
-        [False, "MangaUnknown2", 1],
-        [False, "AnimeUnknown2", 1],
-    ]
+
+    def __init__(self, session, settings=None):
+        self.media_list = [
+            [False, "Manga1", 0],
+            [True, "Anime1", 0],
+            [False, "MangaUnknown", 1],
+            [False, "AnimeUnknown", 1],
+            [False, "MangaInProgress", 1],
+            [True, "AnimeInProgress", 1],
+            [False, "MangaUnknown2", 1],
+            [False, "AnimeUnknown2", 1],
+        ]
 
     def update(self, list_of_updates):
         for id, progress in list_of_updates:

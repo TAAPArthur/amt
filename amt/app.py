@@ -124,7 +124,7 @@ class Application(MangaReader):
             print("{:4}| {}:{}\t{} {}/{}".format(i, result["server_id"], result["id"], result["name"], last_read, last_chapter_num))
 
     def list_chapters(self, name):
-        media_data = self._get_single_media(name)
+        media_data = self._get_single_media(name=name)
         for chapter in media_data["chapters"].values():
             print("{:4}:{}".format(chapter["number"], chapter["title"]))
 

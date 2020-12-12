@@ -59,7 +59,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         download_specific_parser = sub_parsers.add_parser("download", help="Used to download specific chapters")
         download_specific_parser.add_argument("id", choices=app.get_all_single_names())
-
         download_specific_parser.add_argument("start", type=float, default=0, help="Starting chapter (inclusive)")
         download_specific_parser.add_argument("end", type=float, nargs="?", default=None, help="Ending chapter (inclusive)")
 
