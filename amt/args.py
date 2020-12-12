@@ -133,11 +133,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         offset_parser.add_argument("N", type=int, default=0, nargs="?", help="Decrease the chapter number reported by the server by N")
 
         # settings
-        get_settings_parsers = sub_parsers.add_parser("get")
-        get_settings_parsers.add_argument("setting", choices=Settings.get_members())
-        set_settings_parsers = sub_parsers.add_parser("set")
-        set_settings_parsers.add_argument("setting", choices=Settings.get_members())
-        set_settings_parsers.add_argument("value")
+        settings_parsers = sub_parsers.add_parser("setting")
+        settings_parsers.add_argument("setting", choices=Settings.get_members())
+        settings_parsers.add_argument("value", default=None, nargs="?")
 
         # upgrade state
         sub_parsers.add_parser("upgrade", description="Upgrade old state to newer format")
@@ -172,11 +170,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.download_specific_chapters(namespace.id, start=namespace.start, end=namespace.end)
     elif action == "download-unread":
         app.download_unread_chapters(namespace.name, media_type=namespace.manga_only or namespace.anime_only, limit=namespace.limit)
-    elif action == "get":
-        print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
-
     elif action == "get-media":
-        app.get_media(namespace.name, media_type=namespace.manga_only or namespace.anime_only, stream=namespace.stream, start=namespace.start, end=namespace.end)
+        app.get_media(namespace.local or namespace.name, media_type=namespace.manga_only or namespace.anime_only, stream=namespace.stream, start=namespace.start, end=namespace.end)
     elif action == "list":
         app.list()
     elif action == "list-chapters":
@@ -198,15 +193,17 @@ def parse_args(args=None, app=None, already_upgraded=False):
         print(app.read_bundle(namespace.name))
     elif action == "remove":
         app.remove_media(id=namespace.id)
+    elif action == "import":
+        app.import_media(namespace.file, media_type=namespace.manga or namespace.anime or namespace.novel or ANIME, no_copy=namespace.no_copy, name=namespace.name)
     elif action == "search":
         app.search_add(namespace.term, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact)
     elif action == "server-list":
         app.list_server_media(namespace.id)
-    elif action == "set":
-        print("{} = {}".format(namespace.setting, app.settings.set(namespace.setting, namespace.value)))
-        app.settings.save()
-    elif action == "import":
-        app.import_media(namespace.file, media_type=namespace.manga or namespace.anime or namespace.novel or ANIME, no_copy=namespace.no_copy, name=namespace.name)
+    elif action == "setting":
+        if namespace.value:
+            app.settings.set(namespace.setting, namespace.value)
+            app.settings.save()
+        print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
     elif action == "stream":
         app.stream(namespace.url, add=namespace.add, cont=namespace.cont)
     elif action == "sync":

@@ -507,25 +507,21 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["auth"])
 
     def test_get_settings(self):
-        parse_args(app=self.media_reader, args=["get", "password_manager_enabled"])
-
-    def test_set_settings_bool(self):
-        parse_args(app=self.media_reader, args=["set", "password_manager_enabled", "false"])
-        self.assertEqual(self.settings.password_manager_enabled, False)
-        parse_args(app=self.media_reader, args=["set", "password_manager_enabled", "true"])
-        self.assertEqual(self.settings.password_manager_enabled, True)
-
-    def test_set_settings_int(self):
-        parse_args(app=self.media_reader, args=["set", "max_retires", "1"])
-        self.assertEqual(self.settings.max_retires, 1)
-        parse_args(app=self.media_reader, args=["set", "max_retires", "2"])
-        self.assertEqual(self.settings.max_retires, 2)
+        parse_args(app=self.media_reader, args=["setting", "password_manager_enabled"])
 
     def test_set_settings(self):
-        parse_args(app=self.media_reader, args=["set", "bundle_format", "jpg"])
-        self.assertEqual(self.settings.bundle_format, "jpg")
-        parse_args(app=self.media_reader, args=["set", "bundle_format", "true"])
-        self.assertEqual(self.settings.bundle_format, "true")
+        key_values = [("bundle_format", "jpg"), ("bundle_format", "true"),
+                      ("max_retires", "1", 1),
+                      ("max_retires", "2", 2),
+                      ("password_manager_enabled", "true", True),
+                      ("password_manager_enabled", "false", False)]
+
+        self.app.settings.save()
+        for key_value in key_values:
+            parse_args(app=self.media_reader, args=["setting", key_value[0], key_value[1]])
+            self.assertEqual(self.settings.get(key_value[0]), key_value[-1])
+            self.app.settings.load()
+            self.assertEqual(self.settings.get(key_value[0]), key_value[-1])
 
     def test_print_app_state(self):
         self.add_arbitrary_media()
@@ -757,7 +753,7 @@ class ArgsTest(MinimalUnitTestClass):
         media_list = self.add_test_media(self.test_anime_server)
         media_list[1].pop("media_type")
         assert self.app.save_state()
-        parse_args(app=self.media_reader, args=["set", "max_retires", "1"])
+        parse_args(app=self.media_reader, args=["setting", "max_retires", "1"])
         self.assertEqual(self.settings.max_retires, 1)
         self.app.state.clear()
         self.app.load_state()
