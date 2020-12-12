@@ -562,9 +562,15 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["mark-up-to-date"])
         parse_args(app=self.media_reader, args=["sync"])
         self.media_reader.media.clear()
+        self.media_reader.load_state()
+        for media_data in self.media_reader.get_media_in_library():
+            self.assertEqual(self.media_reader.get_last_chapter_number(media_data), self.media_reader.get_last_read(media_data))
+            self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
+        self.media_reader.media.clear()
         parse_args(app=self.media_reader, args=["--auto", "load"])
         for media_data in self.media_reader.get_media_in_library():
             self.assertEqual(self.media_reader.get_last_chapter_number(media_data), self.media_reader.get_last_read(media_data))
+            self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
 
     def test_download(self):
         media_list = self.add_test_media(no_update=True)

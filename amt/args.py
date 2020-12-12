@@ -216,5 +216,5 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "upgrade":
         app.upgrade_state()
 
-    if not namespace.no_save and "dry_run" not in namespace:
+    if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):
         app.save()
