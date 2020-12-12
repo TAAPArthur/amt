@@ -350,8 +350,17 @@ class MangaReader:
         for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
             print(server.get_stream_url(media_data, chapter, raw=raw))
 
-    def play(self, name=None, shuffle=False, cont=False):
-        for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
+    def get_chapters(self, media_type, name, num_list):
+        media_data = self._get_single_media(media_type=media_type, name=name)
+
+        server = self.get_server(media_data["server_id"])
+        for chapter in self._get_sorted_chapters(media_data):
+            if chapter["number"] in num_list:
+                yield server, media_data, chapter
+
+    def play(self, name=None, shuffle=False, cont=False, num_list=None):
+
+        for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle)):
             success = self.settings.open_segment_viewer(server.get_children(media_data, chapter)) if server.is_fully_downloaded(media_data, chapter) else self.settings.open_anime_viewer(server.get_stream_url(media_data, chapter), server.get_media_title(media_data, chapter))
             if success:
                 chapter["read"] = True

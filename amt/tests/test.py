@@ -674,6 +674,12 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["play", "-c"])
         self.assertAllChaptersRead(ANIME)
 
+    def test_play_specific(self):
+        media_list = self.add_test_media(self.test_anime_server)
+        parse_args(app=self.media_reader, args=["play", "-c", media_list[0]["name"], "1", "3"])
+        for chapter in self.app._get_sorted_chapters(media_list[0]):
+            self.assertEquals(chapter["read"], chapter["number"] in [1, 3])
+
     def test_get_stream_url(self):
         media_list = self.add_test_media(self.test_anime_server)
         parse_args(app=self.media_reader, args=["get-stream-url"])
