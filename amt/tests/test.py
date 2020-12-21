@@ -51,6 +51,8 @@ class TestApplication(Application):
         settings.shell = True
         settings.free_only = True
         settings.password_manager_enabled = False
+        settings.env_override_prefix = None
+
         servers = list(TEST_SERVERS)
         trackers = list(TEST_TRACKERS)
         if real:
@@ -193,6 +195,18 @@ class SettingsTest(BaseUnitTestClass):
         secret = "MySecret"
         self.settings.store_secret(tracker_id, secret)
         assert secret == self.settings.get_secret(tracker_id)
+
+    def test_credentials_override(self):
+        self.settings.env_override_prefix = "prefix"
+        server_id = "test"
+        username, password = "user", "pass"
+        os.environ[self.settings.env_override_prefix + server_id] = f"{username}\t{password}"
+        try:
+            self.assertEquals(username, self.settings.get_credentials(server_id)[0])
+            self.assertEquals(password, self.settings.get_credentials(server_id)[1])
+            assert not self.settings.get_credentials("bad_id")
+        finally:
+            del os.environ[self.settings.env_override_prefix + server_id]
 
     def test_bundle(self):
         name = self.settings.bundle("")

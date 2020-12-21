@@ -35,6 +35,7 @@ class Settings:
     max_retires = 5
     status_to_retry = [500, 502, 504]
     force_odd_pages = True
+    env_override_prefix = "PASSWORD_OVERRIDE_"
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
@@ -107,6 +108,8 @@ class Settings:
 
     def get_credentials(self, server_id: str) -> (str, str):
         """Returns the saved username, password"""
+        if self.env_override_prefix and os.getenv(self.env_override_prefix + server_id):
+            return os.getenv(self.env_override_prefix + server_id).split("\t")
         if self.password_manager_enabled and self.password_load_cmd:
             try:
                 logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
