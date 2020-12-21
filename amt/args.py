@@ -28,6 +28,11 @@ def parse_args(args=None, app=None, already_upgraded=False):
         parser.add_argument("--update", "-u", default=False, action="store_const", const=True, help="Check for new chapters and download them")
 
         sub_parsers = parser.add_subparsers(dest="type")
+        cookie_parser = sub_parsers.add_parser("add-cookie", description="Add cookie")
+        cookie_parser.add_argument("--domain", default=None)
+        cookie_parser.add_argument("--path", default="/")
+        cookie_parser.add_argument("key")
+        cookie_parser.add_argument("value")
 
         # add remove
         search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
@@ -159,7 +164,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.session.cookies.clear()
     action = namespace.type
     app.auto_select = namespace.auto
-    if action == "auth":
+    if action == "add-cookie":
+        app.session.cookies.set(namespace.key, namespace.value, domain=namespace.domain, path=namespace.path)
+    elif action == "auth":
         tracker = app.get_primary_tracker()
         secret = tracker.auth()
         app.settings.store_secret(tracker.id, secret)

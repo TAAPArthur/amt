@@ -520,6 +520,13 @@ class ArgsTest(MinimalUnitTestClass):
     def test_arg(self, input):
         parse_args(app=self.media_reader, args=["auth"])
 
+    def test_cookies(self):
+        key, value = "Key", "value"
+        parse_args(app=self.media_reader, args=["add-cookie", "--domain", ".foo.bar", key, value])
+        self.assertEqual(self.app.session.cookies.get(key), value)
+        parse_args(app=self.media_reader, args=["--clear-cookies", "list"])
+        self.assertNotEqual(self.app.session.cookies.get(key), value)
+
     def test_get_settings(self):
         parse_args(app=self.media_reader, args=["setting", "password_manager_enabled"])
 
