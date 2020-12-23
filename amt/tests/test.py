@@ -130,7 +130,7 @@ class BaseUnitTestClass(unittest.TestCase):
                             img = Image.open(img_file)
                             self.assertEqual(file_name.split(".")[-1].replace("jpg", "jpeg"), img.format.lower())
                     elif media_data["media_type"] == ANIME:
-                        subprocess.check_call(["ffprobe", os.path.join(dir_path, dirpath, file_name)])
+                        subprocess.check_call(["ffprobe", "-loglevel", "quiet", os.path.join(dir_path, dirpath, file_name)])
 
     def verify_unique_numbers(self, chapters):
         list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values() if not chapter_data["special"]])
