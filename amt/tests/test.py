@@ -47,11 +47,11 @@ class TestApplication(Application):
         # Save cache in local directory
         os.environ['XDG_CACHE_HOME'] = "./.cache"
         settings = Settings(home=TEST_HOME)
-        settings.init()
         settings.shell = True
         settings.free_only = True
         settings.password_manager_enabled = False
         settings.incapsula_prompt = "echo $INCAPSULA_COOKIE"
+        settings.no_save_session = True
         settings.env_override_prefix = None
 
         servers = list(TEST_SERVERS)
@@ -128,7 +128,7 @@ class BaseUnitTestClass(unittest.TestCase):
         dir_path = self.media_reader.settings.get_media_dir(media_data)
         for dirpath, dirnames, filenames in os.walk(dir_path):
             for file_name in filenames:
-                assert len(filenames) > 2
+                assert len(filenames) > 1, f"files: {filenames}, dirnames: {dirnames}"
                 if not file_name.startswith("."):
                     if media_data["media_type"] == MANGA:
                         with open(os.path.join(dirpath, file_name), "rb") as img_file:
@@ -260,16 +260,10 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 assert media_data == list(server.search(name))[0]
                 assert server.search(name[:3])
 
-    def test_search_for_media(self):
-        servers = set()
-        for term in ["a", "e"]:
-            servers |= {x["server_id"] for x in self.media_reader.search_for_media(term)}
-        assert len(self.media_reader.get_servers()) == len(servers)
-
     def test_bad_login(self):
 
-        TestServerLogin.fail_login = True
         server = self.media_reader.get_server(TestServerLogin.id)
+        server.fail_login = True
         server.settings.password_manager_enabled = True
         server.settings.password_load_cmd = r"echo -e A\\tB"
 
@@ -278,12 +272,14 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             for chapter in media["chapters"].values():
 
                 server.download_chapter(media, chapter)
-        self.assertEqual(1, TestServerLogin.counter)
+        self.assertEqual(1, server.counter)
 
 
 class MediaReaderTest(BaseUnitTestClass):
 
     def test_save_load_cookies(self):
+
+        self.app.settings.no_save_session = False
         key, value = "Test", "value"
         self.test_server.session.cookies.set(key, value)
         assert self.media_reader.save_session_cookies()
@@ -504,7 +500,7 @@ class ApplicationTestWithErrors(BaseUnitTestClass):
 
     def test_search_with_error(self):
         self.test_server.inject_error()
-        assert self.app.search_add("a")
+        assert self.app.search_add("manga")
         assert self.test_server.was_error_thrown()
 
     def test_update_with_error(self):
@@ -810,7 +806,7 @@ class ServerTest(RealBaseUnitTestClass):
                 assert all([isinstance(x, dict) for x in media_list])
                 assert all([x["media_type"] == server.media_type for x in media_list])
             with self.subTest(server=server.id, method="search"):
-                search_media_list = server.search("a")
+                search_media_list = server.search(media_list[0]["name"])
                 assert isinstance(search_media_list, list)
                 assert all([isinstance(x, dict) for x in search_media_list])
 
@@ -835,7 +831,7 @@ class ServerTest(RealBaseUnitTestClass):
                     break
 
     def test_login_fail(self):
-        TestServerLogin.fail_login = True
+        self.media_reader.get_server(TestServerLogin.id).fail_login = True
         for server in self.media_reader.get_servers():
             if not server.has_login:
                 continue
@@ -869,8 +865,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 with self.subTest(url=url, server=server.id):
                     media_data = server.get_media_data_from_url(url)
                     assert media_data
-                    self.assertEqual(str(media_id), str(media_data["id"]))
-                    self.assertTrue(season_id in media_data["season_ids"])
+                    self.assertEqual(media_id, str(media_data["id"]))
+                    self.assertTrue(season_id in map(str, media_data["season_ids"]))
                     self.assertTrue(chapter_id in media_data["chapters"])
 
 
@@ -901,7 +897,7 @@ class PremiumTest(RealBaseUnitTestClass):
 
     def test_download_premium(self):
         for server in self.media_reader.get_servers():
-            if server.has_login:
+            if server.has_login and not isinstance(server, TestServer):
                 with self.subTest(server=server.id, method="get_media_list"):
                     media_list = server.get_media_list()
                     download_passed = False

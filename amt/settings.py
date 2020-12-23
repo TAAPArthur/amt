@@ -49,8 +49,6 @@ class Settings:
         self.no_save_session = no_save_session
         if not no_load:
             self.load()
-
-    def init(self):
         os.makedirs(self.config_dir, exist_ok=True)
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)

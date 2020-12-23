@@ -60,7 +60,7 @@ class TestServer(Server):
 
     def get_media_chapter_data(self, media_data, chapter_data):
         self.maybe_inject_error()
-        return [self.create_page_data(url="") for k in range(int(media_data["id"]) + 3)]
+        return [self.create_page_data(url="some_url") for k in range(int(media_data["id"]) + 3)]
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()
@@ -76,8 +76,15 @@ class TestServerLogin(TestServer):
     has_login = True
 
     def login(self, username, password):
-        TestServerLogin.counter += 1
-        return not TestServerLogin.fail_login
+        self.counter += 1
+        self.is_premium = 1
+        return not self.fail_login
+
+    def relogin(self):
+        return self.login(None, None)
+
+    def needs_authentication(self):
+        return not self.counter
 
 
 class TestAnimeServer(TestServer):
@@ -105,7 +112,7 @@ class TestAnimeServer(TestServer):
         assert isinstance(media_data, dict) if media_data else True
         assert isinstance(chapter_data, dict) if chapter_data else True
         assert isinstance(url, str) if url else True
-        return "url.m3u8?key=1&&false"
+        return "https://domain.com/url.m3u8?key=1&&false"
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()

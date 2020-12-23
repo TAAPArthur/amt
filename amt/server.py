@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import time
-from enum import Enum
 from functools import cache
 
 import m3u8
@@ -186,7 +185,6 @@ class Server:
         assert list_of_pages
 
         logging.info("Downloading %d pages", len(list_of_pages))
-        downloaded_page = False
 
         dir_path = self._get_dir(media_data, chapter_data)
         job = Job(self.settings.threads)

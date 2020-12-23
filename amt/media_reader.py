@@ -40,6 +40,7 @@ def for_each(func, media_list):
             result = func(media_data)
             results.append(result) if isinstance(result, int) else results.extend(result)
         except Exception as e:
+            logging.info("Error with %s", media_data)
             logging.error(e)
     return results
 
@@ -146,7 +147,7 @@ class MangaReader:
                 self.state = json.load(jsonFile)
                 self._set_state_hash()
         except FileNotFoundError:
-            self.settings.init()
+            pass
 
         for key in list(self.state["media"].keys()):
             if self.state["media"][key]["server_id"] not in self._servers:
