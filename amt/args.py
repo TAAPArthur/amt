@@ -28,11 +28,19 @@ def parse_args(args=None, app=None, already_upgraded=False):
         parser.add_argument("--update", "-u", default=False, action="store_const", const=True, help="Check for new chapters and download them")
 
         sub_parsers = parser.add_subparsers(dest="type")
+
+        # cookie
         cookie_parser = sub_parsers.add_parser("add-cookie", description="Add cookie")
         cookie_parser.add_argument("--domain", default=None)
         cookie_parser.add_argument("--path", default="/")
         cookie_parser.add_argument("key")
         cookie_parser.add_argument("value")
+
+        incap_cookie_parser = sub_parsers.add_parser("add-incapsula", description="Add incapsula cookie")
+        incap_cookie_parser.add_argument("--path", default="/")
+        incap_cookie_parser.add_argument("--key", default="incap_ses_979_998813")
+        incap_cookie_parser.add_argument("id", choices=[server.id for server in app.get_servers() if server.domain])
+        incap_cookie_parser.add_argument("value")
 
         # add remove
         search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
@@ -166,6 +174,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
     app.auto_select = namespace.auto
     if action == "add-cookie":
         app.session.cookies.set(namespace.key, namespace.value, domain=namespace.domain, path=namespace.path)
+    elif action == "add-incapsula":
+        app.session.cookies.set(namespace.key, namespace.value, domain=app.get_server(namespace.id).domain, path=namespace.path)
     elif action == "auth":
         tracker = app.get_primary_tracker()
         secret = tracker.auth()

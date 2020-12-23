@@ -20,6 +20,7 @@ ALL_MEDIA = NOT_ANIME | ANIME
 class Server:
     id = None
     alias = None
+    domain = None
     lang = 'en'
     locale = 'enUS'
     session = None

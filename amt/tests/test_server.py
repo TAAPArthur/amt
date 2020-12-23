@@ -87,6 +87,7 @@ class TestAnimeServer(TestServer):
     stream_url = "test_url"
     extension = "ts"
     TEST_VIDEO_PATH = ""
+    domain = "domain.com"
 
     def can_stream_url(self, url):
         return url == TestAnimeServer.stream_url

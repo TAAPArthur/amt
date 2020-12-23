@@ -527,6 +527,11 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["--clear-cookies", "list"])
         self.assertNotEqual(self.app.session.cookies.get(key), value)
 
+    def test_incap_cookies(self):
+        value = "value"
+        parse_args(app=self.media_reader, args=["add-incapsula", TestAnimeServer.id, value])
+        self.assertEqual(list(self.app.session.cookies.values())[0], value)
+
     def test_get_settings(self):
         parse_args(app=self.media_reader, args=["setting", "password_manager_enabled"])
 
