@@ -7,6 +7,7 @@ class Job:
         self.numThreads = numThreads
         self.enqueue(iterable)
         self.queue = Queue()
+        self.exception = None
 
     def enqueue(self, iterable):
         for item in iterable:
@@ -21,6 +22,9 @@ class Job:
             try:
                 if func:
                     func()
+            except Exception as e:
+                self.exception = e
+                raise
             finally:
                 self.queue.task_done()
 
@@ -29,5 +33,7 @@ class Job:
             for i in range(self.numThreads):
                 Thread(target=self.worker, daemon=True).start()
             self.queue.join()
+            if self.exception:
+                raise self.exception
         else:
             self.worker()
