@@ -56,7 +56,11 @@ class TestApplication(Application):
         servers = list(TEST_SERVERS)
         trackers = list(TEST_TRACKERS)
         if real:
-            servers += SERVERS
+            if os.getenv("ENABLE_ONLY_SERVERS"):
+                enabled_servers = set(os.getenv("ENABLE_ONLY_SERVERS").split(","))
+                [servers.append(x) for x in SERVERS if x.id in enabled_servers]
+            else:
+                servers += SERVERS
             trackers += TRACKERS
         elif local:
             servers += LOCAL_SERVERS
