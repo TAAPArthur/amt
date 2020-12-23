@@ -92,8 +92,6 @@ class TestAnimeServer(TestServer):
         return url == TestAnimeServer.stream_url
 
     def is_url_for_known_media(self, url, known_media):
-        print(self.can_stream_url(url), self.get_media_list()[1]["id"] in known_media, known_media)
-
         media_id = self.get_media_list()[1]["id"]
         if self.can_stream_url(url) and media_id in known_media:
             return known_media[media_id], list(known_media[media_id]["chapters"].values())[0]

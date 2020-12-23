@@ -149,7 +149,7 @@ class Application(MangaReader):
         for server in self.get_servers():
             if server.has_login:
                 if server.needs_authentication() and not server.relogin():
-                    print("Failed to login into {}" % server.id)
+                    logging.error("Failed to login into %s", server.id)
                     failures = True
         return failures
 

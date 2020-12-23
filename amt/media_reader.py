@@ -262,7 +262,6 @@ class MangaReader:
             last_read = self.get_last_chapter_number(media_data) - N
             if not force:
                 last_read = max(self.get_last_read(media_data), last_read)
-            print(force, self.get_last_read(media_data), last_read, N, len(media_data["chapters"]))
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
     def download_unread_chapters(self, name=None, media_type=None, limit=0):

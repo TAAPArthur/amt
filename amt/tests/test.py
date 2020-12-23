@@ -715,7 +715,6 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["stream", "--add", TestAnimeServer.stream_url])
         assert len(self.media_reader.get_media_in_library()) == 1
         parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
-        print(self.media_reader.get_media_in_library())
         self.assertEqual(1, self.getNumChaptersRead())
 
     def test_stream_passthrough(self):
@@ -733,7 +732,6 @@ class ArgsTest(MinimalUnitTestClass):
         image.save(path)
         image.save(path_file)
         image.save(path3)
-        print(path)
         parse_args(app=self.media_reader, args=["import", path])
         assert 1 == len(self.media_reader.get_media_in_library())
         assert os.path.exists(path)
@@ -743,7 +741,6 @@ class ArgsTest(MinimalUnitTestClass):
         assert not os.path.exists(path2)
 
         for i, media_type in enumerate(["--novel", "--manga", "--anime"]):
-            print(i, media_type)
             name = "name" + str(i)
             parse_args(app=self.media_reader, args=["import", "--name", name, media_type, path3])
             assert any([x["name"] == name for x in self.media_reader.get_media_in_library()])

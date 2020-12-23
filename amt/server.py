@@ -37,7 +37,7 @@ class Server:
         self.session = session
 
     def _request(self, get, url, **kwargs):
-        logging.info(url)
+        logging.info("Making request to %s", url)
         r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
         if r.status_code != 200:
             logging.warning(r)
@@ -129,7 +129,7 @@ class Server:
         temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp." + page_data["ext"])
         full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + page_data["ext"])
 
-        logging.warn("downloading %s", full_path)
+        logging.warning("downloading %s", full_path)
         if os.path.exists(full_path):
             logging.debug("Page %s already download", full_path)
         else:
@@ -139,13 +139,13 @@ class Server:
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         if self.is_fully_downloaded(media_data, chapter_data):
-            logging.debug("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
+            logging.info("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
             return True, False
 
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         if chapter_data["premium"]:
             if not self.is_non_premium_account and self.needs_authentication():
-                logging.debug("Server is not authenticated; relogging in")
+                logging.info("Server is not authenticated; relogging in")
                 if not self.relogin():
                     logging.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                     return False, False
@@ -154,7 +154,9 @@ class Server:
                 return False, False
 
         list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
-        logging.debug("Starting download for %d pages", len(list_of_pages))
+        assert list_of_pages
+
+        logging.info("Downloading %d pages", len(list_of_pages))
         downloaded_page = False
 
         dir_path = self._get_dir(media_data, chapter_data)
@@ -231,4 +233,5 @@ class Server:
         return True
 
     def create_page_data(self, url, id=None, encryption_key=None, ext=None):
+        assert url
         return dict(url=url, id=id, encryption_key=encryption_key, ext=ext or self.extension)
