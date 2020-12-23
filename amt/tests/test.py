@@ -854,7 +854,10 @@ class ServerTest(RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
-        (269787, "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209")
+        ("269787", "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209"),
+        ("1019573", "1019574", "1019900", "https://www.funimation.com/shows/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?qid=b112d0129f243eda"),
+        ("260315", "21563", "652193", "https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193"),
+        ("1079937", "1174339", "1174543", "https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b")
     ]
 
     def test_media_steam(self):
