@@ -12,6 +12,7 @@ class CrunchyrollAnime(Crunchyroll):
     search_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}&filter=prefix:{}"
     list_media = api_base_url + "/list_media.0.json?limit=2000&media_type=anime&session_id={}&series_id={}"
     stream_url = api_base_url + "/info.0.json?fields=media.stream_data&locale=enUS&session_id={}&media_id={}"
+    episode_url = api_base_url + "/info.0.json?session_id={}&media_id={}"
     bandwidth_regex = re.compile(r"BANDWIDTH=([0-9]*),")
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
     media_type = ANIME
@@ -23,19 +24,21 @@ class CrunchyrollAnime(Crunchyroll):
     def get_media_list(self):
         return self.search("a")
 
-    def search(self, term, alt_id=None):
+    def _create_media_data(self, series_id, item_alt_id, season_id=None):
+        r = self.session_get(self.series_url.format(self.get_session_id(), series_id))
+        season_data = r.json()["data"]
+        unique_seasons = len(set(map(lambda x: x["season"], season_data))) == len(season_data)
+        for season in season_data:
+            if not season_id or season["collection_id"] == season_id:
+                yield self.create_media_data(id=series_id, name=season["name"], season_ids=[season["collection_id"]], season_number=season["season"] if unique_seasons else season["collection_id"], dir_name=item_alt_id)
+
+    def search(self, term):
         r = self.session_get(self.search_series.format(self.get_session_id(), term.replace(" ", "%20")))
         data = r.json()["data"]
         media_data = []
         for item in data:
             item_alt_id = item["url"].split("/")[-1]
-            if alt_id and alt_id != item_alt_id:
-                continue
-            r = self.session_get(self.series_url.format(self.get_session_id(), item["series_id"]))
-            season_data = r.json()["data"]
-            unique_seasons = len(set(map(lambda x: x["season"], season_data))) == len(season_data)
-            for season in season_data:
-                media_data.append(self.create_media_data(id=item['series_id'], name=season["name"], season_ids=[season["collection_id"]], season_number=season["season"] if unique_seasons else season["collection_id"], dir_name=item_alt_id))
+            media_data += list([media for media in self._create_media_data(item["series_id"], item_alt_id)])
 
         return media_data
 
@@ -63,11 +66,12 @@ class CrunchyrollAnime(Crunchyroll):
         media_name_hint = match.group(1)
         media_name_prefix_hint = media_name_hint.split("-")[0]
         chapter_id = match.group(2)
-        media_list = self.search(media_name_prefix_hint, media_name_hint) or self.search(media_name_prefix_hint[0], media_name_hint)
-        for media_data in media_list:
-            self.update_media_data(media_data)
-            if chapter_id in media_data["chapters"]:
-                return media_data
+        r = self.session_get(self.episode_url.format(self.get_session_id(), chapter_id))
+        data = r.json()["data"]
+        media_data = next(self._create_media_data(data["series_id"], media_name_hint, season_id=data["collection_id"]))
+        self.update_media_data(media_data)
+        assert chapter_id in media_data["chapters"]
+        return media_data
 
     def is_url_for_known_media(self, url, known_media):
         chapter_id = url.split("-")[-1]
