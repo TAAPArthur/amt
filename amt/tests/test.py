@@ -51,6 +51,7 @@ class TestApplication(Application):
         settings.shell = True
         settings.free_only = True
         settings.password_manager_enabled = False
+        settings.incapsula_prompt = "echo $INCAPSULA_COOKIE"
         settings.env_override_prefix = None
 
         servers = list(TEST_SERVERS)

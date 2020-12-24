@@ -36,6 +36,7 @@ class Settings:
     status_to_retry = [500, 502, 504]
     force_odd_pages = True
     env_override_prefix = "PASSWORD_OVERRIDE_"
+    incapsula_prompt = ""
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
@@ -99,12 +100,19 @@ class Settings:
         return os.path.join(self.media_dir, server_id)
 
     def get_media_dir(self, media_data):
-        return os.path.join(self.get_server_dir(media_data["server_id"]), media_data["name"])
+        return os.path.join(self.get_server_dir(media_data["server_id"]), media_data["name"].replace("/", "_"))
 
     def get_chapter_dir(self, media_data, chapter_data):
         dir = os.path.join(self.get_media_dir(media_data), "%06.1f" % chapter_data["number"])
         os.makedirs(dir, exist_ok=True)
         return dir
+
+    def get_incapsula(self, server_id: str) -> (str, str):
+        output = subprocess.check_output(self.incapsula_prompt.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
+        if output.startswith("incap_ses_"):
+            return output.split("=", 1)
+        else:
+            return "incap_ses_979_998813", output
 
     def get_credentials(self, server_id: str) -> (str, str):
         """Returns the saved username, password"""

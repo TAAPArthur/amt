@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 from enum import Enum
 from functools import lru_cache
@@ -32,6 +33,8 @@ class Server:
     has_gaps = False
     is_non_premium_account = False
     extension = "jpeg"
+    incapsula_flag = "Request unsuccessful. Incapsula incident ID:"
+    incapsula_regex = re.compile(r"/_Incapsula_Resource\?SWJIYLWA=[0-9a-z]*,[0-9a-z]*")
 
     def __init__(self, session, settings=None):
         self.settings = settings
@@ -39,14 +42,38 @@ class Server:
 
     def _request(self, get, url, **kwargs):
         logging.info("Making request to %s", url)
+        logging.debug("Request args: %s ", kwargs)
         r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
         if r.status_code != 200:
             logging.warning(r)
+        r.raise_for_status()
         return r
 
-    @lru_cache
+    def _request_or_prompt_incapsula(self, url):
+        r = self._request(True, url)
+        for i in range(self.settings.max_retires):
+            if (self.incapsula_flag in r.text or self.incapsula_regex.search(r.text)):
+                if self.settings.incapsula_prompt:
+                    logging.info("Detected _Incapsula_Resource")
+                    print(r.text)
+                    name, value = self.settings.get_incapsula(self.id)
+                    self.session.cookies.set(name, value, domain=self.domain, path="/")
+                r = self._request(True, url)
+            else:
+                break
+        if self.incapsula_flag in r.text or self.incapsula_regex.search(r.text):
+            raise ValueError(r.text[-500:])
+        return r
+
     def session_get_cache(self, url):
-        return self._request(True, url)
+        return self.settings.get_cache(url, lambda: self._request_or_prompt_incapsula(url))
+
+    def session_get_protected(self, url):
+        return self._request_or_prompt_incapsula(url)
+
+    @cache
+    def session_get_mem_cache(self, url):
+        return self._request_or_prompt_incapsula(url)
 
     def session_get(self, url, **kwargs):
         return self._request(True, url, **kwargs)
