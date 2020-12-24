@@ -45,7 +45,7 @@ import_sub_classes(servers, CustomServer, LOCAL_SERVERS)
 class TestApplication(Application):
     def __init__(self, real=False, local=False):
         # Save cache in local directory
-        os.putenv('XDG_CACHE_HOME', ".")
+        os.environ['XDG_CACHE_HOME'] = "./.cache"
         settings = Settings(home=TEST_HOME)
         settings.init()
         settings.shell = True

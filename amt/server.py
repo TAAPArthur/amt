@@ -3,7 +3,7 @@ import os
 import re
 import time
 from enum import Enum
-from functools import lru_cache
+from functools import cache
 
 import m3u8
 from Crypto.Cipher import AES
@@ -84,8 +84,9 @@ class Server:
     def login(self, username, password):
         return False
 
-    @lru_cache
     def relogin(self):
+        if self.is_logged_in:
+            return True
         credential = self.settings.get_credentials(self.id if not self.alias else self.alias)
         if credential:
             logged_in = self.login(credential[0], credential[1])
@@ -213,7 +214,7 @@ class Server:
         content = r.content
         key = page_data["encryption_key"]
         if key:
-            key_bytes = self.session_get_cache(page_data["encryption_key"].uri).content
+            key_bytes = self.session_get_mem_cache(key.uri).content
             content = AES.new(key_bytes, AES.MODE_CBC, key.iv).decrypt(content)
         with open(path, 'wb') as fp:
             fp.write(content)

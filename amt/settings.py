@@ -7,6 +7,8 @@ from pathlib import Path
 from shlex import quote
 from subprocess import CalledProcessError
 
+from .cache import Cache
+
 APP_NAME = "amt"
 
 
@@ -54,6 +56,10 @@ class Settings:
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.bundle_dir, exist_ok=True)
         os.makedirs(self.media_dir, exist_ok=True)
+        self.cache = Cache(self.cache_dir)
+
+    def get_cache(self, key, func):
+        return self.cache.get(key, func)
 
     @classmethod
     def get_members(clazz):
