@@ -54,7 +54,7 @@ class Crunchyroll(Server):
 
     def _store_login_data(self, data):
         self.api_auth_token = data['data']['auth']
-        self.is_non_premium_account = not data['data']["user"]['premium']
+        self.is_premium = data['data']["user"]['premium']
 
     def needs_authentication(self):
         r = self.session_get(self.api_auth_url.format(self.get_session_id()))
@@ -62,8 +62,8 @@ class Crunchyroll(Server):
         if 'data' in data:
             self._store_login_data(data)
             return False
-        if data["code"] == "bad_session":
-            logging.info("Session is invalid %s", data)
+        if data.get("error", False):
+            logging.info("Error authenticating %s", data)
         return True
 
     def login(self, username, password):

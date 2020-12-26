@@ -31,6 +31,9 @@ class Server:
     has_login = False
     has_gaps = False
     is_non_premium_account = False
+    is_premium = False
+    is_logged_in = False
+
     extension = "jpeg"
     incapsula_flag = "Request unsuccessful. Incapsula incident ID:"
     incapsula_regex = re.compile(r"/_Incapsula_Resource\?SWJIYLWA=[0-9a-z]*,[0-9a-z]*")
@@ -91,6 +94,10 @@ class Server:
             logged_in = self.login(credential[0], credential[1])
             if not logged_in:
                 logging.warning("Could not login with username: %s", credential[0])
+            else:
+                logging.info("Logged into %s; premium %s", self.id, self.is_premium)
+
+            self.is_logged_in = logged_in
             return logged_in
         logging.warning("Could not load credentials")
         return False
@@ -132,7 +139,7 @@ class Server:
         If the user is not logged in (and needs to login to access all content),
         this method should return true.
         """
-        return self.has_login
+        return self.has_login and not self.is_logged_in
 
     @staticmethod
     def get_download_marker():
@@ -171,13 +178,15 @@ class Server:
             return True, False
 
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
-        if chapter_data["premium"]:
-            if not self.is_non_premium_account and self.needs_authentication():
+        if chapter_data["premium"] and not self.is_premium:
+            if not self.is_logged_in and self.needs_authentication():
                 logging.info("Server is not authenticated; relogging in")
                 if not self.relogin():
                     logging.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                     return False, False
-            if self.is_non_premium_account:
+            else:
+                self.is_logged_in = True
+            if not self.is_premium:
                 logging.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                 return False, False
 

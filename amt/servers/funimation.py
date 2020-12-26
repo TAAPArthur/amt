@@ -10,6 +10,7 @@ from ..server import ANIME, Server
 
 class Funimation(Server):
     id = 'funimation'
+    has_login = True
 
     CSRF_NAME = "csrfmiddlewaretoken"
     domain = ".funimation.com"
@@ -33,9 +34,15 @@ class Funimation(Server):
     extension = "mp4"
 
     def _get_csrf(self):
-        r = self.session.http.get_cache(self.login_url)
-        soup = BeautifulSoup(r.content, "lxml")
+        r = self.session_get_cache(self.login_url)
+        soup = BeautifulSoup(r.text, "lxml")
         return soup.find("input", {"name": self.CSRF_NAME})["value"]
+
+    def needs_authentication(self):
+        if self.session.cookies.get("src_user_id", domain=self.domain):
+            self.is_premium = self.session.cookies.get("userState", domain=self.domain) == "Premium%20Plus"
+            return False
+        return True
 
     def login(self, username, password):
 
@@ -45,7 +52,10 @@ class Funimation(Server):
 
         data = r.json()
         try:
-            self.premium = "premium" in data["rlildup_cookie"]
+            self.session.cookies.set("src_token", data["token"], domain=self.domain)
+            self.session.cookies.set("src_user_id", str(data["user"]["id"]), domain=self.domain)
+            self.session.cookies.set("rlildup", data["rlildup_cookie"], domain=self.domain)
+            self.is_premium = "premium" in data["rlildup_cookie"].lower()
             return True
         except KeyError:
             logging.info(data["error"])

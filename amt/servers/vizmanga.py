@@ -27,6 +27,7 @@ class VizManga(Server):
 
     chapter_regex = re.compile(r"/shonenjump/(.*)-chapter-([\d\-]*)/chapter/(\d*)")
     page_regex = re.compile(r"var pages\s*=\s*(\d*);")
+    wsj_subscriber_regex = re.compile(r"var is_wsj_subscriber = (\w*);")
 
     def get_token(self):
         auth_token = self.session_get(self.refresh_login_url)
@@ -37,6 +38,7 @@ class VizManga(Server):
         r = self.session_get(self.refresh_login_url)
         soup = BeautifulSoup(r.content, "lxml")
         account = soup.find("div", id="o_account-links-content")
+        self.is_premium = self.wsj_subscriber_regex.search(r.text).group(1) == "true"
         return not account or account["logged_in"] == "false"
 
     def login(self, username, password):
