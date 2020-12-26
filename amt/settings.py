@@ -26,10 +26,10 @@ class Settings:
 
     threads = 8
 
-    anime_viewer = "mpv {:1} --title='{title}'"
+    anime_viewer = "mpv --title='{title}' {media} "
     manga_viewer = "zathura {}"
     page_viewer = "sxiv {}"
-    segment_viewer = "cat {} | mpv -"
+    segment_viewer = "cat {media} | mpv --title='{title}' -"
 
     no_save_session = False
     free_only = False
@@ -159,13 +159,13 @@ class Settings:
     def _smart_quote(name):
         return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
 
-    def _open_viewer(self, viewer, name, **kwargs):
+    def _open_viewer(self, viewer, name, title=None):
         try:
             if isinstance(name, str):
                 name = Settings._smart_quote(name)
             else:
                 name = " ".join(map(Settings._smart_quote, name))
-            full_cmd = viewer.format(name, kwargs)
+            full_cmd = viewer.format(media=name, title=quote(title)) if title else viewer.format(name)
             logging.info("Running cmd %s: %s shell = %s", viewer, full_cmd, self.shell)
             subprocess.check_call(full_cmd, shell=self.shell)
             return True
@@ -178,8 +178,8 @@ class Settings:
     def open_anime_viewer(self, name, title):
         return self._open_viewer(self.anime_viewer, name, title=title)
 
-    def open_segment_viewer(self, name):
-        return self._open_viewer(self.segment_viewer, name)
+    def open_segment_viewer(self, name, title):
+        return self._open_viewer(self.segment_viewer, name, title=title)
 
     def open_page_viewer(self, name):
         return self._open_viewer(self.page_viewer, name)

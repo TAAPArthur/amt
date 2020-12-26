@@ -341,7 +341,7 @@ class MangaReader:
                 else:
                     streamable_url = server.get_stream_url(url=url)
                     logging.info("Streaming %s", streamable_url)
-                    if self.settings.open_anime_viewer(streamable_url, server.get_media_title(known[0], known[1])if known else url) and known:
+                    if self.settings.open_anime_viewer(streamable_url, server.get_media_title(known[0], known[1]) if known else url.split("/", 3)[-1]) and known:
                         known[1]["read"] = True
                         if cont:
                             self.play(name=self._get_global_id(known[0]), cont=cont)
@@ -367,7 +367,7 @@ class MangaReader:
     def play(self, name=None, shuffle=False, cont=False, num_list=None):
 
         for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle)):
-            success = self.settings.open_segment_viewer(server.get_children(media_data, chapter)) if server.is_fully_downloaded(media_data, chapter) else self.settings.open_anime_viewer(server.get_stream_url(media_data, chapter), server.get_media_title(media_data, chapter))
+            success = self.settings.open_segment_viewer(server.get_children(media_data, chapter), title=chapter["title"]) if server.is_fully_downloaded(media_data, chapter) else self.settings.open_anime_viewer(server.get_stream_url(media_data, chapter), server.get_media_title(media_data, chapter))
             if success:
                 chapter["read"] = True
                 if not cont:

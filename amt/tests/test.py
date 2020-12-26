@@ -72,9 +72,9 @@ class TestApplication(Application):
         assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
         self.settings.threads = 0
-        self.settings.anime_viewer = "echo {}"
+        self.settings.anime_viewer = "echo {media} {title}"
         self.settings.manga_viewer = "[ -f {} ]"
-        self.settings.segment_viewer = "ls {}"
+        self.settings.segment_viewer = "ls {media}; echo {title}"
         self.settings.page_viewer = "ls {}"
         self.settings.bundle_cmds[self.settings.bundle_format] = "ls {}; touch {}"
 
