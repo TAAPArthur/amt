@@ -91,7 +91,10 @@ class Server:
             return True
         credential = self.settings.get_credentials(self.id if not self.alias else self.alias)
         if credential:
-            logged_in = self.login(credential[0], credential[1])
+            try:
+                logged_in = self.login(credential[0], credential[1])
+            except:
+                logged_in = False
             if not logged_in:
                 logging.warning("Could not login with username: %s", credential[0])
             else:
