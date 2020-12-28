@@ -163,17 +163,26 @@ class Server:
     def get_children(self, media_data, chapter_data):
         return "{}/*".format(self._get_dir(media_data, chapter_data))
 
-    def _download_page(self, media_data, chapter_data, dir_path, index, page_data):
-        temp_full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "-temp." + page_data["ext"])
-        full_path = os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + page_data["ext"])
-
-        logging.warning("downloading %s", full_path)
+    def download_if_missing(self, func, full_path):
+        logging.info("downloading %s", full_path)
         if os.path.exists(full_path):
             logging.debug("Page %s already download", full_path)
         else:
-            self.save_chapter_page(page_data, temp_full_path)
-            os.rename(temp_full_path, full_path)
-            downloaded_page = True
+            temp_path = os.path.join(os.path.dirname(full_path), ".tmp-" + os.path.basename(full_path))
+            func(temp_path)
+            os.rename(temp_path, full_path)
+
+    def _get_page_path(self, media_data, chapter_data, dir_path, index, page_data):
+        return os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + page_data["ext"])
+
+    def download_subtitles(self, media_data, chapter_data, dir_path):
+        pass
+
+    def post_download(self, media_data, chapter_data, dir_path):
+        pass
+
+    def pre_download(self, media_data, chapter_data, dir_path):
+        self.download_subtitles(media_data, chapter_data, dir_path=dir_path)
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         if self.is_fully_downloaded(media_data, chapter_data):
@@ -199,9 +208,12 @@ class Server:
         logging.info("Downloading %d pages", len(list_of_pages))
 
         dir_path = self._get_dir(media_data, chapter_data)
+        self.pre_download(media_data, chapter_data, dir_path)
         job = Job(self.settings.threads)
         for index, page_data in enumerate(list_of_pages[:page_limit]):
-            job.add(lambda index=index, page_data=page_data: self._download_page(media_data, chapter_data, dir_path, index, page_data))
+            full_path = self._get_page_path(media_data, chapter_data, dir_path, index, page_data)
+            self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), full_path)
+            job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
         job.run()
 
         if self.settings.force_odd_pages and self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2:
@@ -209,6 +221,7 @@ class Server:
             image = Image.new('RGB', (100, 100))
             image.save(full_path, "jpeg")
 
+        self.post_download(media_data, chapter_data, dir_path)
         self.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
 
@@ -247,7 +260,7 @@ class Server:
     def create_media_data(self, id, name, season_ids=None, season_number="", media_type=None, dir_name=None, offset=0, alt_id=None, cover=None):
         return dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_ids=season_ids, season_number=season_number, offset=offset, chapters={}, alt_id=alt_id)
 
-    def update_chapter_data(self, media_data, id, title, number, premium=False, special=False, date=None):
+    def update_chapter_data(self, media_data, id, title, number, premium=False, special=False, date=None, subtitles=None):
         id = str(id)
         if isinstance(number, str):
             if number.isalpha():
@@ -263,7 +276,7 @@ class Server:
         if number % 1 == 0:
             number = int(number)
 
-        new_values = dict(id=id, title=title, number=number, premium=premium, special=special, date=date)
+        new_values = dict(id=id, title=title, number=number, premium=premium, special=special, date=date, subtitles=subtitles)
         if id in media_data["chapters"]:
             media_data["chapters"][id].update(new_values)
         else:

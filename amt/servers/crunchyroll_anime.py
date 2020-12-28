@@ -1,4 +1,6 @@
+import os
 import re
+from shlex import quote
 
 from ..server import ANIME
 from .crunchyroll import Crunchyroll
@@ -100,6 +102,10 @@ class CrunchyrollAnime(Crunchyroll):
                 url_bandwidth_tuples.append((bandwidth, line))
         url_bandwidth_tuples.sort(reverse=True)
         return url_bandwidth_tuples[0][1]
+
+    def post_download(self, media_data, chapter_data, dir_path):
+        pathWithoutExt = os.path.join(dir_path, chapter_data["id"])
+        self.settings.convert(self.extension, f"{quote(dir_path)}/*.{self.extension}", pathWithoutExt)
 
     def get_media_chapter_data(self, media_data, chapter_data):
         return self.get_stream_data(media_data, chapter_data)

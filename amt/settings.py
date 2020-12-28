@@ -25,11 +25,15 @@ class Settings:
     bundle_format = "pdf"
 
     threads = 8
+    converters = [
+        ("ts", "mp4", "cat {} > {}.mp4", "rm {}")
+    ]
 
-    anime_viewer = "mpv --title='{title}' {media} "
+    anime_viewer = "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media} "
     manga_viewer = "zathura {}"
     page_viewer = "sxiv {}"
-    segment_viewer = "cat {media} | mpv --title='{title}' -"
+
+    subtitle_formats = ["srt", "vtt"]
 
     no_save_session = False
     free_only = False
@@ -145,27 +149,30 @@ class Settings:
     def store_secret(self, server_id, secret):
         self.store_credentials(server_id, secret, "token")
 
+    def run_cmd(self, cmd, wd=None):
+        subprocess.check_call(cmd, shell=self.shell, cwd=wd)
+
     def bundle(self, img_dirs):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
         name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'), str(hash(arg))[1:8], self.bundle_format))
         cmd = self.bundle_cmds[self.bundle_format].format(arg, name)
         logging.info("Running cmd %s shell = %s", cmd, self.shell)
-        subprocess.check_call(cmd, shell=self.shell)
+        self.run_cmd(cmd)
         return name
 
     @staticmethod
     def _smart_quote(name):
         return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
 
-    def _open_viewer(self, viewer, name, title=None):
+    def _open_viewer(self, viewer, name, title=None, wd=None):
         try:
             if isinstance(name, str):
                 name = Settings._smart_quote(name)
             else:
                 name = " ".join(map(Settings._smart_quote, name))
-            full_cmd = viewer.format(media=name, title=quote(title)) if title else viewer.format(name)
-            logging.info("Running cmd %s: %s shell = %s", viewer, full_cmd, self.shell)
-            subprocess.check_call(full_cmd, shell=self.shell)
+            cmd = viewer.format(media=name, title=quote(title)) if title else viewer.format(name)
+            logging.info("Running cmd %s: %s shell = %s, wd=%s", viewer, cmd, self.shell, wd)
+            self.run_cmd(cmd, wd=wd)
             return True
         except CalledProcessError:
             return False
@@ -173,11 +180,16 @@ class Settings:
     def open_manga_viewer(self, name):
         return self._open_viewer(self.manga_viewer, name)
 
-    def open_anime_viewer(self, name, title):
-        return self._open_viewer(self.anime_viewer, name, title=title)
-
-    def open_segment_viewer(self, name, title):
-        return self._open_viewer(self.segment_viewer, name, title=title)
+    def open_anime_viewer(self, name, title, wd=None):
+        return self._open_viewer(self.anime_viewer, name, title=title, wd=wd)
 
     def open_page_viewer(self, name):
         return self._open_viewer(self.page_viewer, name)
+
+    def convert(self, extension, files, destWithoutExt):
+        for ext, targetExt, cmd, cleanupCmd in self.converters:
+            if ext == extension:
+                targetFile = self._smart_quote(f"{destWithoutExt}.{targetExt}")
+                logging.info("Converting %s to %s", files, targetFile)
+                self.run_cmd(cmd.format(files, targetFile))
+                self.run_cmd(cleanupCmd.format(files))
