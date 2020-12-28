@@ -130,12 +130,14 @@ class BaseUnitTestClass(unittest.TestCase):
             for file_name in filenames:
                 assert len(filenames) > 1, f"files: {filenames}, dirnames: {dirnames}"
                 if not file_name.startswith("."):
+                    path = os.path.join(dir_path, dirpath, file_name)
+                    subprocess.check_call(f"ls {path}", shell=True)
                     if media_data["media_type"] == MANGA:
-                        with open(os.path.join(dirpath, file_name), "rb") as img_file:
+                        with open(path, "rb") as img_file:
                             img = Image.open(img_file)
                             self.assertEqual(file_name.split(".")[-1].replace("jpg", "jpeg"), img.format.lower())
                     elif media_data["media_type"] == ANIME:
-                        subprocess.check_call(["ffprobe", "-loglevel", "quiet", os.path.join(dir_path, dirpath, file_name)])
+                        subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
 
     def verify_unique_numbers(self, chapters):
         list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values() if not chapter_data["special"]])
@@ -251,6 +253,15 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 assert my_media_list[0]["id"] == selected_media["id"]
                 self.media_reader.remove_media(media_data=selected_media)
                 assert 0 == len(self.media_reader.get_media_in_library())
+
+    def test_server_download(self):
+        for server in self.media_reader.get_servers():
+            for media_data in server.get_media_list():
+                with self.subTest(server=server.id, media_data=media_data["name"]):
+                    server.update_media_data(media_data)
+                    chapter_data = list(media_data["chapters"].values())[0]
+                    self.assertEqual((True, True), server.download_chapter(media_data, chapter_data, page_limit=2))
+                    self.verify_download(media_data, chapter_data)
 
     def test_search_media(self):
         for server in self.media_reader.get_servers():
