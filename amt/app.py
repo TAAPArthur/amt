@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 
 from .media_reader import MangaReader
@@ -31,10 +32,9 @@ class Application(MangaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def search_add(self, term, media_type=None, exact=False):
-        results = self.search_for_media(term, media_type=media_type, exact=exact)
+    def search_add(self, term, server_id=None, media_type=None, exact=False):
+        results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact)
         if len(results) == 0:
-            logging.warning("Could not find media %s", term)
             return
         self.print_results(results)
 
@@ -60,7 +60,7 @@ class Application(MangaReader):
         else:
             logging.info("Could not find media")
 
-    def load_from_tracker(self, user_id=None, user_name=None, exact=True, local_only=False, update_progress_only=False):
+    def load_from_tracker(self, user_id=None, user_name=None, media_type_filter=None, exact=True, local_only=False, update_progress_only=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         count = 0
@@ -80,6 +80,7 @@ class Application(MangaReader):
 
                 known_matching_media = list(filter(lambda x: media_type & x["media_type"] and (
                     clean_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(clean_entry_name)
+                    or clean_entry_name == clean_name(x["season_title"])
                 ), self.get_media_in_library()))
                 if not known_matching_media and not exact:
                     known_matching_media = list(filter(lambda x: media_type & x["media_type"] and (
@@ -94,6 +95,10 @@ class Application(MangaReader):
                         media_data = self.search_add(entry["name"], media_type=media_type, exact=True)
                     if not media_data and not exact:
                         media_data = self.search_add(entry["name"].split(":")[0], media_type=media_type, exact=False)
+                    if not media_data and not exact:
+                        prefix = re.sub(r"\W*$", "", entry["name"])
+                        if prefix != entry["name"]:
+                            media_data = self.search_add(prefix, media_type=media_type, exact=False)
                 if not media_data:
                     logging.info("Could not find media %s", entry["name"])
                     continue

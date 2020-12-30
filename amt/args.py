@@ -46,6 +46,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
         search_parsers.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
         search_parsers.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        search_parsers.add_argument("--server", choices=app.get_servers_ids())
         search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
         search_parsers.add_argument("term", help="The string to search by")
 
@@ -123,10 +124,11 @@ def parse_args(args=None, app=None, already_upgraded=False):
         sub_parsers.add_parser("auth")
 
         load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
-        load_parser.add_argument("name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
-        load_parser.add_argument("--lenient", action="store_const", const=True, default=False, help="Don't require an exact match")
+        load_parser.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
+        load_parser.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
         load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
         load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media")
+        load_parser.add_argument("name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
 
         sync_parser = sub_parsers.add_parser("sync", description="Attempts to update tracker with current progress")
         sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
@@ -194,7 +196,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "list-chapters":
         app.list_chapters(namespace.name)
     elif action == "load":
-        app.load_from_tracker(user_name=namespace.name, exact=not namespace.lenient, local_only=namespace.local_only, update_progress_only=namespace.progress_only)
+        app.load_from_tracker(user_name=namespace.name, exact=False, media_type_filter=namespace.manga_only or namespace.anime_only, local_only=namespace.local_only, update_progress_only=namespace.progress_only)
     elif action == "login":
         app.test_login(namespace.servers)
     elif action == "mark-up-to-date":
@@ -213,7 +215,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "import":
         app.import_media(namespace.file, media_type=namespace.manga or namespace.anime or namespace.novel or ANIME, no_copy=namespace.no_copy, name=namespace.name)
     elif action == "search":
-        app.search_add(namespace.term, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact)
+        if not app.search_add(namespace.term, server_id=namespace.server, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact):
+            logging.warning("Could not find media %s", namespace.term)
     elif action == "server-list":
         app.list_server_media(namespace.id)
     elif action == "setting":
