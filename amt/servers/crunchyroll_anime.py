@@ -32,7 +32,7 @@ class CrunchyrollAnime(Crunchyroll):
         unique_seasons = len(set(map(lambda x: x["season"], season_data))) == len(season_data)
         for season in season_data:
             if not season_id or season["collection_id"] == season_id:
-                yield self.create_media_data(id=series_id, name=season["name"], season_ids=[season["collection_id"]], season_number=season["season"] if unique_seasons else season["collection_id"], dir_name=item_alt_id)
+                yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], season_number=season["season"] if unique_seasons else season["collection_id"], dir_name=item_alt_id)
 
     def search(self, term):
         r = self.session_get(self.search_series.format(self.get_session_id(), term.replace(" ", "%20")))
@@ -48,7 +48,7 @@ class CrunchyrollAnime(Crunchyroll):
         r = self.session_get_cache(self.list_media.format(self.get_session_id(), media_data["id"]))
         data = r.json()["data"]
         for chapter in data:
-            if chapter["collection_id"] in media_data["season_ids"] and not chapter['clip']:
+            if chapter["collection_id"] == media_data["season_id"] and not chapter['clip']:
                 special = False
                 if not chapter['episode_number']:
                     special = True

@@ -880,7 +880,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
                     media_data = server.get_media_data_from_url(url)
                     assert media_data
                     self.assertEqual(media_id, str(media_data["id"]))
-                    self.assertTrue(season_id in map(str, media_data["season_ids"]))
+                    if season_id:
+                        self.assertEqual(season_id, str(media_data["season_ids"]))
                     self.assertTrue(chapter_id in media_data["chapters"])
 
 
