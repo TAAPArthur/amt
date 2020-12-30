@@ -252,7 +252,7 @@ class MangaReader:
                 chapter["read"] = False
 
     def get_last_chapter_number(self, media_data):
-        return max(media_data["chapters"].values(), key=lambda x: x["number"])["number"]
+        return max(media_data["chapters"].values(), key=lambda x: x["number"])["number"] if media_data["chapters"] else 0
 
     def get_last_read(self, media_data):
         return max(filter(lambda x: x["read"], media_data["chapters"].values()), key=lambda x: x["number"], default={"number": -1})["number"]
