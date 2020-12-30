@@ -19,7 +19,7 @@ class Application(MangaReader):
 
     def print_results(self, results):
         for i, result in enumerate(results):
-            print("{:4}| {}:{}\t{} ({})".format(i, result["server_id"], result["id"], result["name"], TYPE_NAMES[result["media_type"]]))
+            print("{:4}| {}:{}\t{} {} ({})".format(i, result["server_id"], result["id"], result["name"], result["season_title"], TYPE_NAMES[result["media_type"]]))
 
     def select_media(self, results, prompt):
         index = 0
@@ -69,8 +69,12 @@ class Application(MangaReader):
         def clean_name(x):
             return x.lower().replace(" ", "")
 
+        unknown_media = []
         for entry in data:
             media_type = ANIME if entry["anime"] else NOT_ANIME
+            if media_type_filter and not media_type & media_type_filter:
+                logging.debug("Skipping %s", entry)
+                continue
             media_data = self.is_added(tracker.id, entry["id"])
             if not media_data:
                 if update_progress_only:
@@ -101,6 +105,7 @@ class Application(MangaReader):
                             media_data = self.search_add(prefix, media_type=media_type, exact=False)
                 if not media_data:
                     logging.info("Could not find media %s", entry["name"])
+                    unknown_media.append(entry["name"])
                     continue
 
                 self.track(tracker.id, self._get_global_id(media_data), entry["id"], entry["name"])
@@ -112,6 +117,9 @@ class Application(MangaReader):
                 self.mark_chapters_until_n_as_read(media_data, entry["progress"])
             media_data["progress"] = entry["progress"]
             count += 1
+        if unknown_media:
+            logging.info("Could not find any of %s", unknown_media)
+
         self.list()
         return count, new_count
 
@@ -126,7 +134,7 @@ class Application(MangaReader):
         for i, result in enumerate(self.get_media_in_library()):
             last_chapter_num = self.get_last_chapter_number(result)
             last_read = self.get_last_read(result)
-            print("{:4}| {}:{}\t{} {}/{}".format(i, result["server_id"], result["id"], result["name"], last_read, last_chapter_num))
+            print("{:4}|\t{}:{}\t{} {}\t{}/{}".format(i, result["server_id"], result["id"], result["name"], result["season_title"], last_read, last_chapter_num))
 
     def list_chapters(self, name):
         media_data = self._get_single_media(name=name)
