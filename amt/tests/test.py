@@ -47,16 +47,18 @@ class TestApplication(Application):
         # Save cache in local directory
         os.environ['XDG_CACHE_HOME'] = "./.cache"
         settings = Settings(home=TEST_HOME)
-        settings.shell = True
+        settings.env_override_prefix = None
         settings.free_only = True
-        settings.password_manager_enabled = False
         settings.incapsula_prompt = "echo $INCAPSULA_COOKIE"
         settings.no_save_session = True
-        settings.env_override_prefix = None
+        settings.password_manager_enabled = False
+        settings.shell = True
+        settings.threads = 0
 
         servers = list(TEST_SERVERS)
         trackers = list(TEST_TRACKERS)
         if real:
+            settings.threads = 4
             if os.getenv("ENABLE_ONLY_SERVERS"):
                 enabled_servers = set(os.getenv("ENABLE_ONLY_SERVERS").split(","))
                 [servers.append(x) for x in SERVERS if x.id in enabled_servers]
@@ -71,7 +73,6 @@ class TestApplication(Application):
         assert len(self.get_trackers()) == len(trackers)
         assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
-        self.settings.threads = 0
         self.settings.anime_viewer = "echo {media} {title}"
         self.settings.manga_viewer = "[ -f {} ]"
         self.settings.segment_viewer = "ls {media}; echo {title}"

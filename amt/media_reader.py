@@ -13,6 +13,7 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
 from . import servers, trackers
+from .job import Job
 from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
 from .settings import Settings
 from .tracker import Tracker
@@ -31,18 +32,6 @@ def import_sub_classes(m, base_class, results):
 
 import_sub_classes(servers, Server, SERVERS)
 import_sub_classes(trackers, Tracker, TRACKERS)
-
-
-def for_each(func, media_list):
-    results = deque()
-    for media_data in media_list:
-        try:
-            result = func(media_data)
-            results.append(result) if isinstance(result, int) else results.extend(result)
-        except Exception as e:
-            logging.info("Error with %s", media_data)
-            logging.error(e)
-    return results
 
 
 class MangaReader:
@@ -241,9 +230,15 @@ class MangaReader:
                 if not chapter["read"]:
                     yield server, media_data, chapter
 
-    def search_for_media(self, term, media_type=None, exact=False):
+    def for_each(self, func, media_list):
+        return Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list]).run()
+
+    def search_for_media(self, term, server_id=None, media_type=None, exact=False):
         def func(x): return x.search(term)
-        results = for_each(func, filter(lambda x: media_type is None or media_type & x.media_type, self.get_servers()))
+        if server_id:
+            results = func(self.get_server(server_id))
+        else:
+            results = self.for_each(func, filter(lambda x: media_type is None or media_type & x.media_type, self.get_servers()))
         if exact:
             results = list(filter(lambda x: x["name"] == term, results))
         return results
@@ -276,7 +271,7 @@ class MangaReader:
     def download_unread_chapters(self, name=None, media_type=None, limit=0):
         """Downloads all chapters that are not read"""
         def func(media_data): return self.download_chapters(media_data, limit)
-        return sum(for_each(func, map(lambda x: x[1], self._get_unreads(media_type, name=name))))
+        return sum(self.for_each(func, map(lambda x: x[1], self._get_unreads(media_type, name=name))))
 
     def _get_sorted_chapters(self, media_data):
         return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
@@ -316,8 +311,14 @@ class MangaReader:
         unreads = []
         paths = []
         bundle_data = []
+
+        def func(x):
+            server, media_data, chapter = x
+            server.download_chapter(media_data, chapter)
+        self.for_each(func, self._get_unreads(MANGA, name=name, shuffle=shuffle))
+
         for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle):
-            if server.download_chapter(media_data, chapter)[0]:
+            if server.is_fully_downloaded(media_data, chapter):
                 paths.append(server.get_children(media_data, chapter))
                 bundle_data.append(self._create_bundle_data_entry(media_data, chapter))
         if not paths:
@@ -399,7 +400,7 @@ class MangaReader:
     def update(self, download=False, media_type_to_download=MANGA):
         logging.info("Updating: download %s", download)
         def func(x): return self.update_media(x, download, media_type_to_download=media_type_to_download)
-        return for_each(func, self.get_media_in_library())
+        return self.for_each(func, self.get_media_in_library())
 
     def update_media(self, media_data, download=False, media_type_to_download=MANGA, limit=None, page_limit=None):
         """
