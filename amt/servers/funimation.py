@@ -75,7 +75,7 @@ class Funimation(Server):
             experience = data["items"][0]["mostRecentSvod"]["experience"]
 
             for seasonId, seasonTitle in season_data:
-                media_data.append(self.create_media_data(id=id, name=title, season_id=seasonId, season_number=seasonTitle, cover=cover, alt_id=experience))
+                media_data.append(self.create_media_data(id=id, name=title, season_id=seasonId, season_title=seasonTitle, cover=cover, alt_id=experience))
 
         return media_data
 
@@ -121,7 +121,7 @@ class Funimation(Server):
                     video = lang["alpha"]
                     exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                     if int(exp["experienceId"]) == int(chapter_id):
-                        media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_number=season["seasonPk"], alt_id=chapter_id)
+                        media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id)
                         self.update_media_data(media_data, r=r)
                         return media_data
 
