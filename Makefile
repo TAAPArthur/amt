@@ -1,7 +1,10 @@
 APP_NAME := amt
 
 test:
-	coverage run --source=amt -m unittest -f
+	coverage run --source=amt -m unittest $(TEST_ARGS)
+
+coverage: test
+	coverage html
 
 install:
 	install -m 0744 -Dt "$(DESTDIR)/usr/lib/python3.9/$(APP_NAME)" $(APP_NAME)/*.py
