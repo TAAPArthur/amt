@@ -47,6 +47,9 @@ class TestApplication(Application):
         # Save cache in local directory
         os.environ['XDG_CACHE_HOME'] = "./.cache"
         settings = Settings(home=TEST_HOME)
+        del os.environ['XDG_CACHE_HOME']
+        if os.path.exists(settings.get_cookie_file()):
+            os.remove(settings.get_cookie_file())
         settings.env_override_prefix = None
         settings.free_only = True
         settings.incapsula_prompt = "echo $INCAPSULA_COOKIE"
@@ -58,7 +61,7 @@ class TestApplication(Application):
         servers = list(TEST_SERVERS)
         trackers = list(TEST_TRACKERS)
         if real:
-            settings.threads = 4
+            settings.threads = Settings.threads
             if os.getenv("ENABLE_ONLY_SERVERS"):
                 enabled_servers = set(os.getenv("ENABLE_ONLY_SERVERS").split(","))
                 [servers.append(x) for x in SERVERS if x.id in enabled_servers]
@@ -66,6 +69,7 @@ class TestApplication(Application):
                 servers += SERVERS
             trackers += TRACKERS
         elif local:
+            settings.js_enabled_browser = ""
             servers += LOCAL_SERVERS
 
         super().__init__(servers, trackers, settings)
@@ -125,6 +129,7 @@ class BaseUnitTestClass(unittest.TestCase):
         server = self.media_reader.get_server(media_data["server_id"])
         if server.external:
             return
+        valid_image_formats = ("png", "jpeg", "jpg")
         assert server.is_fully_downloaded(media_data, chapter_data)
         dir_path = self.media_reader.settings.get_media_dir(media_data)
         for dirpath, dirnames, filenames in os.walk(dir_path):
@@ -136,7 +141,8 @@ class BaseUnitTestClass(unittest.TestCase):
                     if media_data["media_type"] == MANGA:
                         with open(path, "rb") as img_file:
                             img = Image.open(img_file)
-                            self.assertEqual(file_name.split(".")[-1].replace("jpg", "jpeg"), img.format.lower())
+                            self.assertIn(img.format.lower(), valid_image_formats)
+                            self.assertIn(file_name.split(".")[-1], valid_image_formats)
                     elif media_data["media_type"] == ANIME:
                         subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
 
@@ -320,6 +326,7 @@ class MediaReaderTest(BaseUnitTestClass):
         self.media_reader._servers = {}
         self.media_reader.load_state()
         assert not len(self.media_reader.media)
+        self.media_reader.save_state()
         self.media_reader._servers = temp
         self.media_reader.load_state()
         assert len(self.media_reader.media)
@@ -533,6 +540,15 @@ class ArgsTest(MinimalUnitTestClass):
     def test_arg(self, input):
         parse_args(app=self.media_reader, args=["auth"])
 
+    def test_test_login(self):
+        parse_args(app=self.media_reader, args=["login", TestServerLogin.id])
+        server = self.app.get_server(TestServerLogin.id)
+        assert not server.needs_authentication()
+
+    def test_autocomplete_not_found(self):
+        with patch.dict(sys.modules, {'argcomplete': None}):
+            parse_args(app=self.media_reader, args=["list"])
+
     def test_cookies(self):
         key, value = "Key", "value"
         parse_args(app=self.media_reader, args=["add-cookie", "--domain", ".foo.bar", key, value])
@@ -664,6 +680,9 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         assert len(self.media_reader.get_media_in_library())
         self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["--auto", "search", "manga"])
+
+    def test_search_fail(self):
+        parse_args(app=self.media_reader, args=["--auto", "search", "__UnknownMedia__"])
 
     def test_remove(self):
         parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
@@ -845,7 +864,7 @@ class ServerTest(RealBaseUnitTestClass):
             with self.subTest(server=server.id, method="download"):
                 media_data = media_list[0]
                 for chapter_data in filter(lambda x: not x["premium"], media_data["chapters"].values()):
-                    assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=8)
+                    assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=2)
                     self.verify_download(media_data, chapter_data)
                     assert not server.download_chapter(media_data, chapter_data, page_limit=1)
                     break
@@ -871,6 +890,18 @@ class ServerTest(RealBaseUnitTestClass):
             with self.subTest(server=server.id, method="relogin"):
                 assert not server.relogin()
 
+    def test_search_media(self):
+        interesting_media = ["Gintama", "One Piece"]
+        for media in interesting_media:
+            with self.subTest(media_name=media):
+                self.media_reader.media.clear()
+                media_data = self.media_reader.search_for_media(media)
+                assert media_data
+                for data in media_data:
+                    self.media_reader.add_media(data)
+                    self.verify_unique_numbers(data["chapters"])
+                self.assertEqual(len(self.media_reader.get_media_in_library()), len(media_data))
+
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
@@ -890,7 +921,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
                     assert media_data
                     self.assertEqual(media_id, str(media_data["id"]))
                     if season_id:
-                        self.assertEqual(season_id, str(media_data["season_ids"]))
+                        self.assertEqual(season_id, str(media_data["season_id"]))
                     self.assertTrue(chapter_id in media_data["chapters"])
 
 
@@ -976,21 +1007,6 @@ class TrackerTest(RealBaseUnitTestClass):
                         assert False
                     except ValueError:
                         pass
-
-
-class InterestingMediaTest(RealBaseUnitTestClass):
-    interesting_media = ["Gintama", "One Piece"]
-
-    def test_search_media(self):
-        for media in self.interesting_media:
-            with self.subTest(media_name=media):
-                self.media_reader.media.clear()
-                media_data = self.media_reader.search_for_media(media)
-                assert media_data
-                for data in media_data:
-                    self.media_reader.add_media(data)
-                    self.verify_unique_numbers(data["chapters"])
-                self.assertEqual(len(self.media_reader.get_media_in_library()), len(media_data))
 
 
 def load_tests(loader, tests, pattern):

@@ -77,7 +77,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         download_specific_parser = sub_parsers.add_parser("download", help="Used to download specific chapters")
         download_specific_parser.add_argument("id", choices=app.get_all_single_names())
         download_specific_parser.add_argument("start", type=float, default=0, help="Starting chapter (inclusive)")
-        download_specific_parser.add_argument("end", type=float, nargs="?", default=None, help="Ending chapter (inclusive)")
+        download_specific_parser.add_argument("end", type=float, nargs="?", default=0, help="Ending chapter (inclusive)")
 
         # media consumption
         bundle_parser = sub_parsers.add_parser("bundle", help="Bundle individual manga pages into a single file")
@@ -113,8 +113,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
         import_parser.add_argument("file", nargs='+')
 
         # info
-        server_list_parser = sub_parsers.add_parser("server-list")
-        server_list_parser.add_argument("id", choices=app.get_servers_ids())
         sub_parsers.add_parser("list")
         chapter_parsers = sub_parsers.add_parser("list-chapters")
         chapter_parsers.add_argument("name", choices=app.get_all_names())
@@ -176,6 +174,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
     if namespace.clear_cookies:
         app.session.cookies.clear()
+
     action = namespace.type
     app.auto_select = namespace.auto
     if action == "add-cookie":
@@ -222,8 +221,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "search":
         if not app.search_add(namespace.term, server_id=namespace.server, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact):
             logging.warning("Could not find media %s", namespace.term)
-    elif action == "server-list":
-        app.list_server_media(namespace.id)
     elif action == "setting":
         if namespace.value:
             app.settings.set(namespace.setting, namespace.value)

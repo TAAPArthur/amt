@@ -143,7 +143,7 @@ class MangaReader:
                 self.state["disabled_media"][key] = self.state["media"][key]
                 del self.state["media"][key]
 
-        for key in list(self.state.get("disabled_media", {}).keys()):
+        for key in list(self.state["disabled_media"].keys()):
             if self.state["disabled_media"][key]["server_id"] in self._servers:
                 self.state["media"]["key"] = self.state["disabled_media"][key]
                 del self.state["disabled_media"][key]
@@ -285,10 +285,8 @@ class MangaReader:
     def get_chapters_in_range(self, media_data, start=0, end=0):
         if not end:
             end = start
-        if end <= 0:
-            end = float("inf")
         for chapter in self._get_sorted_chapters(media_data):
-            if start <= chapter["number"] and chapter["number"] <= end:
+            if start <= chapter["number"] and (end <= 0 or chapter["number"] <= end):
                 yield chapter
                 if end == start:
                     break
@@ -414,6 +412,7 @@ class MangaReader:
         chapter_ids = get_chapter_ids(media_data["chapters"])
 
         server.update_media_data(media_data)
+        assert media_data["chapters"]
 
         current_chapter_ids = get_chapter_ids(media_data["chapters"])
         new_chapter_ids = current_chapter_ids - chapter_ids

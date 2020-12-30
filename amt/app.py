@@ -131,13 +131,6 @@ class Application(MangaReader):
         self.list()
         return count, new_count
 
-    def list_server_media(self, id):
-        for server in self.get_servers():
-            if id and server.id != id:
-                continue
-            for media_data in server.get_media_list():
-                print("{}:{}\t{}".format(server.id, media_data["id"], media_data["name"]))
-
     def list(self):
         for i, result in enumerate(self.get_media_in_library()):
             last_chapter_num = self.get_last_chapter_number(result)

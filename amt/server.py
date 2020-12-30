@@ -129,7 +129,9 @@ class Server:
         raise NotImplementedError
 
     def save_chapter_page(self, page_data, path):
-        raise NotImplementedError
+        r = self.session_get(page_data["url"])
+        with open(path, 'wb') as fp:
+            fp.write(r.content)
 
     @staticmethod
     def get_page_name_from_index(page_index):
@@ -267,7 +269,7 @@ class Server:
     def update_chapter_data(self, media_data, id, title, number, premium=False, special=False, date=None, subtitles=None):
         id = str(id)
         if isinstance(number, str):
-            if number.isalpha():
+            if not number or number.isalpha():
                 logging.info("Chapter number %s is not valid; skipping", number)
                 return False
             try:
@@ -289,5 +291,8 @@ class Server:
         return True
 
     def create_page_data(self, url, id=None, encryption_key=None, ext=None):
-        assert url
+        if not ext:
+            _, ext = os.path.splitext(url.split("?")[0])
+            if ext and ext[0] == ".":
+                ext = ext[1:]
         return dict(url=url, id=id, encryption_key=encryption_key, ext=ext or self.extension)

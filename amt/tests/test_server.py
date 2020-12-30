@@ -12,6 +12,7 @@ TEST_BASE = "/tmp/amt/"
 class TestServer(Server):
     id = 'test_server_manga'
     has_gaps = True
+    extension = "jpeg"
     _prefix = "Manga"
     _throw_error = False
     _error_thrown = False

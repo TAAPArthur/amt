@@ -67,15 +67,16 @@ class Crunchyroll(Server):
         return True
 
     def login(self, username, password):
-        login = self.session_post(self.login_url,
-                                  data={
-                                      'session_id': self.get_session_id(),
-                                      'account': username,
-                                      'password': password
-                                  }).json()
-        if 'data' in login:
-            self._store_login_data(login)
+        response = self.session_post(self.login_url,
+                                     data={
+                                         'session_id': self.get_session_id(),
+                                         'account': username,
+                                         'password': password
+                                     }).json()
+        if 'data' in response:
+            self._store_login_data(response)
             return True
+        logging.debug("Login failed; response: %s", response)
         return False
 
     def get_media_list(self):
