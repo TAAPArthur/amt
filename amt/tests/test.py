@@ -735,6 +735,14 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
         self.assertEqual(1, self.getNumChaptersRead())
 
+    def test_add_from_url(self):
+        parse_args(app=self.media_reader, args=["add-from-url", TestAnimeServer.stream_url])
+        assert len(self.media_reader.get_media_in_library()) == 1
+
+    def test_add_from_url_bad(self):
+        parse_args(app=self.media_reader, args=["add-from-url", "bad_url"])
+        assert not self.media_reader.get_media_in_library()
+
     def test_stream_passthrough(self):
         self.settings.passthrough = True
         parse_args(app=self.media_reader, args=["stream", "youtube.com"])

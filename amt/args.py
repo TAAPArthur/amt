@@ -50,6 +50,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
         search_parsers.add_argument("term", help="The string to search by")
 
+        add_parsers = sub_parsers.add_parser("add-from-url", description="Add media by human viewable location")
+        add_parsers.add_argument("url", help="Either the series home page or the page for an arbitrary chapter (depends on server)")
+
         remove_parsers = sub_parsers.add_parser("remove", description="Remove media")
         remove_parsers.add_argument("id", choices=app.get_all_single_names(), help="Global id of media to remove")
 
@@ -177,6 +180,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
     app.auto_select = namespace.auto
     if action == "add-cookie":
         app.session.cookies.set(namespace.key, namespace.value, domain=namespace.domain, path=namespace.path)
+    elif action == "add-from-url":
+        app.add_from_url(namespace.url)
     elif action == "add-incapsula":
         app.session.cookies.set(namespace.key, namespace.value, domain=app.get_server(namespace.id).domain, path=namespace.path)
     elif action == "auth":

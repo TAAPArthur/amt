@@ -43,6 +43,14 @@ class Application(MangaReader):
             self.add_media(media_data)
         return media_data
 
+    def add_from_url(self, url):
+        for server in self.get_servers():
+            if server.can_stream_url(url):
+                media_data = server.get_media_data_from_url(url)
+                if media_data:
+                    self.add_media(media_data)
+                return media_data
+
     def get_media(self, term, media_type=None, stream=False, start=0, end=0):
         results = self.search_for_media(term, media_type=media_type, exact=False)
         self.print_results(results)
