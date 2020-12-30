@@ -43,7 +43,7 @@ class CustomServer(Server):
         return quote(chapter)
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
-        return True, False
+        return False
 
 
 class LocalMangaServer(CustomServer):

@@ -261,7 +261,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 with self.subTest(server=server.id, media_data=media_data["name"]):
                     server.update_media_data(media_data)
                     chapter_data = list(media_data["chapters"].values())[0]
-                    self.assertEqual((True, True), server.download_chapter(media_data, chapter_data, page_limit=2))
+                    self.assertEqual(True, server.download_chapter(media_data, chapter_data, page_limit=2))
                     self.verify_download(media_data, chapter_data)
 
     def test_search_media(self):
@@ -380,7 +380,7 @@ class MediaReaderTest(BaseUnitTestClass):
 
                 # error if we try to save a page we have already downloaded
                 server.save_chapter_page = None
-                assert not server.download_chapter(media_data, chapter_data, page_limit=3)[1]
+                assert not server.download_chapter(media_data, chapter_data, page_limit=3)
 
     def test_preserve_read_status_on_update(self):
         media_list = self.add_test_media()
@@ -640,7 +640,7 @@ class ArgsTest(MinimalUnitTestClass):
             server = self.app.get_server(media_data["server_id"])
             chapter = sorted(media_data["chapters"].values(), key=lambda x: x["number"])[0]
             parse_args(app=self.media_reader, args=["download-unread", "--limit", "1", id])
-            self.assertEqual(0, server.download_chapter(media_data, chapter)[1])
+            self.assertEqual(0, server.download_chapter(media_data, chapter))
 
     def test_update(self):
         media_list = self.add_test_media(no_update=True)
@@ -837,9 +837,9 @@ class ServerTest(RealBaseUnitTestClass):
             with self.subTest(server=server.id, method="download"):
                 media_data = media_list[0]
                 for chapter_data in filter(lambda x: not x["premium"], media_data["chapters"].values()):
-                    assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=8)[1]
+                    assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=8)
                     self.verify_download(media_data, chapter_data)
-                    assert not server.download_chapter(media_data, chapter_data, page_limit=1)[1]
+                    assert not server.download_chapter(media_data, chapter_data, page_limit=1)
                     break
 
     def test_login_fail(self):
@@ -921,8 +921,8 @@ class PremiumTest(RealBaseUnitTestClass):
                         server.update_media_data(media_data)
                         chapter_data = next(filter(lambda x: x["premium"], media_data["chapters"].values()), None)
                         if chapter_data:
-                            assert server.download_chapter(media_data, chapter_data, page_limit=1)[1]
-                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)[1]
+                            assert server.download_chapter(media_data, chapter_data, page_limit=1)
+                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)
 
                             self.verify_download(media_data, chapter_data)
                             download_passed = True

@@ -298,7 +298,7 @@ class MangaReader:
         server = self.get_server(media_data["server_id"])
         counter = 0
         for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
-            if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(media_data, chapter)[1]:
+            if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(media_data, chapter):
                 counter += 1
                 if counter == limit:
                     break

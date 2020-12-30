@@ -184,35 +184,33 @@ class Server:
         pass
 
     def pre_download(self, media_data, chapter_data, dir_path):
-        self.download_subtitles(media_data, chapter_data, dir_path=dir_path)
-
-    def download_chapter(self, media_data, chapter_data, page_limit=None):
-        if self.is_fully_downloaded(media_data, chapter_data):
-            logging.info("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
-            return True, False
-
-        logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         if chapter_data["premium"] and not self.is_premium:
             if not self.is_logged_in and self.needs_authentication():
                 logging.info("Server is not authenticated; relogging in")
                 if not self.relogin():
                     logging.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
-                    return False, False
             else:
                 self.is_logged_in = True
             if not self.is_premium:
                 logging.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
-                return False, False
+                raise ValueError("Cannot access premium chapter")
+        self.download_subtitles(media_data, chapter_data, dir_path=dir_path)
+
+    def download_chapter(self, media_data, chapter_data, page_limit=None):
+        if self.is_fully_downloaded(media_data, chapter_data):
+            logging.info("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
+            return False
+
+        logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
+        list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
+        assert list_of_pages
+        logging.info("Downloading %d pages", len(list_of_pages))
+        dir_path = self._get_dir(media_data, chapter_data)
+        self.pre_download(media_data, chapter_data, dir_path)
 
         self.lock.acquire()
         try:
-            list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
-            assert list_of_pages
 
-            logging.info("Downloading %d pages", len(list_of_pages))
-
-            dir_path = self._get_dir(media_data, chapter_data)
-            self.pre_download(media_data, chapter_data, dir_path)
             job = Job(self.settings.threads, raiseException=True)
             for index, page_data in enumerate(list_of_pages[:page_limit]):
                 full_path = self._get_page_path(media_data, chapter_data, dir_path, index, page_data)
@@ -231,7 +229,7 @@ class Server:
         finally:
             self.lock.release()
 
-        return True, True
+        return True
 
     def get_stream_data(self, media_data, chapter_data):
         assert media_data["media_type"] == ANIME
