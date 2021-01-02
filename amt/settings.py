@@ -19,10 +19,10 @@ class Settings:
     password_save_cmd = "tpm insert {}"
     password_load_cmd = "tpm show {}"
     bundle_cmds = {
-        "cbz": "zip {:2} {:1}",
-        "pdf": "convert -density 100 -units PixelsPerInch {:1} {:2}"
+        "cbz": "zip {name} {files}",
+        "pdf": "convert -density 100 -units PixelsPerInch {name} {files}"
     }
-    bundle_format = "pdf"
+    bundle_format = "cbz"
 
     threads = 8
     converters = [
@@ -155,7 +155,7 @@ class Settings:
     def bundle(self, img_dirs):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
         name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'), str(hash(arg))[1:8], self.bundle_format))
-        cmd = self.bundle_cmds[self.bundle_format].format(arg, name)
+        cmd = self.bundle_cmds[self.bundle_format].format(files=arg, name=name)
         logging.info("Running cmd %s shell = %s", cmd, self.shell)
         self.run_cmd(cmd)
         return name
