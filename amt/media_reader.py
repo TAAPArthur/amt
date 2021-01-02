@@ -348,9 +348,9 @@ class MangaReader:
                     self.add_media(server.get_media_data_from_url(url), cache=not add)
                     known = server.is_url_for_known_media(url, {media["id"]: media for media in self.yield_media_in_library() if media["server_id"] == server.id})
                 if not add:
-                    streamable_url = server.get_stream_url(url=url)
-                    logging.info("Streaming %s", streamable_url)
                     media_data, chapter = known
+                    streamable_url = server.get_stream_url(media_data, chapter)
+                    logging.info("Streaming %s", streamable_url)
                     dir_path = server._get_dir(media_data, chapter)
 
                     if not server.is_fully_downloaded(media_data, chapter):
