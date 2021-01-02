@@ -72,9 +72,10 @@ class Funimation(Server):
             r = self.session_get_cache(self.episode_url.format(id))
             data = r.json()
             season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"]) for item in data["items"]}
-            experience = data["items"][0]["mostRecentSvod"]["experience"]
+            experiences = {item["item"]["seasonId"]: item["mostRecentSvod"]["experience"] for item in data["items"]}
 
             for seasonId, seasonTitle in season_data:
+                experience = experiences[seasonId]
                 media_data.append(self.create_media_data(id=id, name=title, season_id=seasonId, season_title=seasonTitle, cover=cover, alt_id=experience))
 
         return media_data
@@ -102,11 +103,12 @@ class Funimation(Server):
         for season in r.json()["seasons"]:
             if season["seasonPk"] == media_data["season_id"]:
                 for chapter in season["episodes"]:
-                    video = chapter["languages"]["japanese"]["alpha"]
-                    exp = video["simulcast"] if "simulcast" in video else video["uncut"]
-                    premium = exp["svodOnly"]
-                    special = chapter["mediaCategory"] != "episode"
-                    self.update_chapter_data(media_data, id=exp['experienceId'], number=chapter['episodeId'], title=chapter['episodeTitle'], premium=premium, special=special)
+                    if chapter["languages"] and "japanese" in chapter["languages"]:
+                        video = chapter["languages"]["japanese"]["alpha"]
+                        exp = video["simulcast"] if "simulcast" in video else video["uncut"]
+                        premium = exp["svodOnly"]
+                        special = chapter["mediaCategory"] != "episode"
+                        self.update_chapter_data(media_data, id=exp['experienceId'], number=chapter['episodeId'], title=chapter['episodeTitle'], premium=premium, special=special)
 
     def can_stream_url(self, url):
         return self.stream_url_regex.match(url)
