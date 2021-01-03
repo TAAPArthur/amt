@@ -402,10 +402,10 @@ class MediaReaderTest(BaseUnitTestClass):
         self.media_reader.mark_up_to_date(self.test_server.id)
         for media_data in media_list:
             assert all(map(lambda x: x["read"], media_data["chapters"].values()))
-        self.media_reader.mark_up_to_date(self.test_server.id, N=1)
+        self.media_reader.mark_up_to_date(self.test_server.id, N=-1)
         for media_data in media_list:
             assert all(map(lambda x: x["read"], media_data["chapters"].values()))
-        self.media_reader.mark_up_to_date(self.test_server.id, N=1, force=True)
+        self.media_reader.mark_up_to_date(self.test_server.id, N=-1, force=True)
         for media_data in media_list:
             chapter_list = list(sorted(media_data["chapters"].values(), key=lambda x: x["number"]))
             assert all(map(lambda x: x["read"], chapter_list[:-1]))
@@ -607,6 +607,17 @@ class ArgsTest(MinimalUnitTestClass):
             assert self.media_reader.get_tracker_info(self.app._get_global_id(media_data), self.media_reader.get_primary_tracker().id)
             if media_data["progress"]:
                 self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
+
+    def test_mark_up_to_date(self):
+        media_list = self.add_test_media()
+        media_data = media_list[0]
+        name = self.app._get_global_id(media_data)
+        parse_args(app=self.media_reader, args=["mark-up-to-date", name])
+        assert all(map(lambda x: x["read"], media_data["chapters"].values()))
+        parse_args(app=self.media_reader, args=["mark-up-to-date", "--force", name, "-1"])
+        assert not all(map(lambda x: x["read"], media_data["chapters"].values()))
+        parse_args(app=self.media_reader, args=["mark-up-to-date", "--abs", "--force", name, "-1"])
+        assert not any(map(lambda x: x["read"], media_data["chapters"].values()))
 
     def test_sync_progress(self):
         parse_args(app=self.media_reader, args=["--auto", "load"])

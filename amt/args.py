@@ -138,7 +138,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         sync_parser.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
 
         mark_parsers = sub_parsers.add_parser("mark-up-to-date", description="Mark all known chapters as read")
-        mark_parsers.add_argument("--force", default=False, help="Allow chapters to be marked as unread")
+        mark_parsers.add_argument("--abs", action="store_const", const=True, default=False, help="Treat N as an abs number")
+        mark_parsers.add_argument("--force", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
         mark_parsers.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
         mark_parsers.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
         mark_parsers.add_argument("name", default=None, choices=app.get_all_names(), nargs="?")
@@ -204,7 +205,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "login":
         app.test_login(namespace.servers)
     elif action == "mark-up-to-date":
-        app.mark_up_to_date(namespace.name, media_type=namespace.manga_only or namespace.anime_only, N=namespace.N, force=namespace.force)
+        app.mark_up_to_date(namespace.name, media_type=namespace.manga_only or namespace.anime_only, N=namespace.N, force=namespace.force, abs=namespace.abs)
         app.list()
     elif action == "offset":
         app.offset(namespace.name, offset=namespace.N)

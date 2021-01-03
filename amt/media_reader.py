@@ -261,9 +261,9 @@ class MangaReader:
         for media_data in self._get_media(name=name):
             media_data["offset"] = offset
 
-    def mark_up_to_date(self, name=None, media_type=None, N=0, force=False):
+    def mark_up_to_date(self, name=None, media_type=None, N=0, force=False, abs=False):
         for media_data in self._get_media(media_type=media_type, name=name):
-            last_read = self.get_last_chapter_number(media_data) - N
+            last_read = self.get_last_chapter_number(media_data) + N if not abs else N
             if not force:
                 last_read = max(self.get_last_read(media_data), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
