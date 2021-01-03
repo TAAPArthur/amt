@@ -7,6 +7,7 @@ from pathlib import Path
 from shlex import quote
 from subprocess import CalledProcessError
 
+from . import cookie_manager
 from .cache import Cache
 
 APP_NAME = "amt"
@@ -36,13 +37,16 @@ class Settings:
     subtitle_formats = ["srt", "vtt"]
 
     no_save_session = False
+    no_load_session = False
     free_only = False
     shell = True
-    max_retires = 5
+    max_retires = 3
     status_to_retry = [500, 502, 504]
     force_odd_pages = True
     env_override_prefix = "PASSWORD_OVERRIDE_"
     incapsula_prompt = ""
+    cookie_files = ["/tmp/cookies.txt"]
+    js_enabled_browser = True
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
@@ -59,6 +63,19 @@ class Settings:
         os.makedirs(self.bundle_dir, exist_ok=True)
         os.makedirs(self.media_dir, exist_ok=True)
         self.cache = Cache(self.cache_dir)
+
+    def get_cookie_file(self):
+        return os.path.join(self.cache_dir, "cookies.txt")
+
+    def get_cookie_files(self):
+        yield self.get_cookie_file()
+        yield from map(os.path.expanduser, self.cookie_files)
+
+    def load_js_cookies(self, url, session):
+        if self.js_enabled_browser:
+            cookie_manager.update_session(url, session)
+            return True
+        return False
 
     def get_cache(self, key, func):
         return self.cache.get(key, func)
@@ -150,7 +167,7 @@ class Settings:
         self.store_credentials(server_id, secret, "token")
 
     def run_cmd(self, cmd, wd=None):
-        subprocess.check_call(cmd, shell=self.shell, cwd=wd)
+        subprocess.check_call(cmd, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
 
     def bundle(self, img_dirs):
         arg = " ".join(map(Settings._smart_quote, img_dirs))

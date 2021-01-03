@@ -11,9 +11,10 @@ from ..server import ANIME, Server
 class Funimation(Server):
     id = 'funimation'
     has_login = True
+    is_protected = True
 
     CSRF_NAME = "csrfmiddlewaretoken"
-    domain = ".funimation.com"
+    domain = "funimation.com"
     login_url = "https://www.funimation.com/log-in/"
     api_base = "https://www.funimation.com/api"
     login_api_url = "https://prod-api-funimationnow.dadcdigital.com/api/auth/login/"

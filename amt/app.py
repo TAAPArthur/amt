@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 
+from . import cookie_manager
 from .media_reader import MangaReader
 from .server import ANIME, MANGA, NOT_ANIME, NOVEL
 from .servers.custom import get_local_server_id
@@ -192,3 +193,8 @@ class Application(MangaReader):
         for media_data in self.get_server(local_server_id).get_media_list():
             if self._get_global_id(media_data) not in self.media:
                 self.add_media(media_data)
+
+    def maybe_fetch_extra_cookies(self):
+        for server in self.get_servers():
+            if server.is_protected and server.domain:
+                server.session_get_protected("https://" + server.domain)

@@ -15,6 +15,7 @@ class VizManga(Server):
     locale = "enUS"
 
     has_login = True
+    domain = "viz.com"
 
     base_url = "http://www.viz.com"
     login_url = base_url + "/manga/try_manga_login"

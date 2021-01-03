@@ -31,16 +31,18 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         # cookie
         cookie_parser = sub_parsers.add_parser("add-cookie", description="Add cookie")
-        cookie_parser.add_argument("--domain", default=None)
         cookie_parser.add_argument("--path", default="/")
-        cookie_parser.add_argument("key")
+        cookie_parser.add_argument("id", choices=[server.id for server in app.get_servers() if server.domain])
+        cookie_parser.add_argument("name")
         cookie_parser.add_argument("value")
 
         incap_cookie_parser = sub_parsers.add_parser("add-incapsula", description="Add incapsula cookie")
         incap_cookie_parser.add_argument("--path", default="/")
-        incap_cookie_parser.add_argument("--key", default="incap_ses_979_998813")
+        incap_cookie_parser.add_argument("--name", default="incap_ses_979_998813")
         incap_cookie_parser.add_argument("id", choices=[server.id for server in app.get_servers() if server.domain])
         incap_cookie_parser.add_argument("value")
+
+        js_cookie_parser = sub_parsers.add_parser("js-cookie-parser", description="Open browser for all protected servers")
 
         # add remove
         search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
@@ -170,12 +172,11 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
     action = namespace.type
     app.auto_select = namespace.auto
-    if action == "add-cookie":
-        app.session.cookies.set(namespace.key, namespace.value, domain=namespace.domain, path=namespace.path)
+    if action == "add-cookie" or action == "add-incapsula":
+        server = app.get_server(namespace.id)
+        server.add_cookie(namespace.name, namespace.value, domain=app.get_server(namespace.id).domain, path=namespace.path)
     elif action == "add-from-url":
         app.add_from_url(namespace.url)
-    elif action == "add-incapsula":
-        app.session.cookies.set(namespace.key, namespace.value, domain=app.get_server(namespace.id).domain, path=namespace.path)
     elif action == "auth":
         tracker = app.get_primary_tracker()
         secret = tracker.auth()
@@ -197,6 +198,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "mark-up-to-date":
         app.mark_up_to_date(namespace.name, media_type=namespace.manga_only or namespace.anime_only, N=namespace.N, force=namespace.force, abs=namespace.abs)
         app.list()
+    elif action == "js-cookie-parser":
+        app.maybe_fetch_extra_cookies()
     elif action == "offset":
         app.offset(namespace.name, offset=namespace.N)
     elif action == "get-stream-url":

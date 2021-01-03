@@ -28,6 +28,7 @@ class Server:
     settings = None
     media_type = MANGA
     external = False
+    is_protected = False
 
     has_login = False
     has_gaps = False
@@ -53,21 +54,23 @@ class Server:
         r.raise_for_status()
         return r
 
-    def _request_or_prompt_incapsula(self, url):
+    def _request_or_prompt_incapsula(self, url, no_load_cookies=False):
         r = self._request(True, url)
         for i in range(self.settings.max_retires):
             if (self.incapsula_flag in r.text or self.incapsula_regex.search(r.text)):
                 if self.settings.incapsula_prompt:
                     logging.info("Detected _Incapsula_Resource")
-                    print(r.text)
                     name, value = self.settings.get_incapsula(self.id)
                     self.session.cookies.set(name, value, domain=self.domain, path="/")
                 r = self._request(True, url)
-            else:
-                break
         if self.incapsula_flag in r.text or self.incapsula_regex.search(r.text):
+            if not no_load_cookies and self.settings.load_js_cookies(url, self.session):
+                return self._request_or_prompt_incapsula(url, True)
             raise ValueError(r.text[-500:])
         return r
+
+    def add_cookie(self, name, value, domain=None, path="/"):
+        self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
 
     def session_get_cache(self, url):
         return self.settings.get_cache(url, lambda: self._request_or_prompt_incapsula(url))

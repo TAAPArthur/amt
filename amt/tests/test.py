@@ -52,11 +52,12 @@ class TestApplication(Application):
             os.remove(settings.get_cookie_file())
         settings.env_override_prefix = None
         settings.free_only = True
-        settings.incapsula_prompt = "echo $INCAPSULA_COOKIE"
         settings.no_save_session = True
+        settings.no_load_session = True
         settings.password_manager_enabled = False
         settings.shell = True
         settings.threads = 0
+        settings.js_enabled_browser = ""
 
         servers = list(TEST_SERVERS)
         trackers = list(TEST_TRACKERS)
@@ -97,6 +98,7 @@ class BaseUnitTestClass(unittest.TestCase):
         pass
 
     def setUp(self):
+        shutil.rmtree(TEST_HOME, ignore_errors=True)
         self.app = TestApplication(self.real, self.local)
         self.media_reader = self.app
         self.settings = self.media_reader.settings
@@ -193,6 +195,10 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.save()
 
         assert Settings(home=TEST_HOME).password_save_cmd == "dummy_cmd"
+
+    def test_settings_no_load_js_cookies(self):
+        self.settings.js_enabled_browser = False
+        assert not self.settings.load_js_cookies(None, None)
 
     def test_credentials(self):
         self.settings.password_manager_enabled = True
@@ -295,17 +301,38 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
 class MediaReaderTest(BaseUnitTestClass):
 
-    def test_save_load_cookies(self):
+    def test_load_cookies_no_exists(self):
+        self.app.settings.no_load_session = False
+        if os.path.exists(self.app.settings.get_cookie_file()):
+            os.remove(self.app.settings.get_cookie_file())
+        self.media_reader.load_session_cookies()
 
+    def test_load_cookies_session_cookies(self):
+        self.app.settings.no_load_session = False
+        name, value = "Test", "value"
+        name2, value2 = "Test2", "value2"
+        self.settings.cookie_files = []
+        with open(self.settings.get_cookie_file(), 'w') as f:
+            f.write("\t".join([TestServer.domain, "TRUE", "/", "FALSE", "1640849596", name, value, "None"]))
+            f.write("\n")
+            f.write("\t".join([f"#HttpOnly_.{TestServer.domain}", "TRUE", "/", "FALSE", "1640849596", name2, value2, "None"]))
+
+        self.media_reader.load_session_cookies()
+        assert self.app.session.cookies
+        self.assertEqual(value, self.media_reader.session.cookies.get(name))
+        self.assertEqual(value2, self.media_reader.session.cookies.get(name2))
+
+    def test_save_load_cookies(self):
+        self.app.settings.no_load_session = False
         self.app.settings.no_save_session = False
         key, value = "Test", "value"
-        self.test_server.session.cookies.set(key, value)
+        self.test_server.add_cookie(key, value)
         assert self.media_reader.save_session_cookies()
-        self.test_server.session.cookies.set(key, "bad_value")
-        assert self.media_reader.load_session_cookies()
+        self.test_server.add_cookie(key, "bad_value")
+        self.media_reader.load_session_cookies()
         self.assertEqual(value, self.media_reader.session.cookies.get(key))
-        self.test_server.session.cookies.set(key, "bad_value")
-        assert self.media_reader.load_session_cookies()
+        self.test_server.add_cookie(key, "bad_value")
+        self.media_reader.load_session_cookies()
         assert not self.media_reader.save_session_cookies()
 
     def test_save_load(self):
@@ -543,6 +570,15 @@ class ApplicationTestWithErrors(BaseUnitTestClass):
         assert self.test_server.was_error_thrown()
 
 
+class RealArgsTest(RealBaseUnitTestClass):
+    def test_circumvent_bot_protection(self):
+        self.settings.js_enabled_browser = True
+        parse_args(app=self.media_reader, args=["js-cookie-parser"])
+        for server in self.app.get_servers():
+            if server.domain:
+                server.session_get_protected("https://" + server.domain)
+
+
 class ArgsTest(MinimalUnitTestClass):
     @patch('builtins.input', return_value='0')
     def test_arg(self, input):
@@ -559,13 +595,14 @@ class ArgsTest(MinimalUnitTestClass):
 
     def test_cookies(self):
         key, value = "Key", "value"
-        parse_args(app=self.media_reader, args=["add-cookie", "--domain", ".foo.bar", key, value])
+        parse_args(app=self.media_reader, args=["add-cookie", TestServer.id, key, value])
         self.assertEqual(self.app.session.cookies.get(key), value)
         parse_args(app=self.media_reader, args=["--clear-cookies", "list"])
         self.assertNotEqual(self.app.session.cookies.get(key), value)
 
     def test_incap_cookies(self):
         value = "value"
+        self.app.session.cookies.clear()
         parse_args(app=self.media_reader, args=["add-incapsula", TestAnimeServer.id, value])
         self.assertEqual(list(self.app.session.cookies.values())[0], value)
 
@@ -857,8 +894,13 @@ class ArgsTest(MinimalUnitTestClass):
 
 
 class ServerTest(RealBaseUnitTestClass):
-    def test_number_servers(self):
-        assert len(self.media_reader.get_servers()) > 2
+    def setUp(self):
+        super().setUp()
+
+    def test_circumvent_bot_protection(self):
+        for server in self.app.get_servers():
+            if server.domain:
+                server.session_get_protected("https://" + server.domain)
 
     def test_get_media_list(self):
 

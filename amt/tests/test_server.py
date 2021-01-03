@@ -16,6 +16,7 @@ class TestServer(Server):
     _prefix = "Manga"
     _throw_error = False
     _error_thrown = False
+    domain = "test.com"
 
     def maybe_inject_error(self):
         if self._throw_error:
@@ -69,6 +70,9 @@ class TestServer(Server):
         image = Image.new('RGB', (100, 100))
         image.save(path, self.extension)
 
+    def _request_or_prompt_incapsula(self, url):
+        pass
+
 
 class TestServerLogin(TestServer):
     id = 'test_server_login'
@@ -95,7 +99,6 @@ class TestAnimeServer(TestServer):
     stream_url = "test_url"
     extension = "ts"
     TEST_VIDEO_PATH = ""
-    domain = "domain.com"
 
     def can_stream_url(self, url):
         return url == TestAnimeServer.stream_url
@@ -115,7 +118,7 @@ class TestAnimeServer(TestServer):
         assert isinstance(media_data, dict) if media_data else True
         assert isinstance(chapter_data, dict) if chapter_data else True
         assert isinstance(url, str) if url else True
-        return "https://domain.com/url.m3u8?key=1&&false"
+        return f"https://{self.domain}/url.m3u8?key=1&&false"
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()

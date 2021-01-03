@@ -7,12 +7,13 @@ import pickle
 import pkgutil
 import random
 from collections import deque
+from http.cookiejar import MozillaCookieJar
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
-from . import servers, trackers
+from . import cookie_manager, servers, trackers
 from .job import Job
 from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
 from .settings import Settings
@@ -52,7 +53,6 @@ class MangaReader:
         if self.settings.max_retires:
             for prefix in ('http://', 'https://'):
                 self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retires, status_forcelist=self.settings.status_to_retry)))
-        self.load_session_cookies()
 
         self.session.headers.update({
             "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",
@@ -69,6 +69,7 @@ class MangaReader:
             if cls.id:
                 instance = cls(self.session, self.settings)
                 self._trackers.append(instance)
+        self.load_session_cookies()
         self.load_state()
 
     def get_primary_tracker(self):
@@ -94,26 +95,27 @@ class MangaReader:
 
     def load_session_cookies(self):
         """ Load session from disk """
-        if self.settings.no_save_session:
-            return False
 
-        file_path = os.path.join(self.settings.cache_dir, 'cookies.pickle')
-        try:
-            with open(file_path, 'rb') as f:
-                self.session.cookies = pickle.load(f)
-                self._set_session_hash()
-                return True
-        except FileNotFoundError:
-            return False
+        if self.settings.no_load_session:
+            return
+
+        for path in self.settings.get_cookie_files():
+            try:
+                with open(path, 'r') as f:
+                    cookie_manager.load_cookies(f, self.session)
+            except FileNotFoundError:
+                pass
+        self._set_session_hash()
 
     def save_session_cookies(self, force=False):
         """ Save session to disk """
         if self.settings.no_save_session or not self._set_session_hash():
             return False
 
-        file_path = os.path.join(self.settings.cache_dir, 'cookies.pickle')
-        with open(file_path, 'wb') as f:
-            pickle.dump(self.session.cookies, f)
+        with open(self.settings.get_cookie_file(), 'w') as f:
+            for cookie in self.session.cookies:
+                l = [cookie.domain, str(cookie.domain_specified), cookie.path, str(cookie.secure).upper(), str(cookie.expires) if cookie.expires else "", cookie.name, cookie.value]
+                f.write("\t".join(l) + "\n")
         return True
 
     def _set_state_hash(self, json_str=None):
@@ -214,10 +216,7 @@ class MangaReader:
             yield media_data
 
     def _get_single_media(self, media_type=ALL_MEDIA, name=None):
-        try:
-            return next(self._get_media(media_type=media_type, name=name))
-        except StopIteration:
-            return None
+        return next(self._get_media(media_type=media_type, name=name))
 
     def _get_unreads(self, media_type, name=None, shuffle=False):
 
