@@ -743,6 +743,13 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["play", "-c"])
         self.assertAllChaptersRead(ANIME)
 
+    def test_play_fail(self):
+        media_list = self.add_test_media(self.test_anime_server)
+
+        self.settings.anime_viewer = "exit 1; #" + self.settings.anime_viewer
+        parse_args(app=self.media_reader, args=["play", "-c"])
+        assert not self.getNumChaptersRead(ANIME)
+
     def test_play_specific(self):
         media_list = self.add_test_media(self.test_anime_server)
         parse_args(app=self.media_reader, args=["play", "-c", media_list[0]["name"], "1", "3"])
@@ -758,24 +765,24 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
         assert not len(self.media_reader.get_media_in_library())
 
-    def test_stream_add(self):
+    def test_stream_download(self):
+        parse_args(app=self.media_reader, args=["stream", "--download", TestAnimeServer.stream_url])
         assert not len(self.media_reader.get_media_in_library())
-        parse_args(app=self.media_reader, args=["stream", "--add", TestAnimeServer.stream_url])
-        assert len(self.media_reader.get_media_in_library()) == 1
-        parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
-        self.assertEqual(1, self.getNumChaptersRead())
+        server = self.app.get_server(TestAnimeServer.id)
+        media_data = server.get_media_data_from_url(TestAnimeServer.stream_url)
+        _, chapter_data = server.is_url_for_known_media(TestAnimeServer.stream_url, {media_data["id"]: media_data})
 
-    def test_add_from_url(self):
+        self.verify_download(media_data, chapter_data)
+
+    def test_add_from_url_stream_cont(self):
         parse_args(app=self.media_reader, args=["add-from-url", TestAnimeServer.stream_url])
         assert len(self.media_reader.get_media_in_library()) == 1
+        parse_args(app=self.media_reader, args=["stream", "--cont", TestAnimeServer.stream_url])
+        self.assertAllChaptersRead(ANIME)
 
     def test_add_from_url_bad(self):
-        parse_args(app=self.media_reader, args=["add-from-url", "bad_url"])
+        self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["add-from-url", "bad-url"])
         assert not self.media_reader.get_media_in_library()
-
-    def test_stream_passthrough(self):
-        self.settings.passthrough = True
-        parse_args(app=self.media_reader, args=["stream", "youtube.com"])
 
     def test_import(self):
 

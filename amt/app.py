@@ -50,6 +50,7 @@ class Application(MangaReader):
                 if media_data:
                     self.add_media(media_data)
                 return media_data
+        raise ValueError("Could not find media to add")
 
     def load_from_tracker(self, user_id=None, user_name=None, media_type_filter=None, exact=True, local_only=False, update_progress_only=False):
         tracker = self.get_primary_tracker()

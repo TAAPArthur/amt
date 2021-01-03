@@ -44,7 +44,7 @@ class MangaReader:
 
     def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
         self.settings = settings if settings else Settings()
-        self.state = {"media": {}, "bundles": {}, "trackers": {}, "disabled_media": {}, "cached_media": {}}
+        self.state = {"media": {}, "bundles": {}, "trackers": {}, "disabled_media": {}}
         self._servers = {}
         self._trackers = []
 
@@ -149,7 +149,6 @@ class MangaReader:
                 del self.state["disabled_media"][key]
 
         self.media = self.state["media"]
-        self.cached_media = self.state.get("cached_media", {})
         self.bundles = self.state["bundles"]
         self.trackers = self.state["trackers"]
 
@@ -166,18 +165,15 @@ class MangaReader:
     # TODO detect files added
 
     def _get_global_id(self, media_data):
-        return "{}:{}{}".format(media_data["server_id"], media_data["id"], (media_data["season_id"] if media_data["season_id"] != "" else ""))
+        return "{}:{}{}".format(media_data["server_id"], media_data["id"], (media_data["season_id"] if media_data["season_id"] else ""))
 
-    def add_media(self, media_data, no_update=False, cache=False):
+    def add_media(self, media_data, no_update=False):
         global_id = self._get_global_id(media_data)
         if global_id in self.media:
             raise ValueError("{} {} is already known".format(global_id, media_data["name"]))
 
         logging.debug("Adding %s", global_id)
-        if not cache:
-            self.media[global_id] = media_data
-        else:
-            self.cached_media[global_id] = media_data
+        self.media[global_id] = media_data
         return [] if no_update else self.update_media(media_data)
 
     def remove_media(self, media_data=None, id=None):
@@ -196,10 +192,6 @@ class MangaReader:
 
     def get_media_in_library(self):
         return self.media.values()
-
-    def yield_media_in_library(self):
-        yield from self.media.values()
-        yield from self.cached_media.values()
 
     def get_media_ids_in_library(self):
         return self.media.keys()
@@ -340,30 +332,27 @@ class MangaReader:
         for bundle in bundled_data:
             self.media[bundle["media_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
-    def stream(self, url, add=False, cont=True, passthrough=False):
+    def stream(self, url, cont=True, download=False):
         for server in self.get_servers():
             if server.can_stream_url(url):
-                known = server.is_url_for_known_media(url, {media["id"]: media for media in self.yield_media_in_library() if media["server_id"] == server.id})
+                known = server.is_url_for_known_media(url, {media["id"]: media for media in self.get_media_in_library() if media["server_id"] == server.id})
                 if not known:
-                    self.add_media(server.get_media_data_from_url(url), cache=not add)
-                    known = server.is_url_for_known_media(url, {media["id"]: media for media in self.yield_media_in_library() if media["server_id"] == server.id})
-                if not add:
-                    media_data, chapter = known
-                    streamable_url = server.get_stream_url(media_data, chapter)
-                    logging.info("Streaming %s", streamable_url)
-                    dir_path = server._get_dir(media_data, chapter)
+                    media_data = server.get_media_data_from_url(url)
+                    known = server.is_url_for_known_media(url, {media_data["id"]: media_data})
+                media_data, chapter = known
+                streamable_url = server.get_stream_url(media_data, chapter)
+                logging.info("Streaming %s", streamable_url)
+                dir_path = server._get_dir(media_data, chapter)
 
+                if download:
+                    server.download_chapter(media_data, chapter)
+                else:
                     if not server.is_fully_downloaded(media_data, chapter):
                         server.pre_download(media_data, chapter, dir_path=dir_path)
                     if self.settings.open_anime_viewer(streamable_url, server.get_media_title(media_data, chapter), wd=dir_path):
                         chapter["read"] = True
                         if cont:
                             self.play(name=self._get_global_id(known[0]), cont=cont)
-                return
-        if add:
-            raise Exception("Could not find media to add")
-        if passthrough:
-            self.settings.open_anime_viewer(url, url.split("/", 3)[-1])
         logging.error("Could not find any matching server")
 
     def get_stream_url(self, name=None, shuffle=False, raw=False):
