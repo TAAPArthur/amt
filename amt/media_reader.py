@@ -138,6 +138,10 @@ class MangaReader:
         except FileNotFoundError:
             pass
 
+        self.media = self.state["media"]
+        self.bundles = self.state["bundles"]
+        self.trackers = self.state["trackers"]
+
         for key in list(self.state["media"].keys()):
             if self.state["media"][key]["server_id"] not in self._servers:
                 self.state["disabled_media"][key] = self.state["media"][key]
@@ -148,9 +152,10 @@ class MangaReader:
                 self.state["media"]["key"] = self.state["disabled_media"][key]
                 del self.state["disabled_media"][key]
 
-        self.media = self.state["media"]
-        self.bundles = self.state["bundles"]
-        self.trackers = self.state["trackers"]
+        for key, value in list(self.state["media"].items()):
+            if key != self._get_global_id(value):
+                del self.media[key]
+                self.media[self._get_global_id(value)] = value
 
     def save_state(self):
         json_str = json.dumps(self.state, indent=4, sort_keys=True)

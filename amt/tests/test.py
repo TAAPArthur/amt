@@ -319,6 +319,14 @@ class MediaReaderTest(BaseUnitTestClass):
                 self.media_reader.load_state()
                 assert old_state == self.media_reader.state
 
+    def test_save_load_global_id_format_change(self):
+        media_list = self.add_test_media()
+        assert self.media_reader.save_state()
+        self.media_reader._get_global_id = lambda x: "!{}/{}".format(x["server_id"], x["id"])
+        self.media_reader.load_state()
+        self.assertEquals(set(map(self.media_reader._get_global_id, self.media_reader.get_media_in_library())), self.media_reader.get_media_ids_in_library())
+        self.assertEquals(len(media_list), len(self.media_reader.get_media_ids_in_library()))
+
     def test_save_load_disabled(self):
         self.add_test_media()
         assert self.media_reader.save_state()
