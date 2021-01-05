@@ -58,7 +58,7 @@ class MangaReader:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",
             "Accept-Language": "en,en-US;q=0.9",
             "Connection": "keep-alive",
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0"
+            "User-Agent": self.settings.user_agent
         })
 
         for cls in server_list:

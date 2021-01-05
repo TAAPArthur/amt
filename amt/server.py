@@ -58,6 +58,7 @@ class Server:
         r = self._request(True, url)
         for i in range(self.settings.max_retires):
             if (self.incapsula_flag in r.text or self.incapsula_regex.search(r.text)):
+                time.sleep(1)
                 if self.settings.incapsula_prompt:
                     logging.info("Detected _Incapsula_Resource")
                     name, value = self.settings.get_incapsula(self.id)

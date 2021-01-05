@@ -47,6 +47,7 @@ class Settings:
     incapsula_prompt = ""
     cookie_files = ["/tmp/cookies.txt"]
     js_enabled_browser = True
+    user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0"
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
@@ -114,6 +115,7 @@ class Settings:
                         self.set(attr, saved_settings[attr])
         except FileNotFoundError:
             pass
+        os.environ['USER_AGENT'] = self.user_agent
 
     def get_settings_file(self):
         return os.path.join(self.config_dir, "settings.json")
