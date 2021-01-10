@@ -6,7 +6,7 @@ from selenium.webdriver.firefox.options import Options
 def get_driver():
     options = Options()
     options.add_argument("--headless")
-    return Firefox(options=options)
+    return Firefox(service_log_path="/dev/null", options=options)
 
 
 def get_cookies(driver, url):
