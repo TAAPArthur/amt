@@ -59,10 +59,10 @@ class Crunchyroll(Server):
     def needs_authentication(self):
         r = self.session_get(self.api_auth_url.format(self.get_session_id()))
         data = r.json()
-        if 'data' in data:
+        if data and 'data' in data:
             self._store_login_data(data)
             return False
-        if data.get("error", False):
+        if not data or data.get("error", False):
             logging.info("Error authenticating %s", data)
         return True
 
