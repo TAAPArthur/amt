@@ -208,14 +208,13 @@ class Server:
             return False
 
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
-        list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
-        assert list_of_pages
-        logging.info("Downloading %d pages", len(list_of_pages))
-        dir_path = self._get_dir(media_data, chapter_data)
-        self.pre_download(media_data, chapter_data, dir_path)
-
         self.lock.acquire()
         try:
+            dir_path = self._get_dir(media_data, chapter_data)
+            self.pre_download(media_data, chapter_data, dir_path)
+            list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
+            assert list_of_pages
+            logging.info("Downloading %d pages", len(list_of_pages))
 
             job = Job(self.settings.threads, raiseException=True)
             for index, page_data in enumerate(list_of_pages[:page_limit]):
