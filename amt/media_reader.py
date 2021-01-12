@@ -39,13 +39,12 @@ class MangaReader:
 
     cookie_hash = None
     state_hash = None
-    trackers = {}
     _servers = {}
     _trackers = []
 
     def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
         self.settings = settings if settings else Settings()
-        self.state = {"media": {}, "bundles": {}, "trackers": {}, "disabled_media": {}}
+        self.state = {"media": {}, "bundles": {}, "disabled_media": {}}
         self._servers = {}
         self._trackers = []
 
@@ -142,7 +141,6 @@ class MangaReader:
 
         self.media = self.state["media"]
         self.bundles = self.state["bundles"]
-        self.trackers = self.state["trackers"]
 
         for key in list(self.state["media"].keys()):
             if self.state["media"][key]["server_id"] not in self._servers:
@@ -418,27 +416,24 @@ class MangaReader:
         return new_chapters
 
     def is_added(self, tracker_id, tracking_id):
-        for media_id in self.get_media_ids_in_library():
-            tacker_info = self.get_tracker_info(media_id, tracker_id)
+        for media_data in self.get_media_in_library():
+            tacker_info = self.get_tracker_info(media_data, tracker_id)
             if tacker_info and tacker_info[0] == tracking_id:
-                return self.media[media_id]
+                return media_data
         return False
 
-    def get_tracker_info(self, media_id, tracker_id):
-        return self.trackers.get(media_id, {}).get(tracker_id, None)
+    def get_tracker_info(self, media_data, tracker_id):
+        return media_data["trackers"].get(tracker_id, None)
 
-    def track(self, tracker_id, media_id, tracking_id, tracker_title=None):
-        if media_id not in self.trackers:
-            self.trackers[media_id] = {}
-
-        self.trackers[media_id][tracker_id] = (tracking_id, tracker_title)
+    def track(self, tracker_id, media_data, tracking_id, tracker_title=None):
+        media_data["trackers"][tracker_id] = (tracking_id, tracker_title)
 
     def sync_progress(self, force=False, media_type=None, dry_run=False):
         data = []
         tracker = self.get_primary_tracker()
-        for media_id, media_data in self.media.items():
+        for media_data in self.get_media_in_library():
             if not media_type or media_data["media_type"] == media_type:
-                tracker_info = self.get_tracker_info(media_id=media_id, tracker_id=self.get_primary_tracker().id)
+                tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_primary_tracker().id)
                 if tracker_info and (force or media_data["progress"] < self.get_last_read(media_data)):
                     data.append((tracker_info[0], self.get_last_read(media_data)))
                     media_data["progress"] = self.get_last_read(media_data)

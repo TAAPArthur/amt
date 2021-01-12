@@ -639,17 +639,16 @@ class ArgsTest(MinimalUnitTestClass):
     def test_load(self):
         parse_args(app=self.media_reader, args=["--auto", "search", "InProgress"])
         assert len(self.media_reader.get_media_ids_in_library()) == 1
-        media_id = next(iter(self.media_reader.get_media_ids_in_library()))
         media_data = next(iter(self.media_reader.get_media_in_library()))
         parse_args(app=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
-        assert self.media_reader.get_tracker_info(media_id, self.media_reader.get_primary_tracker().id)
+        assert self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id)
         self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
 
     def test_load_add_new_media(self):
         parse_args(app=self.media_reader, args=["--auto", "load", "test_user"])
         assert len(self.media_reader.get_media_in_library()) > 1
         for media_data in self.media_reader.get_media_in_library():
-            assert self.media_reader.get_tracker_info(self.app._get_global_id(media_data), self.media_reader.get_primary_tracker().id)
+            assert self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id)
             if media_data["progress"]:
                 self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
 

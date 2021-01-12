@@ -101,7 +101,7 @@ class Application(MangaReader):
                     unknown_media.append(entry["name"])
                     continue
 
-                self.track(tracker.id, self._get_global_id(media_data), entry["id"], entry["name"])
+                self.track(tracker.id, media_data, entry["id"], entry["name"])
                 new_count += 1
             else:
                 logging.debug("Already tracking %s %d", media_data["name"], entry["progress"])
