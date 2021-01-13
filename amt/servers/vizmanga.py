@@ -53,7 +53,7 @@ class VizManga(Server):
                 "rem_user": 1,
                 "authenticity_token": token,
             })
-        return r.status_code == 200
+        return not self.needs_authentication()
 
     def get_media_list(self):
         r = self.session_get(self.api_series_url)
