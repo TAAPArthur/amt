@@ -628,6 +628,7 @@ class ArgsTest(MinimalUnitTestClass):
         chapter_id = list(self.media_reader.get_media_ids_in_library())[0]
         parse_args(app=self.media_reader, args=["list-chapters", chapter_id])
         parse_args(app=self.media_reader, args=["list"])
+        parse_args(app=self.media_reader, args=["list-servers"])
 
     def test_search_save(self):
         assert not len(self.media_reader.get_media_in_library())

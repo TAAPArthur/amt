@@ -25,10 +25,13 @@ TRACKERS = set()
 
 def import_sub_classes(m, base_class, results):
     for _finder, name, _ispkg in pkgutil.iter_modules(m.__path__, m.__name__ + '.'):
-        module = importlib.import_module(name)
-        for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
-            if issubclass(obj, base_class) and obj.id:
-                results.add(obj)
+        try:
+            module = importlib.import_module(name)
+            for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
+                if issubclass(obj, base_class) and obj.id:
+                    results.add(obj)
+        except ImportError:
+            pass
 
 
 import_sub_classes(servers, Server, SERVERS)
