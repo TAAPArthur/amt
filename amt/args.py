@@ -111,6 +111,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         sub_parsers.add_parser("list")
         chapter_parsers = sub_parsers.add_parser("list-chapters")
         chapter_parsers.add_argument("name", choices=app.get_all_names())
+        sub_parsers.add_parser("list-servers")
 
         # credentials
         login_parser = sub_parsers.add_parser("login", description="Relogin to all servers")
@@ -190,6 +191,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.download_unread_chapters(namespace.name, media_type=namespace.manga_only or namespace.anime_only, limit=namespace.limit)
     elif action == "list":
         app.list()
+    elif action == "list-servers":
+        app.list_servers()
     elif action == "list-chapters":
         app.list_chapters(namespace.name)
     elif action == "load":
