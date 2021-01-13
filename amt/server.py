@@ -219,7 +219,6 @@ class Server:
             job = Job(self.settings.threads, raiseException=True)
             for index, page_data in enumerate(list_of_pages[:page_limit]):
                 full_path = self._get_page_path(media_data, chapter_data, dir_path, index, page_data)
-                self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), full_path)
                 job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
             job.run()
 
