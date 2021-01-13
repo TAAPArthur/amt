@@ -8,7 +8,7 @@ from ..server import ANIME, MANGA, NOVEL, Server
 
 def get_local_server_id(media_type):
     if media_type == ANIME:
-        return CustomServer.id
+        return LocalAnimeServer.id
     elif media_type == MANGA:
         return LocalMangaServer.id
     elif media_type == NOVEL:
@@ -16,9 +16,7 @@ def get_local_server_id(media_type):
 
 
 class CustomServer(Server):
-    id = 'custom_server'
     external = True
-    media_type = ANIME
     number_regex = re.compile(r"(\d+\.?\d*)")
 
     def get_media_list(self):
@@ -44,6 +42,11 @@ class CustomServer(Server):
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         return False
+
+
+class LocalAnimeServer(CustomServer):
+    id = 'local_anime'
+    media_type = ANIME
 
 
 class LocalMangaServer(CustomServer):
