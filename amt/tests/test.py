@@ -782,6 +782,13 @@ class ArgsTest(MinimalUnitTestClass):
             self.assertEqual(len(list(self.app.bundles.values())[0]), len(media_data["chapters"]))
             self.app.bundles.clear()
 
+    def test_bundle_limit(self):
+        media_list = self.add_test_media(self.test_server)
+        media_data = media_list[0]
+        parse_args(app=self.media_reader, args=["bundle", "--limit=2"])
+        bundle_data = list(self.media_reader.bundles.values())[0]
+        self.assertEqual(len(bundle_data), 2)
+
     def test_play(self):
         media_list = self.add_test_media(self.test_anime_server)
         parse_args(app=self.media_reader, args=["play", "-c"])

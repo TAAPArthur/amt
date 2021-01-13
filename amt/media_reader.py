@@ -216,13 +216,16 @@ class MangaReader:
     def _get_single_media(self, media_type=ALL_MEDIA, name=None):
         return next(self._get_media(media_type=media_type, name=name))
 
-    def _get_unreads(self, media_type, name=None, shuffle=False):
-
+    def _get_unreads(self, media_type, name=None, shuffle=False, limit=None):
+        count = 0
         for media_data in self._get_media(media_type, name, shuffle):
             server = self.get_server(media_data["server_id"])
             for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
                 if not chapter["read"]:
                     yield server, media_data, chapter
+                    count += not chapter["special"]
+                    if count == limit:
+                        return
 
     def for_each(self, func, media_list):
         return Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list]).run()
@@ -299,7 +302,7 @@ class MangaReader:
     def _create_bundle_data_entry(self, media_data, chapter_data):
         return dict(media_id=self._get_global_id(media_data), chapter_id=chapter_data["id"], media_name=media_data["name"], chapter_num=chapter_data["number"])
 
-    def bundle_unread_chapters(self, name=None, shuffle=False):
+    def bundle_unread_chapters(self, name=None, shuffle=False, limit=None):
         unreads = []
         paths = []
         bundle_data = []
@@ -307,9 +310,9 @@ class MangaReader:
         def func(x):
             server, media_data, chapter = x
             server.download_chapter(media_data, chapter)
-        self.for_each(func, self._get_unreads(MANGA, name=name, shuffle=shuffle))
+        self.for_each(func, self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit))
 
-        for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle):
+        for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit):
             if server.is_fully_downloaded(media_data, chapter):
                 paths.append(server.get_children(media_data, chapter))
                 bundle_data.append(self._create_bundle_data_entry(media_data, chapter))
