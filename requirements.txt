@@ -1,9 +1,18 @@
 requests
+beautifulsoup4
+# for auto complete
+argcomplete
+
+# Needed for mangaplus
 pure_protobuf
 Unidecode
-argcomplete
-m3u8
-beautifulsoup4
-dataclasses
+
+# Needed for Viz
 Pillow
+
+# Needed for Crunchyroll
 pycryptodome
+m3u8
+dataclasses
+
+selenium[browser]
