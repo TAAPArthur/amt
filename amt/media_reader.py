@@ -230,8 +230,8 @@ class MangaReader:
                     if count == limit:
                         return
 
-    def for_each(self, func, media_list):
-        return Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list]).run()
+    def for_each(self, func, media_list, raiseException=False):
+        return Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
     def search_for_media(self, term, server_id=None, media_type=None, exact=False):
         def func(x): return x.search(term)
@@ -313,7 +313,7 @@ class MangaReader:
         def func(x):
             server, media_data, chapter = x
             server.download_chapter(media_data, chapter)
-        self.for_each(func, self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit))
+        self.for_each(func, self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit), raiseException=True)
 
         for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit):
             if server.is_fully_downloaded(media_data, chapter):

@@ -293,9 +293,11 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
         for media in server.get_media_list():
             server.update_media_data(media)
-            for chapter in media["chapters"].values():
+            chapters = list(filter(lambda x: x["premium"], media["chapters"].values()))
+            if chapters:
+                self.assertRaises(ValueError, server.download_chapter, media_data=media, chapter_data=chapters[0])
+                break
 
-                server.download_chapter(media, chapter)
         self.assertEqual(1, server.counter)
 
 
@@ -765,6 +767,13 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["bundle"])
         parse_args(app=self.media_reader, args=["read"])
         self.assertAllChaptersRead(MANGA)
+
+    def test_bundle_download_error(self):
+        server = self.media_reader.get_server(TestServerLogin.id)
+        media_list = self.add_test_media(server)
+        server.fail_login = True
+        self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["bundle", TestServerLogin.id])
+        assert not self.app.bundles
 
     def test_bundle_specific(self):
         media_list = self.add_test_media(self.test_server)
