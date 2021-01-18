@@ -85,6 +85,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         steam_parser = sub_parsers.add_parser("stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
         steam_parser.add_argument("--cont", default=False, action="store_const", const=True)
         steam_parser.add_argument("--download", default=False, action="store_const", const=True)
+        steam_parser.add_argument("--quality", "-q", default=0, type=int)
         steam_parser.add_argument("url")
 
         play_parser = sub_parsers.add_parser("play", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
@@ -95,7 +96,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         stream_url_parser = sub_parsers.add_parser("get-stream-url", help="Gets the steaming url for the media")
         stream_url_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
-        stream_url_parser.add_argument("-r", "--raw", default=False, action="store_const", const=True, help="Get the stream url without any extra processing")
         stream_url_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
 
         # external
@@ -225,7 +225,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
             app.settings.save()
         print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
     elif action == "stream":
-        app.stream(namespace.url, cont=namespace.cont, download=namespace.download)
+        app.stream(namespace.url, cont=namespace.cont, download=namespace.download, quality=namespace.quality)
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=namespace.manga_only or namespace.anime_only, dry_run=namespace.dry_run)
     elif action == "update":

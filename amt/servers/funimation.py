@@ -135,7 +135,7 @@ class Funimation(Server):
                 return media, media["chapters"][str(chapter_id)]
         return False
 
-    def get_stream_url(self, media_data=None, chapter_data=None, url=None, raw=False):
+    def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
         if url:
             chapter_id, _ = self._get_episode_id(url)
         else:
@@ -147,8 +147,8 @@ class Funimation(Server):
         logging.info("Sources: %s", [item["src"] for item in r.json()["items"]])
         for item in r.json()["items"]:
             if item["videoType"] == "mp4":
-                return item["src"]
-        return r.json()["items"][0]["src"]
+                return [item["src"]]
+        return [r.json()["items"][0]["src"]]
 
     def get_media_chapter_data(self, media_data, chapter_data):
         return [self.create_page_data(url=self.get_stream_url(media_data, chapter_data))]

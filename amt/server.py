@@ -256,8 +256,11 @@ class Server:
     def can_stream_url(self, url):
         return False
 
-    def get_stream_url(self, media_data=None, chapter_data=None, url=None, raw=False):
-        return False
+    def get_stream_url(self, media_data=None, chapter_data=None, url=None, quality=0):
+        return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data, url=url))[quality]
+
+    def get_stream_urls(self, media_data=None, chapter_data=None, url=None, raw=False):
+        return []
 
     def get_media_data_from_url(self, url):
         raise NotImplementedError

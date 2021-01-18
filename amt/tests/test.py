@@ -833,6 +833,9 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
         assert not len(self.media_reader.get_media_in_library())
 
+    def test_stream_quality(self):
+        parse_args(app=self.media_reader, args=["stream", "-q", "-1", TestAnimeServer.stream_url])
+
     def test_stream_download(self):
         parse_args(app=self.media_reader, args=["stream", "--download", TestAnimeServer.stream_url])
         assert not len(self.media_reader.get_media_in_library())
