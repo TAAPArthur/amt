@@ -82,13 +82,11 @@ class CrunchyrollAnime(Crunchyroll):
                 return media, media["chapters"][chapter_id]
         return False
 
-    def get_stream_url(self, media_data=None, chapter_data=None, url=None, raw=False):
+    def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
         chapter_id = url.split("-")[-1] if url else chapter_data["id"]
 
         r = self.session_get(self.stream_url.format(self.get_session_id(), chapter_id))
         stream = r.json()["data"]["stream_data"]["streams"][0]
-        if raw:
-            return stream["url"]
 
         r = self.session_get(stream["url"])
         bandwidth = None
@@ -101,7 +99,9 @@ class CrunchyrollAnime(Crunchyroll):
             elif line:
                 url_bandwidth_tuples.append((bandwidth, line))
         url_bandwidth_tuples.sort(reverse=True)
-        return url_bandwidth_tuples[0][1]
+        url_bandwidth_tuples.append((0, stream["url"]))
+
+        return map(lambda x: x[1], url_bandwidth_tuples)
 
     def post_download(self, media_data, chapter_data, dir_path):
         pathWithoutExt = os.path.join(dir_path, chapter_data["id"])

@@ -114,11 +114,11 @@ class TestAnimeServer(TestServer):
         self.update_media_data(media_data)
         return media_data
 
-    def get_stream_url(self, media_data=None, chapter_data=None, url=None, raw=False):
+    def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
         assert isinstance(media_data, dict) if media_data else True
         assert isinstance(chapter_data, dict) if chapter_data else True
         assert isinstance(url, str) if url else True
-        return f"https://{self.domain}/url.m3u8?key=1&&false"
+        return [f"https://{self.domain}/url.m3u8?key=1&false"]
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()

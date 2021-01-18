@@ -340,7 +340,7 @@ class MangaReader:
         for bundle in bundled_data:
             self.media[bundle["media_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
-    def stream(self, url, cont=True, download=False):
+    def stream(self, url, cont=True, download=False, quality=0):
         for server in self.get_servers():
             if server.can_stream_url(url):
                 known = server.is_url_for_known_media(url, {media["id"]: media for media in self.get_media_in_library() if media["server_id"] == server.id})
@@ -348,7 +348,7 @@ class MangaReader:
                     media_data = server.get_media_data_from_url(url)
                     known = server.is_url_for_known_media(url, {media_data["id"]: media_data})
                 media_data, chapter = known
-                streamable_url = server.get_stream_url(media_data, chapter)
+                streamable_url = server.get_stream_url(media_data, chapter, quality=quality)
                 logging.info("Streaming %s", streamable_url)
                 dir_path = server._get_dir(media_data, chapter)
 
@@ -363,9 +363,10 @@ class MangaReader:
                             self.play(name=self._get_global_id(known[0]), cont=cont)
         logging.error("Could not find any matching server")
 
-    def get_stream_url(self, name=None, shuffle=False, raw=False):
+    def get_stream_url(self, name=None, shuffle=False):
         for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
-            print(server.get_stream_url(media_data, chapter, raw=raw))
+            for url in server.get_stream_urls(media_data, chapter):
+                print(url)
 
     def get_chapters(self, media_type, name, num_list):
         media_data = self._get_single_media(media_type=media_type, name=name)
