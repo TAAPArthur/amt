@@ -369,7 +369,8 @@ class MangaReader:
 
     def get_chapters(self, media_type, name, num_list):
         media_data = self._get_single_media(media_type=media_type, name=name)
-
+        last_read = self.get_last_read(media_data)
+        num_list = list(map(lambda x: last_read + x + 1 if x < 0 else x, num_list))
         server = self.get_server(media_data["server_id"])
         for chapter in self._get_sorted_chapters(media_data):
             if chapter["number"] in num_list:
