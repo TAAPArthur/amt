@@ -82,7 +82,7 @@ class TestServerLogin(TestServer):
 
     def login(self, username, password):
         self.counter += 1
-        self.is_premium = 1
+        self.is_premium = not self.fail_login
         return not self.fail_login
 
     def relogin(self):
