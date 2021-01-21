@@ -52,6 +52,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
         search_parsers.add_argument("term", help="The string to search by")
 
+        migrate_parsers = sub_parsers.add_parser("migrate", description="Move media to another server")
+        migrate_parsers.add_argument("id", choices=app.get_all_single_names(), help="Global id of media to move")
+
         add_parsers = sub_parsers.add_parser("add-from-url", description="Add media by human viewable location")
         add_parsers.add_argument("url", help="Either the series home page or the page for an arbitrary chapter (depends on server)")
 
@@ -212,6 +215,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle, num_list=namespace.num))
     elif action == "read":
         print(app.read_bundle(namespace.name))
+    elif action == "migrate":
+        app.migrate(id=namespace.id)
     elif action == "remove":
         app.remove_media(id=namespace.id)
     elif action == "import":

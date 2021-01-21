@@ -719,10 +719,21 @@ class ArgsTest(MinimalUnitTestClass):
     def test_search_fail(self):
         parse_args(app=self.media_reader, args=["--auto", "search", "__UnknownMedia__"])
 
+    def test_migrate(self):
+        parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
+        media_data = list(self.media_reader.get_media_in_library())[0]
+        self.app.mark_up_to_date()
+        parse_args(app=self.media_reader, args=["--auto", "migrate", media_data["name"]])
+        self.assertEqual(1, len(self.media_reader.get_media_in_library()))
+        media_data2 = list(self.media_reader.get_media_in_library())[0]
+        self.assertNotEqual(self.app._get_global_id(media_data), self.app._get_global_id(media_data2))
+        self.assertEqual(self.app.get_last_chapter_number(media_data), self.app.get_last_chapter_number(media_data2))
+
     def test_remove(self):
         parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         media_data = list(self.media_reader.get_media_in_library())[0]
         parse_args(app=self.media_reader, args=["remove", self.app._get_global_id(media_data)])
+        self.assertEqual(0, len(self.media_reader.get_media_in_library()))
 
     def test_bundle_read(self):
         self.settings.manga_viewer = "[ -f {} ]"

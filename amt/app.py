@@ -33,16 +33,23 @@ class Application(MangaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def search_add(self, term, server_id=None, media_type=None, exact=False):
-        results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact)
+    def search_add(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[]):
+        results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude)
         if len(results) == 0:
-            return
+            return None
         self.print_results(results)
 
         media_data = self.select_media(results, "Select media to add: ")
         if media_data:
             self.add_media(media_data)
         return media_data
+
+    def migrate(self, id):
+        media_data = self._get_single_media(name=id)
+        new_media_data = self.search_add(media_data["name"], media_type=media_data["media_type"], servers_to_exclude=[media_data["server_id"]])
+        new_media_data["trackers"] = media_data["trackers"]
+        self.mark_chapters_until_n_as_read(new_media_data, self.get_last_read(media_data))
+        self.remove_media(media_data)
 
     def add_from_url(self, url):
         for server in self.get_servers():
