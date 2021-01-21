@@ -100,7 +100,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         # external
         import_parser = sub_parsers.add_parser("import")
-        import_parser.add_argument("--no-copy", action="store_const", const=True, default=False, help="Moves instead of copying files")
+        import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
         import_parser.add_argument("--manga", action="store_const", const=MANGA, default=None, help="Filter for Manga")
         import_parser.add_argument("--novel", "--light-novel-only", action="store_const", const=NOVEL, default=None, help="Filter for Novels")
         import_parser.add_argument("--anime", action="store_const", const=ANIME, default=None, help="Filter for Anime")
@@ -215,7 +215,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "remove":
         app.remove_media(id=namespace.id)
     elif action == "import":
-        app.import_media(namespace.file, media_type=namespace.manga or namespace.anime or namespace.novel or ANIME, no_copy=namespace.no_copy, name=namespace.name)
+        app.import_media(namespace.file, media_type=namespace.manga or namespace.anime or namespace.novel or ANIME, link=namespace.link, name=namespace.name)
     elif action == "search":
         if not app.search_add(namespace.term, server_id=namespace.server, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact):
             logging.warning("Could not find media %s", namespace.term)

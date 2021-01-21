@@ -208,9 +208,10 @@ class Server:
             return False
 
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
+        dir_path = self._get_dir(media_data, chapter_data)
+        os.makedirs(dir_path, exist_ok=True)
         self.lock.acquire()
         try:
-            dir_path = self._get_dir(media_data, chapter_data)
             self.pre_download(media_data, chapter_data, dir_path)
             list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
             assert list_of_pages

@@ -175,28 +175,36 @@ class Application(MangaReader):
                 server.update_chapter_data(new_data, chapter_data["id"], chapter_data["title"], chapter_data["number"])
                 _upgrade_dict(chapter_data, new_data["chapters"][chapter_data["id"]])
 
-    def import_media(self, files, media_type, no_copy=False, name=None):
-        func = shutil.move if no_copy else shutil.copy2
+    def import_media(self, files, media_type, link=False, name=None):
+        func = shutil.move if not link else os.link
 
         local_server_id = get_local_server_id(media_type)
         custom_server_dir = self.settings.get_server_dir(local_server_id)
         os.makedirs(custom_server_dir, exist_ok=True)
         assert os.path.exists(custom_server_dir)
+        names = set()
         for file in files:
+            logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
+            media_name = name
+            if not name:
+                match = re.search(r"(\[\w*\]|\d+[.-:]?)?\s*([\w';:\- ]+[A-z]).*\.\w+$", file)
+                assert match
+                media_name = match.group(2)
+                logging.info("Detected name %s", media_name)
             if os.path.isdir(file):
-                if no_copy:
-                    shutil.move(file, os.path.join(custom_server_dir, name or ""))
-                else:
-                    shutil.copytree(file, os.path.join(custom_server_dir, name or ""))
-                    if name:
-                        os.rename(os.path.join(custom_server_dir, os.path.basename(file)), os.path.join(custom_server_dir, name))
+                shutil.move(file, os.path.join(custom_server_dir, name or ""))
             else:
-                path = os.path.join(custom_server_dir, name or os.path.basename(os.path.dirname(file)))
+                path = os.path.join(custom_server_dir, media_name)
                 os.makedirs(path, exist_ok=True)
-                func(file, os.path.join(path, os.path.basename(file)))
-        for media_data in self.get_server(local_server_id).get_media_list():
-            if self._get_global_id(media_data) not in self.media:
-                self.add_media(media_data)
+                dest = os.path.join(path, os.path.basename(file))
+                logging.info("Importing to %s", dest)
+                func(file, dest)
+            if media_name not in names:
+                if not any([x["name"] == media_name for x in self.get_media_in_library()]):
+                    self.search_add(media_name, server_id=local_server_id, exact=True)
+                names.add(media_name)
+
+        [self.update_media(media_data) for media_data in self._get_media(name=local_server_id)]
 
     def maybe_fetch_extra_cookies(self):
         for server in self.get_servers():
