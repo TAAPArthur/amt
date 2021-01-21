@@ -955,8 +955,12 @@ class ServerTest(RealBaseUnitTestClass):
                         gaps = sum([numbers[i + 1] - numbers[i] > 1 for i in range(len(numbers) - 1)])
                         self.assertLessEqual(gaps, 1)
 
+    @unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
+    def test_media_download(self):
+        for server in self.media_reader.get_servers():
+            media_data = server.get_media_list()[0]
+            server.update_media_data(media_data)
             with self.subTest(server=server.id, method="download"):
-                media_data = media_list[0]
                 for chapter_data in filter(lambda x: not x["premium"], media_data["chapters"].values()):
                     assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=2)
                     self.verify_download(media_data, chapter_data)
@@ -1044,6 +1048,7 @@ class PremiumTest(RealBaseUnitTestClass):
         super().setUp()
         self.settings.password_manager_enabled = True
 
+    @unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
     def test_download_premium(self):
         for server in self.media_reader.get_servers():
             if server.has_login and not isinstance(server, TestServer):
