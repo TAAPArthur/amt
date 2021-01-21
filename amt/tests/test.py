@@ -165,29 +165,6 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
     def init(self):
         self.real = True
 
-    def setUp(self):
-        super().setUp()
-        self.setup_customer_server_data()
-
-    def setup_customer_server_data(self):
-
-        for media_type in (MANGA, ANIME, NOVEL):
-            local_server_id = get_local_server_id(media_type)
-            dir = self.settings.get_server_dir(local_server_id)
-            image = Image.new('RGB', (100, 100))
-            for media_name in ["A", "B", "C"]:
-                parent_dir = os.path.join(dir, media_name)
-                for chapter_name in ["01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]:
-                    chapter_dir = os.path.join(parent_dir, chapter_name)
-                    os.makedirs(chapter_dir)
-                    image.save(os.path.join(chapter_dir, "image"), "jpeg")
-
-            for bundled_media_name in ["A_Bundled", "B_Bundled", "C_Bundled"]:
-                parent_dir = os.path.join(dir, bundled_media_name)
-                os.makedirs(parent_dir)
-                for chapter_name in ["10", "Episode 2"]:
-                    image.save(os.path.join(parent_dir, chapter_name), "jpeg")
-
 
 class SettingsTest(BaseUnitTestClass):
     def test_settings_save_load(self):
@@ -855,8 +832,46 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["add-from-url", "bad-url"])
         assert not self.media_reader.get_media_in_library()
 
-    def test_import(self):
+    def test_import_auto_detect_name(self):
+        samples = [
+            ("Banner of the Stars", 1, "01. Banner of the Stars (Seikai no Senki) [480p][author].mkv"),
+            ("Magical Girl Lyrical Nanoha", 13, "[author] Magical Girl Lyrical Nanoha - 13 (type) [deadbeef].mkv"),
+            ("Magical Girl Lyrical Nanoha A's", 999, "[author] Magical Girl Lyrical Nanoha A's - 999.mkv"),
+            ("Steins;Gate", 1, "01 Steins;Gate.mkv"),
+            ("Kaguya-sama", 1, "Kaguya-sama 1.mkv"),
+        ]
 
+        self.settings.anime_viewer = "[ -f {media} ] && echo {title}"
+        for name, number, file_name in samples:
+            with self.subTest(file_name=file_name):
+                with open(file_name, "w") as f:
+                    f.write("dummy_data")
+                assert os.path.exists(file_name)
+                parse_args(app=self.media_reader, args=["import", "--anime", file_name])
+                assert not os.path.exists(file_name)
+                assert any([x["name"] == name for x in self.media_reader.get_media_in_library()])
+                for media_data in self.media_reader.get_media_in_library():
+                    if media_data["name"] == name:
+                        chapters = list(media_data["chapters"].values())
+                        self.assertEqual(len(chapters), 1)
+                        self.assertEqual(chapters[0]["number"], number)
+                        assert self.media_reader.play(name)
+                        assert re.search(r"^\w+$", media_data["id"])
+
+    def test_import_multiple(self):
+        file_names = ["Media - 1.mp4", "MediaOther - 1.mp4", "Media - 2.mp4"]
+        file_names2 = ["Media - 3.mp4", "MediaOther - 2.mp4", "Media - 4.mp4"]
+        for name in file_names + file_names2:
+            with open(name, "w") as f:
+                f.write("dummy_data")
+        for name_list in (file_names, file_names2):
+            parse_args(app=self.media_reader, args=["import", "--anime"] + name_list)
+            self.assertEqual(2, len(self.media_reader.get_media_in_library()))
+            for name in name_list:
+                with self.subTest(file_name=name):
+                    assert any([x["name"] == name.split()[0] for x in self.media_reader.get_media_in_library()])
+
+    def test_import(self):
         image = Image.new('RGB', (100, 100))
         path = os.path.join(TEST_HOME, "00-file.jpg")
         path2 = os.path.join(TEST_HOME, "test-dir")
@@ -866,17 +881,17 @@ class ArgsTest(MinimalUnitTestClass):
         image.save(path)
         image.save(path_file)
         image.save(path3)
-        parse_args(app=self.media_reader, args=["import", path])
-        assert 1 == len(self.media_reader.get_media_in_library())
+        parse_args(app=self.media_reader, args=["import", "--link", path])
+        self.assertEqual(1, len(self.media_reader.get_media_in_library()))
         assert os.path.exists(path)
-        parse_args(app=self.media_reader, args=["import", "--no-copy", "--name", "testMedia", path2])
+        parse_args(app=self.media_reader, args=["import", "--name", "testMedia", path2])
         assert 2 == len(self.media_reader.get_media_in_library())
         assert any([x["name"] == "testMedia" for x in self.media_reader.get_media_in_library()])
         assert not os.path.exists(path2)
 
         for i, media_type in enumerate(["--novel", "--manga", "--anime"]):
             name = "name" + str(i)
-            parse_args(app=self.media_reader, args=["import", "--name", name, media_type, path3])
+            parse_args(app=self.media_reader, args=["import", "--link", "--name", name, media_type, path3])
             assert any([x["name"] == name for x in self.media_reader.get_media_in_library()])
             self.assertEqual(3 + i, len(self.media_reader.get_media_in_library()))
             assert os.path.exists(path3)
@@ -1035,11 +1050,6 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         assert not server.api_auth_token
         assert server.needs_authentication()
         assert not server.api_auth_token
-
-    def test_custom_bundle(self):
-        server = self.media_reader.get_server(get_local_server_id(MANGA))
-        self.add_test_media(server)
-        self.assertTrue(self.media_reader.bundle_unread_chapters())
 
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
