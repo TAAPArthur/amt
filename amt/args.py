@@ -153,6 +153,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         settings_parsers.add_argument("setting", choices=Settings.get_members())
         settings_parsers.add_argument("value", default=None, nargs="?")
 
+        get_file_parsers = sub_parsers.add_parser("get-file")
+        get_file_parsers.add_argument("file", default=None, choices=["settings_file", "metadata", "cookie_file"])
+
         # upgrade state
         sub_parsers.add_parser("upgrade", description="Upgrade old state to newer format")
     except KeyError as e:
@@ -211,6 +214,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.offset(namespace.name, offset=namespace.N)
     elif action == "get-stream-url":
         app.get_stream_url(name=namespace.name, shuffle=namespace.shuffle)
+    elif action == "get-file":
+        print(app.settings.get(f"get_{namespace.file}")())
     elif action == "play":
         print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle, num_list=namespace.num))
     elif action == "read":
