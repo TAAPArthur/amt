@@ -16,6 +16,12 @@ LANGUAGES_CODES = dict(
 RE_ENCRYPTION_KEY = re.compile('.{1,2}')
 
 
+def load_response(data):
+    resp_data = loads(MangaplusResponse, data)
+    assert resp_data.success
+    return resp_data
+
+
 class Mangaplus(Server):
     id = 'mangaplus'
     lang = 'en'
@@ -30,9 +36,7 @@ class Mangaplus(Server):
 
     def get_media_list(self):
         r = self.session_get(self.api_most_populars_url)
-        resp_data = loads(MangaplusResponse, r.content)
-        if resp_data.error:
-            return None
+        resp_data = load_response(r.content)
 
         results = []
         for title in resp_data.success.titles_ranking.titles:
@@ -45,9 +49,7 @@ class Mangaplus(Server):
     def search(self, term):
         r = self.session_get(self.api_search_url)
 
-        resp_data = loads(MangaplusResponse, r.content)
-        if resp_data.error:
-            return None
+        resp_data = load_response(r.content)
 
         results = []
         term = unidecode.unidecode(term).lower()
@@ -64,9 +66,7 @@ class Mangaplus(Server):
     def update_media_data(self, media_data):
         r = self.session_get(self.api_media_url.format(media_data['id']))
 
-        resp = loads(MangaplusResponse, r.content)
-        if resp.error:
-            return None
+        resp = load_response(r.content)
 
         resp_data = resp.success.title_detail
 
@@ -80,9 +80,7 @@ class Mangaplus(Server):
 
     def get_media_chapter_data(self, media_data, chapter_data):
         r = self.session_get(self.api_chapter_url.format(chapter_data["id"]))
-        resp = loads(MangaplusResponse, r.content)
-        if resp.error:
-            return None
+        resp = load_response(r.content)
 
         resp_data = resp.success.media_viewer
 
@@ -94,8 +92,6 @@ class Mangaplus(Server):
 
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data['url'])
-        if r.status_code != 200:
-            return None
 
         if page_data['encryption_key'] is not None:
             # Decryption
@@ -135,22 +131,6 @@ class UpdateTimingEnum(IntEnum):
     SATURDAY = 6
     SUNDAY = 7
     DAY = 8
-
-
-@message
-@dataclass
-class Popup:
-    subject: str = field(1)
-    body: str = field(2)
-
-
-@message
-@dataclass
-class ErrorResult:
-    action: ActionEnum = field(1)
-    english_popup: Popup = field(2)
-    spanish_popup: Popup = field(3)
-    debug_info: str = field(4)
 
 
 @message
@@ -239,4 +219,3 @@ class SuccessResult:
 @dataclass
 class MangaplusResponse:
     success: SuccessResult = field(1, default=None)
-    error: ErrorResult = field(2, default=None)
