@@ -196,7 +196,7 @@ class MangaReader:
         return self._servers.keys()
 
     def get_server(self, id):
-        return self._servers[id]
+        return self._servers.get(id, None)
 
     def get_media_in_library(self):
         return self.media.values()

@@ -101,6 +101,13 @@ def parse_args(args=None, app=None, already_upgraded=False):
         stream_url_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
         stream_url_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
 
+        # clean
+        clean_bundle_parser = sub_parsers.add_parser("clean-bundle", help="Removes bundle info")
+        clean_parser = sub_parsers.add_parser("clean", help="Removes unused media")
+        clean_parser.add_argument("--remove-disabled-servers", default=False, action="store_const", const=True, help="Removes all servers not belonging to the active list")
+        clean_parser.add_argument("--include-external", default=False, action="store_const", const=True, help="Doesn't skip local servers")
+        clean_parser.add_argument("--remove-read", default=False, action="store_const", const=True, help="Removes all read chapters")
+
         # external
         import_parser = sub_parsers.add_parser("import")
         import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
@@ -191,6 +198,10 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.settings.store_secret(tracker.id, secret)
     elif action == "bundle":
         print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit))
+    elif action == "clean-bundle":
+        app.clean_bundles()
+    elif action == "clean":
+        app.clean(remove_disabled_servers=namespace.remove_disabled_servers, include_external=namespace.include_external, remove_read=namespace.remove_read)
     elif action == "download":
         app.download_specific_chapters(namespace.id, start=namespace.start, end=namespace.end)
     elif action == "download-unread":

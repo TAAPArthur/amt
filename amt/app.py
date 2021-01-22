@@ -217,3 +217,31 @@ class Application(MangaReader):
         for server in self.get_servers():
             if server.is_protected and server.domain:
                 server.session_get_protected("https://" + server.domain)
+
+    def clean_bundles(self):
+        shutil.rmtree(self.settings.bundle_dir)
+        self.bundles.clear()
+
+    def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False):
+        media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media_in_library()}
+        for dir in os.listdir(self.settings.media_dir):
+            server = self.get_server(dir)
+            server_path = os.path.join(self.settings.media_dir, dir)
+            if not server:
+                logging.info("Removing %s because it is not enabled", server_path)
+                shutil.rmtree(server_path)
+            else:
+                if include_external or not server.external:
+                    for media_dir in os.listdir(server_path):
+                        media_path = os.path.join(server_path, media_dir)
+                        if media_path not in media_dirs:
+                            logging.info("Removing %s because it has been removed", media_path)
+                            shutil.rmtree(media_path)
+                        elif remove_read:
+                            media_data = media_dirs[media_path]
+                            for media_dir in os.listdir(server_path):
+                                for chapter_data in self._get_sorted_chapters(media_data):
+                                    if chapter_data["read"]:
+                                        chapter_path = server._get_dir(media_data, chapter_data)
+                                        logging.info("Removing %s because it has been read", chapter_path)
+                                        shutil.rmtree(chapter_path)
