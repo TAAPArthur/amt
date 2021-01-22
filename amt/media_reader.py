@@ -442,10 +442,11 @@ class MangaReader:
         for media_data in self.get_media_in_library():
             if not media_type or media_data["media_type"] == media_type:
                 tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_primary_tracker().id)
-                if tracker_info and (force or media_data["progress"] < self.get_last_read(media_data)):
+                if tracker_info and (force or media_data["progress"] < int(self.get_last_read(media_data))):
                     data.append((tracker_info[0], self.get_last_read(media_data)))
-                    media_data["progress"] = self.get_last_read(media_data)
-                    logging.info("Preparing to update %s to %d", media_data["name"], media_data["progress"])
+                    last_read = self.get_last_read(media_data)
+                    logging.info("Preparing to update %s to %d from %d", media_data["name"], last_read, media_data["progress"])
+                    media_data["progress"] = last_read
 
         if data and not dry_run:
             tracker.update(data)
