@@ -43,7 +43,11 @@ class Server:
     def __init__(self, session, settings=None):
         self.settings = settings
         self.session = session
-        self.lock = Lock()
+        self._lock = Lock()
+
+    @property
+    def lock(self):
+        return self._lock
 
     def _request(self, get, url, **kwargs):
         logging.info("Making request to %s", url)

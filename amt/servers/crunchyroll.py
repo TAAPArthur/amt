@@ -1,4 +1,5 @@
 import logging
+from threading import Lock
 
 from ..server import Server
 
@@ -28,11 +29,16 @@ class Crunchyroll(Server):
 
     _access_token = 'WveH9VkPLrXvuNm'
     _access_type = 'com.crunchyroll.crunchyroid'
+    class_lock = Lock()
 
     @staticmethod
     def decode_image(buffer):
         # Don't know why 66 is special
         return bytes(b ^ 66 for b in buffer)
+
+    @property
+    def lock(self):
+        return Crunchyroll.class_lock
 
     def get_session_id(self):
         if Crunchyroll._api_session_id:

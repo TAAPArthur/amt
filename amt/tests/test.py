@@ -1110,6 +1110,13 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         assert server.needs_authentication()
         assert not server.api_auth_token
 
+    def test_crunchyroll_lock(self):
+        from ..servers.crunchyroll import Crunchyroll
+        from ..servers.crunchyroll_anime import CrunchyrollAnime
+        server = self.media_reader.get_server(Crunchyroll.id)
+        server2 = self.media_reader.get_server(CrunchyrollAnime.id)
+        self.assertEqual(server.lock, server2.lock)
+
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
 class PremiumTest(RealBaseUnitTestClass):
