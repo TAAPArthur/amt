@@ -15,7 +15,7 @@ from PIL import Image
 from .. import servers, tests, trackers
 from ..app import Application
 from ..args import parse_args
-from ..media_reader import SERVERS, TRACKERS, MangaReader, import_sub_classes
+from ..media_reader import SERVERS, TRACKERS, MediaReader, import_sub_classes
 from ..server import ANIME, MANGA, NOVEL, Server
 from ..servers.custom import CustomServer, get_local_server_id
 from ..settings import Settings

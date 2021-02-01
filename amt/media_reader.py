@@ -38,7 +38,7 @@ import_sub_classes(servers, Server, SERVERS)
 import_sub_classes(trackers, Tracker, TRACKERS)
 
 
-class MangaReader:
+class MediaReader:
 
     cookie_hash = None
     state_hash = None
