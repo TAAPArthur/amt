@@ -67,7 +67,7 @@ class Application(MediaReader):
         new_count = 0
 
         def clean_name(x):
-            return x.lower().replace(" ", "")
+            return re.sub(r"\W*", "", x.lower())
 
         unknown_media = []
         for entry in data:
@@ -95,14 +95,11 @@ class Application(MediaReader):
                     media_data = self.select_media(known_matching_media, "Select from known media: ")
 
                 elif not local_only:
-                    if not media_data:
+                    alt_names = {entry["name"], entry["name"].split(":")[0], entry["name"].split()[0], re.sub(r"\W*$", "", entry["name"])}
+                    for name in alt_names:
                         media_data = self.search_add(entry["name"], media_type=media_type, exact=True)
-                    if not media_data and not exact:
-                        media_data = self.search_add(entry["name"].split(":")[0], media_type=media_type, exact=False)
-                    if not media_data and not exact:
-                        prefix = re.sub(r"\W*$", "", entry["name"])
-                        if prefix != entry["name"]:
-                            media_data = self.search_add(prefix, media_type=media_type, exact=False)
+                        if media_data:
+                            break
                 if not media_data:
                     logging.info("Could not find media %s", entry["name"])
                     unknown_media.append(entry["name"])
