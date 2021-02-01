@@ -41,9 +41,14 @@ class Funimation(Server):
 
     def needs_authentication(self):
         if self.session.cookies.get("src_user_id", domain=self.domain):
-            self.is_premium = self.session.cookies.get("userState", domain=self.domain) == "Premium%20Plus"
             return False
         return True
+
+    @property
+    def is_premium(self):
+        state = self.session.cookies.get("rlildup", domain=self.domain)
+        print("State", state)
+        return "premium" in state.lower() if state else False
 
     def login(self, username, password):
 
@@ -56,7 +61,6 @@ class Funimation(Server):
             self.session.cookies.set("src_token", data["token"], domain=self.domain)
             self.session.cookies.set("src_user_id", str(data["user"]["id"]), domain=self.domain)
             self.session.cookies.set("rlildup", data["rlildup_cookie"], domain=self.domain)
-            self.is_premium = "premium" in data["rlildup_cookie"].lower()
             return True
         except KeyError:
             logging.info(data["error"])
