@@ -91,6 +91,9 @@ class TestServerLogin(TestServer):
     def needs_authentication(self):
         return not self.counter
 
+    def reset(self):
+        self.counter = 0
+
 
 class TestAnimeServer(TestServer):
     id = 'test_server_anime'

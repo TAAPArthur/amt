@@ -572,14 +572,56 @@ class RealArgsTest(RealBaseUnitTestClass):
                 server.session_get_protected("https://" + server.domain)
 
 
+class CustomTest(MinimalUnitTestClass):
+    def setUp(self):
+        super().setUp()
+        self.setup_customer_server_data()
+
+    def setup_customer_server_data(self):
+
+        for media_type in (MANGA, ANIME, NOVEL):
+            local_server_id = get_local_server_id(media_type)
+            dir = self.settings.get_server_dir(local_server_id)
+            image = Image.new('RGB', (100, 100))
+            for media_name in ["A", "B", "C"]:
+                parent_dir = os.path.join(dir, media_name)
+                for chapter_name in ["01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]:
+                    chapter_dir = os.path.join(parent_dir, chapter_name)
+                    os.makedirs(chapter_dir)
+                    image.save(os.path.join(chapter_dir, "image"), "jpeg")
+
+            for bundled_media_name in ["A_Bundled", "B_Bundled", "C_Bundled"]:
+                parent_dir = os.path.join(dir, bundled_media_name)
+                os.makedirs(parent_dir)
+                for chapter_name in ["10", "Episode 2"]:
+                    image.save(os.path.join(parent_dir, chapter_name), "jpeg")
+
+    def test_custom_bundle(self):
+        server = self.media_reader.get_server(get_local_server_id(MANGA))
+        self.add_test_media(server)
+        self.assertTrue(self.media_reader.bundle_unread_chapters())
+
+    def test_custom_update(self):
+        server = self.media_reader.get_server(get_local_server_id(MANGA))
+        media_list = self.add_test_media(server)
+        assert media_list
+        for media_data in media_list:
+            assert not self.app.update_media(media_data)
+
+
 class ArgsTest(MinimalUnitTestClass):
     @patch('builtins.input', return_value='0')
     def test_arg(self, input):
         parse_args(app=self.media_reader, args=["auth"])
 
     def test_test_login(self):
-        parse_args(app=self.media_reader, args=["login", TestServerLogin.id])
         server = self.app.get_server(TestServerLogin.id)
+        assert server.needs_authentication()
+        parse_args(app=self.media_reader, args=["login", "--server", server.id])
+        assert not server.needs_authentication()
+        server.reset()
+        assert server.needs_authentication()
+        parse_args(app=self.media_reader, args=["login"])
         assert not server.needs_authentication()
 
     def test_autocomplete_not_found(self):
@@ -1152,7 +1194,7 @@ class PremiumTest(RealBaseUnitTestClass):
                 assert isinstance(data[0], dict)
 
     def test_test_login(self):
-        parse_args(app=self.media_reader, args=["login"])
+        self.app.test_login()
         for server in self.media_reader.get_servers():
             if server.has_login:
                 assert not server.needs_authentication()
