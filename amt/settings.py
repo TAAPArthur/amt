@@ -27,7 +27,7 @@ class Settings:
 
     threads = 8
     converters = [
-        ("ts", "mp4", "cat {} > {}.mp4", "rm {}")
+        ("ts", "mp4", "cat {} > {}", "rm {}")
     ]
 
     anime_viewer = "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media} "
