@@ -154,11 +154,11 @@ class Application(MediaReader):
     def get_all_single_names(self, media_type=None):
         return self.get_all_names(media_type=media_type, disallow_servers=True)
 
-    def test_login(self, server_ids=None):
+    def test_login(self, server_ids=None, force=False):
         failures = False
         for server in self.get_servers():
             if server.has_login and (not server_ids or server.id in server_ids):
-                if server.needs_authentication() and not server.relogin():
+                if (force or server.needs_authentication()) and not server.relogin():
                     logging.error("Failed to login into %s", server.id)
                     failures = True
         return failures

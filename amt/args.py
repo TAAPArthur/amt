@@ -125,7 +125,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         # credentials
         login_parser = sub_parsers.add_parser("login", description="Relogin to all servers")
-        login_parser.add_argument("servers", choices=app.get_servers_ids(), nargs="*")
+        login_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force re-login")
+        login_parser.add_argument("--servers", default=None, choices=app.get_servers_ids_with_logins(), nargs="*")
 
         # trackers and progress
         sub_parsers.add_parser("auth")
@@ -215,7 +216,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "load":
         app.load_from_tracker(user_name=namespace.name, exact=False, media_type_filter=namespace.manga_only or namespace.anime_only, local_only=namespace.local_only, update_progress_only=namespace.progress_only)
     elif action == "login":
-        app.test_login(namespace.servers)
+        app.test_login(namespace.servers, force=namespace.force)
     elif action == "mark-up-to-date":
         app.mark_up_to_date(namespace.name, media_type=namespace.manga_only or namespace.anime_only, N=namespace.N, force=namespace.force, abs=namespace.abs)
         app.list()
