@@ -52,6 +52,7 @@ class Server:
     def _request(self, get, url, **kwargs):
         logging.info("Making request to %s", url)
         logging.debug("Request args: %s ", kwargs)
+        kwargs["verify"] = self.settings.isVerifyingSSL()
         r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
         if r.status_code != 200:
             logging.warning(r)
