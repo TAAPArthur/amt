@@ -67,7 +67,7 @@ class Application(MediaReader):
         new_count = 0
 
         def clean_name(x):
-            return x.lower().replace(" ", "")
+            return re.sub(r"\W*", "", x.lower())
 
         unknown_media = []
         for entry in data:
@@ -97,8 +97,10 @@ class Application(MediaReader):
                 elif not local_only:
                     if not media_data:
                         media_data = self.search_add(entry["name"], media_type=media_type, exact=True)
-                    if not media_data and not exact:
+                    if not media_data and not exact and ":" in entry["name"]:
                         media_data = self.search_add(entry["name"].split(":")[0], media_type=media_type, exact=False)
+                    if not media_data and not exact and " " in entry["name"]:
+                        media_data = self.search_add(entry["name"].split()[0], media_type=media_type, exact=False)
                     if not media_data and not exact:
                         prefix = re.sub(r"\W*$", "", entry["name"])
                         if prefix != entry["name"]:
