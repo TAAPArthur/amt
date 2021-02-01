@@ -37,6 +37,7 @@ class Application(MediaReader):
         results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude)
         if len(results) == 0:
             return None
+        print("Looking for", term)
         self.print_results(results)
 
         media_data = self.select_media(results, "Select media to add: ")
@@ -128,7 +129,7 @@ class Application(MediaReader):
         for i, result in enumerate(self.get_media_in_library()):
             last_chapter_num = self.get_last_chapter_number(result)
             last_read = self.get_last_read(result)
-            print("{:4}|\t{}:{}\t{} {}\t{}/{}".format(i, result["server_id"], result["id"], result["name"], result["season_title"], last_read, last_chapter_num))
+            print("{:4}|\t{}\t{} {}\t{}/{}".format(i, self._get_global_id(result), result["name"], result["season_title"], last_read, last_chapter_num))
 
     def list_chapters(self, name):
         media_data = self._get_single_media(name=name)
