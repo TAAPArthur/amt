@@ -48,6 +48,7 @@ class Settings:
     cookie_files = ["/tmp/cookies.txt"]
     js_enabled_browser = True
     user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0"
+    _verify = True
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
@@ -83,7 +84,7 @@ class Settings:
 
     @classmethod
     def get_members(clazz):
-        return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("__")]
+        return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("_")]
 
     def set(self, name, value):
         if isinstance(self.get(name), bool) and not isinstance(value, bool):
@@ -167,6 +168,9 @@ class Settings:
 
     def store_secret(self, server_id, secret):
         self.store_credentials(server_id, secret, "token")
+
+    def isVerifyingSSL(self):
+        return self._verify
 
     def run_cmd(self, cmd, wd=None):
         subprocess.check_call(cmd, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
