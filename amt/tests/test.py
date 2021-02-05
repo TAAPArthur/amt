@@ -919,7 +919,7 @@ class ArgsTest(MinimalUnitTestClass):
         assert not len(self.media_reader.get_media_in_library())
         server = self.app.get_server(TestAnimeServer.id)
         media_data = server.get_media_data_from_url(TestAnimeServer.stream_url)
-        _, chapter_data = server.is_url_for_known_media(TestAnimeServer.stream_url, {media_data["id"]: media_data})
+        chapter_data = media_data["chapters"][server.get_chapter_id_for_url(TestAnimeServer.stream_url)]
 
         self.verify_download(media_data, chapter_data)
 
@@ -1049,7 +1049,7 @@ class ServerTest(RealBaseUnitTestClass):
         for server in self.media_reader.get_servers():
             server.settings.threads = 8
             with self.subTest(server=server.id, method="get_media_list"):
-                media_list = server.get_media_list()
+                media_list = server.search("One") or server.search("a")
                 assert media_list
                 assert isinstance(media_list, list)
                 assert all([isinstance(x, dict) for x in media_list])
@@ -1119,24 +1119,28 @@ class ServerTest(RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
-        ("269787", "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209"),
-        ("1019573", "1019574", "1019900", "https://www.funimation.com/shows/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?qid=b112d0129f243eda"),
+        ("1019573", "1019574", "1019900", "https://www.funimation.com/shows/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese"),
+        ("1079937", "1174339", "1174543", "https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b"),
         ("260315", "21563", "652193", "https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193"),
-        ("1079937", "1174339", "1174543", "https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b")
+        ("269787", "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209"),
     ]
 
     def test_media_steam(self):
         for media_id, season_id, chapter_id, url in self.streamable_urls:
             servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-            assert servers
-            for server in servers:
-                with self.subTest(url=url, server=server.id):
-                    media_data = server.get_media_data_from_url(url)
-                    assert media_data
-                    self.assertEqual(media_id, str(media_data["id"]))
-                    if season_id:
-                        self.assertEqual(season_id, str(media_data["season_id"]))
-                    self.assertTrue(chapter_id in media_data["chapters"])
+            with self.subTest(url=url):
+                assert servers
+                for server in servers:
+                    with self.subTest(url=url, server=server.id):
+                        media_data = server.get_media_data_from_url(url)
+                        assert media_data
+                        self.assertEqual(media_id, str(media_data["id"]))
+                        if season_id:
+                            self.assertEqual(season_id, str(media_data["season_id"]))
+                        self.assertTrue(chapter_id in media_data["chapters"])
+
+                        _, chapter_data = self.app.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
+                        self.assertEqual(str(chapter_data["id"]), str(chapter_id))
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):

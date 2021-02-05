@@ -343,13 +343,22 @@ class MediaReader:
         for bundle in bundled_data:
             self.media[bundle["media_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
+    def get_media_by_chapter_id(self, server_id, chapter_id, media_list=None):
+        if chapter_id:
+            for media in (media_list if media_list else self.get_media_in_library()):
+                if media["server_id"] == server_id:
+                    l = list(filter(lambda x: chapter_id in (x["id"], x["alt_id"]), media["chapters"].values()))
+                    if l:
+                        return media, l[0]
+        return None
+
     def stream(self, url, cont=True, download=False, quality=0):
         for server in self.get_servers():
             if server.can_stream_url(url):
-                known = server.is_url_for_known_media(url, {media["id"]: media for media in self.get_media_in_library() if media["server_id"] == server.id})
+                known = self.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url))
                 if not known:
                     media_data = server.get_media_data_from_url(url)
-                    known = server.is_url_for_known_media(url, {media_data["id"]: media_data})
+                    known = self.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
                 media_data, chapter = known
                 streamable_url = server.get_stream_url(media_data, chapter, quality=quality)
                 logging.info("Streaming %s", streamable_url)
@@ -364,6 +373,7 @@ class MediaReader:
                         chapter["read"] = True
                         if cont:
                             self.play(name=self._get_global_id(known[0]), cont=cont)
+                return
         logging.error("Could not find any matching server")
 
     def get_stream_url(self, name=None, shuffle=False):
