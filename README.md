@@ -44,6 +44,7 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 ### Anime
 * [Crunchyroll](https://crunchyroll.com)
 * [Funimation](https://funimation.com)
+* [Vrv](https://vrv.co)
 
 ### Trackers
 * [Anilist](https://anilist.co/home)

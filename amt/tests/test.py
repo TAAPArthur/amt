@@ -1124,6 +1124,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("1079937", "1174339", "1174543", "https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b"),
         ("260315", "21563", "652193", "https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193"),
         ("269787", "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209"),
+        ("GRMG8ZQZR", "GYVNM8476", "GR3VWXP96", "https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates"),
     ]
 
     def test_media_steam(self):
