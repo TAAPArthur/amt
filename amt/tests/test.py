@@ -2,6 +2,7 @@ import inspect
 import logging
 import os
 import pkgutil
+import re
 import shutil
 import subprocess
 import sys
@@ -119,6 +120,7 @@ class BaseUnitTestClass(unittest.TestCase):
         media_list = server.get_media_list() if server else self.test_server.get_media_list() + self.test_anime_server.get_media_list()
         for media_data in media_list:
             self.media_reader.add_media(media_data, no_update=no_update)
+        assert media_list
         return media_list
 
     def assertAllChaptersRead(self, media_type=None):
@@ -1047,7 +1049,6 @@ class ServerTest(RealBaseUnitTestClass):
     def test_get_media_list(self):
 
         for server in self.media_reader.get_servers():
-            server.settings.threads = 8
             with self.subTest(server=server.id, method="get_media_list"):
                 media_list = server.search("One") or server.search("a")
                 assert media_list
