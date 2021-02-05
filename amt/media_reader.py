@@ -380,14 +380,14 @@ class MediaReader:
             if chapter["number"] in num_list:
                 yield server, media_data, chapter
 
-    def play(self, name=None, shuffle=False, cont=False, num_list=None):
+    def play(self, name=None, shuffle=False, cont=False, num_list=None, quality=0):
 
         for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle)):
             dir_path = server._get_dir(media_data, chapter)
             if not server.is_fully_downloaded(media_data, chapter):
                 server.pre_download(media_data, chapter, dir_path=dir_path)
             success = self.settings.open_anime_viewer(
-                server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter),
+                server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter, quality=quality),
                 title=server.get_media_title(media_data, chapter), wd=dir_path)
             if success:
                 chapter["read"] = True
