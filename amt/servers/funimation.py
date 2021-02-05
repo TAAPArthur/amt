@@ -115,11 +115,8 @@ class Funimation(Server):
                         special = chapter["mediaCategory"] != "episode"
                         self.update_chapter_data(media_data, id=exp['experienceId'], number=chapter['episodeId'], title=chapter['episodeTitle'], premium=premium, special=special)
 
-    def can_stream_url(self, url):
-        return self.stream_url_regex.match(url)
-
     def get_media_data_from_url(self, url):
-        chapter_id, media_id = self._get_episode_id(url)
+        chapter_id, _ = self._get_episode_id(url)
         r = self.session_get_cache(self.show_api_url.format(chapter_id))
         data = r.json()
         for season in data["seasons"]:
@@ -132,12 +129,9 @@ class Funimation(Server):
                         self.update_media_data(media_data, r=r)
                         return media_data
 
-    def is_url_for_known_media(self, url, known_media):
+    def get_media_by_chapter_id(self, url, known_media):
         chapter_id, media_id = self._get_episode_id(url)
-        for media in known_media.values():
-            if str(chapter_id) in media["chapters"]:
-                return media, media["chapters"][str(chapter_id)]
-        return False
+        return chapter_id
 
     def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
         if url:
@@ -153,9 +147,6 @@ class Funimation(Server):
             if item["videoType"] == "mp4":
                 return [item["src"]]
         return [r.json()["items"][0]["src"]]
-
-    def get_media_chapter_data(self, media_data, chapter_data):
-        return [self.create_page_data(url=self.get_stream_url(media_data, chapter_data))]
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
         r = self.session_get_protected(self.show_api_url.format(chapter_data["id"]))
@@ -177,8 +168,3 @@ class Funimation(Server):
 
     def _get_page_path(self, media_data, chapter_data, dir_path, index, page_data):
         return os.path.join(dir_path, "{}.{}".format(chapter_data["id"], page_data["ext"]))
-
-    def save_chapter_page(self, page_data, path):
-        r = self.session_get(page_data["url"], stream=True)
-        with open(path, 'wb') as fp:
-            fp.write(r.content)

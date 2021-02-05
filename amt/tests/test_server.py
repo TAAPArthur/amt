@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from shlex import quote
 
@@ -99,17 +100,15 @@ class TestAnimeServer(TestServer):
     id = 'test_server_anime'
     media_type = ANIME
     _prefix = "Anime"
-    stream_url = "test_url"
     extension = "ts"
     TEST_VIDEO_PATH = ""
+    stream_url = "https://www.test/url/4"
+    stream_url_regex = re.compile(r".*/([0-9])")
 
-    def can_stream_url(self, url):
-        return url == TestAnimeServer.stream_url
-
-    def is_url_for_known_media(self, url, known_media):
-        media_id = self.get_media_list()[1]["id"]
-        if self.can_stream_url(url) and media_id in known_media:
-            return known_media[media_id], list(known_media[media_id]["chapters"].values())[0]
+    def get_chapter_id_for_url(self, url):
+        assert self.can_stream_url(url)
+        assert url == self.stream_url
+        return self.stream_url_regex.match(url).group(1)
 
     def get_media_data_from_url(self, url):
         assert self.can_stream_url(url)

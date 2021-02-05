@@ -23,9 +23,6 @@ class CrunchyrollAnime(Crunchyroll):
 
     extension = "ts"
 
-    def get_media_list(self):
-        return self.search("a")
-
     def _create_media_data(self, series_id, item_alt_id, season_id=None):
         r = self.session_get(self.series_url.format(self.get_session_id(), series_id))
         season_data = r.json()["data"]
@@ -59,9 +56,6 @@ class CrunchyrollAnime(Crunchyroll):
 
                 self.update_chapter_data(media_data, id=chapter['media_id'], number=chapter['episode_number'], title=chapter['name'], premium=not chapter["free_available"], special=special)
 
-    def can_stream_url(self, url):
-        return self.stream_url_regex.match(url)
-
     def get_media_data_from_url(self, url):
 
         match = self.stream_url_regex.match(url)
@@ -75,12 +69,9 @@ class CrunchyrollAnime(Crunchyroll):
         assert chapter_id in media_data["chapters"]
         return media_data
 
-    def is_url_for_known_media(self, url, known_media):
+    def get_chapter_id_for_url(self, url):
         chapter_id = url.split("-")[-1]
-        for media in known_media.values():
-            if chapter_id in media["chapters"]:
-                return media, media["chapters"][chapter_id]
-        return False
+        return chapter_id
 
     def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
         chapter_id = url.split("-")[-1] if url else chapter_data["id"]
@@ -109,6 +100,3 @@ class CrunchyrollAnime(Crunchyroll):
 
     def get_media_chapter_data(self, media_data, chapter_data):
         return self.get_stream_data(media_data, chapter_data)
-
-    def save_chapter_page(self, page_data, path):
-        return self.save_stream(page_data, path)
