@@ -41,7 +41,7 @@ class Settings:
     free_only = False
     shell = True
     max_retires = 3
-    status_to_retry = [500, 502, 504]
+    status_to_retry = [429, 500, 502, 504]
     force_odd_pages = True
     env_override_prefix = "PASSWORD_OVERRIDE_"
     incapsula_prompt = ""
