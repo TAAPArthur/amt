@@ -68,7 +68,7 @@ class TestApplication(Application):
                 enabled_servers = set(os.getenv("ENABLE_ONLY_SERVERS").split(","))
                 [servers.append(x) for x in SERVERS if x.id in enabled_servers]
             else:
-                servers += SERVERS
+                servers += [s for s in SERVERS if not s.external]
             trackers += TRACKERS
         elif local:
             settings.js_enabled_browser = ""
