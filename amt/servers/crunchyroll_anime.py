@@ -3,12 +3,11 @@ import re
 from shlex import quote
 
 from ..server import ANIME
-from .crunchyroll import Crunchyroll
+from .crunchyroll import GenericCrunchyrollServer
 
 
-class CrunchyrollAnime(Crunchyroll):
+class CrunchyrollAnime(GenericCrunchyrollServer):
     id = 'crunchyroll_anime'
-    alias = Crunchyroll.id
 
     api_base_url = 'http://api.crunchyroll.com'
     search_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}&filter=prefix:{}"

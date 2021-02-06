@@ -4,41 +4,20 @@ from threading import Lock
 from ..server import Server
 
 
-class Crunchyroll(Server):
-    id = 'crunchyroll'
-    lang = 'en'
-    locale = 'enUS'
-    has_login = True
+class GenericCrunchyrollServer(Server):
+    class_lock = Lock()
+    alias = "crunchyroll"
 
-    base_url = 'https://www.crunchyroll.com'
-    manga_url = base_url + '/comics/manga/{0}/volumes'
-
+    api_auth_url = 'https://api-manga.crunchyroll.com/cr_authenticate?session_id={}&version=0&format=json'
     start_session_url = 'https://api.crunchyroll.com/start_session.0.json'
     login_url = 'https://api.crunchyroll.com/login.0.json'
 
-    api_base_url = 'https://api-manga.crunchyroll.com'
-    api_auth_url = api_base_url + '/cr_authenticate?session_id={}&version=0&format=json'
-    api_series_url = api_base_url + '/series?sort=popular'
-    api_chapter_url = api_base_url + '/list_chapter?session_id={}&chapter_id={}&auth={}'
-    api_chapters_url = api_base_url + '/chapters?series_id={}'
-
-    api_auth_token = None
-    _api_session_id = None
-    possible_page_url_keys = ['encrypted_mobile_image_url', 'encrypted_composed_image_url']
-    page_url_key = possible_page_url_keys[0]
-
     _access_token = 'WveH9VkPLrXvuNm'
     _access_type = 'com.crunchyroll.crunchyroid'
-    class_lock = Lock()
-
-    @staticmethod
-    def decode_image(buffer):
-        # Don't know why 66 is special
-        return bytes(b ^ 66 for b in buffer)
 
     @property
     def lock(self):
-        return Crunchyroll.class_lock
+        return GenericCrunchyrollServer.class_lock
 
     def get_session_id(self):
         if Crunchyroll._api_session_id:
@@ -85,6 +64,31 @@ class Crunchyroll(Server):
             return True
         logging.debug("Login failed; response: %s", response)
         return False
+
+
+class Crunchyroll(GenericCrunchyrollServer):
+    id = 'crunchyroll'
+    lang = 'en'
+    locale = 'enUS'
+    has_login = True
+
+    base_url = 'https://www.crunchyroll.com'
+    manga_url = base_url + '/comics/manga/{0}/volumes'
+
+    api_base_url = 'https://api-manga.crunchyroll.com'
+    api_series_url = api_base_url + '/series?sort=popular'
+    api_chapter_url = api_base_url + '/list_chapter?session_id={}&chapter_id={}&auth={}'
+    api_chapters_url = api_base_url + '/chapters?series_id={}'
+
+    api_auth_token = None
+    _api_session_id = None
+    possible_page_url_keys = ['encrypted_mobile_image_url', 'encrypted_composed_image_url']
+    page_url_key = possible_page_url_keys[0]
+
+    @staticmethod
+    def decode_image(buffer):
+        # Don't know why 66 is special
+        return bytes(b ^ 66 for b in buffer)
 
     def get_media_list(self):
         r = self.session_get(self.api_series_url)
