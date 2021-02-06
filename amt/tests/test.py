@@ -1200,10 +1200,11 @@ class PremiumTest(RealBaseUnitTestClass):
                 assert isinstance(data[0], dict)
 
     def test_test_login(self):
-        self.app.test_login()
+        assert self.app.test_login()
         for server in self.media_reader.get_servers():
             if server.has_login:
-                assert not server.needs_authentication()
+                with self.subTest(server=server.id):
+                    assert not server.needs_authentication()
 
 
 class TrackerTest(RealBaseUnitTestClass):

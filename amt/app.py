@@ -159,7 +159,7 @@ class Application(MediaReader):
                 if (force or server.needs_authentication()) and not server.relogin():
                     logging.error("Failed to login into %s", server.id)
                     failures = True
-        return failures
+        return not failures
 
     def upgrade_state(self):
         media = self.get_media_in_library()

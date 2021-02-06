@@ -45,8 +45,7 @@ class Crunchyroll(Server):
             return Crunchyroll._api_session_id
         if 'session_id' in self.session.cookies:
             Crunchyroll._api_session_id = self.session.cookies['session_id']
-            if not self.needs_authentication():
-                return Crunchyroll._api_session_id
+            return Crunchyroll._api_session_id
         data = self.session_post(
             self.start_session_url,
             data={
@@ -63,6 +62,8 @@ class Crunchyroll(Server):
         self.is_premium = data['data']["user"]['premium']
 
     def needs_authentication(self):
+        if self.api_auth_token:
+            return False
         r = self.session_get(self.api_auth_url.format(self.get_session_id()))
         data = r.json()
         if data and 'data' in data:
