@@ -42,6 +42,7 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 * mangadex (unofficial)
 
 ### Anime
+* [Animelab](https://animelab.com/) (WIP)
 * [Crunchyroll](https://crunchyroll.com)
 * [Funimation](https://funimation.com)
 * [Vrv](https://vrv.co)
