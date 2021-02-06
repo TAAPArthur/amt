@@ -347,9 +347,7 @@ class MediaReader:
         if chapter_id:
             for media in (media_list if media_list else self.get_media_in_library()):
                 if media["server_id"] == server_id:
-                    if chapter_id in media["chapters"]:
-                        return media, media["chapters"][chapter_id]
-                    l = list(filter(lambda x: x["alt_id"] == chapter_id, media["chapters"].values()))
+                    l = list(filter(lambda x: chapter_id in (x["id"], x["alt_id"]), media["chapters"].values()))
                     if l:
                         return media, l[0]
         return None
