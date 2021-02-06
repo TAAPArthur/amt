@@ -58,7 +58,6 @@ class TestApplication(Application):
         settings.password_manager_enabled = False
         settings.shell = True
         settings.threads = 0
-        settings.js_enabled_browser = ""
 
         servers = list(TEST_SERVERS)
         trackers = list(TEST_TRACKERS)
@@ -66,9 +65,9 @@ class TestApplication(Application):
             settings.threads = Settings.threads
             if os.getenv("ENABLE_ONLY_SERVERS"):
                 enabled_servers = set(os.getenv("ENABLE_ONLY_SERVERS").split(","))
-                [servers.append(x) for x in SERVERS if x.id in enabled_servers]
+                servers = [x for x in SERVERS if x.id in enabled_servers]
             else:
-                servers += [s for s in SERVERS if not s.external]
+                servers = [s for s in SERVERS if not s.external]
             trackers += TRACKERS
         elif local:
             settings.js_enabled_browser = ""
@@ -1047,22 +1046,27 @@ class ServerTest(RealBaseUnitTestClass):
                 server.session_get_protected("https://" + server.domain)
 
     def test_get_media_list(self):
-
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id, method="get_media_list"):
-                media_list = server.search("One") or server.search("a")
+                media_list = server.search("One Piece")
+                if not media_list:
+                    media_list = server.search("Attack")
+                if not media_list:
+                    self.skipTest("Can't load media")
                 assert media_list
                 assert isinstance(media_list, list)
                 assert all([isinstance(x, dict) for x in media_list])
                 assert all([x["media_type"] == server.media_type for x in media_list])
+            if not media_list:
+                continue
             with self.subTest(server=server.id, method="search"):
                 search_media_list = server.search(media_list[0]["name"])
                 assert isinstance(search_media_list, list)
                 assert all([isinstance(x, dict) for x in search_media_list])
 
             for i in (0, -1):
-                media_data = media_list[i]
                 with self.subTest(server=server.id, method="update_media_data", i=i):
+                    media_data = media_list[i]
                     return_val = server.update_media_data(media_data)
                     assert not return_val
                     assert isinstance(media_data["chapters"], dict)
@@ -1072,20 +1076,26 @@ class ServerTest(RealBaseUnitTestClass):
                         gaps = sum([numbers[i + 1] - numbers[i] > 1 for i in range(len(numbers) - 1)])
                         self.assertLessEqual(gaps, 1)
 
-    @unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
-    def test_media_download(self):
+    def test_media_download_stream(self, stream=False):
         for server in self.media_reader.get_servers():
-            media_data = server.get_media_list()[0]
-            server.update_media_data(media_data)
-            with self.subTest(server=server.id, method="download"):
+            with self.subTest(server=server.id):
+                media_list = server.get_media_list()
+                if not media_list:
+                    self.skipTest("Can't load media")
+                media_data = server.get_media_list()[0]
+                self.app.add_media(media_data)
                 for chapter_data in filter(lambda x: not x["premium"], media_data["chapters"].values()):
-                    assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=2)
-                    self.verify_download(media_data, chapter_data)
-                    assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+                    with self.subTest(server=server.id, stream=True):
+                        if media_data["media_type"] & ANIME:
+                            assert self.app.play(self.app._get_global_id(media_data), num_list=[chapter_data["number"]])
+                    with self.subTest(server=server.id, stream=False):
+                        unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
+                        assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=2)
+                        self.verify_download(media_data, chapter_data)
+                        assert not server.download_chapter(media_data, chapter_data, page_limit=1)
                     break
 
     def test_login_fail(self):
-        self.media_reader.get_server(TestServerLogin.id).fail_login = True
         for server in self.media_reader.get_servers():
             if not server.has_login:
                 continue
@@ -1143,6 +1153,9 @@ class ServerStreamTest(RealBaseUnitTestClass):
 
                         _, chapter_data = self.app.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
                         self.assertEqual(str(chapter_data["id"]), str(chapter_id))
+                        assert self.app.stream(url)
+                        self.app.add_from_url(url)
+                        assert self.app.play(self.app._get_global_id(media_data))
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):
