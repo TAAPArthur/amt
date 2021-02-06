@@ -122,7 +122,7 @@ class Application(MediaReader):
         return count, new_count
 
     def list_servers(self):
-        for id in self.get_servers_ids():
+        for id in sorted(self.get_servers_ids()):
             print(id)
 
     def list(self):
