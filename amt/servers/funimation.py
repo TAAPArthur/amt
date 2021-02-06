@@ -47,7 +47,6 @@ class Funimation(Server):
     @property
     def is_premium(self):
         state = self.session.cookies.get("rlildup", domain=self.domain)
-        print("State", state)
         return "premium" in state.lower() if state else False
 
     def login(self, username, password):
@@ -111,9 +110,10 @@ class Funimation(Server):
                     if chapter["languages"] and "japanese" in chapter["languages"]:
                         video = chapter["languages"]["japanese"]["alpha"]
                         exp = video["simulcast"] if "simulcast" in video else video["uncut"]
+                        alt_exp = video["uncut"] if "uncut" in video else video["simulcast"]
                         premium = exp["svodOnly"]
                         special = chapter["mediaCategory"] != "episode"
-                        self.update_chapter_data(media_data, id=exp['experienceId'], number=chapter['episodeId'], title=chapter['episodeTitle'], premium=premium, special=special)
+                        self.update_chapter_data(media_data, id=exp['experienceId'], number=chapter['episodeId'], title=chapter['episodeTitle'], premium=premium, special=special, alt_id=alt_exp["experienceId"])
 
     def get_media_data_from_url(self, url):
         chapter_id, _ = self._get_episode_id(url)
@@ -123,13 +123,16 @@ class Funimation(Server):
             for episode in season["episodes"]:
                 for lang in episode["languages"].values():
                     video = lang["alpha"]
-                    exp = video["simulcast"] if "simulcast" in video else video["uncut"]
-                    if int(exp["experienceId"]) == int(chapter_id):
-                        media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id)
-                        self.update_media_data(media_data, r=r)
-                        return media_data
+                    for typeKey in ("simulcast", "uncut"):
+                        if typeKey not in video:
+                            continue
+                        exp = video[typeKey]
+                        if int(exp["experienceId"]) == int(chapter_id):
+                            media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id)
+                            self.update_media_data(media_data, r=r)
+                            return media_data
 
-    def get_media_by_chapter_id(self, url, known_media):
+    def get_chapter_id_for_url(self, url):
         chapter_id, media_id = self._get_episode_id(url)
         return chapter_id
 
