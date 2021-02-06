@@ -352,7 +352,7 @@ class MediaReader:
                         return media, l[0]
         return None
 
-    def stream(self, url, cont=True, download=False, quality=0):
+    def stream(self, url, cont=False, download=False, quality=0):
         for server in self.get_servers():
             if server.can_stream_url(url):
                 known = self.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url))
@@ -372,9 +372,10 @@ class MediaReader:
                     if self.settings.open_anime_viewer(streamable_url, server.get_media_title(media_data, chapter), wd=dir_path):
                         chapter["read"] = True
                         if cont:
-                            self.play(name=self._get_global_id(known[0]), cont=cont)
-                return
+                            return 1 + self.play(name=self._get_global_id(known[0]), cont=cont)
+                return 1
         logging.error("Could not find any matching server")
+        return False
 
     def get_stream_url(self, name=None, shuffle=False):
         for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
@@ -392,6 +393,7 @@ class MediaReader:
 
     def play(self, name=None, shuffle=False, cont=False, num_list=None, quality=0):
 
+        num = 0
         for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle)):
             dir_path = server._get_dir(media_data, chapter)
             if not server.is_fully_downloaded(media_data, chapter):
@@ -400,12 +402,13 @@ class MediaReader:
                 server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter, quality=quality),
                 title=server.get_media_title(media_data, chapter), wd=dir_path)
             if success:
+                num += 1
                 chapter["read"] = True
                 if not cont:
                     break
             else:
                 return False
-        return True
+        return num
 
     def update(self, download=False, media_type_to_download=MANGA):
         logging.info("Updating: download %s", download)
