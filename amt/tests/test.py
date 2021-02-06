@@ -487,6 +487,9 @@ class MediaReaderTest(BaseUnitTestClass):
         self._prepare_for_bundle(TestAnimeServer.id)
         self.assertFalse(self.media_reader.bundle_unread_chapters())
 
+    def test_stream_anime_bad_url(self):
+        assert not self.media_reader.stream("bad_url")
+
     def test_play_anime(self):
         self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
         assert self.media_reader.play(cont=True)
@@ -625,6 +628,12 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["login"])
         assert not server.needs_authentication()
 
+    def test_test_login_fail(self):
+        server = self.app.get_server(TestServerLogin.id)
+        server.fail_login = True
+        parse_args(app=self.media_reader, args=["login", "--server", server.id])
+        assert server.needs_authentication()
+
     def test_autocomplete_not_found(self):
         with patch.dict(sys.modules, {'argcomplete': None}):
             parse_args(app=self.media_reader, args=["list"])
@@ -635,6 +644,9 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(self.app.session.cookies.get(key), value)
         parse_args(app=self.media_reader, args=["--clear-cookies", "list"])
         self.assertNotEqual(self.app.session.cookies.get(key), value)
+
+    def test_js_cookie_parser(self):
+        parse_args(app=self.media_reader, args=["js-cookie-parser"])
 
     def test_incap_cookies(self):
         value = "value"

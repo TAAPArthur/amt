@@ -71,29 +71,29 @@ class TestServer(Server):
         image = Image.new('RGB', (100, 100))
         image.save(path, self.extension)
 
-    def _request_or_prompt_incapsula(self, url):
-        pass
-
 
 class TestServerLogin(TestServer):
     id = 'test_server_login'
     counter = 0
     fail_login = False
     has_login = True
+    logged_in = False
 
     def login(self, username, password):
         self.counter += 1
         self.is_premium = not self.fail_login
-        return not self.fail_login
+        self.logged_in = not self.fail_login
+        return self.logged_in
 
     def relogin(self):
         return self.login(None, None)
 
     def needs_authentication(self):
-        return not self.counter
+        return not self.logged_in
 
     def reset(self):
         self.counter = 0
+        self.logged_in = False
 
 
 class TestAnimeServer(TestServer):
@@ -104,6 +104,7 @@ class TestAnimeServer(TestServer):
     TEST_VIDEO_PATH = ""
     stream_url = "https://www.test/url/4"
     stream_url_regex = re.compile(r".*/([0-9])")
+    is_protected = True
 
     def get_chapter_id_for_url(self, url):
         assert self.can_stream_url(url)
@@ -130,3 +131,6 @@ class TestAnimeServer(TestServer):
             TestAnimeServer.TEST_VIDEO_PATH = TEST_BASE + "test_video.mp4"
             subprocess.check_call(["ffmpeg", "-y", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", TestAnimeServer.TEST_VIDEO_PATH])
         os.link(TestAnimeServer.TEST_VIDEO_PATH, path)
+
+    def session_get_protected(self, url, **kwargs):
+        return None
