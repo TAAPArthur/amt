@@ -81,6 +81,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         bundle_parser = sub_parsers.add_parser("bundle", help="Bundle individual manga pages into a single file")
         bundle_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
         bundle_parser.add_argument("-l", "--limit", default=0, type=int)
+        bundle_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
         bundle_parser.add_argument("name", choices=app.get_all_names(MANGA), default=None, nargs="?")
 
         read_parser = sub_parsers.add_parser("read", help="Open a saved bundle for reading. If the command exits with status 0, then the container chapters will be marked read")
@@ -202,7 +203,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         secret = tracker.auth()
         app.settings.store_secret(tracker.id, secret)
     elif action == "bundle":
-        print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit))
+        print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit, ignore_errors=namespace.ignore_errors))
     elif action == "clean-bundle":
         app.clean_bundles()
     elif action == "clean":

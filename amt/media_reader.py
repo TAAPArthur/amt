@@ -308,7 +308,7 @@ class MediaReader:
     def _create_bundle_data_entry(self, media_data, chapter_data):
         return dict(media_id=self._get_global_id(media_data), chapter_id=chapter_data["id"], media_name=media_data["name"], chapter_num=chapter_data["number"])
 
-    def bundle_unread_chapters(self, name=None, shuffle=False, limit=None):
+    def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
         unreads = []
         paths = []
         bundle_data = []
@@ -316,7 +316,11 @@ class MediaReader:
         def func(x):
             server, media_data, chapter = x
             server.download_chapter(media_data, chapter)
-        self.for_each(func, self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit), raiseException=True)
+        try:
+            self.for_each(func, self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit), raiseException=True)
+        except:
+            if not ignore_errors:
+                raise
 
         for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit):
             if server.is_fully_downloaded(media_data, chapter):
