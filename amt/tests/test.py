@@ -30,9 +30,6 @@ TEST_HOME = TEST_BASE + "test_home/"
 
 
 logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)
-logger = logging.getLogger()
-stream_handler = logging.StreamHandler(sys.stdout)
-logger.addHandler(stream_handler)
 
 TEST_SERVERS = set()
 TEST_TRACKERS = set()
@@ -78,6 +75,7 @@ class TestApplication(Application):
         assert len(self.get_trackers()) == len(trackers)
         assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
+        self.settings.suppress_cmd_output = True
         self.settings.anime_viewer = "echo {media} {title}"
         self.settings.manga_viewer = "[ -f {} ]"
         self.settings.segment_viewer = "ls {media}; echo {title}"
@@ -90,7 +88,6 @@ class BaseUnitTestClass(unittest.TestCase):
     local = False
 
     def __init__(self, methodName='runTest'):
-        stream_handler.stream = sys.stdout
         super().__init__(methodName=methodName)
         self.init()
 
@@ -98,6 +95,10 @@ class BaseUnitTestClass(unittest.TestCase):
         pass
 
     def setUp(self):
+        self.stream_handler = logging.StreamHandler(sys.stdout)
+        logger = logging.getLogger()
+        logger.handlers = []
+        logger.addHandler(self.stream_handler)
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         self.app = TestApplication(self.real, self.local)
         self.media_reader = self.app
@@ -109,6 +110,7 @@ class BaseUnitTestClass(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         self.app.session.close()
+        logging.getLogger().removeHandler(self.stream_handler)
 
     def add_arbitrary_media(self):
         server = self.media_reader.get_server(TestServer.id)
@@ -140,7 +142,7 @@ class BaseUnitTestClass(unittest.TestCase):
                 assert len(filenames) > 1, f"files: {filenames}, dirnames: {dirnames}"
                 if not file_name.startswith("."):
                     path = os.path.join(dir_path, dirpath, file_name)
-                    subprocess.check_call(f"ls {path}", shell=True)
+                    subprocess.check_call(f"[ -f {path} ]", shell=True)
                     if media_data["media_type"] == MANGA:
                         with open(path, "rb") as img_file:
                             img = Image.open(img_file)
@@ -194,7 +196,7 @@ class SettingsTest(BaseUnitTestClass):
 
     def test_credentials(self):
         self.settings.password_manager_enabled = True
-        self.settings.password_load_cmd = "cat {}{}".format(TEST_HOME, "{}")
+        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
         self.settings.password_save_cmd = r"cat - >> {}{}".format(TEST_HOME, "{}")
         server_id = "test"
         assert not self.settings.get_credentials(server_id)

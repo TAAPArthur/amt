@@ -5,7 +5,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from shlex import quote
-from subprocess import CalledProcessError
+from subprocess import DEVNULL, CalledProcessError
 
 from . import cookie_manager
 from .cache import Cache
@@ -49,6 +49,7 @@ class Settings:
     js_enabled_browser = True
     user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0"
     _verify = True
+    suppress_cmd_output = False
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
@@ -173,7 +174,7 @@ class Settings:
         return self._verify
 
     def run_cmd(self, cmd, wd=None):
-        subprocess.check_call(cmd, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
+        subprocess.check_call(cmd, stdout=DEVNULL if self.suppress_cmd_output else None, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
 
     def bundle(self, img_dirs):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
