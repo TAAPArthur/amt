@@ -497,6 +497,20 @@ class MediaReaderTest(BaseUnitTestClass):
         assert self.media_reader.play(cont=True)
         assert all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()])
 
+    def test_play_offset_anime(self):
+        self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
+        self.media_reader.offset(TestAnimeServer.id, 1)
+        self.media_reader.update()
+        chapters = [x for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values()]
+        assert chapters
+        assert [x["read"] for x in chapters if x["number"] <= 0]
+        assert self.media_reader.play(cont=True)
+
+        assert all([x["read"] for x in chapters if x["number"] > 0])
+        assert not any([x["read"] for x in chapters if x["number"] <= 0])
+        assert self.media_reader.play(cont=True, any_unread=True)
+        assert all([x["read"] for x in chapters])
+
     def test_play_anime_downloaded(self):
         self._prepare_for_bundle(TestAnimeServer.id, no_download=False)
         assert self.media_reader.play(cont=True)

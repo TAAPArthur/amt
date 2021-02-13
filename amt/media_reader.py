@@ -222,12 +222,14 @@ class MediaReader:
     def _get_single_media(self, media_type=ALL_MEDIA, name=None):
         return next(self._get_media(media_type=media_type, name=name))
 
-    def _get_unreads(self, media_type, name=None, shuffle=False, limit=None):
+    def _get_unreads(self, media_type, name=None, shuffle=False, limit=None, any_unread=False):
         count = 0
         for media_data in self._get_media(media_type, name, shuffle):
             server = self.get_server(media_data["server_id"])
+
+            lastRead = self.get_last_read(media_data)
             for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
-                if not chapter["read"]:
+                if not chapter["read"] and (any_unread or chapter["number"] > lastRead):
                     yield server, media_data, chapter
                     count += not chapter["special"]
                     if count == limit:
@@ -258,7 +260,7 @@ class MediaReader:
         return max(media_data["chapters"].values(), key=lambda x: x["number"])["number"] if media_data["chapters"] else 0
 
     def get_last_read(self, media_data):
-        return max(filter(lambda x: x["read"], media_data["chapters"].values()), key=lambda x: x["number"], default={"number": -1})["number"]
+        return max(filter(lambda x: x["read"], media_data["chapters"].values()), key=lambda x: x["number"], default={"number": 0})["number"]
 
     def offset(self, name, offset):
         for media_data in self._get_media(name=name):
@@ -395,10 +397,10 @@ class MediaReader:
             if chapter["number"] in num_list:
                 yield server, media_data, chapter
 
-    def play(self, name=None, shuffle=False, cont=False, num_list=None, quality=0):
+    def play(self, name=None, shuffle=False, cont=False, num_list=None, quality=0, any_unread=False):
 
         num = 0
-        for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle)):
+        for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle, any_unread=any_unread)):
             dir_path = server._get_dir(media_data, chapter)
             if not server.is_fully_downloaded(media_data, chapter):
                 server.pre_download(media_data, chapter, dir_path=dir_path)

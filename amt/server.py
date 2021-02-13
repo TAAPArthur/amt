@@ -294,10 +294,12 @@ class Server:
                 number = float(number.replace("-", "."))
         elif number is None:
             number = 0
-        if media_data["offset"]:
-            number -= media_data["offset"]
         if number % 1 == 0:
             number = int(number)
+        if media_data["offset"]:
+            number -= media_data["offset"]
+            if number % 1 != 0:
+                number = round(number, 4)
 
         new_values = dict(id=id, title=title, number=number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles)
         if id in media_data["chapters"]:

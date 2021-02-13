@@ -97,6 +97,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         play_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
         play_parser.add_argument("-c", "--cont", default=False, action="store_const", const=True, help="Keep playing until all streams have =been consumed or the player exits with non-zero status")
         play_parser.add_argument("--quality", "-q", default=0, type=int)
+        play_parser.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
         play_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
         play_parser.add_argument("num", default=None, nargs="*", type=float)
 
@@ -234,7 +235,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "get-file":
         print(app.settings.get(f"get_{namespace.file}")())
     elif action == "play":
-        print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle, num_list=namespace.num, quality=namespace.quality))
+        print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle, num_list=namespace.num, quality=namespace.quality, any_unread=namespace.any_unread))
     elif action == "read":
         print(app.read_bundle(namespace.name))
     elif action == "migrate":

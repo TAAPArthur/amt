@@ -58,8 +58,9 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=23, title="Chapter3", number=2, date="2020-07-08"),
             self.update_chapter_data(media_data, id=24, title="Chapter4", number=3, date="2020-07-08"),
         elif media_id == 4:
-            self.update_chapter_data(media_data, id=25, title="Chapter1", number=1, date="1998-08-10"),
-            self.update_chapter_data(media_data, id=26, title="Chapter1", number=0, date="1998-08-10"),
+            self.update_chapter_data(media_data, id=25, title="Chapter1", number=2, date="1998-08-10"),
+            self.update_chapter_data(media_data, id=26, title="Chapter1", number=1, date="1998-08-10"),
+            self.update_chapter_data(media_data, id=27, title="Chapter1", number=0.5, date="1998-08-10", special=True),
 
     def get_media_chapter_data(self, media_data, chapter_data):
         self.maybe_inject_error()
