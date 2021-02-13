@@ -184,6 +184,15 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
 
 
 class SettingsTest(BaseUnitTestClass):
+
+    separators = ("\t", "\n", "\r", "some_string")
+
+    def setUp(self):
+        super().setUp()
+        self.settings.password_manager_enabled = True
+        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
+        self.settings.password_save_cmd = r"cat - > {}{}".format(TEST_HOME, "{}")
+
     def test_settings_save_load(self):
         self.settings.password_save_cmd = "dummy_cmd"
         self.settings.save()
@@ -195,9 +204,6 @@ class SettingsTest(BaseUnitTestClass):
         assert not self.settings.load_js_cookies(None, None)
 
     def test_credentials(self):
-        self.settings.password_manager_enabled = True
-        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
-        self.settings.password_save_cmd = r"cat - >> {}{}".format(TEST_HOME, "{}")
         server_id = "test"
         assert not self.settings.get_credentials(server_id)
         username, password = "user", "pass"
@@ -210,17 +216,29 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.store_secret(tracker_id, secret)
         assert secret == self.settings.get_secret(tracker_id)
 
+    def test_credentials_seperator(self):
+
+        username, password = "user", "pass"
+        for sep in self.separators:
+            self.settings.credential_separator = sep
+            with self.subTest(sep=sep):
+                self.settings.store_credentials(TestServer.id, username, password)
+                self.assertEqual((username, password), self.settings.get_credentials(TestServer.id))
+
     def test_credentials_override(self):
         self.settings.env_override_prefix = "prefix"
         server_id = "test"
         username, password = "user", "pass"
-        os.environ[self.settings.env_override_prefix + server_id] = f"{username}\t{password}"
-        try:
-            self.assertEquals(username, self.settings.get_credentials(server_id)[0])
-            self.assertEquals(password, self.settings.get_credentials(server_id)[1])
-            assert not self.settings.get_credentials("bad_id")
-        finally:
-            del os.environ[self.settings.env_override_prefix + server_id]
+        for sep in self.separators:
+            self.settings.credential_separator = sep
+            with self.subTest(sep=sep):
+                os.environ[self.settings.env_override_prefix + server_id] = f"{username}{sep}{password}"
+                try:
+                    self.assertEqual(username, self.settings.get_credentials(server_id)[0])
+                    self.assertEqual(password, self.settings.get_credentials(server_id)[1])
+                    assert not self.settings.get_credentials("bad_id")
+                finally:
+                    del os.environ[self.settings.env_override_prefix + server_id]
 
     def test_bundle(self):
         name = self.settings.bundle("")

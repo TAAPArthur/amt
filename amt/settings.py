@@ -34,8 +34,6 @@ class Settings:
     manga_viewer = "zathura {}"
     page_viewer = "sxiv {}"
 
-    subtitle_formats = ["srt", "vtt"]
-
     no_save_session = False
     no_load_session = False
     free_only = False
@@ -50,6 +48,7 @@ class Settings:
     user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0"
     _verify = True
     suppress_cmd_output = False
+    credential_separator = "\t"
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
@@ -146,12 +145,12 @@ class Settings:
     def get_credentials(self, server_id: str) -> (str, str):
         """Returns the saved username, password"""
         if self.env_override_prefix and os.getenv(self.env_override_prefix + server_id):
-            return os.getenv(self.env_override_prefix + server_id).split("\t")
+            return os.getenv(self.env_override_prefix + server_id).split(self.credential_separator)
         if self.password_manager_enabled and self.password_load_cmd:
             try:
                 logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
                 output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
-                login, password = output.split("\t")
+                login, password = output.split(self.credential_separator)
                 return login, password
             except subprocess.CalledProcessError:
                 logging.info("Unable to load credentials for %s", server_id)
@@ -161,7 +160,7 @@ class Settings:
         if self.password_manager_enabled and self.password_save_cmd:
             logging.debug("Storing credentials for %s", server_id)
             process = subprocess.Popen(self.password_save_cmd.format(server_id), shell=self.shell, stdin=subprocess.PIPE)
-            process.communicate(input=bytes("{}\t{}".format(username, password), "utf8"))
+            process.communicate(input=bytes(f"{username}{self.credential_separator}{password}", "utf8"))
 
     def get_secret(self, server_id: str) -> (str, str):
         result = self.get_credentials(server_id)

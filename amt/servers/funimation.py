@@ -159,7 +159,7 @@ class Funimation(Server):
                 video = chapter["languages"]["japanese"]["alpha"]
                 exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                 if exp['experienceId'] == int(chapter_data["id"]):
-                    subtitles = [track["src"] for track in exp["sources"][0]["textTracks"] if track["src"].split(".")[-1] in self.settings.subtitle_formats and track["language"] == "en"]
+                    subtitles = [track["src"] for track in exp["sources"][0]["textTracks"] if track["language"] == "en"]
                     if subtitles:
                         _, ext = os.path.splitext(subtitles[0])
                         r = self.session_get(subtitles[0])
