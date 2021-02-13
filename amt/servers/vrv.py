@@ -182,6 +182,18 @@ class Vrv(Server):
         subtitles = r.json()["subtitles"]["en-US"]
         r = self.session_get(subtitles["url"])
         path = os.path.join(dir_path, f"{chapter_data['id']}.{subtitles['format']}")
-        with open(path, 'wb') as fp:
-            fp.write(r.content)
+        with open(path, 'w') as fp:
+            iterable = iter(r.content.decode().splitlines())
+            buffer = None
+            for line in iterable:
+                if line.startswith("Subtitle-") and not line.endswith("_1"):
+                    buffer = None  # ignore blank line
+                    # don't output this line
+                    next(iterable)  # skip line with timestamp
+                else:
+                    if buffer is not None:
+                        fp.write(f"{buffer}\n")
+                    buffer = line
+            fp.write(f"{buffer}\n")
+
         return path
