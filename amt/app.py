@@ -96,9 +96,9 @@ class Application(MediaReader):
                     media_data = self.select_media(known_matching_media, "Select from known media: ")
 
                 elif not local_only:
-                    alt_names = {entry["name"], entry["name"].split(":")[0], entry["name"].split()[0], re.sub(r"\W*$", "", entry["name"])}
+                    alt_names = {entry["name"], entry["name"].split(":")[0], entry["name"].split()[0], re.sub(r"\W*$", "", entry["name"]), re.sub(r"\W+", "", entry["name"].split()[0])}
                     for name in alt_names:
-                        media_data = self.search_add(entry["name"], media_type=media_type, exact=True)
+                        media_data = self.search_add(name, media_type=media_type)
                         if media_data:
                             break
                 if not media_data:

@@ -591,6 +591,12 @@ class RealArgsTest(RealBaseUnitTestClass):
             if server.domain:
                 server.session_get_protected("https://" + server.domain)
 
+    def test_load_from_tracker(self):
+        anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
+        self.app.get_primary_tracker().set_custom_anime_list(anime)
+        parse_args(app=self.media_reader, args=["--auto", "load", "--anime-only"])
+        self.assertEqual(len(anime), len(self.media_reader.get_media_ids_in_library()))
+
 
 class CustomTest(MinimalUnitTestClass):
     def setUp(self):
