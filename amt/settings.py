@@ -15,40 +15,46 @@ APP_NAME = "amt"
 
 class Settings:
 
-    auto_upgrade_state = True
+    # Password manager related settings
     password_manager_enabled = True
     password_save_cmd = "tpm insert {}"
     password_load_cmd = "tpm show {}"
+    credential_separator = "\t"
+    env_override_prefix = "PASSWORD_OVERRIDE_"
+
+    # External commands and formats
     bundle_cmds = {
         "cbz": "zip {name} {files}",
         "pdf": "convert -density 100 -units PixelsPerInch {name} {files}"
     }
     bundle_format = "cbz"
-
-    threads = 8
     converters = [
         ("ts", "mp4", "cat {} > {}", "rm {}")
     ]
-
     anime_viewer = "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media} "
     manga_viewer = "zathura {}"
     page_viewer = "sxiv {}"
 
-    no_save_session = False
-    no_load_session = False
-    free_only = False
-    shell = True
+    # HTTP related; Generally used as args to requests
+    _verify = True
     max_retires = 3
     status_to_retry = [429, 500, 502, 504]
-    force_odd_pages = True
-    env_override_prefix = "PASSWORD_OVERRIDE_"
-    incapsula_prompt = ""
-    cookie_files = ["/tmp/cookies.txt"]
-    js_enabled_browser = True
     user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0"
-    _verify = True
+
+    # Cookies
+    cookie_files = ["/tmp/cookies.txt"]
+    incapsula_prompt = ""
+    js_enabled_browser = True
+
+    # MISC
+    auto_upgrade_state = True
+    force_odd_pages = True
+    free_only = False
+    no_load_session = False
+    no_save_session = False
+    shell = True
     suppress_cmd_output = False
-    credential_separator = "\t"
+    threads = 8  # per server thread count
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
