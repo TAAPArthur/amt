@@ -310,19 +310,30 @@ class MediaReader:
     def _create_bundle_data_entry(self, media_data, chapter_data):
         return dict(media_id=self._get_global_id(media_data), chapter_id=chapter_data["id"], media_name=media_data["name"], chapter_num=chapter_data["number"])
 
+    def _download_selected_chapters(self, x):
+        server, media_data, chapter = x
+        server.download_chapter(media_data, chapter)
+
+    def view_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False, num_list=None):
+        chapter_info_list = list((self.get_chapters(MANGA, name, num_list) if num_list else self._get_unreads(MANGA, name=name, limit=limit, shuffle=shuffle)))
+        self.for_each(self._download_selected_chapters, chapter_info_list, raiseException=not ignore_errors)
+        paths = []
+        chapters = []
+        for server, media_data, chapter in chapter_info_list:
+            if server.is_fully_downloaded(media_data, chapter):
+                paths.append(server.get_children(media_data, chapter))
+                chapters.append(chapter)
+        if paths and self.settings.open_page_viewer(paths):
+            for chapter in chapters:
+                chapter["read"] = True
+            return True
+        return False
+
     def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
-        unreads = []
         paths = []
         bundle_data = []
 
-        def func(x):
-            server, media_data, chapter = x
-            server.download_chapter(media_data, chapter)
-        try:
-            self.for_each(func, self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit), raiseException=True)
-        except:
-            if not ignore_errors:
-                raise
+        self.for_each(self._download_selected_chapters, self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit), raiseException=not ignore_errors)
 
         for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit):
             if server.is_fully_downloaded(media_data, chapter):

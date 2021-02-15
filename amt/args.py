@@ -78,6 +78,13 @@ def parse_args(args=None, app=None, already_upgraded=False):
         download_specific_parser.add_argument("end", type=float, nargs="?", default=0, help="Ending chapter (inclusive)")
 
         # media consumption
+        view_parser = sub_parsers.add_parser("view", help="View pages of chapters")
+        view_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
+        view_parser.add_argument("-l", "--limit", default=0, type=int)
+        view_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
+        view_parser.add_argument("name", choices=app.get_all_names(MANGA), default=None, nargs="?")
+        view_parser.add_argument("num", default=None, nargs="*", type=float)
+
         bundle_parser = sub_parsers.add_parser("bundle", help="Bundle individual manga pages into a single file")
         bundle_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
         bundle_parser.add_argument("-l", "--limit", default=0, type=int)
@@ -260,6 +267,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.update(download=namespace.download)
     elif action == "upgrade":
         app.upgrade_state()
+    elif action == "view":
+        print(app.view_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit, ignore_errors=namespace.ignore_errors, num_list=namespace.num))
 
     if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):
         app.save()

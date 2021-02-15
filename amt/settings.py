@@ -207,8 +207,8 @@ class Settings:
     def open_anime_viewer(self, name, title, wd=None):
         return self._open_viewer(self.anime_viewer, name, title=title, wd=wd)
 
-    def open_page_viewer(self, name):
-        return self._open_viewer(self.page_viewer, name)
+    def open_page_viewer(self, images):
+        return self._open_viewer(self.page_viewer, images)
 
     def convert(self, extension, files, destWithoutExt):
         for ext, targetExt, cmd, cleanupCmd in self.converters:
