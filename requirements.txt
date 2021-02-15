@@ -13,6 +13,6 @@ Pillow
 # Needed for Crunchyroll
 pycryptodome
 m3u8
-dataclasses
 
+# Needed for a good experience with Funimation
 selenium[browser]
