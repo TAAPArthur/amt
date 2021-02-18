@@ -1117,11 +1117,6 @@ class ServerTest(RealBaseUnitTestClass):
     def setUp(self):
         super().setUp()
 
-    def test_circumvent_bot_protection(self):
-        for server in self.app.get_servers():
-            if server.domain:
-                server.session_get_protected("https://" + server.domain)
-
     def test_get_media_list(self):
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id, method="get_media_list"):
