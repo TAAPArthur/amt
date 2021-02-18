@@ -275,8 +275,7 @@ class MediaReader:
 
     def download_unread_chapters(self, name=None, media_type=None, limit=0):
         """Downloads all chapters that are not read"""
-        def func(media_data): return self.download_chapters(media_data, limit)
-        return sum(self.for_each(func, map(lambda x: x[1], self._get_unreads(media_type, name=name))))
+        return sum(self.for_each(self._download_selected_chapters, self._get_unreads(media_type, name=name, limit=limit)))
 
     def _get_sorted_chapters(self, media_data):
         return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
@@ -312,7 +311,7 @@ class MediaReader:
 
     def _download_selected_chapters(self, x):
         server, media_data, chapter = x
-        server.download_chapter(media_data, chapter)
+        return server.download_chapter(media_data, chapter)
 
     def view_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False, num_list=None):
         chapter_info_list = list((self.get_chapters(MANGA, name, num_list) if num_list else self._get_unreads(MANGA, name=name, limit=limit, shuffle=shuffle)))

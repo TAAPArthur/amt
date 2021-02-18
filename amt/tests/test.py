@@ -400,6 +400,16 @@ class MediaReaderTest(BaseUnitTestClass):
                 server.download_chapter = fake_download_chapter
                 self.media_reader.download_unread_chapters()
 
+    def test_download_unread_chapters(self):
+        media_list = self.add_test_media()
+        count = self.media_reader.download_unread_chapters()
+
+        self.assertEqual(count, sum([len(media_data["chapters"]) for media_data in media_list]))
+
+        for media_data in media_list:
+            for chapter_data in media_data["chapters"].values():
+                self.verify_download(media_data, chapter_data, skip_file_type_validation=True)
+
     def test_update_no_media(self):
         assert not self.media_reader.update()
 

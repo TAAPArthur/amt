@@ -36,7 +36,7 @@ class Job:
                 self.queue.task_done()
 
     def run(self):
-        logging.info("Using %s threads", self.numThreads)
+        logging.info("Using %s threads for ~%d items", self.numThreads, self.queue.qsize())
         if self.numThreads:
             for i in range(self.numThreads):
                 Thread(target=self.worker, daemon=True).start()

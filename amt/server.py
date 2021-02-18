@@ -243,7 +243,7 @@ class Server:
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         if self.is_fully_downloaded(media_data, chapter_data):
-            logging.info("Already downloaded of %s %s", media_data["name"], chapter_data["title"])
+            logging.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
 
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
