@@ -22,9 +22,6 @@ class GenericCrunchyrollServer(Server):
     def get_session_id(self):
         if Crunchyroll._api_session_id:
             return Crunchyroll._api_session_id
-        if 'session_id' in self.session.cookies:
-            Crunchyroll._api_session_id = self.session.cookies['session_id']
-            return Crunchyroll._api_session_id
         data = self.session_post(
             self.start_session_url,
             data={
