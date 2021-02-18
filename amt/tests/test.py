@@ -126,7 +126,7 @@ class BaseUnitTestClass(unittest.TestCase):
     def getNumChaptersRead(self, media_type=ANIME | MANGA):
         return sum([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values() if media_data["media_type"] & media_type])
 
-    def verify_download(self, media_data, chapter_data):
+    def verify_download(self, media_data, chapter_data, skip_file_type_validation=False):
         server = self.media_reader.get_server(media_data["server_id"])
         if server.external:
             return
@@ -139,6 +139,8 @@ class BaseUnitTestClass(unittest.TestCase):
                 if not file_name.startswith("."):
                     path = os.path.join(dir_path, dirpath, file_name)
                     subprocess.check_call(f"[ -f {path} ]", shell=True)
+                    if skip_file_type_validation:
+                        continue
                     if media_data["media_type"] == MANGA:
                         with open(path, "rb") as img_file:
                             img = Image.open(img_file)
