@@ -1,27 +1,23 @@
 import inspect
 import logging
 import os
-import pkgutil
 import re
 import shutil
 import subprocess
 import sys
-import time
 import unittest
 from inspect import findsource
 from unittest.mock import patch
 
 from PIL import Image
 
-from .. import servers, tests, trackers
+from .. import servers, tests
 from ..app import Application
 from ..args import parse_args
-from ..media_reader import SERVERS, TRACKERS, MediaReader, import_sub_classes
-from ..server import ANIME, MANGA, NOVEL, Server
+from ..media_reader import SERVERS, TRACKERS, import_sub_classes
+from ..server import ANIME, MANGA, NOVEL
 from ..servers.custom import CustomServer, get_local_server_id
 from ..settings import Settings
-from ..tracker import Tracker
-from . import test_server
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
                           TestServerLogin)
 from .test_tracker import TestTracker
@@ -56,23 +52,23 @@ class TestApplication(Application):
         settings.shell = True
         settings.threads = 0
 
-        servers = list(TEST_SERVERS)
-        trackers = list(TEST_TRACKERS)
+        _servers = list(TEST_SERVERS)
+        _trackers = list(TEST_TRACKERS)
         if real:
             settings.threads = Settings.threads
             if os.getenv("ENABLE_ONLY_SERVERS"):
                 enabled_servers = set(os.getenv("ENABLE_ONLY_SERVERS").split(","))
-                servers = [x for x in SERVERS if x.id in enabled_servers]
+                _servers = [x for x in SERVERS if x.id in enabled_servers]
             else:
-                servers = [s for s in SERVERS if not s.external]
-            trackers += TRACKERS
+                _servers = [s for s in SERVERS if not s.external]
+            _trackers += TRACKERS
         elif local:
             settings.js_enabled_browser = ""
-            servers += LOCAL_SERVERS
+            _servers += LOCAL_SERVERS
 
-        super().__init__(servers, trackers, settings)
-        assert len(self.get_servers()) == len(servers)
-        assert len(self.get_trackers()) == len(trackers)
+        super().__init__(_servers, _trackers, settings)
+        assert len(self.get_servers()) == len(_servers)
+        assert len(self.get_trackers()) == len(_trackers)
         assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
         self.settings.suppress_cmd_output = True
@@ -809,7 +805,7 @@ class ArgsTest(MinimalUnitTestClass):
                 assert not server.is_fully_downloaded(media_data, chapter_data)
 
     def test_download_next(self):
-        media_list = self.add_test_media()
+        self.add_test_media()
         for id, media_data in self.media_reader.media.items():
             server = self.app.get_server(media_data["server_id"])
             chapter = sorted(media_data["chapters"].values(), key=lambda x: x["number"])[0]
@@ -859,14 +855,14 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(0, len(self.media_reader.get_media_in_library()))
 
     def test_clean_bundle(self):
-        media_list = self.add_test_media(self.test_server)
+        self.add_test_media(self.test_server)
         parse_args(app=self.media_reader, args=["bundle"])
         parse_args(app=self.media_reader, args=["clean-bundle"])
         self.assertEqual(0, len(self.app.bundles))
         self.assertFalse(os.path.exists(self.settings.bundle_dir))
 
     def test_clean_removed(self):
-        media_list = self.add_test_media(self.test_server)
+        self.add_test_media(self.test_server)
         self.app.download_unread_chapters()
         self.app.media.clear()
 
@@ -875,14 +871,14 @@ class ArgsTest(MinimalUnitTestClass):
             self.assertEqual(0, len(os.listdir(os.path.join(self.settings.media_dir, dir))))
 
     def test_clean_read(self):
-        media_list = self.add_test_media(self.test_server)
+        self.add_test_media(self.test_server)
         self.app.download_unread_chapters()
         self.media_reader.mark_up_to_date()
         parse_args(app=self.media_reader, args=["clean", "--remove-read"])
         self.verifyNoChaptersDownloaded()
 
     def test_clean_servers(self):
-        media_list = self.add_test_media(self.test_server)
+        self.add_test_media(self.test_server)
         self.app.download_unread_chapters()
         self.app._servers.clear()
         parse_args(app=self.media_reader, args=["clean", "--remove-disabled-servers"])
@@ -919,14 +915,14 @@ class ArgsTest(MinimalUnitTestClass):
 
     def test_bundle_read_simple(self):
         self.settings.manga_viewer = "[ -f {} ]"
-        media_list = self.add_test_media(self.test_server)
+        self.add_test_media(self.test_server)
         parse_args(app=self.media_reader, args=["bundle"])
         parse_args(app=self.media_reader, args=["read"])
         self.assertAllChaptersRead(MANGA)
 
     def test_bundle_download_error(self):
         server = self.media_reader.get_server(TestServerLogin.id)
-        media_list = self.add_test_media(server)
+        self.add_test_media(server)
         server.fail_login = True
         self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["bundle", TestServerLogin.id])
         assert not self.app.bundles
@@ -949,19 +945,18 @@ class ArgsTest(MinimalUnitTestClass):
             self.app.bundles.clear()
 
     def test_bundle_limit(self):
-        media_list = self.add_test_media(self.test_server)
-        media_data = media_list[0]
+        self.add_test_media(self.test_server)
         parse_args(app=self.media_reader, args=["bundle", "--limit=2"])
         bundle_data = list(self.media_reader.bundles.values())[0]
         self.assertEqual(len(bundle_data), 2)
 
     def test_play(self):
-        media_list = self.add_test_media(self.test_anime_server)
+        self.add_test_media(self.test_anime_server)
         parse_args(app=self.media_reader, args=["play", "-c"])
         self.assertAllChaptersRead(ANIME)
 
     def test_play_fail(self):
-        media_list = self.add_test_media(self.test_anime_server)
+        self.add_test_media(self.test_anime_server)
 
         self.settings.anime_viewer = "exit 1; #" + self.settings.anime_viewer
         parse_args(app=self.media_reader, args=["play", "-c"])
@@ -981,7 +976,7 @@ class ArgsTest(MinimalUnitTestClass):
         assert chapters[0]["read"]
 
     def test_get_stream_url(self):
-        media_list = self.add_test_media(self.test_anime_server)
+        self.add_test_media(self.test_anime_server)
         parse_args(app=self.media_reader, args=["get-stream-url"])
         assert not self.getNumChaptersRead(ANIME)
 

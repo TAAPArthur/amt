@@ -3,7 +3,6 @@ import os
 import re
 import shutil
 
-from . import cookie_manager
 from .media_reader import MediaReader
 from .server import ANIME, MANGA, NOT_ANIME, NOVEL
 from .servers.custom import get_local_server_id

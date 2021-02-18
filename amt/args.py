@@ -3,7 +3,7 @@ import logging
 import os
 
 from .app import Application
-from .server import ANIME, MANGA, NOT_ANIME, NOVEL
+from .server import ANIME, MANGA, NOVEL
 from .settings import Settings
 
 
