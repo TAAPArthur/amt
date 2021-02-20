@@ -25,7 +25,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         parser.add_argument("--clear-cookies", default=False, action="store_const", const=True, help="Clear all cached cookies")
         parser.add_argument("--log-level", default="INFO", choices=logging._levelToName.values(), help="Controls verbosity of logs")
         parser.add_argument("--no-save", default=False, action="store_const", const=True, help="Do not save state/cookies")
-        parser.add_argument("--no-verify", default=False, action="store_const", const=True, help="Skip SSL verification")
+        parser.add_argument("--no-verify", default=not Settings._verify, action="store_const", const=True, help="Skip SSL verification")
         parser.add_argument("--update", "-u", default=False, action="store_const", const=True, help="Check for new chapters and download them")
 
         sub_parsers = parser.add_subparsers(dest="type")
