@@ -398,19 +398,19 @@ class MediaReader:
             for url in server.get_stream_urls(media_data, chapter):
                 print(url)
 
-    def get_chapters(self, media_type, name, num_list):
+    def get_chapters(self, media_type, name, num_list, force_abs=False):
         media_data = self._get_single_media(media_type=media_type, name=name)
         last_read = self.get_last_read(media_data)
-        num_list = list(map(lambda x: last_read + x + 1 if x < 0 else x, num_list))
+        num_list = list(map(lambda x: last_read + x if x <= 0 and not force_abs else x, num_list))
         server = self.get_server(media_data["server_id"])
         for chapter in self._get_sorted_chapters(media_data):
             if chapter["number"] in num_list:
                 yield server, media_data, chapter
 
-    def play(self, name=None, shuffle=False, cont=False, num_list=None, quality=0, any_unread=False):
+    def play(self, name=None, shuffle=False, cont=False, num_list=None, quality=0, any_unread=False, force_abs=False):
 
         num = 0
-        for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle, any_unread=any_unread)):
+        for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list, force_abs=force_abs) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle, any_unread=any_unread)):
             dir_path = server._get_dir(media_data, chapter)
             if not server.is_fully_downloaded(media_data, chapter):
                 server.pre_download(media_data, chapter, dir_path=dir_path)
