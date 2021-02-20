@@ -872,7 +872,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_clean_bundle(self):
         self.add_test_media(self.test_server)
         parse_args(app=self.media_reader, args=["bundle"])
-        parse_args(app=self.media_reader, args=["clean-bundle"])
+        parse_args(app=self.media_reader, args=["clean", "-b"])
         self.assertEqual(0, len(self.app.bundles))
         self.assertFalse(os.path.exists(self.settings.bundle_dir))
 
