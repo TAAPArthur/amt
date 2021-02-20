@@ -1,21 +1,9 @@
-import base64
-import hashlib
-import hmac
 import json
-import logging
 import os
-import random
 import re
-import string
-import time
-import urllib.parse as compat_urllib_parse
 from collections import defaultdict
 from datetime import datetime
-from urllib.parse import quote
-from urllib.parse import urlencode
-from urllib.parse import urlencode as compat_urllib_parse_urlencode
 
-from bs4 import BeautifulSoup
 from requests_oauthlib import OAuth1
 
 from ..server import ANIME, Server
@@ -33,6 +21,7 @@ class Vrv(Server):
     api_param_regex = re.compile(r"window.__APP_CONFIG__\s*=\s*(.*);")
     api_state_regex = re.compile(r"window.__INITIAL_STATE__\s*=\s*(.*);")
 
+    subtitle_regex = re.compile(r"\w*-\w\d*_[2-9]\d*$")
     domain = "vrv.co"
     api_base = "https://api.vrv.co"
     login_api_url = api_base + "/core/authenticate/by:credentials"
@@ -186,7 +175,7 @@ class Vrv(Server):
             iterable = iter(r.content.decode().splitlines())
             buffer = None
             for line in iterable:
-                if line.startswith("Subtitle-") and not line.endswith("_1"):
+                if self.subtitle_regex.match(line):
                     buffer = None  # ignore blank line
                     # don't output this line
                     next(iterable)  # skip line with timestamp
