@@ -232,7 +232,7 @@ class MediaReader:
                 if not chapter["read"] and (any_unread or chapter["number"] > lastRead):
                     yield server, media_data, chapter
                     count += not chapter["special"]
-                    if count == limit:
+                    if limit and count == limit:
                         return
 
     def for_each(self, func, media_list, raiseException=False):

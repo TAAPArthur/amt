@@ -396,6 +396,7 @@ class MediaReaderTest(BaseUnitTestClass):
 
                 def fake_download_chapter(media_data, chapter_data):
                     assert chapter_data["number"] > last_chapter_num_read
+                    return True
 
                 server.download_chapter = fake_download_chapter
                 self.media_reader.download_unread_chapters()
