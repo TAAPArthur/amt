@@ -57,9 +57,9 @@ class Settings:
     threads = 8  # per server thread count
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
-        self.config_dir = os.getenv('XDG_CONFIG_HOME', os.path.join(home, ".config", APP_NAME))
-        self.cache_dir = os.getenv('XDG_CACHE_HOME', os.path.join(home, ".cache", APP_NAME))
-        self.data_dir = os.getenv('XDG_DATA_HOME', os.path.join(home, ".local/share", APP_NAME))
+        self.config_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config", APP_NAME))
+        self.cache_dir = os.getenv("XDG_CACHE_HOME", os.path.join(home, ".cache", APP_NAME))
+        self.data_dir = os.getenv("XDG_DATA_HOME", os.path.join(home, ".local/share", APP_NAME))
         self.bundle_dir = os.path.join(self.data_dir, "Bundles")
         self.media_dir = os.path.join(self.data_dir, "Media")
         self.no_save_session = no_save_session
@@ -105,7 +105,7 @@ class Settings:
         return getattr(self, name)
 
     def save(self):
-        with open(self.get_settings_file(), 'w') as f:
+        with open(self.get_settings_file(), "w") as f:
             settings_to_save = {}
             members = Settings.get_members()
             for attr in members:
@@ -114,7 +114,7 @@ class Settings:
 
     def load(self):
         try:
-            with open(self.get_settings_file(), 'r') as f:
+            with open(self.get_settings_file(), "r") as f:
                 saved_settings = json.load(f)
                 members = Settings.get_members()
                 for attr in members:
@@ -122,7 +122,7 @@ class Settings:
                         self.set(attr, saved_settings[attr])
         except FileNotFoundError:
             pass
-        os.environ['USER_AGENT'] = self.user_agent
+        os.environ["USER_AGENT"] = self.user_agent
 
     def get_settings_file(self):
         return os.path.join(self.config_dir, "settings.json")
@@ -183,7 +183,7 @@ class Settings:
 
     def bundle(self, img_dirs):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
-        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime('%Y-%m-%d_%H:%M:%S'), str(hash(arg))[1:8], self.bundle_format))
+        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), str(hash(arg))[1:8], self.bundle_format))
         cmd = self.bundle_cmds[self.bundle_format].format(files=arg, name=name)
         logging.info("Running cmd %s shell = %s", cmd, self.shell)
         self.run_cmd(cmd)

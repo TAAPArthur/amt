@@ -212,7 +212,7 @@ class Application(MediaReader):
 
     def maybe_fetch_extra_cookies(self):
         for server in self.get_servers():
-            if server.is_protected and server.domain:
+            if server.is_protected:
                 server.session_get_protected("https://" + server.domain)
 
     def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, bundles=False):

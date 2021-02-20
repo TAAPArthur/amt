@@ -1,9 +1,6 @@
 import json
-import logging
 import os
 import re
-
-from bs4 import BeautifulSoup
 
 from ..server import ANIME, Server
 
@@ -33,7 +30,7 @@ class Animelab(Server):
 
     def login(self, username, password):
         r = self.session_post(self.login_url,
-                              data={'email': username, 'password': password, "rememberMe": "true"},
+                              data={"email": username, "password": password, "rememberMe": "true"},
                               )
 
         data = r.json()
@@ -67,7 +64,7 @@ class Animelab(Server):
         r = self.session_get_cache(self.episode_url.format(media_data["id"]))
         for episode in r.json()["list"]:
             if episode["season"]["id"] == media_data["season_id"]:
-                self.update_chapter_data(media_data, id=episode["videoList"][0]["id"], number=episode['episodeNumber'], title=episode['name'])
+                self.update_chapter_data(media_data, id=episode["videoList"][0]["id"], number=episode["episodeNumber"], title=episode["name"])
 
     def get_media_data_from_url(self, url):
         chapter_slug = self.stream_url_regex.match(url).group(1)

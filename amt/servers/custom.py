@@ -1,7 +1,5 @@
-import logging
 import os
 import re
-from shlex import quote
 
 from ..server import ANIME, MANGA, NOVEL, Server
 
@@ -46,15 +44,15 @@ class CustomServer(Server):
 
 
 class LocalAnimeServer(CustomServer):
-    id = 'local_anime'
+    id = "local_anime"
     media_type = ANIME
 
 
 class LocalMangaServer(CustomServer):
-    id = 'local_manga'
+    id = "local_manga"
     media_type = MANGA
 
 
 class LocalLightNovelServer(CustomServer):
-    id = 'local_novels'
+    id = "local_novels"
     media_type = NOVEL

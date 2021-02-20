@@ -1,7 +1,6 @@
 import os
 import re
 import subprocess
-from shlex import quote
 
 from PIL import Image
 
@@ -11,7 +10,7 @@ TEST_BASE = "/tmp/amt/"
 
 
 class TestServer(Server):
-    id = 'test_server_manga'
+    id = "test_server_manga"
     has_gaps = True
     extension = "jpeg"
     _prefix = "Manga"
@@ -69,12 +68,12 @@ class TestServer(Server):
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()
         assert not os.path.exists(path)
-        image = Image.new('RGB', (100, 100))
+        image = Image.new("RGB", (100, 100))
         image.save(path, self.extension)
 
 
 class TestServerLogin(TestServer):
-    id = 'test_server_login'
+    id = "test_server_login"
     counter = 0
     fail_login = False
     has_login = True
@@ -98,7 +97,7 @@ class TestServerLogin(TestServer):
 
 
 class TestAnimeServer(TestServer):
-    id = 'test_server_anime'
+    id = "test_server_anime"
     media_type = ANIME
     _prefix = "Anime"
     extension = "ts"

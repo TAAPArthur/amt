@@ -10,7 +10,7 @@ from ..server import ANIME, Server
 
 
 class Vrv(Server):
-    id = 'vrv'
+    id = "vrv"
     home = "https://vrv.co/"
     media_type = ANIME
     extension = "mp4"
@@ -102,12 +102,12 @@ class Vrv(Server):
     def _request(self, get, url, **kwargs):
         if kwargs.get("auth", "") != False:
             if self.oauth_token:
-                oauth = OAuth1(self.apiParams['oAuthKey'], self.apiParams['oAuthSecret'],
+                oauth = OAuth1(self.apiParams["oAuthKey"], self.apiParams["oAuthSecret"],
                                resource_owner_key=self.oauth_token,
                                resource_owner_secret=self.oauth_token_secret,
-                               signature_type='auth_header')
+                               signature_type="auth_header")
             else:
-                oauth = OAuth1(self.apiParams['oAuthKey'], self.apiParams['oAuthSecret'], signature_type='auth_header')
+                oauth = OAuth1(self.apiParams["oAuthKey"], self.apiParams["oAuthSecret"], signature_type="auth_header")
             kwargs.update({"auth": oauth})
         else:
             del kwargs["auth"]
@@ -119,7 +119,7 @@ class Vrv(Server):
         return True
 
     def login(self, username, password):
-        r = self.session_post(self.login_api_url, data={'email': username, 'password': password})
+        r = self.session_post(self.login_api_url, data={"email": username, "password": password})
         data = r.json()
         dateFormat = "%Y-%m-%dT%H:%M:%S%z"
         expires = datetime.strptime(data["expiration_date"], dateFormat).timestamp()

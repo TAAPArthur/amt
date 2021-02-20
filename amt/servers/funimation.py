@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import re
@@ -9,7 +8,7 @@ from ..server import ANIME, Server
 
 
 class Funimation(Server):
-    id = 'funimation'
+    id = "funimation"
     has_login = True
     is_protected = True
 
@@ -52,7 +51,7 @@ class Funimation(Server):
     def login(self, username, password):
 
         r = self.session_post(self.login_api_url,
-                              data={'username': username, 'password': password, self.CSRF_NAME: self._get_csrf()},
+                              data={"username": username, "password": password, self.CSRF_NAME: self._get_csrf()},
                               headers={"Referer": "https://www.funimation.com/log-in/"})
 
         data = r.json()
@@ -113,7 +112,7 @@ class Funimation(Server):
                         alt_exp = video["uncut"] if "uncut" in video else video["simulcast"]
                         premium = exp["svodOnly"]
                         special = chapter["mediaCategory"] != "episode"
-                        self.update_chapter_data(media_data, id=exp['experienceId'], number=chapter['episodeId'], title=chapter['episodeTitle'], premium=premium, special=special, alt_id=alt_exp["experienceId"])
+                        self.update_chapter_data(media_data, id=exp["experienceId"], number=chapter["episodeId"], title=chapter["episodeTitle"], premium=premium, special=special, alt_id=alt_exp["experienceId"])
 
     def get_media_data_from_url(self, url):
         chapter_id, _ = self._get_episode_id(url)
@@ -158,13 +157,13 @@ class Funimation(Server):
             for chapter in season["episodes"]:
                 video = chapter["languages"]["japanese"]["alpha"]
                 exp = video["simulcast"] if "simulcast" in video else video["uncut"]
-                if exp['experienceId'] == int(chapter_data["id"]):
+                if exp["experienceId"] == int(chapter_data["id"]):
                     subtitles = [track["src"] for track in exp["sources"][0]["textTracks"] if track["language"] == "en"]
                     if subtitles:
                         _, ext = os.path.splitext(subtitles[0])
                         r = self.session_get(subtitles[0])
                         path = os.path.join(dir_path, str(chapter_data["id"]) + ext)
-                        with open(path, 'wb') as fp:
+                        with open(path, "wb") as fp:
                             fp.write(r.content)
                         return path
                     logging.info("No subtitles found for %s", chapter_data["id"])

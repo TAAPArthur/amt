@@ -27,7 +27,7 @@ TEST_HOME = TEST_BASE + "test_home/"
 
 Settings._verify = False
 
-logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)
+logging.basicConfig(format="[%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
 
 TEST_SERVERS = set()
 TEST_TRACKERS = set()
@@ -41,9 +41,9 @@ import_sub_classes(servers, CustomServer, LOCAL_SERVERS)
 class TestApplication(Application):
     def __init__(self, real=False, local=False):
         # Save cache in local directory
-        os.environ['XDG_CACHE_HOME'] = "./.cache"
+        os.environ["XDG_CACHE_HOME"] = "./.cache"
         settings = Settings(home=TEST_HOME)
-        del os.environ['XDG_CACHE_HOME']
+        del os.environ["XDG_CACHE_HOME"]
         if os.path.exists(settings.get_cookie_file()):
             os.remove(settings.get_cookie_file())
         settings.env_override_prefix = None
@@ -85,7 +85,7 @@ class BaseUnitTestClass(unittest.TestCase):
     real = False
     local = False
 
-    def __init__(self, methodName='runTest'):
+    def __init__(self, methodName="runTest"):
         super().__init__(methodName=methodName)
         self.init()
 
@@ -326,7 +326,7 @@ class MediaReaderTest(BaseUnitTestClass):
         name, value = "Test", "value"
         name2, value2 = "Test2", "value2"
         self.settings.cookie_files = []
-        with open(self.settings.get_cookie_file(), 'w') as f:
+        with open(self.settings.get_cookie_file(), "w") as f:
             f.write("\t".join([TestServer.domain, "TRUE", "/", "FALSE", "1640849596", name, value, "None"]))
             f.write("\n")
             f.write("\t".join([f"#HttpOnly_.{TestServer.domain}", "TRUE", "/", "FALSE", "1640849596", name2, value2, "None"]))
@@ -575,21 +575,21 @@ class ApplicationTest(BaseUnitTestClass):
         for id in self.media_reader.get_media_ids_in_library():
             self.app.list_chapters(id)
 
-    @patch('builtins.input', return_value='0')
+    @patch("builtins.input", return_value="0")
     def test_search_add(self, input):
         media_data = self.app.search_add("a")
         assert(media_data)
         assert media_data in self.media_reader.get_media_in_library()
 
-    @patch('builtins.input', return_value='a')
+    @patch("builtins.input", return_value="a")
     def test_search_add_nan(self, input):
         assert not self.app.search_add("a")
 
-    @patch('builtins.input', return_value='1000')
+    @patch("builtins.input", return_value="1000")
     def test_search_add_out_or_range(self, input):
         assert not self.app.search_add("a")
 
-    @patch('builtins.input', return_value='0')
+    @patch("builtins.input", return_value="0")
     def test_load_from_tracker(self, input):
         c, n = self.app.load_from_tracker(1)
         assert c
@@ -647,7 +647,7 @@ class CustomTest(MinimalUnitTestClass):
         for media_type in (MANGA, ANIME, NOVEL):
             local_server_id = get_local_server_id(media_type)
             dir = self.settings.get_server_dir(local_server_id)
-            image = Image.new('RGB', (100, 100))
+            image = Image.new("RGB", (100, 100))
             for media_name in ["A", "B", "C"]:
                 parent_dir = os.path.join(dir, media_name)
                 for chapter_name in ["01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]:
@@ -675,7 +675,7 @@ class CustomTest(MinimalUnitTestClass):
 
 
 class ArgsTest(MinimalUnitTestClass):
-    @patch('builtins.input', return_value='0')
+    @patch("builtins.input", return_value="0")
     def test_arg(self, input):
         parse_args(app=self.media_reader, args=["auth"])
 
@@ -696,7 +696,7 @@ class ArgsTest(MinimalUnitTestClass):
         assert server.needs_authentication()
 
     def test_autocomplete_not_found(self):
-        with patch.dict(sys.modules, {'argcomplete': None}):
+        with patch.dict(sys.modules, {"argcomplete": None}):
             parse_args(app=self.media_reader, args=["list"])
 
     def test_cookies(self):
@@ -1068,7 +1068,7 @@ class ArgsTest(MinimalUnitTestClass):
                     assert any([x["name"] == name.split()[0] for x in self.media_reader.get_media_in_library()])
 
     def test_import(self):
-        image = Image.new('RGB', (100, 100))
+        image = Image.new("RGB", (100, 100))
         path = os.path.join(TEST_HOME, "00-file.jpg")
         path2 = os.path.join(TEST_HOME, "test-dir")
         os.mkdir(path2)
@@ -1252,7 +1252,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         from ..servers.crunchyroll import Crunchyroll
         server = self.media_reader.get_server(Crunchyroll.id)
         bad_session = "bad_session"
-        server.session.cookies['session_id'] = bad_session
+        server.session.cookies["session_id"] = bad_session
         session = server.get_session_id()
         assert bad_session != session
         assert session == server.get_session_id()

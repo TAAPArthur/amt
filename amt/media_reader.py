@@ -3,11 +3,8 @@ import inspect
 import json
 import logging
 import os
-import pickle
 import pkgutil
 import random
-from collections import deque
-from http.cookiejar import MozillaCookieJar
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -15,7 +12,7 @@ from urllib3 import Retry
 
 from . import cookie_manager, servers, trackers
 from .job import Job
-from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
+from .server import ALL_MEDIA, ANIME, MANGA, Server
 from .settings import Settings
 from .tracker import Tracker
 
@@ -24,7 +21,7 @@ TRACKERS = set()
 
 
 def import_sub_classes(m, base_class, results):
-    for _finder, name, _ispkg in pkgutil.iter_modules(m.__path__, m.__name__ + '.'):
+    for _finder, name, _ispkg in pkgutil.iter_modules(m.__path__, m.__name__ + "."):
         try:
             module = importlib.import_module(name)
             for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
@@ -53,7 +50,7 @@ class MediaReader:
 
         self.session = requests.Session()
         if self.settings.max_retires:
-            for prefix in ('http://', 'https://'):
+            for prefix in ("http://", "https://"):
                 self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retires, status_forcelist=self.settings.status_to_retry)))
 
         self.session.headers.update({
@@ -103,7 +100,7 @@ class MediaReader:
 
         for path in self.settings.get_cookie_files():
             try:
-                with open(path, 'r') as f:
+                with open(path, "r") as f:
                     cookie_manager.load_cookies(f, self.session)
             except FileNotFoundError:
                 pass
@@ -114,7 +111,7 @@ class MediaReader:
         if self.settings.no_save_session or not self._set_session_hash():
             return False
 
-        with open(self.settings.get_cookie_file(), 'w') as f:
+        with open(self.settings.get_cookie_file(), "w") as f:
             for cookie in self.session.cookies:
                 l = [cookie.domain, str(cookie.domain_specified), cookie.path, str(cookie.secure).upper(), str(cookie.expires) if cookie.expires else "", cookie.name, cookie.value]
                 f.write("\t".join(l) + "\n")
@@ -136,7 +133,7 @@ class MediaReader:
 
     def load_state(self):
         try:
-            with open(self.settings.get_metadata(), 'r') as jsonFile:
+            with open(self.settings.get_metadata(), "r") as jsonFile:
                 self.state = json.load(jsonFile)
                 self._set_state_hash()
         except FileNotFoundError:
@@ -165,7 +162,7 @@ class MediaReader:
         if not self._set_state_hash(json_str):
             return False
         logging.info("Persisting state")
-        with open(self.settings.get_metadata(), 'w') as jsonFile:
+        with open(self.settings.get_metadata(), "w") as jsonFile:
             jsonFile.write(json_str)
         return True
 
@@ -196,7 +193,10 @@ class MediaReader:
         return self._servers.keys()
 
     def get_servers_ids_with_logins(self):
-        return [k for k in self._servers.keys()if self.get_server(k).has_login]
+        return [k for k in self._servers.keys() if self.get_server(k).has_login]
+
+    def get_protected_servers_ids(self):
+        return [k for k in self._servers.keys() if self.get_server(k).is_protected]
 
     def get_server(self, id):
         return self._servers.get(id, None)

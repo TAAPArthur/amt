@@ -1,25 +1,22 @@
 import json
 import re
 
-import requests
-from bs4 import BeautifulSoup
-
 from ..server import Server
 
 
 class Mangasee(Server):
-    id = 'mangasee'
+    id = "mangasee"
 
     base_url = "https://mangasee123.com"
     media_list_url = base_url + "/_search.php"
-    manga_url = base_url + '/manga/{0}'
-    chapter_url = base_url + '/read-online/{0}-chapter-{1}-page-1.html'
-    chapter_url_n = base_url + '/read-online/{0}-chapter-{1}-index-{2}-page-1.html'
+    manga_url = base_url + "/manga/{0}"
+    chapter_url = base_url + "/read-online/{0}-chapter-{1}-page-1.html"
+    chapter_url_n = base_url + "/read-online/{0}-chapter-{1}-index-{2}-page-1.html"
     page_url = "https://{}/manga/{}/{}-{:03d}.png"
 
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
     page_regex = re.compile(r"vm.CurChapter = (.*);")
-    domain_regex = re.compile(r'vm.CurPathName = "(.*)";')
+    domain_regex = re.compile(r"vm.CurPathName = \"(.*)\";")
 
     def get_media_list(self):
         r = self.session_post(self.media_list_url)
@@ -28,7 +25,7 @@ class Mangasee(Server):
 
     def update_media_data(self, media_data):
 
-        r = self.session_get(self.manga_url.format(media_data['id']))
+        r = self.session_get(self.manga_url.format(media_data["id"]))
         match = self.chapter_regex.search(r.text)
         chapters_text = match.group(1)
         chapter_list = json.loads(chapters_text)
@@ -60,5 +57,5 @@ class Mangasee(Server):
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"])
         if r.status_code == 200:
-            with open(path, 'wb') as fp:
+            with open(path, "wb") as fp:
                 fp.write(r.content)

@@ -13,7 +13,7 @@ LANGUAGES_CODES = dict(
     en=0,
     es=1,
 )
-RE_ENCRYPTION_KEY = re.compile('.{1,2}')
+RE_ENCRYPTION_KEY = re.compile(".{1,2}")
 
 
 def load_response(data):
@@ -23,16 +23,16 @@ def load_response(data):
 
 
 class Mangaplus(Server):
-    id = 'mangaplus'
-    lang = 'en'
+    id = "mangaplus"
+    lang = "en"
 
-    base_url = 'https://mediaplus.shueisha.co.jp'
-    api_url = 'https://jumpg-webapi.tokyo-cdn.com/api'
-    api_search_url = api_url + '/title_list/all'
-    api_most_populars_url = api_url + '/title_list/ranking'
-    api_media_url = api_url + '/title_detail?title_id={0}'
-    api_chapter_url = api_url + '/manga_viewer?chapter_id={0}&split=yes&img_quality=high'
-    media_url = base_url + '/titles/{0}'
+    base_url = "https://mediaplus.shueisha.co.jp"
+    api_url = "https://jumpg-webapi.tokyo-cdn.com/api"
+    api_search_url = api_url + "/title_list/all"
+    api_most_populars_url = api_url + "/title_list/ranking"
+    api_media_url = api_url + "/title_detail?title_id={0}"
+    api_chapter_url = api_url + "/manga_viewer?chapter_id={0}&split=yes&img_quality=high"
+    media_url = base_url + "/titles/{0}"
 
     def get_media_list(self):
         r = self.session_get(self.api_most_populars_url)
@@ -64,7 +64,7 @@ class Mangaplus(Server):
         return results
 
     def update_media_data(self, media_data):
-        r = self.session_get(self.api_media_url.format(media_data['id']))
+        r = self.session_get(self.api_media_url.format(media_data["id"]))
 
         resp = load_response(r.content)
 
@@ -76,7 +76,7 @@ class Mangaplus(Server):
                     number = int(chapter.name[1:] if chapter.name[0] == "#" else chapter.name)
                 except ValueError:
                     number = 0
-                self.update_chapter_data(media_data, id=chapter.id, title='{0} - {1}'.format(chapter.name, chapter.subtitle), number=number, date=chapter.start_timestamp)
+                self.update_chapter_data(media_data, id=chapter.id, title="{0} - {1}".format(chapter.name, chapter.subtitle), number=number, date=chapter.start_timestamp)
 
     def get_media_chapter_data(self, media_data, chapter_data):
         r = self.session_get(self.api_chapter_url.format(chapter_data["id"]))
@@ -91,18 +91,18 @@ class Mangaplus(Server):
         return pages
 
     def save_chapter_page(self, page_data, path):
-        r = self.session_get(page_data['url'])
+        r = self.session_get(page_data["url"])
 
-        if page_data['encryption_key'] is not None:
+        if page_data["encryption_key"] is not None:
             # Decryption
-            key_stream = [int(v, 16) for v in RE_ENCRYPTION_KEY.findall(page_data['encryption_key'])]
+            key_stream = [int(v, 16) for v in RE_ENCRYPTION_KEY.findall(page_data["encryption_key"])]
             block_size_in_bytes = len(key_stream)
 
             content = bytes([int(v) ^ key_stream[index % block_size_in_bytes] for index, v in enumerate(r.content)])
         else:
             content = r.content
 
-        with open(path, 'wb') as fp:
+        with open(path, "wb") as fp:
             fp.write(content)
 
 

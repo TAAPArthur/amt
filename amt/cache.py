@@ -15,14 +15,14 @@ class Cache():
         file_path = os.path.join(self.cache_dir, key)
         if key in self.files and time.time() - os.stat(file_path).st_mtime < 3600 * 24:
             logging.info("Opening cache file %s for %s", file_path, url)
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 data = json.load(f)
                 if data["key"] == url:
                     return FakeRequestWrapper(data["value"])
 
         logging.info("Cache miss %s %s", url, key)
         value = func()
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump({"key": url, "value": value.text}, f)
 
         self.files.add(key)

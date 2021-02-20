@@ -7,9 +7,9 @@ from .crunchyroll import GenericCrunchyrollServer
 
 
 class CrunchyrollAnime(GenericCrunchyrollServer):
-    id = 'crunchyroll_anime'
+    id = "crunchyroll_anime"
 
-    api_base_url = 'http://api.crunchyroll.com'
+    api_base_url = "http://api.crunchyroll.com"
     search_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}&filter=prefix:{}"
     list_media = api_base_url + "/list_media.0.json?limit=2000&media_type=anime&session_id={}&series_id={}"
     stream_url = api_base_url + "/info.0.json?fields=media.stream_data&locale=enUS&session_id={}&media_id={}"
@@ -44,22 +44,22 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         r = self.session_get_cache(self.list_media.format(self.get_session_id(), media_data["id"]))
         data = r.json()["data"]
         for chapter in data:
-            if chapter["collection_id"] == media_data["season_id"] and not chapter['clip']:
+            if chapter["collection_id"] == media_data["season_id"] and not chapter["clip"]:
                 special = False
-                if not chapter['episode_number']:
+                if not chapter["episode_number"]:
                     special = True
-                    chapter['episode_number'] = 0
-                elif chapter['episode_number'][-1].isalpha():
+                    chapter["episode_number"] = 0
+                elif chapter["episode_number"][-1].isalpha():
                     special = True
-                    chapter['episode_number'] = chapter['episode_number'][:-1]
+                    chapter["episode_number"] = chapter["episode_number"][:-1]
 
-                self.update_chapter_data(media_data, id=chapter['media_id'], number=chapter['episode_number'], title=chapter['name'], premium=not chapter["free_available"], special=special)
+                self.update_chapter_data(media_data, id=chapter["media_id"], number=chapter["episode_number"], title=chapter["name"], premium=not chapter["free_available"], special=special)
 
     def get_media_data_from_url(self, url):
 
         match = self.stream_url_regex.match(url)
         media_name_hint = match.group(1)
-        media_name_prefix_hint = media_name_hint.split("-")[0]
+        # media_name_prefix_hint = media_name_hint.split("-")[0]
         chapter_id = match.group(2)
         r = self.session_get(self.episode_url.format(self.get_session_id(), chapter_id))
         data = r.json()["data"]

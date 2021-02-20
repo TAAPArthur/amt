@@ -43,7 +43,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         incap_cookie_parser.add_argument("id", choices=[server.id for server in app.get_servers() if server.domain])
         incap_cookie_parser.add_argument("value")
 
-        js_cookie_parser = sub_parsers.add_parser("js-cookie-parser", description="Open browser for all protected servers")
+        sub_parsers.add_parser("js-cookie-parser", description="Open browser for all protected servers")
 
         # add remove
         search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
@@ -127,7 +127,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         import_parser.add_argument("--novel", "--light-novel-only", action="store_const", const=NOVEL, default=None, help="Filter for Novels")
         import_parser.add_argument("--anime", action="store_const", const=ANIME, default=None, help="Filter for Anime")
         import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
-        import_parser.add_argument("file", nargs='+')
+        import_parser.add_argument("file", nargs="+")
 
         # info
         sub_parsers.add_parser("list")

@@ -32,7 +32,7 @@ class VizManga(Server):
 
     def get_token(self):
         auth_token = self.session_get(self.refresh_login_url)
-        token = re.search(r'AUTH_TOKEN\s*=\s*"(.+?)"', auth_token.text)
+        token = re.search(r"AUTH_TOKEN\s*=\s*\"(.+?)\"", auth_token.text)
         return token.group(1)
 
     def needs_authentication(self):
@@ -45,7 +45,7 @@ class VizManga(Server):
     def login(self, username, password):
         token = self.get_token()
 
-        r = self.session_post(
+        self.session_post(
             self.login_url,
             data={
                 "login": username,
@@ -80,7 +80,7 @@ class VizManga(Server):
         for chapter in chapters:
             raw_url_maybe = chapter["data-target-url"]
             match = self.chapter_regex.search(raw_url_maybe)
-            series_name = match.group(1)
+            # series_name = match.group(1)
             chapter_number = match.group(2)
             chapter_id = match.group(3)
             chapter_date = None
@@ -132,7 +132,7 @@ class VizManga(Server):
 
         _key = 42016
         exif = orig.getexif()
-        key = [int(i, 16) for i in exif[_key].split(':')]
+        key = [int(i, 16) for i in exif[_key].split(":")]
         width, height = exif[256], exif[257]
 
         small_width = int(width / 10)
