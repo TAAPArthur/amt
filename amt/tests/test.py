@@ -598,6 +598,12 @@ class ApplicationTest(BaseUnitTestClass):
         self.assertEqual(c, c2)
         self.assertEqual(0, n2)
 
+    def test_select_chapter(self):
+        self.app.auto_select = True
+        for mediaName in ("Manga", "Anime"):
+            with self.subTest(mediaName=mediaName):
+                self.assertTrue(self.app.select_chapter(mediaName))
+
 
 class ApplicationTestWithErrors(BaseUnitTestClass):
     def setUp(self):
@@ -749,6 +755,11 @@ class ArgsTest(MinimalUnitTestClass):
         assert len(self.media_reader.get_media_in_library())
         self.app.load_state()
         assert len(self.media_reader.get_media_in_library())
+
+    def test_select(self):
+        assert not len(self.media_reader.get_media_in_library())
+        parse_args(app=self.media_reader, args=["--auto", "select", "manga"])
+        assert not len(self.media_reader.get_media_in_library())
 
     def test_load(self):
         parse_args(app=self.media_reader, args=["--auto", "search", "InProgress"])

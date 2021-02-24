@@ -208,6 +208,9 @@ class MediaReader:
         return self.media.keys()
 
     def _get_media(self, media_type=ALL_MEDIA, name=None, shuffle=False):
+        if isinstance(name, dict):
+            yield name
+            return
         media = self.get_media_in_library()
         if shuffle:
             media = list(media)
@@ -313,8 +316,8 @@ class MediaReader:
         server, media_data, chapter = x
         return server.download_chapter(media_data, chapter)
 
-    def view_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False, num_list=None):
-        chapter_info_list = list((self.get_chapters(MANGA, name, num_list) if num_list else self._get_unreads(MANGA, name=name, limit=limit, shuffle=shuffle)))
+    def view_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False, num_list=None, force_abs=False):
+        chapter_info_list = list((self.get_chapters(MANGA, name, num_list, force_abs=force_abs) if num_list else self._get_unreads(MANGA, name=name, limit=limit, shuffle=shuffle)))
         self.for_each(self._download_selected_chapters, chapter_info_list, raiseException=not ignore_errors)
         paths = []
         chapters = []

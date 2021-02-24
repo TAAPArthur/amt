@@ -53,6 +53,14 @@ def parse_args(args=None, app=None, already_upgraded=False):
         search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
         search_parsers.add_argument("term", help="The string to search by")
 
+        select_chapter_parsers = sub_parsers.add_parser("select", description="Search for and add media")
+        select_chapter_parsers.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
+        select_chapter_parsers.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        select_chapter_parsers.add_argument("--server", choices=app.get_servers_ids())
+        select_chapter_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
+        select_chapter_parsers.add_argument("--quality", "-q", default=0, type=int)
+        select_chapter_parsers.add_argument("term", help="The string to search by")
+
         migrate_parsers = sub_parsers.add_parser("migrate", description="Move media to another server")
         migrate_parsers.add_argument("id", choices=app.get_all_single_names(), help="Global id of media to move")
 
@@ -253,6 +261,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "search":
         if not app.search_add(namespace.term, server_id=namespace.server, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact):
             logging.warning("Could not find media %s", namespace.term)
+    elif action == "select":
+        app.select_chapter(namespace.term, quality=namespace.quality, server_id=namespace.server, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact)
     elif action == "setting":
         if namespace.value:
             app.settings.set(namespace.setting, namespace.value)

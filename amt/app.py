@@ -32,17 +32,29 @@ class Application(MediaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def search_add(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[]):
+    def search_add(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[], no_add=False):
         results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude)
         if len(results) == 0:
             return None
         print("Looking for", term)
         self.print_results(results)
 
-        media_data = self.select_media(results, "Select media to add: ")
-        if media_data:
+        media_data = self.select_media(results, "Select media: ")
+        if not no_add and media_data:
             self.add_media(media_data)
         return media_data
+
+    def select_chapter(self, term, quality=0, **kwargs):
+        media_data = self.search_add(term, **kwargs, no_add=True)
+        if media_data:
+            self.update_media(media_data)
+            self.list_chapters(media_data)
+            chapter = self.select_media(self._get_sorted_chapters(media_data), "Select episode")
+            if media_data["media_type"] == ANIME:
+                return self.play(name=media_data, num_list=[chapter["number"]], force_abs=True, quality=quality)
+            else:
+                return self.view_chapters(name=media_data, num_list=[chapter["number"]], force_abs=True)
+            assert False
 
     def migrate(self, id):
         media_data = self._get_single_media(name=id)
@@ -132,7 +144,7 @@ class Application(MediaReader):
 
     def list_chapters(self, name):
         media_data = self._get_single_media(name=name)
-        for chapter in media_data["chapters"].values():
+        for chapter in self._get_sorted_chapters(media_data):
             print("{:4}:{}".format(chapter["number"], chapter["title"]))
 
     def _get_all_names(self, media_type=None, disallow_servers=False):
