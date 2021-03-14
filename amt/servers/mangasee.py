@@ -16,7 +16,7 @@ class Mangasee(Server):
 
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
     page_regex = re.compile(r"vm.CurChapter = (.*);")
-    domain_regex = re.compile(r"vm.CurPathName = \"(.*)\";")
+    domain_regex = re.compile(r"vm.CurPathName\w* = \"(.*)\";")
 
     def get_media_list(self):
         r = self.session_post(self.media_list_url)
