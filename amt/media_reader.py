@@ -429,12 +429,12 @@ class MediaReader:
                 return False
         return num
 
-    def update(self, download=False, media_type_to_download=MANGA):
+    def update(self, download=False, media_type_to_download=MANGA, replace=False):
         logging.info("Updating: download %s", download)
-        def func(x): return self.update_media(x, download, media_type_to_download=media_type_to_download)
+        def func(x): return self.update_media(x, download, media_type_to_download=media_type_to_download, replace=replace)
         return self.for_each(func, self.get_media_in_library())
 
-    def update_media(self, media_data, download=False, media_type_to_download=MANGA, limit=None, page_limit=None):
+    def update_media(self, media_data, download=False, media_type_to_download=MANGA, limit=None, page_limit=None, replace=False):
         """
         Return set of updated chapters or a False-like value
         """
@@ -444,12 +444,20 @@ class MediaReader:
             return {x for x in chapters if not chapters[x]["premium"]} if self.settings.free_only else set(chapters.keys())
 
         chapter_ids = get_chapter_ids(media_data["chapters"])
+        if replace:
+            chapters = dict(media_data["chapters"])
+            media_data["chapters"].clear()
 
         server.update_media_data(media_data)
         assert media_data["chapters"]
 
         current_chapter_ids = get_chapter_ids(media_data["chapters"])
         new_chapter_ids = current_chapter_ids - chapter_ids
+
+        if replace:
+            for chapter in chapters:
+                if chapter in media_data["chapters"]:
+                    media_data["chapters"][chapter]["read"] = chapters[chapter]["read"]
 
         new_chapters = sorted([media_data["chapters"][x] for x in new_chapter_ids], key=lambda x: x["number"])
         assert len(new_chapter_ids) == len(new_chapters)

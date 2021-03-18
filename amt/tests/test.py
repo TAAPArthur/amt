@@ -844,6 +844,16 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["update"])
         assert len(media_list[0]["chapters"])
 
+    def test_update_replace(self):
+        fake_chapter_id = "fakeId"
+        media_list = self.add_test_media()
+        self.app.mark_up_to_date()
+        original_len = len(media_list[0]["chapters"])
+        parse_args(app=self.media_reader, args=["update", "--replace"])
+        assert fake_chapter_id not in media_list[0]["chapters"]
+        assert original_len == len(media_list[0]["chapters"])
+        self.assertAllChaptersRead(MANGA)
+
     def test_offset(self):
         media_list = self.add_test_media()
         media_data = media_list[0]

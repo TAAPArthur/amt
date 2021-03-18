@@ -73,6 +73,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         # update and download
         update_parser = sub_parsers.add_parser("update", description="Update all media")
         update_parser.add_argument("--download", "-d", action="store_const", const=True, default=False, help="Update and download")
+        update_parser.add_argument("--replace", "-r", action="store_const", const=True, default=False, help="Replace existing metadata instead of appending")
 
         download_parser = sub_parsers.add_parser("download-unread", help="Downloads all chapters that have not been read")
         download_parser.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
@@ -273,7 +274,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=namespace.manga_only or namespace.anime_only, dry_run=namespace.dry_run)
     elif action == "update":
-        app.update(download=namespace.download)
+        app.update(download=namespace.download, replace=namespace.replace)
     elif action == "upgrade":
         app.upgrade_state()
     elif action == "view":
