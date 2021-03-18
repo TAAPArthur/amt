@@ -1044,8 +1044,13 @@ class ArgsTest(MinimalUnitTestClass):
             ("Banner of the Stars", 1, "01. Banner of the Stars (Seikai no Senki) [480p][author].mkv"),
             ("Magical Girl Lyrical Nanoha", 13, "[author] Magical Girl Lyrical Nanoha - 13 (type) [deadbeef].mkv"),
             ("Magical Girl Lyrical Nanoha A's", 999, "[author] Magical Girl Lyrical Nanoha A's - 999.mkv"),
-            ("Steins;Gate", 1, "01 Steins;Gate.mkv"),
-            ("Kaguya-sama", 1, "Kaguya-sama 1.mkv"),
+            ("Steins;Gate", 1, "01 - Steins;Gate.mkv"),
+            ("Kaguya-sama", 1, "Kaguya-sama - 01.mkv"),
+            ("ViVid Strike!", 1, "[First Name] ViVid Strike! - 01 [BD 1080p][247EFC8F].mkv"),
+            ("Specials", 5.5, "[First Name] Specials - 05.5 [BD 1080p][247EFC8F].mkv"),
+            ("Ending", 0, "[First Name] Ending - ED [BD 1080p][247EFC8F].mkv"),
+            ("Attack No. 1", 2, "Attack No. 1 - 02.mkv"),
+            ("Alien 9", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
         ]
 
         self.settings.anime_viewer = "[ -f {media} ] && echo {title}"
@@ -1062,7 +1067,7 @@ class ArgsTest(MinimalUnitTestClass):
                         chapters = list(media_data["chapters"].values())
                         self.assertEqual(len(chapters), 1)
                         self.assertEqual(chapters[0]["number"], number)
-                        assert self.media_reader.play(name)
+                        assert self.media_reader.play(name, any_unread=True)
                         assert re.search(r"^\w+$", media_data["id"])
 
     def test_import_multiple(self):
