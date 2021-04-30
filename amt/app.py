@@ -227,7 +227,11 @@ class Application(MediaReader):
             if server.is_protected:
                 server.session_get_protected("https://" + server.domain)
 
-    def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, bundles=False):
+    def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, remove_not_on_disk=False, bundles=False):
+        if remove_not_on_disk:
+            for media_data in [x for x in self.get_media_in_library() if not os.path.exists(self.settings.get_media_dir(x))]:
+                logging.info("Removing metadata for %s because it doesn't exist on disk", media_data["name"])
+                self.remove_media(media_data)
         media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media_in_library()}
         if bundles:
             logging.info("Removing all bundles")
@@ -236,10 +240,7 @@ class Application(MediaReader):
         for dir in os.listdir(self.settings.media_dir):
             server = self.get_server(dir)
             server_path = os.path.join(self.settings.media_dir, dir)
-            if not server:
-                logging.info("Removing %s because it is not enabled", server_path)
-                shutil.rmtree(server_path)
-            else:
+            if server:
                 if include_external or not server.external:
                     for media_dir in os.listdir(server_path):
                         media_path = os.path.join(server_path, media_dir)
@@ -254,3 +255,7 @@ class Application(MediaReader):
                                         chapter_path = server._get_dir(media_data, chapter_data)
                                         logging.info("Removing %s because it has been read", chapter_path)
                                         shutil.rmtree(chapter_path)
+
+            elif remove_disabled_servers:
+                logging.info("Removing %s because it is not enabled", server_path)
+                shutil.rmtree(server_path)

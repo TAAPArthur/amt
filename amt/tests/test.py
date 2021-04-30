@@ -920,6 +920,11 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["clean", "--remove-disabled-servers"])
         self.assertEqual(0, len(os.listdir(self.settings.media_dir)))
 
+    def test_clean_unused(self):
+        self.add_test_media(self.test_server)
+        parse_args(app=self.media_reader, args=["clean", "--remove-not-on-disk"])
+        self.assertEqual(0, len(os.listdir(self.settings.media_dir)))
+
     def test_view_chapter(self):
         media_list = self.add_test_media(self.test_server)
         media_data = media_list[0]
