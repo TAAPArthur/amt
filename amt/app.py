@@ -4,7 +4,7 @@ import re
 import shutil
 
 from .media_reader import MediaReader
-from .server import ANIME, MANGA, NOT_ANIME, NOVEL
+from .server import ANIME, MANGA, NOVEL
 from .servers.custom import get_local_server_id
 
 TYPE_NAMES = {MANGA: "Manga", NOVEL: "Novel", ANIME: "Anime"}
@@ -83,7 +83,7 @@ class Application(MediaReader):
 
         unknown_media = []
         for entry in data:
-            media_type = ANIME if entry["anime"] else NOT_ANIME
+            media_type = entry["media_type"]
             if media_type_filter and not media_type & media_type_filter:
                 logging.debug("Skipping %s", entry)
                 continue

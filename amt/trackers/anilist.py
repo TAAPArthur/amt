@@ -1,5 +1,6 @@
 import logging
 
+from ..server import ANIME, MEDIA_TYPES
 from ..tracker import Tracker
 
 
@@ -25,6 +26,7 @@ class Anilist(Tracker):
             media {
                id
                type
+               format
                title {
                  english
                  romaji
@@ -80,7 +82,7 @@ class Anilist(Tracker):
         data = response.json()
         return [self.get_media_dict(
             id=x["id"],
-            anime=x["media"]["type"] == "ANIME",
+            media_type=ANIME if x["media"]["type"] == "ANIME" else MEDIA_TYPES[x["media"]["format"]],
             title=x["media"]["title"]["english"] or x["media"]["title"]["romaji"],
             progress=x["progress"]
         ) for x in data["data"]["Page"]["mediaList"]]

@@ -15,7 +15,7 @@ from .. import servers, tests
 from ..app import Application
 from ..args import parse_args
 from ..media_reader import SERVERS, TRACKERS, import_sub_classes
-from ..server import ANIME, MANGA, NOVEL
+from ..server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from ..servers.custom import CustomServer, get_local_server_id
 from ..settings import Settings
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
@@ -639,7 +639,7 @@ class RealArgsTest(RealBaseUnitTestClass):
     def test_load_from_tracker(self):
         anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
         self.app.get_primary_tracker().set_custom_anime_list(anime)
-        parse_args(app=self.media_reader, args=["--auto", "load", "--anime-only"])
+        parse_args(app=self.media_reader, args=["--auto", "load", "--media-type=ANIME"])
         self.assertEqual(len(anime), len(self.media_reader.get_media_ids_in_library()))
 
 
@@ -1074,7 +1074,7 @@ class ArgsTest(MinimalUnitTestClass):
                 with open(file_name, "w") as f:
                     f.write("dummy_data")
                 assert os.path.exists(file_name)
-                parse_args(app=self.media_reader, args=["import", "--anime", file_name])
+                parse_args(app=self.media_reader, args=["import", "--media-type=ANIME", file_name])
                 assert not os.path.exists(file_name)
                 assert any([x["name"] == name for x in self.media_reader.get_media_in_library()])
                 for media_data in self.media_reader.get_media_in_library():
@@ -1092,7 +1092,7 @@ class ArgsTest(MinimalUnitTestClass):
             with open(name, "w") as f:
                 f.write("dummy_data")
         for name_list in (file_names, file_names2):
-            parse_args(app=self.media_reader, args=["import", "--anime"] + name_list)
+            parse_args(app=self.media_reader, args=["import", "--media-type=ANIME"] + name_list)
             self.assertEqual(2, len(self.media_reader.get_media_in_library()))
             for name in name_list:
                 with self.subTest(file_name=name):
@@ -1116,9 +1116,9 @@ class ArgsTest(MinimalUnitTestClass):
         assert any([x["name"] == "testMedia" for x in self.media_reader.get_media_in_library()])
         assert not os.path.exists(path2)
 
-        for i, media_type in enumerate(["--novel", "--manga", "--anime"]):
+        for i, media_type in enumerate(MEDIA_TYPES.keys()):
             name = "name" + str(i)
-            parse_args(app=self.media_reader, args=["import", "--link", "--name", name, media_type, path3])
+            parse_args(app=self.media_reader, args=["import", "--link", "--name", name, "--media-type", media_type, path3])
             assert any([x["name"] == name for x in self.media_reader.get_media_in_library()])
             self.assertEqual(3 + i, len(self.media_reader.get_media_in_library()))
             assert os.path.exists(path3)

@@ -6,8 +6,8 @@ class Tracker():
         self.settings = settings
         self.session = session
 
-    def get_media_dict(self, id, anime, title, progress):
-        return {"id": id, "anime": anime, "name": title, "progress": progress}
+    def get_media_dict(self, id, media_type, title, progress):
+        return {"id": id, "media_type": media_type, "name": title, "progress": progress}
 
     def auth(self):
         pass

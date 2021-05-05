@@ -12,7 +12,7 @@ from urllib3 import Retry
 
 from . import cookie_manager, servers, trackers
 from .job import Job
-from .server import ALL_MEDIA, ANIME, MANGA, Server
+from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
 from .settings import Settings
 from .tracker import Tracker
 
@@ -317,7 +317,7 @@ class MediaReader:
         return server.download_chapter(media_data, chapter)
 
     def view_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False, num_list=None, force_abs=False):
-        chapter_info_list = list((self.get_chapters(MANGA, name, num_list, force_abs=force_abs) if num_list else self._get_unreads(MANGA, name=name, limit=limit, shuffle=shuffle)))
+        chapter_info_list = list((self.get_chapters(NOT_ANIME, name, num_list, force_abs=force_abs) if num_list else self._get_unreads(NOT_ANIME, name=name, limit=limit, shuffle=shuffle)))
         self.for_each(self._download_selected_chapters, chapter_info_list, raiseException=not ignore_errors)
         paths = []
         chapters = []

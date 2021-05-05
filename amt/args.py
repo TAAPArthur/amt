@@ -3,7 +3,7 @@ import logging
 import os
 
 from .app import Application
-from .server import ANIME, MANGA, NOVEL
+from .server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from .settings import Settings
 
 
@@ -47,15 +47,14 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         # add remove
         search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
-        search_parsers.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
-        search_parsers.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        search_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         search_parsers.add_argument("--server", choices=app.get_servers_ids())
         search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
         search_parsers.add_argument("term", help="The string to search by")
 
         select_chapter_parsers = sub_parsers.add_parser("select", description="Search for and add media")
-        select_chapter_parsers.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
-        select_chapter_parsers.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        select_chapter_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+
         select_chapter_parsers.add_argument("--server", choices=app.get_servers_ids())
         select_chapter_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
         select_chapter_parsers.add_argument("--quality", "-q", default=0, type=int)
@@ -76,8 +75,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         update_parser.add_argument("--replace", "-r", action="store_const", const=True, default=False, help="Replace existing metadata instead of appending")
 
         download_parser = sub_parsers.add_parser("download-unread", help="Downloads all chapters that have not been read")
-        download_parser.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
-        download_parser.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        download_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         download_parser.add_argument("--limit", type=int, default=0, help="How many chapters will be downloaded per series")
         download_parser.add_argument("name", choices=app.get_all_names(), default=None, nargs="?", help="Download only series determined by name")
 
@@ -133,9 +131,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         # external
         import_parser = sub_parsers.add_parser("import")
         import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
-        import_parser.add_argument("--manga", action="store_const", const=MANGA, default=None, help="Filter for Manga")
-        import_parser.add_argument("--novel", "--light-novel-only", action="store_const", const=NOVEL, default=None, help="Filter for Novels")
-        import_parser.add_argument("--anime", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        import_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
         import_parser.add_argument("file", nargs="+")
 
@@ -154,8 +150,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         sub_parsers.add_parser("auth")
 
         load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
-        load_parser.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
-        load_parser.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+
+        load_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
         load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media")
         load_parser.add_argument("name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
@@ -163,14 +159,12 @@ def parse_args(args=None, app=None, already_upgraded=False):
         sync_parser = sub_parsers.add_parser("sync", description="Attempts to update tracker with current progress")
         sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
         sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
-        sync_parser.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
-        sync_parser.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        sync_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
 
         mark_parsers = sub_parsers.add_parser("mark-up-to-date", description="Mark all known chapters as read")
         mark_parsers.add_argument("--abs", action="store_const", const=True, default=False, help="Treat N as an abs number")
         mark_parsers.add_argument("--force", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
-        mark_parsers.add_argument("--manga-only", action="store_const", const=MANGA, default=None, help="Filter for Manga")
-        mark_parsers.add_argument("--anime-only", action="store_const", const=ANIME, default=None, help="Filter for Anime")
+        mark_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         mark_parsers.add_argument("name", default=None, choices=app.get_all_names(), nargs="?")
         mark_parsers.add_argument("N", type=int, default=0, nargs="?", help="Consider the last N chapters as not up-to-date")
 
@@ -228,7 +222,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "download":
         app.download_specific_chapters(namespace.id, start=namespace.start, end=namespace.end)
     elif action == "download-unread":
-        app.download_unread_chapters(namespace.name, media_type=namespace.manga_only or namespace.anime_only, limit=namespace.limit)
+        app.download_unread_chapters(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), limit=namespace.limit)
     elif action == "list":
         app.list()
     elif action == "list-servers":
@@ -236,11 +230,11 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "list-chapters":
         app.list_chapters(namespace.name)
     elif action == "load":
-        app.load_from_tracker(user_name=namespace.name, exact=False, media_type_filter=namespace.manga_only or namespace.anime_only, local_only=namespace.local_only, update_progress_only=namespace.progress_only)
+        app.load_from_tracker(user_name=namespace.name, exact=False, media_type_filter=MEDIA_TYPES.get(namespace.media_type, None), local_only=namespace.local_only, update_progress_only=namespace.progress_only)
     elif action == "login":
         app.test_login(namespace.servers, force=namespace.force)
     elif action == "mark-up-to-date":
-        app.mark_up_to_date(namespace.name, media_type=namespace.manga_only or namespace.anime_only, N=namespace.N, force=namespace.force, abs=namespace.abs)
+        app.mark_up_to_date(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), N=namespace.N, force=namespace.force, abs=namespace.abs)
         app.list()
     elif action == "js-cookie-parser":
         app.maybe_fetch_extra_cookies()
@@ -259,12 +253,12 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "remove":
         app.remove_media(id=namespace.id)
     elif action == "import":
-        app.import_media(namespace.file, media_type=namespace.manga or namespace.anime or namespace.novel or ANIME, link=namespace.link, name=namespace.name)
+        app.import_media(namespace.file, media_type=MEDIA_TYPES.get(namespace.media_type, None) or ANIME, link=namespace.link, name=namespace.name)
     elif action == "search":
-        if not app.search_add(namespace.term, server_id=namespace.server, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact):
+        if not app.search_add(namespace.term, server_id=namespace.server, media_type=MEDIA_TYPES.get(namespace.media_type, None), exact=namespace.exact):
             logging.warning("Could not find media %s", namespace.term)
     elif action == "select":
-        app.select_chapter(namespace.term, quality=namespace.quality, server_id=namespace.server, media_type=namespace.manga_only or namespace.anime_only, exact=namespace.exact)
+        app.select_chapter(namespace.term, quality=namespace.quality, server_id=namespace.server, media_type=MEDIA_TYPES.get(namespace.media_type, None), exact=namespace.exact)
     elif action == "setting":
         if namespace.value:
             app.settings.set(namespace.setting, namespace.value)
@@ -273,7 +267,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "stream":
         app.stream(namespace.url, cont=namespace.cont, download=namespace.download, quality=namespace.quality)
     elif action == "sync":
-        app.sync_progress(force=namespace.force, media_type=namespace.manga_only or namespace.anime_only, dry_run=namespace.dry_run)
+        app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
     elif action == "update":
         app.update(download=namespace.download, replace=namespace.replace)
     elif action == "upgrade":
