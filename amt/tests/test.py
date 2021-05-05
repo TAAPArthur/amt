@@ -738,6 +738,14 @@ class ArgsTest(MinimalUnitTestClass):
             self.app.settings.load()
             self.assertEqual(self.settings.get(key_value[0]), key_value[-1])
 
+    @patch("getpass.getpass", return_value="0")
+    def test_set_password(self, input):
+        self.app.settings.password_manager_enabled = True
+        self.app.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
+        self.app.settings.password_save_cmd = r"cat - > {}{}".format(TEST_HOME, "{}")
+        parse_args(app=self.media_reader, args=["set-password", TestServerLogin.id, "username"])
+        self.assertEquals(("username", "0"), self.app.settings.get_credentials(TestServerLogin.id))
+
     def test_print_app_state(self):
         self.add_arbitrary_media()
         chapter_id = list(self.media_reader.get_media_ids_in_library())[0]

@@ -1,3 +1,4 @@
+import getpass
 import json
 import logging
 import os
@@ -162,8 +163,10 @@ class Settings:
             except subprocess.CalledProcessError:
                 logging.info("Unable to load credentials for %s", server_id)
 
-    def store_credentials(self, server_id, username, password):
+    def store_credentials(self, server_id, username, password=None):
         """Stores the username, password for the given server_id"""
+        if password is None:
+            password = getpass.getpass()
         if self.password_manager_enabled and self.password_save_cmd:
             logging.debug("Storing credentials for %s", server_id)
             process = subprocess.Popen(self.password_save_cmd.format(server_id), shell=self.shell, stdin=subprocess.PIPE)

@@ -182,6 +182,11 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         # upgrade state
         sub_parsers.add_parser("upgrade", description="Upgrade old state to newer format")
+
+        # store password state
+        password_parser = sub_parsers.add_parser("set-password", description="Set password")
+        password_parser.add_argument("server", default=None, choices=app.get_servers_ids_with_logins())
+        password_parser.add_argument("username")
     except KeyError as e:
         logging.warn("Failed to parse arguments because of key error; attempting to upgrade state")
         if not app.settings.auto_upgrade_state:
@@ -266,6 +271,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
     elif action == "stream":
         app.stream(namespace.url, cont=namespace.cont, download=namespace.download, quality=namespace.quality)
+    elif action == "set-password":
+        app.settings.store_credentials(namespace.server, namespace.username)
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
     elif action == "update":
