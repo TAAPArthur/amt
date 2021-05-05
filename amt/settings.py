@@ -32,6 +32,7 @@ class Settings:
         ("ts", "mp4", "cat {} > {}", "rm {}")
     ]
     anime_viewer = "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media} "
+    novel_viewer = "zathura {}"
     manga_viewer = "zathura {}"
     page_viewer = "sxiv {}"
 
@@ -214,6 +215,9 @@ class Settings:
 
     def open_page_viewer(self, images):
         return self._open_viewer(self.page_viewer, images)
+
+    def open_novel_viewer(self, file):
+        return self._open_viewer(self.novel_viewer, file)
 
     def convert(self, extension, files, destWithoutExt):
         for ext, targetExt, cmd, cleanupCmd in self.converters:

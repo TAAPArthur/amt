@@ -12,7 +12,7 @@ from urllib3 import Retry
 
 from . import cookie_manager, servers, trackers
 from .job import Job
-from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
+from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, NOVEL, Server
 from .settings import Settings
 from .tracker import Tracker
 
@@ -319,17 +319,14 @@ class MediaReader:
     def view_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False, num_list=None, force_abs=False):
         chapter_info_list = list((self.get_chapters(NOT_ANIME, name, num_list, force_abs=force_abs) if num_list else self._get_unreads(NOT_ANIME, name=name, limit=limit, shuffle=shuffle)))
         self.for_each(self._download_selected_chapters, chapter_info_list, raiseException=not ignore_errors)
-        paths = []
-        chapters = []
         for server, media_data, chapter in chapter_info_list:
             if server.is_fully_downloaded(media_data, chapter):
-                paths.append(server.get_children(media_data, chapter))
-                chapters.append(chapter)
-        if paths and self.settings.open_page_viewer(paths):
-            for chapter in chapters:
-                chapter["read"] = True
-            return True
-        return False
+                path = server.get_children(media_data, chapter)
+                if media_data["media_type"] == MANGA and self.settings.open_page_viewer(path) or media_data["media_type"] == NOVEL and self.settings.open_novel_viewer(path):
+                    chapter["read"] = True
+                else:
+                    return False
+        return True
 
     def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
         paths = []

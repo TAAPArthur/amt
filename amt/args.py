@@ -89,7 +89,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         view_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
         view_parser.add_argument("-l", "--limit", default=0, type=int)
         view_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
-        view_parser.add_argument("name", choices=app.get_all_names(MANGA), default=None, nargs="?")
+        view_parser.add_argument("name", choices=app.get_all_names(MANGA | NOVEL), default=None, nargs="?")
         view_parser.add_argument("num", default=None, nargs="*", type=float)
 
         bundle_parser = sub_parsers.add_parser("bundle", help="Bundle individual manga pages into a single file")
