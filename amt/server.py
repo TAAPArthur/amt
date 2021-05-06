@@ -8,6 +8,7 @@ from threading import Lock
 import m3u8
 from Crypto.Cipher import AES
 from PIL import Image
+from requests.exceptions import HTTPError
 
 from .job import Job
 
@@ -232,9 +233,15 @@ class Server:
     def post_download(self, media_data, chapter_data, dir_path):
         pass
 
+    def needs_to_login(self):
+        try:
+            return not self.is_logged_in and self.needs_authentication()
+        except HTTPError:
+            return True
+
     def pre_download(self, media_data, chapter_data, dir_path):
         if chapter_data["premium"] and not self.is_premium:
-            if not self.is_logged_in and self.needs_authentication():
+            if self.needs_to_login():
                 logging.info("Server is not authenticated; relogging in")
                 if not self.relogin():
                     logging.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
