@@ -47,6 +47,9 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 * [Funimation](https://funimation.com)
 * [Vrv](https://vrv.co)
 
+### Light novels
+* [J Novel club](https://j-novel.club/)
+
 ### Trackers
 * [Anilist](https://anilist.co/home)
 
