@@ -436,17 +436,17 @@ class MediaReader:
         Return set of updated chapters or a False-like value
         """
         server = self.get_server(media_data["server_id"])
+        if server.sync_removed:
+            replace = True
 
         def get_chapter_ids(chapters):
             return {x for x in chapters if not chapters[x]["premium"]} if self.settings.free_only else set(chapters.keys())
-
         chapter_ids = get_chapter_ids(media_data["chapters"])
         if replace:
             chapters = dict(media_data["chapters"])
             media_data["chapters"].clear()
 
         server.update_media_data(media_data)
-        assert media_data["chapters"]
 
         current_chapter_ids = get_chapter_ids(media_data["chapters"])
         new_chapter_ids = current_chapter_ids - chapter_ids

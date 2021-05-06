@@ -16,6 +16,7 @@ class TestServer(Server):
     _throw_error = False
     _error_thrown = False
     domain = "test.com"
+    hide = False
 
     def maybe_inject_error(self):
         if self._throw_error:
@@ -34,6 +35,8 @@ class TestServer(Server):
 
     def update_media_data(self, media_data):
         self.maybe_inject_error()
+        if self.hide:
+            return
         media_id = media_data["id"]
         assert media_id in map(lambda x: x["id"], self.get_media_list())
         if media_id == 1:

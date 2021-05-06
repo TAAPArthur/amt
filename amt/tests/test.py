@@ -123,11 +123,14 @@ class BaseUnitTestClass(unittest.TestCase):
         assert media_list
         return media_list
 
+    def getChapters(self, media_type=ANIME | MANGA):
+        return [x for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values() if media_data["media_type"] & media_type]
+
     def assertAllChaptersRead(self, media_type=None):
-        self.assertTrue(all([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values() if not media_type or media_data["media_type"] & media_type]))
+        return all(map(lambda x: x["read"], self.getChapters(media_type)))
 
     def getNumChaptersRead(self, media_type=ANIME | MANGA):
-        return sum([x["read"] for media_data in self.media_reader.get_media_in_library() for x in media_data["chapters"].values() if media_data["media_type"] & media_type])
+        return sum(map(lambda x: x["read"], self.getChapters(media_type)))
 
     def verify_download(self, media_data, chapter_data, skip_file_type_validation=False):
         server = self.media_reader.get_server(media_data["server_id"])
@@ -418,7 +421,6 @@ class MediaReaderTest(BaseUnitTestClass):
         assert not self.media_reader.update()
 
     def test_update(self):
-
         self.media_reader.settings.free_only = False
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id):
@@ -432,6 +434,18 @@ class MediaReaderTest(BaseUnitTestClass):
                 media_data["chapters"].clear()
                 new_chapters2 = self.media_reader.update_media(media_data)
                 assert new_chapters == new_chapters2
+
+    def test_update_hidden_media(self):
+        media_list = self.add_test_media(server=self.test_server)
+        self.test_server.hide = True
+        numMedia = len(media_list)
+        initialChapters = len(self.getChapters())
+        assert not self.media_reader.update()
+        self.assertEquals(numMedia, len(self.app.get_media_in_library()))
+        self.assertEquals(initialChapters, len(self.getChapters()))
+        self.test_server.sync_removed = True
+        assert not self.media_reader.update()
+        self.assertEquals(0, len(self.getChapters()))
 
     def test_update_download(self):
         for server in self.media_reader.get_servers():

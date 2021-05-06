@@ -25,6 +25,7 @@ def load_response(data):
 class Mangaplus(Server):
     id = "mangaplus"
     lang = "en"
+    sync_removed = True
 
     base_url = "https://mediaplus.shueisha.co.jp"
     api_url = "https://jumpg-webapi.tokyo-cdn.com/api"
