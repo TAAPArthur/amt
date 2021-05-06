@@ -7,7 +7,6 @@ from ..server import ANIME, Server
 
 class Animelab(Server):
     #id = 'animelab'
-    has_login = True
     domain = "animelab.com"
     media_type = ANIME
     extension = "mp4"

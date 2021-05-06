@@ -11,7 +11,6 @@ TEST_BASE = "/tmp/amt/"
 
 class TestServer(Server):
     id = "test_server_manga"
-    has_gaps = True
     extension = "jpeg"
     _prefix = "Manga"
     _throw_error = False
@@ -76,7 +75,6 @@ class TestServerLogin(TestServer):
     id = "test_server_login"
     counter = 0
     fail_login = False
-    has_login = True
     logged_in = False
 
     def login(self, username, password):

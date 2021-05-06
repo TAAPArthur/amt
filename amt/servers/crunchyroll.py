@@ -67,7 +67,6 @@ class Crunchyroll(GenericCrunchyrollServer):
     id = "crunchyroll"
     lang = "en"
     locale = "enUS"
-    has_login = True
 
     base_url = "https://www.crunchyroll.com"
     manga_url = base_url + "/comics/manga/{0}/volumes"

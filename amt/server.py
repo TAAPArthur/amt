@@ -20,107 +20,25 @@ ALL_MEDIA = NOT_ANIME | ANIME
 MEDIA_TYPES = {"MANGA": MANGA, "NOVEL": NOVEL, "ANIME": ANIME}
 
 
-class Server:
+class GenericServer:
+    """
+    This class is intended to seperate the overridable methods of Server from
+    the internal business logic.
+
+    Servers need not override most of the methods of this. Some have default
+    values that are sane in some common situations
+    """
     id = None
     alias = None
     domain = None
-    lang = 'en'
-    locale = 'enUS'
-    session = None
-    settings = None
-    media_type = MANGA
+    extension = "jpeg"
     external = False
     is_protected = False
-
-    has_login = False
-    has_gaps = False
-    is_non_premium_account = False
-    is_premium = False
-    is_logged_in = False
+    lang = 'en'
+    locale = 'enUS'
+    media_type = MANGA
     stream_url_regex = None
-
-    # progress in chapters (default) or volumes
-    progress_in_volumes = False
-
-    extension = "jpeg"
-    incapsula_flag = "Request unsuccessful. Incapsula incident ID:"
-    incapsula_regex = re.compile(r"/_Incapsula_Resource\?SWJIYLWA=[0-9a-z]*,[0-9a-z]*")
-
-    def __init__(self, session, settings=None):
-        self.settings = settings
-        self.session = session
-        self._lock = Lock()
-
-    @property
-    def lock(self):
-        return self._lock
-
-    def _request(self, get, url, **kwargs):
-        logging.info("Making request to %s", url)
-        logging.debug("Request args: %s ", kwargs)
-        kwargs["verify"] = self.settings.isVerifyingSSL()
-        r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
-        if r.status_code != 200:
-            logging.warning("HTTP Error: %d %s", r.status_code, r.text)
-        r.raise_for_status()
-        return r
-
-    def _request_or_prompt_incapsula(self, url, no_load_cookies=False, **kwargs):
-        r = self.session_get(url, **kwargs)
-        for i in range(self.settings.max_retires):
-            if (self.incapsula_flag in r.text or self.incapsula_regex.search(r.text)):
-                time.sleep(1)
-                if self.settings.incapsula_prompt:
-                    logging.info("Detected _Incapsula_Resource")
-                    name, value = self.settings.get_incapsula(self.id)
-                    self.session.cookies.set(name, value, domain=self.domain, path="/")
-                r = self._request(True, url)
-        if self.incapsula_flag in r.text or self.incapsula_regex.search(r.text):
-            if not no_load_cookies and self.settings.load_js_cookies(url, self.session):
-                return self._request_or_prompt_incapsula(url, True, **kwargs)
-            raise ValueError(r.text[-500:])
-        return r
-
-    def add_cookie(self, name, value, domain=None, path="/"):
-        self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
-
-    def session_get_cache(self, url, **kwargs):
-        return self.settings.get_cache(url, lambda: self._request_or_prompt_incapsula(url, **kwargs))
-
-    def session_get_protected(self, url, **kwargs):
-        return self._request_or_prompt_incapsula(url, **kwargs)
-
-    @cache
-    def session_get_mem_cache(self, url, **kwargs):
-        return self._request_or_prompt_incapsula(url, **kwargs)
-
-    def session_get(self, url, **kwargs):
-        return self._request(True, url, **kwargs)
-
-    def session_post(self, url, **kwargs):
-        return self._request(False, url, **kwargs)
-
-    def login(self, username, password):
-        return False
-
-    def relogin(self):
-        if self.is_logged_in:
-            return True
-        credential = self.settings.get_credentials(self.id if not self.alias else self.alias)
-        if credential:
-            try:
-                logged_in = self.login(credential[0], credential[1])
-            except:
-                logged_in = False
-            if not logged_in:
-                logging.warning("Could not login with username: %s", credential[0])
-            else:
-                logging.info("Logged into %s; premium %s", self.id, self.is_premium)
-
-            self.is_logged_in = logged_in
-            return logged_in
-        logging.warning("Could not load credentials")
-        return False
+    is_premium = False
 
     def get_media_list(self):
         """
@@ -151,23 +69,6 @@ class Server:
         """
         return [self.create_page_data(url=self.get_stream_url(media_data, chapter_data), ext=self.extension)]
 
-    def get_stream_data(self, media_data, chapter_data):
-        assert media_data["media_type"] == ANIME
-        m3u8_url = self.get_stream_url(media_data=media_data, chapter_data=chapter_data)
-        return [self.create_page_data(url=segment.uri, encryption_key=segment.key) for segment in m3u8.load(m3u8_url).segments]
-
-    def get_chapter_id_for_url(self, url):
-        return None
-
-    def can_stream_url(self, url):
-        return self.stream_url_regex and self.stream_url_regex.match(url)
-
-    def get_stream_url(self, media_data, chapter_data, quality=0):
-        return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[quality]
-
-    def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
-        return []
-
     def get_media_data_from_url(self, url):
         raise NotImplementedError
 
@@ -181,48 +82,25 @@ class Server:
         with open(path, 'wb') as fp:
             fp.write(content)
 
-    @staticmethod
-    def get_page_name_from_index(page_index):
-        return '%04d' % page_index
+    ################ ANIME ONLY #####################
+    def get_stream_data(self, media_data, chapter_data):
+        assert media_data["media_type"] == ANIME
+        m3u8_url = self.get_stream_url(media_data=media_data, chapter_data=chapter_data)
+        return [self.create_page_data(url=segment.uri, encryption_key=segment.key) for segment in m3u8.load(m3u8_url).segments]
 
-    def needs_authentication(self):
-        """
-        Checks if the user is logged in
-        If the user is logged into a non-premium account,
-        is_non_premium_account should be set to False
+    def get_chapter_id_for_url(self, url):
+        return None
 
-        If the user is not logged in (and needs to login to access all content),
-        this method should return true.
-        """
-        return self.has_login and not self.is_logged_in
+    def get_stream_url(self, media_data, chapter_data, quality=0):
+        return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[quality]
 
-    @staticmethod
-    def get_download_marker():
-        return ".downloaded"
+    def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
+        return []
 
-    def mark_download_complete(self, dir_path):
-        full_path = os.path.join(dir_path, Server.get_download_marker())
-        open(full_path, 'w').close()
+    ################ OPTIONAL #####################
 
     def _get_dir(self, media_data, chapter_data):
         return self.settings.get_chapter_dir(media_data, chapter_data)
-
-    def is_fully_downloaded(self, media_data, chapter_data):
-        dir_path = self._get_dir(media_data, chapter_data)
-        full_path = os.path.join(dir_path, self.get_download_marker())
-        return os.path.exists(full_path)
-
-    def get_children(self, media_data, chapter_data):
-        return "{}/*".format(self._get_dir(media_data, chapter_data))
-
-    def download_if_missing(self, func, full_path):
-        logging.info("downloading %s", full_path)
-        if os.path.exists(full_path):
-            logging.debug("Page %s already download", full_path)
-        else:
-            temp_path = os.path.join(os.path.dirname(full_path), ".tmp-" + os.path.basename(full_path))
-            func(temp_path)
-            os.rename(temp_path, full_path)
 
     def _get_page_path(self, media_data, chapter_data, dir_path, index, page_data):
         return os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + page_data["ext"])
@@ -232,6 +110,144 @@ class Server:
 
     def post_download(self, media_data, chapter_data, dir_path):
         pass
+
+    def is_fully_downloaded(self, media_data, chapter_data):
+        dir_path = self._get_dir(media_data, chapter_data)
+        full_path = os.path.join(dir_path, self.get_download_marker())
+        return os.path.exists(full_path)
+
+    def get_children(self, media_data, chapter_data):
+        return "{}/*".format(self._get_dir(media_data, chapter_data))
+
+    def needs_authentication(self):
+        """
+        Checks if the user is logged in
+
+        If the user is not logged in (and needs to login to access all content),
+        this method should return true.
+        """
+        return self.has_login and not self.is_logged_in
+
+    def login(self, username, password):
+        assert False
+        return False
+
+
+# Global constants
+incapsula_flag = "Request unsuccessful. Incapsula incident ID:"
+incapsula_regex = re.compile(r"/_Incapsula_Resource\?SWJIYLWA=[0-9a-z]*,[0-9a-z]*")
+
+
+class Server(GenericServer):
+
+    session = None
+    settings = None
+    _is_logged_in = False
+
+    def __init__(self, session, settings=None):
+        self.settings = settings
+        self.session = session
+        self._lock = Lock()
+
+    @property
+    def lock(self):
+        return self._lock
+
+    @property
+    def is_logged_in(self):
+        return self._is_logged_in
+
+    @property
+    def has_login(self):
+        return self.login.__func__ is not GenericServer.login
+
+    def _request(self, get, url, **kwargs):
+        logging.info("Making request to %s", url)
+        logging.debug("Request args: %s ", kwargs)
+        kwargs["verify"] = self.settings.isVerifyingSSL()
+        r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
+        if r.status_code != 200:
+            logging.warning("HTTP Error: %d %s", r.status_code, r.text)
+        r.raise_for_status()
+        return r
+
+    def _request_or_prompt_incapsula(self, url, no_load_cookies=False, **kwargs):
+        r = self.session_get(url, **kwargs)
+        for i in range(self.settings.max_retires):
+            if (incapsula_flag in r.text or incapsula_regex.search(r.text)):
+                time.sleep(1)
+                if self.settings.incapsula_prompt:
+                    logging.info("Detected _Incapsula_Resource")
+                    name, value = self.settings.get_incapsula(self.id)
+                    self.session.cookies.set(name, value, domain=self.domain, path="/")
+                r = self._request(True, url)
+        if incapsula_flag in r.text or incapsula_regex.search(r.text):
+            if not no_load_cookies and self.settings.load_js_cookies(url, self.session):
+                return self._request_or_prompt_incapsula(url, True, **kwargs)
+            raise ValueError(r.text[-500:])
+        return r
+
+    def add_cookie(self, name, value, domain=None, path="/"):
+        self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
+
+    def session_get_cache(self, url, **kwargs):
+        return self.settings.get_cache(url, lambda: self._request_or_prompt_incapsula(url, **kwargs))
+
+    def session_get_protected(self, url, **kwargs):
+        return self._request_or_prompt_incapsula(url, **kwargs)
+
+    @cache
+    def session_get_mem_cache(self, url, **kwargs):
+        return self._request_or_prompt_incapsula(url, **kwargs)
+
+    def session_get(self, url, **kwargs):
+        return self._request(True, url, **kwargs)
+
+    def session_post(self, url, **kwargs):
+        return self._request(False, url, **kwargs)
+
+    def relogin(self):
+        if self.is_logged_in:
+            return True
+        credential = self.settings.get_credentials(self.id if not self.alias else self.alias)
+        if credential:
+            try:
+                logged_in = self.login(credential[0], credential[1])
+            except:
+                logged_in = False
+            if not logged_in:
+                logging.warning("Could not login with username: %s", credential[0])
+            else:
+                logging.info("Logged into %s; premium %s", self.id, self.is_premium)
+
+            self._is_logged_in = logged_in
+            return logged_in
+        logging.warning("Could not load credentials")
+        return False
+
+    @staticmethod
+    def get_page_name_from_index(page_index):
+        return '%04d' % page_index
+
+    def can_stream_url(self, url):
+        return self.stream_url_regex and self.stream_url_regex.match(url)
+
+    @staticmethod
+    def get_download_marker():
+        return ".downloaded"
+
+    def mark_download_complete(self, dir_path):
+        full_path = os.path.join(dir_path, Server.get_download_marker())
+        open(full_path, 'w').close()
+
+    def download_if_missing(self, func, full_path):
+        logging.info("downloading %s", full_path)
+        if os.path.exists(full_path):
+            logging.debug("Page %s already download", full_path)
+        else:
+            temp_path = os.path.join(os.path.dirname(full_path), ".tmp-" + os.path.basename(full_path))
+            func(temp_path)
+            os.rename(temp_path, full_path)
 
     def needs_to_login(self):
         try:
@@ -246,7 +262,7 @@ class Server:
                 if not self.relogin():
                     logging.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
             else:
-                self.is_logged_in = True
+                self._is_logged_in = True
             if not self.is_premium:
                 logging.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                 raise ValueError("Cannot access premium chapter")

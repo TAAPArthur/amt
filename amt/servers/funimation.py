@@ -9,7 +9,6 @@ from ..server import ANIME, Server
 
 class Funimation(Server):
     id = "funimation"
-    has_login = True
     is_protected = True
 
     CSRF_NAME = "csrfmiddlewaretoken"

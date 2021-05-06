@@ -1206,11 +1206,6 @@ class ServerTest(RealBaseUnitTestClass):
                     return_val = server.update_media_data(media_data)
                     assert not return_val
                     assert isinstance(media_data["chapters"], dict)
-                    set_of_numbers = self.verify_unique_numbers(media_data["chapters"])
-                    if not server.has_gaps:
-                        numbers = sorted(set_of_numbers)
-                        gaps = sum([numbers[i + 1] - numbers[i] > 1 for i in range(len(numbers) - 1)])
-                        self.assertLessEqual(gaps, 1)
 
     def test_media_download_stream(self, stream=False):
         for server in self.media_reader.get_servers():
