@@ -122,9 +122,10 @@ class Application(MediaReader):
             else:
                 logging.debug("Already tracking %s %d", media_data["name"], entry["progress"])
 
-            if entry["progress"] > media_data["progress"]:
-                self.mark_chapters_until_n_as_read(media_data, entry["progress"])
-            media_data["progress"] = entry["progress"]
+            progress = entry["progress"] if not self.get_server(media_data["server_id"]).progress_in_volumes else entry["progress_volumes"]
+            if progress > media_data["progress"]:
+                self.mark_chapters_until_n_as_read(media_data, progress)
+            media_data["progress"] = progress
             count += 1
         if unknown_media:
             logging.info("Could not find any of %s", unknown_media)

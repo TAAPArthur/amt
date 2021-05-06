@@ -17,7 +17,7 @@ class TestTracker(Tracker):
             ])
 
     def update(self, list_of_updates):
-        for id, progress in list_of_updates:
+        for id, progress, _ in list_of_updates:
             self.media_list[id][2] = progress
 
     def get_tracker_list(self, user_name=None, id=None):

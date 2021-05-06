@@ -76,6 +76,7 @@ class TestApplication(Application):
         self.settings.suppress_cmd_output = True
         self.settings.anime_viewer = "echo {media} {title}"
         self.settings.manga_viewer = "[ -f {} ]"
+        self.settings.novel_viewer = "[ -f {} ]"
         self.settings.segment_viewer = "ls {media}; echo {title}"
         self.settings.page_viewer = "ls {}"
         self.settings.bundle_cmds[self.settings.bundle_format] = "ls {files}; touch {name}"
