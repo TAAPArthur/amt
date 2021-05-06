@@ -1065,25 +1065,28 @@ class ArgsTest(MinimalUnitTestClass):
 
     def test_import_auto_detect_name(self):
         samples = [
-            ("Banner of the Stars", 1, "01. Banner of the Stars (Seikai no Senki) [480p][author].mkv"),
-            ("Magical Girl Lyrical Nanoha", 13, "[author] Magical Girl Lyrical Nanoha - 13 (type) [deadbeef].mkv"),
-            ("Magical Girl Lyrical Nanoha A's", 999, "[author] Magical Girl Lyrical Nanoha A's - 999.mkv"),
-            ("Steins;Gate", 1, "01 - Steins;Gate.mkv"),
-            ("Kaguya-sama", 1, "Kaguya-sama - 01.mkv"),
-            ("ViVid Strike!", 1, "[First Name] ViVid Strike! - 01 [BD 1080p][247EFC8F].mkv"),
-            ("Specials", 5.5, "[First Name] Specials - 05.5 [BD 1080p][247EFC8F].mkv"),
-            ("Ending", 0, "[First Name] Ending - ED [BD 1080p][247EFC8F].mkv"),
-            ("Attack No. 1", 2, "Attack No. 1 - 02.mkv"),
-            ("Alien 9", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
+            ("ANIME", "Banner of the Stars", 1, "01. Banner of the Stars (Seikai no Senki) [480p][author].mkv"),
+            ("ANIME", "Magical Girl Lyrical Nanoha", 13, "[author] Magical Girl Lyrical Nanoha - 13 (type) [deadbeef].mkv"),
+            ("ANIME", "Magical Girl Lyrical Nanoha A's", 999, "[author] Magical Girl Lyrical Nanoha A's - 999.mkv"),
+            ("ANIME", "Steins;Gate", 1, "01 - Steins;Gate.mkv"),
+            ("ANIME", "Kaguya-sama", 1, "Kaguya-sama - 01.mkv"),
+            ("ANIME", "ViVid Strike!", 1, "[First Name] ViVid Strike! - 01 [BD 1080p][247EFC8F].mkv"),
+            ("ANIME", "Specials", 5.5, "[First Name] Specials - 05.5 [BD 1080p][247EFC8F].mkv"),
+            ("ANIME", "Ending", 0, "[First Name] Ending - ED [BD 1080p][247EFC8F].mkv"),
+            ("ANIME", "Attack No. 1", 2, "Attack No. 1 - 02.mkv"),
+            ("ANIME", "Alien 9", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
+            ("MANGA", "shamanking0", 1, "shamanking0_vol1.pdf"),
+            ("NOVEL", "i-refuse-to-be-your-enemy", 5, "i-refuse-to-be-your-enemy-volume-5.epub"),
+
         ]
 
         self.settings.anime_viewer = "[ -f {media} ] && echo {title}"
-        for name, number, file_name in samples:
+        for media_type, name, number, file_name in samples:
             with self.subTest(file_name=file_name):
                 with open(file_name, "w") as f:
                     f.write("dummy_data")
                 assert os.path.exists(file_name)
-                parse_args(app=self.media_reader, args=["import", "--media-type=ANIME", file_name])
+                parse_args(app=self.media_reader, args=["import", "--media-type", media_type, file_name])
                 assert not os.path.exists(file_name)
                 assert any([x["name"] == name for x in self.media_reader.get_media_in_library()])
                 for media_data in self.media_reader.get_media_in_library():
@@ -1091,8 +1094,12 @@ class ArgsTest(MinimalUnitTestClass):
                         chapters = list(media_data["chapters"].values())
                         self.assertEqual(len(chapters), 1)
                         self.assertEqual(chapters[0]["number"], number)
-                        assert self.media_reader.play(name, any_unread=True)
                         assert re.search(r"^\w+$", media_data["id"])
+                        self.assertEqual(media_data["media_type"], MEDIA_TYPES[media_type])
+                        if media_data["media_type"] == ANIME:
+                            assert self.media_reader.play(name, any_unread=True)
+                        else:
+                            assert self.media_reader.view_chapters(name)
 
     def test_import_multiple(self):
         file_names = ["Media - 1.mp4", "MediaOther - 1.mp4", "Media - 2.mp4"]

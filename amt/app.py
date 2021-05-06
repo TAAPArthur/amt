@@ -200,11 +200,12 @@ class Application(MediaReader):
         os.makedirs(custom_server_dir, exist_ok=True)
         assert os.path.exists(custom_server_dir)
         names = set()
+        volume_regex = r"(_|\s)?vol[ume-]*[\w\s]*(\d+)"
         for file in files:
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             media_name = name
             if not name:
-                match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]*\w+[\w';:\. ]+[0-9A-z][!?]*).*\.\w+$", file)
+                match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]*\w+[\w';:\. ]+\w[!?]*)(.*\.\w+)$", re.sub(volume_regex, "", file))
                 assert match
                 media_name = match.group(2)
                 logging.info("Detected name %s", media_name)

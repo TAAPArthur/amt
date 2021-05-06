@@ -15,7 +15,7 @@ def get_local_server_id(media_type):
 
 class CustomServer(Server):
     external = True
-    number_regex = re.compile(r"(\d{2,}\.?\d*)[ \.]")
+    number_regex = re.compile(r"(\d+\.?\d*)[ \.]")
     id_formatter_regex = re.compile(r"\W+")
 
     def get_media_list(self):
@@ -23,8 +23,8 @@ class CustomServer(Server):
 
     def update_media_data(self, media_data):
         for fileName in os.listdir(self.settings.get_media_dir(media_data)):
-            match = self.number_regex.search(fileName)
-            self.update_chapter_data(media_data, id=fileName, title=fileName, number=float(match.group(1) if match else 0))
+            matches = self.number_regex.findall(fileName)
+            self.update_chapter_data(media_data, id=fileName, title=fileName, number=float(max(matches, key=len)) if matches else 0)
 
     def is_fully_downloaded(self, media_data, chapter_data):
         return os.path.exists(os.path.join(self.settings.get_media_dir(media_data), chapter_data["id"]))
