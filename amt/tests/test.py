@@ -1275,18 +1275,20 @@ class ServerTest(RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
-        ("1019573", "1019574", "1019900", "https://www.funimation.com/shows/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese"),
-        ("1079937", "1174339", "1174543", "https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b"),
-        ("260315", "21563", "652193", "https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193"),
-        ("269787", "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209"),
-        ("GRMG8ZQZR", "GYVNM8476", "GR3VWXP96", "https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates"),
+        ("260315", "21563", "652193", "https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193", False),
+        ("269787", "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209", False),
+        ("GRMG8ZQZR", "GYVNM8476", "GR3VWXP96", "https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", False),
+        ("1019573", "1019574", "1019900", "https://www.funimation.com/shows/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", True),
+        ("1079937", "1174339", "1174543", "https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b", True),
     ]
 
     def test_media_steam(self):
-        for media_id, season_id, chapter_id, url in self.streamable_urls:
+        for media_id, season_id, chapter_id, url, premium in self.streamable_urls:
             servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
             with self.subTest(url=url):
                 assert servers
+                if premium and not os.getenv("PREMIUM_TEST"):
+                    self.skipTest("PREMIUM_TEST is not enabled")
                 for server in servers:
                     with self.subTest(url=url, server=server.id):
                         media_data = server.get_media_data_from_url(url)
