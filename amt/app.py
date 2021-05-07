@@ -54,7 +54,6 @@ class Application(MediaReader):
                 return self.play(name=media_data, num_list=[chapter["number"]], force_abs=True, quality=quality)
             else:
                 return self.view_chapters(name=media_data, num_list=[chapter["number"]], force_abs=True)
-            assert False
 
     def add_from_url(self, url):
         for server in self.get_servers():

@@ -49,7 +49,8 @@ class TestApplication(Application):
         settings.free_only = True
         settings.no_save_session = True
         settings.no_load_session = True
-        settings.password_manager_enabled = False
+        settings.password_manager_enabled = True
+        settings.password_load_cmd = r"echo -e a\\tb"
         settings.shell = True
         settings.threads = 0
 
@@ -276,6 +277,11 @@ class SettingsTest(BaseUnitTestClass):
 
 class ServerWorkflowsTest(BaseUnitTestClass):
 
+    def setUp(self):
+        super().setUp()
+        self.app.settings.threads = Settings.threads
+        self.app.settings.password_manager_enabled = True
+
     def test_media_reader_add_remove_media(self):
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id):
@@ -316,8 +322,12 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def test_bad_login(self):
         server = self.media_reader.get_server(TestServerLogin.id)
         server.fail_login = True
-        server.settings.password_manager_enabled = True
-        server.settings.password_load_cmd = r"echo -e A\\tB"
+        self.assertRaises(ValueError, self.download_matching_chapters, server, lambda x: x["premium"])
+        self.assertEqual(1, server.counter)
+
+    def test_error_on_login(self):
+        server = self.media_reader.get_server(TestServerLogin.id)
+        server.error_login = True
         self.assertRaises(ValueError, self.download_matching_chapters, server, lambda x: x["premium"])
         self.assertEqual(1, server.counter)
 
@@ -421,7 +431,7 @@ class MediaReaderTest(BaseUnitTestClass):
                 self.media_reader.download_unread_chapters()
 
     def test_download_unread_chapters(self):
-        media_list = self.add_test_media()
+        media_list = self.add_test_media(self.test_server)
         count = self.media_reader.download_unread_chapters()
 
         self.assertEqual(count, sum([len(media_data["chapters"]) for media_data in media_list]))
@@ -712,11 +722,13 @@ class CustomTest(MinimalUnitTestClass):
 class ArgsTest(MinimalUnitTestClass):
     @patch("builtins.input", return_value="0")
     def test_arg(self, input):
+        self.settings.password_manager_enabled = False
         parse_args(app=self.media_reader, args=["auth"])
 
     def test_test_login(self):
         server = self.app.get_server(TestServerLogin.id)
         assert server.needs_authentication()
+
         parse_args(app=self.media_reader, args=["login", "--server", server.id])
         assert not server.needs_authentication()
         server.reset()
@@ -806,6 +818,14 @@ class ArgsTest(MinimalUnitTestClass):
         assert self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id)
         self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
 
+    def test_load_filter_by_type(self):
+        parse_args(app=self.media_reader, args=["--auto", "load", "--media-type=ANIME", "test_user"])
+        assert all([x["media_type"] == ANIME for x in self.media_reader.get_media_in_library()])
+
+    def test_load_add_progress_only(self):
+        parse_args(app=self.media_reader, args=["--auto", "load", "--progress-only", "test_user"])
+        assert not self.media_reader.get_media_in_library()
+
     def test_load_add_new_media(self):
         parse_args(app=self.media_reader, args=["--auto", "load", "test_user"])
         assert len(self.media_reader.get_media_in_library()) > 1
@@ -882,7 +902,7 @@ class ArgsTest(MinimalUnitTestClass):
                 assert not server.is_fully_downloaded(media_data, chapter_data)
 
     def test_download_next(self):
-        self.add_test_media()
+        self.add_test_media(self.test_server)
         for id, media_data in self.media_reader.media.items():
             server = self.app.get_server(media_data["server_id"])
             chapter = sorted(media_data["chapters"].values(), key=lambda x: x["number"])[0]

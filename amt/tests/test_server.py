@@ -3,6 +3,7 @@ import re
 import subprocess
 
 from PIL import Image
+from requests.exceptions import HTTPError
 
 from ..server import ANIME, MEDIA_TYPES, Server
 
@@ -81,23 +82,18 @@ class TestServerLogin(TestServer):
     id = "test_server_login"
     counter = 0
     fail_login = False
-    logged_in = False
+    error_login = False
 
     def login(self, username, password):
         self.counter += 1
+        if self.error_login:
+            raise HTTPError()
         self.is_premium = not self.fail_login
-        self.logged_in = not self.fail_login
-        return self.logged_in
-
-    def relogin(self):
-        return self.login(None, None)
-
-    def needs_authentication(self):
-        return not self.logged_in
+        return not self.fail_login
 
     def reset(self):
         self.counter = 0
-        self.logged_in = False
+        self._is_logged_in = False
 
 
 class TestAnimeServer(TestServer):
