@@ -30,7 +30,7 @@ class Settings:
     }
     bundle_format = "cbz"
     converters = [
-        ("ts", "mp4", "cat {} > {}", "rm {}")
+        ("ts", "mp4", "cat {input} > {output}", "rm {}"),
     ]
     anime_viewer = "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media} "
     novel_viewer = "zathura {}"
@@ -227,5 +227,5 @@ class Settings:
             if ext == extension:
                 targetFile = self._smart_quote(f"{destWithoutExt}.{targetExt}")
                 logging.info("Converting %s to %s", files, targetFile)
-                self.run_cmd(cmd.format(files, targetFile))
+                self.run_cmd(cmd.format(input=files, output=targetFile))
                 self.run_cmd(cleanupCmd.format(files))
