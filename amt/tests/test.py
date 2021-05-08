@@ -142,7 +142,7 @@ class BaseUnitTestClass(unittest.TestCase):
                 assert len(filenames) > 1, f"files: {filenames}, dirnames: {dirnames}"
                 if not file_name.startswith("."):
                     path = os.path.join(dir_path, dirpath, file_name)
-                    subprocess.check_call(f"[ -f {path} ]", shell=True)
+                    assert os.path.exists(path)
                     if skip_file_type_validation:
                         continue
                     if media_data["media_type"] == MANGA:
@@ -172,6 +172,11 @@ class BaseUnitTestClass(unittest.TestCase):
         set_of_numbers = sorted(list(set(list_of_numbers)))
         self.assertEqual(set_of_numbers, list_of_numbers)
         return set_of_numbers
+
+    def assertTrueOrSkipTest(self, obj):
+        if os.getenv("ENABLE_ONLY_SERVERS") and not obj:
+            self.skipTest("Server not enabled")
+        assert obj
 
 
 class MinimalUnitTestClass(BaseUnitTestClass):
@@ -302,7 +307,6 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         for media in server.get_media_list():
             server.update_media_data(media)
             chapters = list(filter(func, media["chapters"].values()))
-            print(chapters)
             if chapters:
                 server.download_chapter(media_data=media, chapter_data=chapters[0])
 
@@ -655,6 +659,7 @@ class RealArgsTest(RealBaseUnitTestClass):
             if server.domain:
                 server.session_get_protected("https://" + server.domain)
 
+    @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
     def test_load_from_tracker(self):
         anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
         self.app.get_primary_tracker().set_custom_anime_list(anime)
@@ -1238,6 +1243,7 @@ class ServerTest(RealBaseUnitTestClass):
 
     def test_get_media_list(self):
         for server in self.media_reader.get_servers():
+            media_list = None
             with self.subTest(server=server.id, method="get_media_list"):
                 media_list = server.search("One Piece")
                 if not media_list:
@@ -1307,7 +1313,7 @@ class ServerTest(RealBaseUnitTestClass):
             with self.subTest(media_name=media):
                 self.media_reader.media.clear()
                 media_data = self.media_reader.search_for_media(media)
-                assert media_data
+                self.assertTrueOrSkipTest(media)
                 for data in media_data:
                     self.media_reader.add_media(data)
                     self.verify_unique_numbers(data["chapters"])
@@ -1336,7 +1342,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         for url, media_id, season_id, chapter_id in self.streamable_urls:
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                assert servers
+                self.assertTrueOrSkipTest(servers)
                 for server in servers:
                     with self.subTest(url=url, server=server.id):
                         media_data = server.get_media_data_from_url(url)
@@ -1359,7 +1365,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
             for url, media_id, season_id, chapter_id in self.streamable_urls:
                 with self.subTest(url=url):
                     servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                    assert servers
+                    self.assertTrueOrSkipTest(servers)
                     for server in servers:
                         if server.media_type == ANIME:
                             assert self.app.stream(url)
@@ -1368,6 +1374,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
 class ServerSpecificTest(RealBaseUnitTestClass):
     def test_crunchyroll_session(self):
         from ..servers.crunchyroll import Crunchyroll
+        server = self.media_reader.get_server(Crunchyroll.id)
+        self.assertTrueOrSkipTest(server)
         server = self.media_reader.get_server(Crunchyroll.id)
         bad_session = "bad_session"
         server.session.cookies["session_id"] = bad_session
