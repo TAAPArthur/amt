@@ -1,6 +1,6 @@
 import re
 
-from ..server import MANGA, NOVEL, Server
+from ..server import MANGA, MEDIA_TYPES, NOVEL, Server
 
 
 class JNovelClub(Server):
@@ -9,8 +9,6 @@ class JNovelClub(Server):
     media_type = NOVEL
     sync_removed = True
     progress_in_volumes = True
-
-    stream_url_regex = re.compile(r"https://j-novel.club/series/([A-z\-])")
 
     login_url = "https://api.j-novel.club/api/users/login"
     api_domain = "https://labs.j-novel.club"
@@ -45,10 +43,13 @@ class JNovelClub(Server):
         data = self.session_get(self.series_info_url.format(series_id)).json()
         return self.create_media_data(data["slug"], data["title"])
 
+    def _create_media_data_helper(self, data):
+        return [self.create_media_data(media_data["slug"], media_data["title"], progress_in_volumes=self.progress_in_volumes) for media_data in data if MEDIA_TYPES[media_data["type"]] == self.media_type]
+
     def get_media_list(self):
         r = self.session_get(self.series_url)
         data = r.json()["series"]
-        return [self.create_media_data(media_data["slug"], media_data["title"], progress_in_volumes=self.progress_in_volumes) for media_data in data if media_data["type"] == str(self.media_type)]
+        return self._create_media_data_helper(data)
 
     def search(self, term):
         r = self.session_post(self.search_url, json={"query": term, "type": 1 if self.media_type == NOVEL else 2})
@@ -70,19 +71,31 @@ class JNovelClubParts(JNovelClub):
     alias = "j_novel_club"
     extension = "xhtml"
 
+    part_to_series_url = JNovelClub.api_base_url + "/parts/{}/serie?format=json"
     parts_url = JNovelClub.api_base_url + "/volumes/{}/parts?format=json"
     pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
     progress_in_volumes = False
+
+    stream_url_regex = re.compile(r"https://j-novel.club/read/([\w\d\-]+)")
 
     def update_media_data(self, media_data: dict):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
         for volume in r.json()["volumes"]:
             r = self.session_get(self.parts_url.format(volume["slug"]))
             for part in r.json()["parts"]:
-                self.update_chapter_data(media_data, id=part["legacyId"], number=part["number"], title=part["title"], premium=not part["preview"])
+                self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=part["number"], title=part["title"], premium=not part["preview"])
 
     def get_media_chapter_data(self, media_data, chapter_data):
-        return [self.create_page_data(self.pages_url.format(chapter_data["id"]))]
+        return [self.create_page_data(self.pages_url.format(chapter_data["alt_id"]))]
+
+    def get_media_data_from_url(self, url):
+        part_id = self.get_chapter_id_for_url(url)
+        r = self.session_get(self.part_to_series_url.format(part_id))
+        media_list = self._create_media_data_helper([r.json()])
+        return media_list[0] if media_list else None
+
+    def get_chapter_id_for_url(self, url):
+        return self.stream_url_regex.search(url).group(1)
 
 
 class JNovelClubManga(JNovelClub):

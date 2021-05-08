@@ -14,7 +14,7 @@ class Mangadex(Server):
     api_manga_url = base_url + "/api/manga/{0}"
     api_chapter_url = base_url + "/api/chapter/{0}"
     most_populars_url = base_url + "/titles/7"
-    manga_page_regex = re.compile(r"https?://mangadex.org/title/(\d*)")
+    stream_url_regex = re.compile(r"https?://mangadex.org/title/(\d*)")
 
     def get_media_list(self):
         r = self.session_get_cache(self.most_populars_url)
@@ -27,11 +27,8 @@ class Mangadex(Server):
 
         return results
 
-    def can_stream_url(self, url):
-        return self.manga_page_regex.search(url)
-
     def get_media_data_from_url(self, url):
-        match = self.manga_page_regex.search(url)
+        match = self.stream_url_regex.search(url)
         if match:
             id = int(match.group(1))
             r = self.session_get_cache(self.api_manga_url.format(id))

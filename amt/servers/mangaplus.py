@@ -18,6 +18,17 @@ class Mangaplus(Server):
     api_chapter_url = api_url + "/manga_viewer?chapter_id={0}&split=yes&img_quality=high&format=json"
     media_url = base_url + "/titles/{0}?format=json"
 
+    stream_url_regex = re.compile(r"https://mangaplus.shueisha.co.jp/viewer/(\d+)")
+
+    def get_media_data_from_url(self, url):
+        chapter_id = self.get_chapter_id_for_url(url)
+        r = self.session_get(self.api_chapter_url.format(chapter_id))
+        series_info = r.json()["success"]["mangaViewer"]
+        return self.create_media_data(id=series_info["titleId"], name=series_info["titleName"])
+
+    def get_chapter_id_for_url(self, url):
+        return self.stream_url_regex.search(url).group(1)
+
     def get_media_list(self):
         return self.search("")
 

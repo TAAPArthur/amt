@@ -29,6 +29,18 @@ class VizManga(Server):
     page_regex = re.compile(r"var pages\s*=\s*(\d*);")
     wsj_subscriber_regex = re.compile(r"var is_wsj_subscriber = (\w*);")
 
+    stream_url_regex = re.compile(r"https://www.viz.com/shonenjump/([\w\-]*)-chapter-1/chapter/(\d+)")
+
+    series_name_regex = re.compile(r"var seriesTitle\s*=\s*.([\w ]*).;")
+
+    def get_media_data_from_url(self, url):
+        media_id = self.stream_url_regex.search(url).group(1)
+        title = self.series_name_regex.search(self.session_get(url).text).group(1)
+        return self.create_media_data(id=media_id, name=title)
+
+    def get_chapter_id_for_url(self, url):
+        return self.stream_url_regex.search(url).group(2)
+
     def get_token(self):
         auth_token = self.session_get(self.refresh_login_url)
         token = re.search(r"AUTH_TOKEN\s*=\s*\"(.+?)\"", auth_token.text)

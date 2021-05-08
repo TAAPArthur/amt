@@ -1318,34 +1318,53 @@ class ServerTest(RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
-        ("260315", "21563", "652193", "https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193", False),
-        ("269787", "25186", "796209", "https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209", False),
-        ("GRMG8ZQZR", "GYVNM8476", "GR3VWXP96", "https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", False),
-        ("1019573", "1019574", "1019900", "https://www.funimation.com/shows/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", True),
-        ("1079937", "1174339", "1174543", "https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b", True),
+        ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),
+        ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
+        ("https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
+        ("https://www.crunchyroll.com/manga/to-your-eternity/read/1", "499", None, "16329"),
+        ("https://www.crunchyroll.com/one-piece/episode-1-im-luffy-the-man-whos-gonna-be-king-of-the-pirates-650673", "257631", "21685", "650673"),
+        ("https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209", "269787", "25186", "796209"),
+        ("https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193", "260315", "21563", "652193"),
+        ("https://www.funimation.com/en/shows/one-piece/im-luffy-the-man-whos-gonna-be-king-of-the-pirates/?lang=japanese", "20224", "20227", "22333"),
+        ("https://www.viz.com/shonenjump/one-piece-chapter-1/chapter/5090?action=read", "one-piece", None, "5090")
     ]
 
-    def test_media_steam(self):
-        for media_id, season_id, chapter_id, url, premium in self.streamable_urls:
-            servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
+    premium_streamable_urls = [
+        ("https://www.funimation.com/shows/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
+        ("https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b", "1079937", "1174339", "1174543"),
+    ]
+
+    def test_media_add_from_url(self):
+        for url, media_id, season_id, chapter_id in self.streamable_urls:
             with self.subTest(url=url):
+                servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
                 assert servers
-                if premium and not os.getenv("PREMIUM_TEST"):
-                    self.skipTest("PREMIUM_TEST is not enabled")
                 for server in servers:
                     with self.subTest(url=url, server=server.id):
                         media_data = server.get_media_data_from_url(url)
                         assert media_data
+                        server.update_media_data(media_data)
                         self.assertEqual(media_id, str(media_data["id"]))
+                        self.assertTrue(chapter_id in media_data["chapters"])
+                        self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
                         if season_id:
                             self.assertEqual(season_id, str(media_data["season_id"]))
-                        self.assertTrue(chapter_id in media_data["chapters"])
 
                         _, chapter_data = self.app.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
                         self.assertEqual(str(chapter_data["id"]), str(chapter_id))
-                        assert self.app.stream(url)
-                        self.app.add_from_url(url)
-                        assert self.app.play(self.app._get_global_id(media_data))
+                        self.assertTrue(chapter_id in media_data["chapters"])
+                        assert self.app.add_from_url(url)
+
+    def test_media_steam(self):
+        url_list = self.streamable_urls if not os.getenv("PREMIUM_TEST") else self.streamable_urls + self.premium_streamable_urls
+        for url, media_id, season_id, chapter_id in url_list:
+            for url, media_id, season_id, chapter_id in self.streamable_urls:
+                with self.subTest(url=url):
+                    servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
+                    assert servers
+                    for server in servers:
+                        if server.media_type == ANIME:
+                            assert self.app.stream(url)
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):

@@ -71,9 +71,6 @@ class GenericServer:
         """
         return [self.create_page_data(url=self.get_stream_url(media_data, chapter_data), ext=self.extension)]
 
-    def get_media_data_from_url(self, url):
-        raise NotImplementedError
-
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"], stream=True)
         content = r.content
@@ -84,14 +81,17 @@ class GenericServer:
         with open(path, 'wb') as fp:
             fp.write(content)
 
+    def get_media_data_from_url(self, url):
+        raise NotImplementedError
+
+    def get_chapter_id_for_url(self, url):
+        return None
+
     ################ ANIME ONLY #####################
     def get_stream_data(self, media_data, chapter_data):
         assert media_data["media_type"] == ANIME
         m3u8_url = self.get_stream_url(media_data=media_data, chapter_data=chapter_data)
         return [self.create_page_data(url=segment.uri, encryption_key=segment.key) for segment in m3u8.load(m3u8_url).segments]
-
-    def get_chapter_id_for_url(self, url):
-        return None
 
     def get_stream_url(self, media_data, chapter_data, quality=0):
         return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[quality]

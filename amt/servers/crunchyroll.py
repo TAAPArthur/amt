@@ -1,4 +1,5 @@
 import logging
+import re
 from threading import Lock
 
 from ..server import Server
@@ -145,8 +146,6 @@ SERIES_DATA = {
 
 class Crunchyroll(GenericCrunchyrollServer):
     id = "crunchyroll"
-    lang = "en"
-    locale = "enUS"
 
     base_url = "https://www.crunchyroll.com"
     manga_url = base_url + "/comics/manga/{0}/volumes"
@@ -160,6 +159,20 @@ class Crunchyroll(GenericCrunchyrollServer):
     _api_session_id = None
     possible_page_url_keys = ["encrypted_mobile_image_url", "encrypted_composed_image_url"]
     page_url_key = possible_page_url_keys[0]
+
+    stream_url_regex = re.compile(r"https://www.crunchyroll.com/manga/([\w-]*)/read/(\d*\.?\d*)")
+
+    def get_media_data_from_url(self, url):
+        name_slug = self.stream_url_regex.search(url).group(1)
+        return self.search(name_slug)[0]
+
+    def get_chapter_id_for_url(self, url):
+        number = self.stream_url_regex.search(url).group(2)
+        media_data = self.get_media_data_from_url(url)
+        self.update_media_data(media_data)
+        for chapter_data in media_data["chapters"].values():
+            if chapter_data["number"] == float(number):
+                return chapter_data["id"]
 
     @staticmethod
     def decode_image(buffer):
