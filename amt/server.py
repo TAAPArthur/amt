@@ -258,6 +258,9 @@ class Server(GenericServer):
             return True
 
     def pre_download(self, media_data, chapter_data, dir_path):
+        if chapter_data["inaccessible"]:
+            logging.info("Chapter is not accessible")
+            raise ValueError("Cannot access chapter")
         if chapter_data["premium"] and not self.is_premium:
             if self.needs_to_login():
                 logging.info("Server is not authenticated; relogging in")
@@ -310,7 +313,7 @@ class Server(GenericServer):
     def create_media_data(self, id, name, season_id=None, season_title="", media_type=None, dir_name=None, offset=0, alt_id=None, cover=None, progress_in_volumes=False):
         return dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=media_type or self.media_type, cover=None, progress=0, season_id=season_id, season_title=season_title, offset=offset, chapters={}, alt_id=alt_id, trackers={}, progress_in_volumes=progress_in_volumes)
 
-    def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None):
+    def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False):
         id = str(id)
         if isinstance(number, str):
             if not number or number.isalpha():
@@ -330,7 +333,7 @@ class Server(GenericServer):
             if number % 1 != 0:
                 number = round(number, 4)
 
-        new_values = dict(id=id, title=title, number=number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles)
+        new_values = dict(id=id, title=title, number=number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, inaccessible=inaccessible)
         if id in media_data["chapters"]:
             media_data["chapters"][id].update(new_values)
         else:

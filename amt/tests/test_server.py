@@ -17,6 +17,7 @@ class TestServer(Server):
     _error_thrown = False
     domain = "test.com"
     hide = False
+    inaccessible = False
 
     def maybe_inject_error(self):
         if self._throw_error:
@@ -61,8 +62,9 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=24, title="Chapter4", number=3, date="2020-07-08"),
         elif media_id == 4:
             self.update_chapter_data(media_data, id=25, title="Chapter1", number=2, date="1998-08-10"),
-            self.update_chapter_data(media_data, id=26, title="Chapter1", number=1, date="1998-08-10"),
-            self.update_chapter_data(media_data, id=27, title="Chapter1", number=0.5, date="1998-08-10", special=True),
+            self.update_chapter_data(media_data, id=26, title="Chapter2", number=1, date="1998-08-10"),
+            self.update_chapter_data(media_data, id=27, title="Chapter0.5", number=0.5, date="1998-08-10", special=True),
+            self.update_chapter_data(media_data, id=28, title="Chapter4", number=4, date="1998-08-10", inaccessible=self.inaccessible),
 
     def get_media_chapter_data(self, media_data, chapter_data):
         self.maybe_inject_error()

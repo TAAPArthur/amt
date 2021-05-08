@@ -300,21 +300,27 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 assert media_data == list(server.search(name))[0]
                 assert server.search(name[:3])
 
-    def test_bad_login(self):
+    def download_matching_chapters(self, server, func):
+        for media in server.get_media_list():
+            server.update_media_data(media)
+            chapters = list(filter(func, media["chapters"].values()))
+            print(chapters)
+            if chapters:
+                server.download_chapter(media_data=media, chapter_data=chapters[0])
 
+    def test_bad_login(self):
         server = self.media_reader.get_server(TestServerLogin.id)
         server.fail_login = True
         server.settings.password_manager_enabled = True
         server.settings.password_load_cmd = r"echo -e A\\tB"
-
-        for media in server.get_media_list():
-            server.update_media_data(media)
-            chapters = list(filter(lambda x: x["premium"], media["chapters"].values()))
-            if chapters:
-                self.assertRaises(ValueError, server.download_chapter, media_data=media, chapter_data=chapters[0])
-                break
-
+        self.assertRaises(ValueError, self.download_matching_chapters, server, lambda x: x["premium"])
         self.assertEqual(1, server.counter)
+
+    def test_server_download_inaccessiable(self):
+        server = self.media_reader.get_server(TestServerLogin.id)
+        server.inaccessible = True
+        self.assertRaises(ValueError, self.download_matching_chapters, server, lambda x: x["inaccessible"])
+        self.assertEqual(0, server.counter)
 
 
 class MediaReaderTest(BaseUnitTestClass):
