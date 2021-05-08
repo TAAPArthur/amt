@@ -3,10 +3,6 @@ beautifulsoup4
 # for auto complete
 argcomplete
 
-# Needed for mangaplus
-pure_protobuf
-Unidecode
-
 # Needed for Viz
 Pillow
 
