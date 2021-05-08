@@ -25,8 +25,6 @@ from .test_tracker import TestTracker
 TEST_HOME = TEST_BASE + "test_home/"
 
 
-Settings._verify = False
-
 logging.basicConfig(format="[%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
 
 TEST_SERVERS = set()
