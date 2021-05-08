@@ -4,7 +4,7 @@ import subprocess
 
 from PIL import Image
 
-from ..server import ANIME, Server
+from ..server import ANIME, MEDIA_TYPES, Server
 
 TEST_BASE = "/tmp/amt/"
 
@@ -31,7 +31,8 @@ class TestServer(Server):
 
     def get_media_list(self):
         self.maybe_inject_error()
-        return [self.create_media_data(id=1, name=self._prefix + "1"), self.create_media_data(id=2, name=self._prefix + "InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-=")]
+        media_type_name = [x for x in MEDIA_TYPES if MEDIA_TYPES[x] == self.media_type][0]
+        return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-=")]
 
     def update_media_data(self, media_data):
         self.maybe_inject_error()

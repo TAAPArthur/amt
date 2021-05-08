@@ -117,7 +117,7 @@ class BaseUnitTestClass(unittest.TestCase):
             self.media_reader.add_media(media_data)
 
     def add_test_media(self, server=None, no_update=False):
-        media_list = server.get_media_list() if server else self.test_server.get_media_list() + self.test_anime_server.get_media_list()
+        media_list = server.get_media_list() if server else self.test_server.get_media_list() + self.test_anime_server.get_media_list() + self.media_reader.get_server(TestServerLogin.id).get_media_list()
         for media_data in media_list:
             self.media_reader.add_media(media_data, no_update=no_update)
         assert media_list
@@ -799,6 +799,24 @@ class ArgsTest(MinimalUnitTestClass):
             assert self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id)
             if media_data["progress"]:
                 self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
+
+    def test_copy_tracker(self):
+        media_list = self.add_test_media()
+        self.app.get_primary_tracker().set_custom_anime_list([media_list[0]["name"]], media_list[0]["media_type"])
+        parse_args(app=self.media_reader, args=["--auto", "load", "test_user"])
+        assert self.app.get_tracker_info(media_list[0])
+        assert not self.app.get_tracker_info(media_list[1])
+        parse_args(app=self.media_reader, args=["copy-tracker", media_list[0]["name"], media_list[1]["name"]])
+        self.assertEquals(self.app.get_tracker_info(media_list[0]), self.app.get_tracker_info(media_list[1]))
+
+    def test_share_tracker(self):
+        media_list = self.add_test_media()
+        parse_args(app=self.media_reader, args=["--auto", "load", "test_user"])
+        tracked_media = [media_data["name"] for media_data in media_list if self.app.get_tracker_info(media_data)]
+        parse_args(app=self.media_reader, args=["--auto", "share-tracker"])
+        tracked_media2 = [media_data["name"] for media_data in media_list if self.app.get_tracker_info(media_data)]
+        assert all([self.app.get_tracker_info(media_data) for media_data in media_list if media_data["name"] in tracked_media])
+        assert len(tracked_media) < len(tracked_media2)
 
     def test_mark_up_to_date(self):
         media_list = self.add_test_media()

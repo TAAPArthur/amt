@@ -150,11 +150,19 @@ def parse_args(args=None, app=None, already_upgraded=False):
         sub_parsers.add_parser("auth")
 
         load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
-
         load_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
         load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media")
         load_parser.add_argument("name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
+
+        copy_tracker_parser = sub_parsers.add_parser("copy-tracker", description="Copies tracking info from src to dest")
+        copy_tracker_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+        copy_tracker_parser.add_argument("src", choices=app.get_all_single_names(), help="Src media")
+        copy_tracker_parser.add_argument("dst", choices=app.get_all_single_names(), help="Dst media")
+
+        share_tracker_parser = sub_parsers.add_parser("share-tracker", description="Checks local media to see if tracking info can be shared")
+        share_tracker_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+        share_tracker_parser.add_argument("name", choices=app.get_all_single_names(), default=None, nargs="?")
 
         sync_parser = sub_parsers.add_parser("sync", description="Attempts to update tracker with current progress")
         sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
@@ -224,6 +232,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit, ignore_errors=namespace.ignore_errors))
     elif action == "clean":
         app.clean(remove_disabled_servers=namespace.remove_disabled_servers, include_external=namespace.include_external, remove_read=namespace.remove_read, bundles=namespace.bundles, remove_not_on_disk=namespace.remove_not_on_disk)
+    elif action == "copy-tracker":
+        app.copy_tracker(namespace.src, namespace.dst)
     elif action == "download":
         app.download_specific_chapters(namespace.id, start=namespace.start, end=namespace.end)
     elif action == "download-unread":
@@ -273,6 +283,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.stream(namespace.url, cont=namespace.cont, download=namespace.download, quality=namespace.quality)
     elif action == "set-password":
         app.settings.store_credentials(namespace.server, namespace.username)
+    elif action == "share-tracker":
+        app.share_tracker(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None))
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
     elif action == "update":

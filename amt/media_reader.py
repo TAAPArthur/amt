@@ -222,7 +222,7 @@ class MediaReader:
                 continue
             yield media_data
 
-    def _get_single_media(self, media_type=ALL_MEDIA, name=None):
+    def _get_single_media(self, media_type=None, name=None):
         return next(self._get_media(media_type=media_type, name=name))
 
     def _get_unreads(self, media_type, name=None, shuffle=False, limit=None, any_unread=False):
@@ -463,14 +463,17 @@ class MediaReader:
                 server.download_chapter(media_data, chapter_data, page_limit)
         return new_chapters
 
-    def is_added(self, tracker_id, tracking_id):
+    def get_tracked_media(self, tracker_id, tracking_id):
+        media_data_list = []
         for media_data in self.get_media_in_library():
             tacker_info = self.get_tracker_info(media_data, tracker_id)
             if tacker_info and tacker_info[0] == tracking_id:
-                return media_data
-        return False
+                media_data_list.append(media_data)
+        return media_data_list
 
-    def get_tracker_info(self, media_data, tracker_id):
+    def get_tracker_info(self, media_data, tracker_id=None):
+        if not tracker_id:
+            tracker_id = self.get_primary_tracker().id
         return media_data["trackers"].get(tracker_id, None)
 
     def track(self, tracker_id, media_data, tracking_id, tracker_title=None):

@@ -24,5 +24,5 @@ class TestTracker(Tracker):
 
         return [self.get_media_dict(id=i, media_type=item[0], title=item[1], progress=item[2]) for i, item in enumerate(self.media_list)] if not self.customList else self.customList
 
-    def set_custom_anime_list(self, l):
-        self.customList = [self.get_media_dict(i, ANIME, item, 1) for i, item in enumerate(l)]
+    def set_custom_anime_list(self, l, media_type=ANIME):
+        self.customList = [self.get_media_dict(i, media_type, item, 1) for i, item in enumerate(l)]

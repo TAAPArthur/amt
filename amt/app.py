@@ -72,14 +72,62 @@ class Application(MediaReader):
                 return media_data
         raise ValueError("Could not find media to add")
 
+    def _search_for_tracked_media(self, name, media_type, exact=False, local_only=False):
+        def clean_name(x):
+            return re.sub(r"\W*", "", x.lower())
+        clean_entry_name = clean_name(name)
+        prefix_entry_name = clean_entry_name.split(":")[0]
+        media_data = None
+
+        known_matching_media = list(filter(lambda x: not self.get_tracker_info(x) and
+                                           (not media_type or media_type & x["media_type"]) and (
+            clean_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(clean_entry_name)
+            or clean_entry_name == clean_name(x["season_title"])
+        ), self.get_media_in_library()))
+        if not known_matching_media and not exact:
+            known_matching_media = list(filter(lambda x: not self.get_tracker_info(x) and
+                                               (not media_type or media_type & x["media_type"]) and (
+                prefix_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(prefix_entry_name)
+            ), self.get_media_in_library()))
+
+        if known_matching_media:
+            logging.debug("Checking among known media")
+            media_data = self.select_media(known_matching_media, "Select from known media: ")
+
+        elif not local_only:
+            alt_names = dict.fromkeys([name, re.sub(r"\W*$", "", name), re.sub(r"\W+", "", name.split()[0])])
+            for name in alt_names:
+                media_data = self.search_add(name, media_type=media_type)
+                if media_data:
+                    break
+        if not media_data:
+            logging.info("Could not find media %s", name)
+            return False
+        return media_data
+
+    def share_tracker(self, name=None, media_type=None, exact=True):
+        tracker = self.get_primary_tracker()
+        for media_data in self._get_media(name=name, media_type=media_type):
+            info = self.get_tracker_info(media_data, tracker.id)
+            if info:
+                tracking_id, tracker_title = info
+                other_media = self._search_for_tracked_media(tracker_title, media_type, local_only=True)
+                if other_media:
+                    assert media_data != other_media
+                    logging.info("Sharing tracker of %s with %s", self._get_global_id(media_data), self._get_global_id(other_media))
+                    self.track(tracker.id, other_media, tracking_id, tracker_title)
+
+    def copy_tracker(self, src, dst):
+        src_media_data = self._get_single_media(name=src)
+        dst_media_data = self._get_single_media(name=dst)
+        tracking_id, tracker_title = self.get_tracker_info(src_media_data, self.get_primary_tracker().id)
+        self.track(self.get_primary_tracker().id, dst_media_data, tracking_id, tracker_title)
+
     def load_from_tracker(self, user_id=None, user_name=None, media_type_filter=None, exact=True, local_only=False, update_progress_only=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         count = 0
         new_count = 0
-
-        def clean_name(x):
-            return re.sub(r"\W*", "", x.lower())
 
         unknown_media = []
         for entry in data:
@@ -87,45 +135,25 @@ class Application(MediaReader):
             if media_type_filter and not media_type & media_type_filter:
                 logging.debug("Skipping %s", entry)
                 continue
-            media_data = self.is_added(tracker.id, entry["id"])
-            if not media_data:
+            media_data_list = self.get_tracked_media(tracker.id, entry["id"])
+            if not media_data_list:
                 if update_progress_only:
                     continue
-                clean_entry_name = clean_name(entry["name"])
-                prefix_entry_name = clean_entry_name.split(":")[0]
-
-                known_matching_media = list(filter(lambda x: media_type & x["media_type"] and (
-                    clean_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(clean_entry_name)
-                    or clean_entry_name == clean_name(x["season_title"])
-                ), self.get_media_in_library()))
-                if not known_matching_media and not exact:
-                    known_matching_media = list(filter(lambda x: media_type & x["media_type"] and (
-                        prefix_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(prefix_entry_name)
-                    ), self.get_media_in_library()))
-                if known_matching_media:
-                    logging.debug("Checking among known media")
-                    media_data = self.select_media(known_matching_media, "Select from known media: ")
-
-                elif not local_only:
-                    alt_names = dict.fromkeys([entry["name"], entry["name"].split()[0], re.sub(r"\W*$", "", entry["name"]), re.sub(r"\W+", "", entry["name"].split()[0])])
-                    for name in alt_names:
-                        media_data = self.search_add(name, media_type=media_type)
-                        if media_data:
-                            break
-                if not media_data:
-                    logging.info("Could not find media %s", entry["name"])
+                media_data = self._search_for_tracked_media(entry["name"], media_type, exact=exact, local_only=local_only)
+                if media_data:
+                    self.track(tracker.id, media_data, entry["id"], entry["name"])
+                    assert self.get_tracked_media(tracker.id, entry["id"])
+                    new_count += 1
+                else:
                     unknown_media.append(entry["name"])
                     continue
+                media_data_list = [media_data]
 
-                self.track(tracker.id, media_data, entry["id"], entry["name"])
-                new_count += 1
-            else:
-                logging.debug("Already tracking %s %d", media_data["name"], entry["progress"])
-
-            progress = entry["progress"] if not self.get_server(media_data["server_id"]).progress_in_volumes else entry["progress_volumes"]
-            if progress > media_data["progress"]:
-                self.mark_chapters_until_n_as_read(media_data, progress)
-            media_data["progress"] = progress
+            for media_data in media_data_list:
+                progress = entry["progress"] if not media_data["progress_in_volumes"] else entry["progress_volumes"]
+                if progress > media_data["progress"]:
+                    self.mark_chapters_until_n_as_read(media_data, progress)
+                media_data["progress"] = progress
             count += 1
         if unknown_media:
             logging.info("Could not find any of %s", unknown_media)
