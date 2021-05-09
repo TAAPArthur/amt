@@ -1,12 +1,10 @@
 import logging
 import re
-from threading import Lock
 
 from ..server import Server
 
 
 class GenericCrunchyrollServer(Server):
-    class_lock = Lock()
     alias = "crunchyroll"
 
     api_auth_url = "https://api-manga.crunchyroll.com/cr_authenticate?session_id={}&version=0&format=json"
@@ -15,10 +13,6 @@ class GenericCrunchyrollServer(Server):
 
     _access_token = "WveH9VkPLrXvuNm"
     _access_type = "com.crunchyroll.crunchyroid"
-
-    @property
-    def lock(self):
-        return GenericCrunchyrollServer.class_lock
 
     def get_session_id(self):
         if Crunchyroll._api_session_id:

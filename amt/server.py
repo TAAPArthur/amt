@@ -3,7 +3,6 @@ import os
 import re
 import time
 from functools import cache
-from threading import Lock
 
 import m3u8
 from Crypto.Cipher import AES
@@ -149,11 +148,6 @@ class Server(GenericServer):
     def __init__(self, session, settings=None):
         self.settings = settings
         self.session = session
-        self._lock = Lock()
-
-    @property
-    def lock(self):
-        return self._lock
 
     @property
     def is_logged_in(self):
@@ -281,29 +275,25 @@ class Server(GenericServer):
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         dir_path = self._get_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
-        self.lock.acquire()
-        try:
-            self.pre_download(media_data, chapter_data, dir_path)
-            list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
-            assert list_of_pages
-            logging.info("Downloading %d pages", len(list_of_pages))
+        self.pre_download(media_data, chapter_data, dir_path)
+        list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
+        assert list_of_pages
+        logging.info("Downloading %d pages", len(list_of_pages))
 
-            job = Job(self.settings.threads, raiseException=True)
-            for index, page_data in enumerate(list_of_pages[:page_limit]):
-                full_path = self._get_page_path(media_data, chapter_data, dir_path, index, page_data)
-                job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
-            job.run()
+        job = Job(self.settings.threads, raiseException=True)
+        for index, page_data in enumerate(list_of_pages[:page_limit]):
+            full_path = self._get_page_path(media_data, chapter_data, dir_path, index, page_data)
+            job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
+        job.run()
 
-            if self.settings.force_odd_pages and self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2:
-                full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
-                image = Image.new('RGB', (100, 100))
-                image.save(full_path, "jpeg")
+        if self.settings.force_odd_pages and self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2:
+            full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
+            image = Image.new('RGB', (100, 100))
+            image.save(full_path, "jpeg")
 
-            self.post_download(media_data, chapter_data, dir_path)
-            self.mark_download_complete(dir_path)
-            logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
-        finally:
-            self.lock.release()
+        self.post_download(media_data, chapter_data, dir_path)
+        self.mark_download_complete(dir_path)
+        logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
 
         return True
 
