@@ -56,13 +56,6 @@ class Application(MediaReader):
                 return self.view_chapters(name=media_data, num_list=[chapter["number"]], force_abs=True)
             assert False
 
-    def migrate(self, id):
-        media_data = self._get_single_media(name=id)
-        new_media_data = self.search_add(media_data["name"], media_type=media_data["media_type"], servers_to_exclude=[media_data["server_id"]])
-        new_media_data["trackers"] = media_data["trackers"]
-        self.mark_chapters_until_n_as_read(new_media_data, self.get_last_read(media_data))
-        self.remove_media(media_data)
-
     def add_from_url(self, url):
         for server in self.get_servers():
             if server.can_stream_url(url):
@@ -104,6 +97,16 @@ class Application(MediaReader):
             logging.info("Could not find media %s", name)
             return False
         return media_data
+
+    def migrate(self, name, move_self=False):
+        media_data = self._get_single_media(name=name)
+        self.remove_media(media_data)
+        if move_self:
+            new_media_data = self.search_add(media_data["name"], server_id=media_data["server_id"])
+        else:
+            new_media_data = self.search_add(media_data["name"], media_type=media_data["media_type"], servers_to_exclude=[media_data["server_id"]])
+        self.copy_tracker(media_data, new_media_data)
+        self.mark_chapters_until_n_as_read(new_media_data, self.get_last_read(media_data))
 
     def share_tracker(self, name=None, media_type=None, exact=True):
         tracker = self.get_primary_tracker()
