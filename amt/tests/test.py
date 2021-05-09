@@ -1386,6 +1386,20 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         assert server.needs_authentication()
         assert not server.api_auth_token
 
+    def test_jnovel_club_parts_autodelete(self):
+        from ..servers.jnovelclub import JNovelClubParts
+        server = self.media_reader.get_server(JNovelClubParts.id)
+        self.assertTrueOrSkipTest(server)
+        server.time_to_live_sec = 0
+        media_data = server.get_media_list()[0]
+        self.app.add_media(media_data)
+        self.app.download_unread_chapters(media_data, limit=1)
+        media_path = self.settings.get_media_dir(media_data)
+
+        self.assertTrue(os.path.exists(media_path))
+        self.app.update(media_data)
+        self.assertTrue(not os.path.exists(media_path))
+
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
 class PremiumTest(RealBaseUnitTestClass):

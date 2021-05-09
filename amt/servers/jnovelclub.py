@@ -1,4 +1,7 @@
+import os
 import re
+import shutil
+import time
 
 from ..server import MANGA, MEDIA_TYPES, NOVEL, Server
 
@@ -77,12 +80,20 @@ class JNovelClubParts(JNovelClub):
     progress_in_volumes = False
 
     stream_url_regex = re.compile(r"https://j-novel.club/read/([\w\d\-]+)")
+    time_to_live_sec = 3600 * 24 * 7
 
     def update_media_data(self, media_data: dict):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
+
+        for chapter_data in media_data["chapters"].values():
+            chapter_path = self.settings.get_chapter_dir(media_data, chapter_data)
+            if os.path.exists(chapter_path) and (time.time() - os.path.getmtime(chapter_path)) > self.time_to_live_sec:
+                shutil.rmtree(chapter_path)
         for volume in r.json()["volumes"]:
             r = self.session_get(self.parts_url.format(volume["slug"]))
-            for part in r.json()["parts"]:
+            parts = r.json()["parts"]
+
+            for part in parts:
                 self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=part["number"], title=part["title"], premium=not part["preview"])
 
     def get_media_chapter_data(self, media_data, chapter_data):
