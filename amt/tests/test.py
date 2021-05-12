@@ -1330,7 +1330,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209", "269787", "25186", "796209"),
         ("https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193", "260315", "21563", "652193"),
         ("https://www.funimation.com/en/shows/one-piece/im-luffy-the-man-whos-gonna-be-king-of-the-pirates/?lang=japanese", "20224", "20227", "22333"),
-        ("https://www.viz.com/shonenjump/one-piece-chapter-1/chapter/5090?action=read", "one-piece", None, "5090")
+        ("https://www.viz.com/shonenjump/one-piece-chapter-1/chapter/5090?action=read", "one-piece", None, "5090"),
+        ("https://www.wlnupdates.com/series-id/49815/itai-no-wa-iya-nanode-bogyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", 49815, None, None),
     ]
 
     premium_streamable_urls = [
@@ -1349,14 +1350,14 @@ class ServerStreamTest(RealBaseUnitTestClass):
                         assert media_data
                         server.update_media_data(media_data)
                         self.assertEqual(media_id, str(media_data["id"]))
-                        self.assertTrue(chapter_id in media_data["chapters"])
-                        self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
                         if season_id:
                             self.assertEqual(season_id, str(media_data["season_id"]))
-
-                        _, chapter_data = self.app.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
-                        self.assertEqual(str(chapter_data["id"]), str(chapter_id))
-                        self.assertTrue(chapter_id in media_data["chapters"])
+                        if chapter_id:
+                            self.assertTrue(chapter_id in media_data["chapters"])
+                            self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
+                            _, chapter_data = self.app.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
+                            self.assertEqual(str(chapter_data["id"]), str(chapter_id))
+                            self.assertTrue(chapter_id in media_data["chapters"])
                         assert self.app.add_from_url(url)
 
     def test_media_steam(self):

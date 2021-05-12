@@ -49,6 +49,7 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 
 ### Light novels
 * [J Novel club](https://j-novel.club/)
+* [WLNUpdates](https://www.wlnupdates.com/) (unofficial)
 
 ### Trackers
 * [Anilist](https://anilist.co/home)
