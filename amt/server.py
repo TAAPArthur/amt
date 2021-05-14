@@ -164,6 +164,12 @@ class Server(GenericServer):
         r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
         if r.status_code != 200:
             logging.warning("HTTP Error: %d %s", r.status_code, r.text)
+            if r.status_code == 401 and self.has_login and self.domain:
+                try:
+                    self.session.cookies.clear(self.domain)
+                    r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
+                except KeyError:
+                    pass
         r.raise_for_status()
         return r
 
