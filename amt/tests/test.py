@@ -18,6 +18,7 @@ from ..media_reader import SERVERS, TRACKERS, import_sub_classes
 from ..server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from ..servers.custom import CustomServer, get_local_server_id
 from ..settings import Settings
+from ..state import State
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
                           TestServerLogin)
 from .test_tracker import TestTracker
@@ -91,14 +92,16 @@ class BaseUnitTestClass(unittest.TestCase):
     def init(self):
         pass
 
+    def reload(self):
+        self.app = self.media_reader = TestApplication(self.real, self.local)
+
     def setUp(self):
         self.stream_handler = logging.StreamHandler(sys.stdout)
         logger = logging.getLogger()
         logger.handlers = []
         logger.addHandler(self.stream_handler)
         shutil.rmtree(TEST_HOME, ignore_errors=True)
-        self.app = TestApplication(self.real, self.local)
-        self.media_reader = self.app
+        self.reload()
         self.settings = self.media_reader.settings
         self.test_server = self.media_reader.get_server(TestServer.id)
         self.test_anime_server = self.media_reader.get_server(TestAnimeServer.id)
@@ -362,35 +365,37 @@ class MediaReaderTest(BaseUnitTestClass):
         assert not self.media_reader.save_session_cookies()
 
     def test_save_load(self):
-        for server in self.media_reader.get_servers():
-            with self.subTest(server=server.id):
-                media_list = server.get_media_list()
-                self.media_reader.add_media(media_list[0])
-                old_state = dict(self.media_reader.state)
-                assert self.media_reader.save_state()
-                assert old_state == dict(self.media_reader.state)
-                self.media_reader.load_state()
-                assert old_state == self.media_reader.state
+        assert not os.path.exists(self.settings.get_metadata())
+        self.add_test_media(server=self.test_server)
+        old_hash = State.get_hash(self.app.media)
+        self.app.save()
+        assert os.path.exists(self.settings.get_metadata())
+        self.app = self.media_reader = TestApplication(self.real, self.local)
+        self.assertEqual(old_hash, State.get_hash(self.app.media))
+        for media_data in self.app.get_media_in_library():
+            self.assertTrue(media_data["chapters"])
+            self.assertTrue(media_data.chapters)
 
     def test_save_load_global_id_format_change(self):
-        media_list = self.add_test_media()
-        assert self.media_reader.save_state()
-        self.media_reader._get_global_id = lambda x: "!{}/{}".format(x["server_id"], x["id"])
-        self.media_reader.load_state()
-        self.assertEquals(set(map(self.media_reader._get_global_id, self.media_reader.get_media_in_library())), self.media_reader.get_media_ids_in_library())
-        self.assertEquals(len(media_list), len(self.media_reader.get_media_ids_in_library()))
+        self.add_test_media(server=self.test_server)
+        original_keys = set(self.app.media.keys())
+        for key in original_keys:
+            self.app.media["old_" + key] = self.app.media[key]
+            del self.app.media[key]
+        self.media_reader.save()
+        self.reload()
+        self.assertEqual(original_keys, set(self.app.media.keys()))
 
     def test_save_load_disabled(self):
         self.add_test_media()
-        assert self.media_reader.save_state()
-        temp = self.media_reader._servers
-        self.media_reader._servers = {}
-        self.media_reader.load_state()
-        assert not len(self.media_reader.media)
-        self.media_reader.save_state()
-        self.media_reader._servers = temp
-        self.media_reader.load_state()
-        assert len(self.media_reader.media)
+        old_hash = State.get_hash(self.app.media)
+        self.app.save()
+        self.app.state.configure_media({})
+        assert not self.media_reader.media
+        self.app.save()
+        self.app.state.configure_media(self.app.get_servers_ids())
+        assert self.media_reader.media
+        self.assertEqual(old_hash, State.get_hash(self.app.media))
 
     def test_mark_chapters_until_n_as_read(self):
 
@@ -785,7 +790,7 @@ class ArgsTest(MinimalUnitTestClass):
         assert not len(self.media_reader.get_media_in_library())
         parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         assert len(self.media_reader.get_media_in_library())
-        self.app.load_state()
+        self.reload()
         assert len(self.media_reader.get_media_in_library())
 
     def test_select(self):
@@ -830,7 +835,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_mark_up_to_date(self):
         media_list = self.add_test_media()
         media_data = media_list[0]
-        name = self.app._get_global_id(media_data)
+        name = media_data.global_id
         parse_args(app=self.media_reader, args=["mark-up-to-date", name])
         assert all(map(lambda x: x["read"], media_data["chapters"].values()))
         parse_args(app=self.media_reader, args=["mark-up-to-date", "--force", name, "-1"])
@@ -842,16 +847,12 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["--auto", "load"])
         parse_args(app=self.media_reader, args=["mark-up-to-date"])
         parse_args(app=self.media_reader, args=["sync"])
-        self.media_reader.media.clear()
-        self.media_reader.load_state()
-        for media_data in self.media_reader.get_media_in_library():
-            self.assertEqual(self.media_reader.get_last_chapter_number(media_data), self.media_reader.get_last_read(media_data))
-            self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
-        self.media_reader.media.clear()
-        parse_args(app=self.media_reader, args=["--auto", "load"])
-        for media_data in self.media_reader.get_media_in_library():
-            self.assertEqual(self.media_reader.get_last_chapter_number(media_data), self.media_reader.get_last_read(media_data))
-            self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
+        for i in range(2):
+            assert self.media_reader.get_media_in_library()
+            for media_data in self.media_reader.get_media_in_library():
+                self.assertEqual(self.media_reader.get_last_chapter_number(media_data), self.media_reader.get_last_read(media_data))
+                self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
+            self.reload()
 
     def test_download(self):
         media_list = self.add_test_media(no_update=True)
@@ -864,7 +865,7 @@ class ArgsTest(MinimalUnitTestClass):
         media_list = self.add_test_media()
         media_data = media_list[0]
         chapters = self.app._get_sorted_chapters(media_data)
-        parse_args(app=self.media_reader, args=["download", self.app._get_global_id(media_data), str(chapters[1]["number"]), str(chapters[-2]["number"])])
+        parse_args(app=self.media_reader, args=["download", media_data.global_id, str(chapters[1]["number"]), str(chapters[-2]["number"])])
         for chapter_data in chapters[1:-2]:
             self.verify_download(media_data, chapter_data)
 
@@ -872,7 +873,7 @@ class ArgsTest(MinimalUnitTestClass):
         media_list = self.add_test_media()
         media_data = media_list[0]
         chapters = self.app._get_sorted_chapters(media_data)
-        parse_args(app=self.media_reader, args=["download", self.app._get_global_id(media_data), str(chapters[1]["number"])])
+        parse_args(app=self.media_reader, args=["download", media_data.global_id, str(chapters[1]["number"])])
         self.verify_download(media_data, chapters[1])
 
         server = self.media_reader.get_server(media_data["server_id"])
@@ -910,7 +911,7 @@ class ArgsTest(MinimalUnitTestClass):
         chapters = media_data["chapters"]
         list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values()])
         offset_list = list(map(lambda x: x - 1, list_of_numbers))
-        parse_args(app=self.media_reader, args=["offset", self.app._get_global_id(media_data), "1"])
+        parse_args(app=self.media_reader, args=["offset", media_data.global_id, "1"])
         parse_args(app=self.media_reader, args=["update"])
         self.assertEqual(offset_list, sorted([chapter_data["number"] for chapter_data in chapters.values()]))
         self.verify_unique_numbers(media_data["chapters"])
@@ -935,7 +936,7 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(1, len(self.media_reader.get_media_in_library()))
 
         media_data2 = list(self.media_reader.get_media_in_library())[0]
-        self.assertNotEqual(self.app._get_global_id(media_data), self.app._get_global_id(media_data2))
+        self.assertNotEqual(media_data.global_id, media_data2.global_id)
         self.assertEqual(self.app.get_last_read(media_data), self.app.get_last_read(media_data2))
         assert self.media_reader.get_tracker_info(media_data2)
 
@@ -949,14 +950,14 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(1, len(self.media_reader.get_media_in_library()))
 
         media_data2 = list(self.media_reader.get_media_in_library())[0]
-        self.assertEqual(self.app._get_global_id(media_data), self.app._get_global_id(media_data2))
+        self.assertEqual(media_data.global_id, media_data2.global_id)
         self.assertEqual(self.app.get_last_read(media_data), self.app.get_last_read(media_data2))
         assert self.media_reader.get_tracker_info(media_data2)
 
     def test_remove(self):
         parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         media_data = list(self.media_reader.get_media_in_library())[0]
-        parse_args(app=self.media_reader, args=["remove", self.app._get_global_id(media_data)])
+        parse_args(app=self.media_reader, args=["remove", media_data.global_id])
         self.assertEqual(0, len(self.media_reader.get_media_in_library()))
 
     def test_clean_bundle(self):
@@ -992,7 +993,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_clean_unused(self):
         self.add_test_media(self.test_server)
         parse_args(app=self.media_reader, args=["clean", "--remove-not-on-disk"])
-        self.assertEqual(0, len(os.listdir(self.settings.media_dir)))
+        self.assertEqual(0, len(os.listdir(self.settings.get_server_dir(TestServer.id))))
 
     def test_view_chapter(self):
         media_list = self.add_test_media(self.test_server)
@@ -1049,7 +1050,7 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(len(list(self.app.bundles.values())[0]), num_chapters)
         self.app.bundles.clear()
         media_data = media_list[0]
-        for name in (media_data["name"], self.app._get_global_id(media_data)):
+        for name in (media_data["name"], media_data.global_id):
             parse_args(app=self.media_reader, args=["bundle", str(name)])
             self.assertEqual(len(list(self.app.bundles.values())[0]), len(media_data["chapters"]))
             self.app.bundles.clear()
@@ -1212,6 +1213,17 @@ class ArgsTest(MinimalUnitTestClass):
         assert "special" in next(iter(media_list[2]["chapters"].values()))
         assert "old_chapter_field" not in next(iter(media_list[3]["chapters"].values()))
 
+    def test_upgrade_change_in_chapter_format_as_needed(self):
+        media_list = self.add_test_media(self.test_anime_server)
+        for media_data in media_list:
+            assert media_data.chapters
+            media_data["chapters"] = media_data.chapters
+            media_data.chapters = {}
+        self.app.save()
+        self.reload()
+        for media_data in self.app.get_media_in_library():
+            assert media_data.chapters
+
     def test_auto_upgrade_disabled_broken(self):
         media_list = self.add_test_media(self.test_anime_server)
         media_list[1].pop("media_type")
@@ -1228,11 +1240,10 @@ class ArgsTest(MinimalUnitTestClass):
         self.settings.max_retires = 10
         media_list = self.add_test_media(self.test_anime_server)
         media_list[1].pop("media_type")
-        assert self.app.save_state()
+        self.app.save()
         parse_args(app=self.media_reader, args=["setting", "max_retires", "1"])
         self.assertEqual(self.settings.max_retires, 1)
-        self.app.state.clear()
-        self.app.load_state()
+        self.reload()
         for media_data in self.app.get_media_in_library():
             assert "media_type" in media_data
 
@@ -1279,7 +1290,7 @@ class ServerTest(RealBaseUnitTestClass):
                 for chapter_data in filter(lambda x: not x["premium"], media_data["chapters"].values()):
                     with self.subTest(server=server.id, stream=True):
                         if media_data["media_type"] & ANIME:
-                            assert self.app.play(self.app._get_global_id(media_data), num_list=[chapter_data["number"]])
+                            assert self.app.play(media_data.global_id, num_list=[chapter_data["number"]])
                     with self.subTest(server=server.id, stream=False):
                         unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
                         assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=2)

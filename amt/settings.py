@@ -132,6 +132,12 @@ class Settings:
     def get_metadata(self):
         return os.path.join(self.data_dir, "metadata.json")
 
+    def get_chapter_metadata_file(self, media_data):
+        return os.path.join(self.get_media_dir(media_data), "chapter_metadata.json")
+
+    def get_bundle_metadata_file(self):
+        return os.path.join(self.data_dir, "bundles.json")
+
     def get_server_dir(self, server_id):
         return os.path.join(self.media_dir, server_id)
 

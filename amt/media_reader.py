@@ -1,6 +1,5 @@
 import importlib
 import inspect
-import json
 import logging
 import os
 import pkgutil
@@ -14,6 +13,7 @@ from . import cookie_manager, servers, trackers
 from .job import Job
 from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, NOVEL, Server
 from .settings import Settings
+from .state import State
 from .tracker import Tracker
 
 SERVERS = set()
@@ -38,13 +38,12 @@ import_sub_classes(trackers, Tracker, TRACKERS)
 class MediaReader:
 
     cookie_hash = None
-    state_hash = None
     _servers = {}
     _trackers = []
 
     def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
         self.settings = settings if settings else Settings()
-        self.state = {"media": {}, "bundles": {}, "disabled_media": {}}
+        self.state = State(self.settings)
         self._servers = {}
         self._trackers = []
 
@@ -69,7 +68,10 @@ class MediaReader:
                 instance = cls(self.session, self.settings)
                 self._trackers.append(instance)
         self.load_session_cookies()
-        self.load_state()
+        self.state.load()
+        self.state.configure_media(self._servers)
+        self.media = self.state.media
+        self.bundles = self.state.bundles
 
     def get_primary_tracker(self):
         return self._trackers[0]
@@ -117,74 +119,23 @@ class MediaReader:
                 f.write("\t".join(l) + "\n")
         return True
 
-    def _set_state_hash(self, json_str=None):
-        """
-        Sets saved sate_hash
-        @return True iff the hash is different than the already saved one
-        """
-
-        if not json_str:
-            json_str = json.dumps(self.state, indent=4, sort_keys=True)
-        state_hash = hash(json_str)
-        if state_hash != self.state_hash:
-            self.state_hash = state_hash
-            return True
-        return False
-
-    def load_state(self):
-        try:
-            with open(self.settings.get_metadata(), "r") as jsonFile:
-                self.state = json.load(jsonFile)
-                self._set_state_hash()
-        except FileNotFoundError:
-            pass
-
-        self.media = self.state["media"]
-        self.bundles = self.state["bundles"]
-
-        for key in list(self.state["media"].keys()):
-            if self.state["media"][key]["server_id"] not in self._servers:
-                self.state["disabled_media"][key] = self.state["media"][key]
-                del self.state["media"][key]
-
-        for key in list(self.state["disabled_media"].keys()):
-            if self.state["disabled_media"][key]["server_id"] in self._servers:
-                self.state["media"]["key"] = self.state["disabled_media"][key]
-                del self.state["disabled_media"][key]
-
-        for key, value in list(self.state["media"].items()):
-            if key != self._get_global_id(value):
-                del self.media[key]
-                self.media[self._get_global_id(value)] = value
-
-    def save_state(self):
-        json_str = json.dumps(self.state, indent=4, sort_keys=True)
-        if not self._set_state_hash(json_str):
-            return False
-        logging.info("Persisting state")
-        with open(self.settings.get_metadata(), "w") as jsonFile:
-            jsonFile.write(json_str)
-        return True
-
     # def sync_with_disk(self):
     # TODO detect files added
 
-    def _get_global_id(self, media_data):
-        return "{}:{}{}".format(media_data["server_id"], media_data["id"], (media_data["season_id"] if media_data["season_id"] else ""))
-
     def add_media(self, media_data, no_update=False):
-        global_id = self._get_global_id(media_data)
+        global_id = media_data.global_id
         if global_id in self.media:
             raise ValueError("{} {} is already known".format(global_id, media_data["name"]))
 
         logging.debug("Adding %s", global_id)
         self.media[global_id] = media_data
+        os.makedirs(self.settings.get_media_dir(media_data), exist_ok=True)
         return [] if no_update else self.update_media(media_data)
 
     def remove_media(self, media_data=None, id=None):
         if id:
             media_data = self._get_single_media(name=id)
-        del self.media[self._get_global_id(media_data)]
+        del self.media[media_data.global_id]
 
     def get_servers(self):
         return self._servers.values()
@@ -216,7 +167,7 @@ class MediaReader:
             media = list(media)
             random.shuffle(media)
         for media_data in media:
-            if name is not None and name not in (media_data["server_id"], media_data["name"], self._get_global_id(media_data)):
+            if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id):
                 continue
             if media_type and media_data["media_type"] & media_type == 0:
                 continue
@@ -309,9 +260,6 @@ class MediaReader:
                     break
         return counter
 
-    def _create_bundle_data_entry(self, media_data, chapter_data):
-        return dict(media_id=self._get_global_id(media_data), chapter_id=chapter_data["id"], media_name=media_data["name"], chapter_num=chapter_data["number"])
-
     def _download_selected_chapters(self, x):
         server, media_data, chapter = x
         return server.download_chapter(media_data, chapter)
@@ -337,27 +285,22 @@ class MediaReader:
         for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit):
             if server.is_fully_downloaded(media_data, chapter):
                 paths.append(server.get_children(media_data, chapter))
-                bundle_data.append(self._create_bundle_data_entry(media_data, chapter))
+                bundle_data.append(dict(media_id=media_data.global_id, chapter_id=chapter["id"]))
         if not paths:
             return None
 
         logging.info("Bundling %s", paths)
         name = self.settings.bundle(paths)
-        self.bundles[name] = bundle_data
+        self.state.bundles[name] = bundle_data
         return name
 
     def read_bundle(self, name):
 
-        bundle_name = os.path.join(self.settings.bundle_dir, name) if name else max(self.bundles.keys())
+        bundle_name = os.path.join(self.settings.bundle_dir, name) if name else max(self.state.bundles.keys())
         if self.settings.open_manga_viewer(bundle_name):
-            self.mark_bundle_as_read(bundle_name)
+            self.state.mark_bundle_as_read(bundle_name)
             return True
         return False
-
-    def mark_bundle_as_read(self, bundle_name, remove=False):
-        bundled_data = self.bundles[bundle_name]
-        for bundle in bundled_data:
-            self.media[bundle["media_id"]]["chapters"][bundle["chapter_id"]]["read"] = True
 
     def get_media_by_chapter_id(self, server_id, chapter_id, media_list=None):
         if chapter_id:
@@ -388,7 +331,7 @@ class MediaReader:
                     if self.settings.open_anime_viewer(streamable_url, server.get_media_title(media_data, chapter), wd=dir_path):
                         chapter["read"] = True
                         if cont:
-                            return 1 + self.play(name=self._get_global_id(known[0]), cont=cont)
+                            return 1 + self.play(name=known[0].global_id, cont=cont)
                 return 1
         logging.error("Could not find any matching server")
         return False
@@ -488,7 +431,7 @@ class MediaReader:
                 if tracker_info and (force or media_data["progress"] < int(self.get_last_read(media_data))):
                     data.append((tracker_info[0], self.get_last_read(media_data), media_data["progress_in_volumes"]))
                     last_read = self.get_last_read(media_data)
-                    logging.info("Preparing to update %s to %d from %d", media_data["name"], last_read, media_data["progress"])
+                    logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], last_read)
                     media_data["progress"] = last_read
 
         if data and not dry_run:

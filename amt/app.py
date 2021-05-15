@@ -15,7 +15,7 @@ class Application(MediaReader):
 
     def save(self):
         self.save_session_cookies()
-        self.save_state()
+        self.state.save()
 
     def print_results(self, results):
         for i, result in enumerate(results):
@@ -117,7 +117,7 @@ class Application(MediaReader):
                 other_media = self._search_for_tracked_media(tracker_title, media_type, local_only=True)
                 if other_media:
                     assert media_data != other_media
-                    logging.info("Sharing tracker of %s with %s", self._get_global_id(media_data), self._get_global_id(other_media))
+                    logging.info("Sharing tracker of %s with %s", media_data.global_id, other_media.global_id)
                     self.track(tracker.id, other_media, tracking_id, tracker_title)
 
     def copy_tracker(self, src, dst):
@@ -172,7 +172,7 @@ class Application(MediaReader):
         for i, result in enumerate(self.get_media_in_library()):
             last_chapter_num = self.get_last_chapter_number(result)
             last_read = self.get_last_read(result)
-            print("{:4}|\t{}\t{} {}\t{}/{}".format(i, self._get_global_id(result), result["name"], result["season_title"], last_read, last_chapter_num))
+            print("{:4}|\t{}\t{} {}\t{}/{}".format(i, result.global_id, result["name"], result["season_title"], last_read, last_chapter_num))
 
     def list_chapters(self, name):
         media_data = self._get_single_media(name=name)
@@ -219,6 +219,7 @@ class Application(MediaReader):
             server = self.get_server(media_data["server_id"])
             new_data = server.create_media_data(media_data["id"], media_data["name"])
             _upgrade_dict(media_data, new_data)
+            os.makedirs(self.settings.get_media_dir(media_data), exist_ok=True)
             for chapter_data in media_data["chapters"].values():
                 server.update_chapter_data(new_data, chapter_data["id"], chapter_data["title"], chapter_data["number"])
                 _upgrade_dict(chapter_data, new_data["chapters"][chapter_data["id"]])
@@ -262,7 +263,7 @@ class Application(MediaReader):
 
     def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, remove_not_on_disk=False, bundles=False):
         if remove_not_on_disk:
-            for media_data in [x for x in self.get_media_in_library() if not os.path.exists(self.settings.get_media_dir(x))]:
+            for media_data in [x for x in self.get_media_in_library() if not os.path.exists(self.settings.get_chapter_metadata_file(x))]:
                 logging.info("Removing metadata for %s because it doesn't exist on disk", media_data["name"])
                 self.remove_media(media_data)
         media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media_in_library()}
