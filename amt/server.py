@@ -5,7 +5,6 @@ import time
 from functools import cache
 
 import m3u8
-from Crypto.Cipher import AES
 from PIL import Image
 from requests.exceptions import HTTPError
 
@@ -76,6 +75,7 @@ class GenericServer:
         content = r.content
         key = page_data["encryption_key"]
         if key:
+            from Crypto.Cipher import AES
             key_bytes = self.session_get_mem_cache(key.uri).content
             content = AES.new(key_bytes, AES.MODE_CBC, key.iv).decrypt(content)
         with open(path, 'wb') as fp:

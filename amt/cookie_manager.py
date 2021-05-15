@@ -1,8 +1,8 @@
-from selenium.webdriver import Firefox
-from selenium.webdriver.firefox.options import Options
 
 
 def get_driver():
+    from selenium.webdriver import Firefox
+    from selenium.webdriver.firefox.options import Options
     options = Options()
     options.add_argument("--headless")
     return Firefox(service_log_path="/dev/null", options=options)
