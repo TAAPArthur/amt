@@ -70,7 +70,6 @@ class Funimation(Server):
         for item in soup.findAll("item")[:limit]:
             title = item.find("title").text
             id = item.find("id").text
-            cover = item.find("thumbnail").text
             r = self.session_get_cache(self.episode_url.format(id))
             data = r.json()
             season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"]) for item in data["items"]}
@@ -78,7 +77,7 @@ class Funimation(Server):
 
             for seasonId, seasonTitle in season_data:
                 experience = experiences[seasonId]
-                media_data.append(self.create_media_data(id=id, name=title, season_id=seasonId, season_title=seasonTitle, cover=cover, alt_id=experience))
+                media_data.append(self.create_media_data(id=id, name=title, season_id=seasonId, season_title=seasonTitle, alt_id=experience))
 
         return media_data
 

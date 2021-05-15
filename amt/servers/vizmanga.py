@@ -75,9 +75,7 @@ class VizManga(Server):
         for div in divs:
             id = div["href"].split("/")[-1]
             name = div.find("div", {"class", "pad-x-rg pad-t-rg pad-b-sm type-sm type-rg--sm type-md--lg type-center line-solid"}).getText().strip()
-            cover_url = div.find("img")["data-original"]
-
-            result.append(self.create_media_data(id=id, name=name, cover=cover_url))
+            result.append(self.create_media_data(id=id, name=name))
 
         return result
 

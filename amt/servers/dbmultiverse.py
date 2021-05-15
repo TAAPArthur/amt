@@ -14,10 +14,9 @@ class Dbmultiverse(Server):
     media_url = base_url + "/en/chapters.html"
     chapter_url = base_url + "/en/chapters.html?chapter={}"
     page_url = base_url + "/en/page-{0}.html"
-    cover_url = base_url + "/image.php?comic=page&num=0&lg=en&ext=jpg&small=1&pw=8f3722a594856af867d55c57f31ee103"
 
     def get_media_list(self):
-        return [self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM)", cover=self.cover_url)]
+        return [self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM)")]
 
     def update_media_data(self, media_data):
 
