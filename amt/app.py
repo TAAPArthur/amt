@@ -125,7 +125,7 @@ class Application(MediaReader):
         tracking_id, tracker_title = self.get_tracker_info(src_media_data, self.get_primary_tracker().id)
         self.track(self.get_primary_tracker().id, dst_media_data, tracking_id, tracker_title)
 
-    def load_from_tracker(self, user_id=None, user_name=None, media_type_filter=None, exact=True, local_only=False, update_progress_only=False):
+    def load_from_tracker(self, user_id=None, user_name=None, media_type_filter=None, exact=True, local_only=False, update_progress_only=False, force=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         count = 0
@@ -153,8 +153,7 @@ class Application(MediaReader):
 
             for media_data in media_data_list:
                 progress = entry["progress"] if not media_data["progress_in_volumes"] else entry["progress_volumes"]
-                if progress > media_data["progress"]:
-                    self.mark_chapters_until_n_as_read(media_data, progress)
+                self.mark_chapters_until_n_as_read(media_data, progress, force=force)
                 media_data["progress"] = progress
             count += 1
         if unknown_media:

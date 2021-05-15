@@ -151,6 +151,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         sub_parsers.add_parser("auth")
 
         load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
+        load_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
         load_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
         load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media")
@@ -246,7 +247,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "list-chapters":
         app.list_chapters(namespace.name)
     elif action == "load":
-        app.load_from_tracker(user_name=namespace.name, exact=False, media_type_filter=MEDIA_TYPES.get(namespace.media_type, None), local_only=namespace.local_only, update_progress_only=namespace.progress_only)
+        app.load_from_tracker(user_name=namespace.name, exact=False, media_type_filter=MEDIA_TYPES.get(namespace.media_type, None), local_only=namespace.local_only, update_progress_only=namespace.progress_only, force=namespace.force)
     elif action == "login":
         app.test_login(namespace.servers, force=namespace.force)
     elif action == "mark-up-to-date":
