@@ -74,6 +74,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         update_parser = sub_parsers.add_parser("update", description="Update all media")
         update_parser.add_argument("--download", "-d", action="store_const", const=True, default=False, help="Update and download")
         update_parser.add_argument("--replace", "-r", action="store_const", const=True, default=False, help="Replace existing metadata instead of appending")
+        update_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+        update_parser.add_argument("name", choices=app.get_all_names(), default=None, nargs="?", help="Update only specified media")
 
         download_parser = sub_parsers.add_parser("download-unread", help="Downloads all chapters that have not been read")
         download_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
@@ -290,7 +292,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
     elif action == "update":
-        app.update(download=namespace.download, replace=namespace.replace)
+        app.update(name=namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), download=namespace.download, replace=namespace.replace)
     elif action == "upgrade":
         app.upgrade_state()
     elif action == "view":
