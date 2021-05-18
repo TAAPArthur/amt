@@ -117,13 +117,17 @@ class Application(MediaReader):
                 if other_media:
                     assert media_data != other_media
                     logging.info("Sharing tracker of %s with %s", media_data.global_id, other_media.global_id)
-                    self.track(tracker.id, other_media, tracking_id, tracker_title)
+                    self.track(other_media, tracker.id, tracking_id, tracker_title)
 
     def copy_tracker(self, src, dst):
         src_media_data = self._get_single_media(name=src)
         dst_media_data = self._get_single_media(name=dst)
         tracking_id, tracker_title = self.get_tracker_info(src_media_data, self.get_primary_tracker().id)
-        self.track(self.get_primary_tracker().id, dst_media_data, tracking_id, tracker_title)
+        self.track(dst_media_data, self.get_primary_tracker().id, tracking_id, tracker_title)
+
+    def remove_tracker(self, name, media_type=None):
+        for media_data in self._get_media(name=name, media_type=media_type):
+            self.untrack(media_data)
 
     def load_from_tracker(self, user_id=None, user_name=None, media_type_filter=None, exact=True, local_only=False, update_progress_only=False, force=False):
         tracker = self.get_primary_tracker()
@@ -143,7 +147,7 @@ class Application(MediaReader):
                     continue
                 media_data = self._search_for_tracked_media(entry["name"], media_type, exact=exact, local_only=local_only)
                 if media_data:
-                    self.track(tracker.id, media_data, entry["id"], entry["name"])
+                    self.track(media_data, tracker.id, entry["id"], entry["name"])
                     assert self.get_tracked_media(tracker.id, entry["id"])
                     new_count += 1
                 else:

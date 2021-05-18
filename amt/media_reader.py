@@ -419,8 +419,13 @@ class MediaReader:
             tracker_id = self.get_primary_tracker().id
         return media_data["trackers"].get(tracker_id, None)
 
-    def track(self, tracker_id, media_data, tracking_id, tracker_title=None):
+    def track(self, media_data, tracker_id, tracking_id, tracker_title=None):
         media_data["trackers"][tracker_id] = (tracking_id, tracker_title)
+
+    def untrack(self, media_data, tracker_id=None):
+        if not tracker_id:
+            tracker_id = self.get_primary_tracker().id
+        del media_data["trackers"][tracker_id]
 
     def sync_progress(self, force=False, media_type=None, dry_run=False):
         data = []

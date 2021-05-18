@@ -834,6 +834,12 @@ class ArgsTest(MinimalUnitTestClass):
             if media_data["progress"]:
                 self.assertEqual(media_data["progress"], self.media_reader.get_last_read(media_data))
 
+    def test_untrack(self):
+        parse_args(app=self.media_reader, args=["--auto", "load"])
+        assert all([self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id) for media_data in self.media_reader.get_media_in_library()])
+        parse_args(app=self.media_reader, args=["untrack"])
+        assert not any([self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id) for media_data in self.media_reader.get_media_in_library()])
+
     def test_copy_tracker(self):
         media_list = self.add_test_media()
         self.app.get_primary_tracker().set_custom_anime_list([media_list[0]["name"]], media_list[0]["media_type"])

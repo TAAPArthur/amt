@@ -159,6 +159,10 @@ def parse_args(args=None, app=None, already_upgraded=False):
         load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media")
         load_parser.add_argument("name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
 
+        untrack_paraser = sub_parsers.add_parser("untrack", description="Removing tracker info")
+        untrack_paraser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+        untrack_paraser.add_argument("name", choices=app.get_all_single_names(), nargs="?", help="Media to untrack")
+
         copy_tracker_parser = sub_parsers.add_parser("copy-tracker", description="Copies tracking info from src to dest")
         copy_tracker_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         copy_tracker_parser.add_argument("src", choices=app.get_all_single_names(), help="Src media")
@@ -291,6 +295,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.share_tracker(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None))
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
+    elif action == "untrack":
+        app.remove_tracker(name=namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None))
     elif action == "update":
         app.update(name=namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), download=namespace.download, replace=namespace.replace)
     elif action == "upgrade":
