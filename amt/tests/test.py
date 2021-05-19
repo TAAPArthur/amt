@@ -1188,6 +1188,15 @@ class ArgsTest(MinimalUnitTestClass):
                         else:
                             assert self.media_reader.view_chapters(name)
 
+    def test_import_directory(self):
+        path = os.path.join(TEST_HOME, "test-dir")
+        os.mkdir(path)
+        path_file = os.path.join(path, "Anime1 - E10.jpg")
+        with open(path_file, "w") as f:
+            f.write("dummy_data")
+        parse_args(app=self.media_reader, args=["import", path])
+        assert any([x["name"] == "Anime1" for x in self.media_reader.get_media_in_library()])
+
     def test_import_multiple(self):
         file_names = ["Media - 1.mp4", "MediaOther - 1.mp4", "Media - 2.mp4"]
         file_names2 = ["Media - 3.mp4", "MediaOther - 2.mp4", "Media - 4.mp4"]

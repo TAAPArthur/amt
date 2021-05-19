@@ -223,7 +223,7 @@ class Application(MediaReader):
                 server.update_chapter_data(new_data, chapter_data["id"], chapter_data["title"], chapter_data["number"])
                 _upgrade_dict(chapter_data, new_data["chapters"][chapter_data["id"]])
 
-    def import_media(self, files, media_type, link=False, name=None):
+    def import_media(self, files, media_type, link=False, name=None, no_update=False):
         func = shutil.move if not link else os.link
 
         local_server_id = get_local_server_id(media_type)
@@ -236,8 +236,13 @@ class Application(MediaReader):
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             media_name = name
             if not name:
-                match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)(.*\.\w+)$", re.sub(volume_regex, "", file))
-                assert match
+                match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)(.*\.\w+)$", re.sub(volume_regex, "", os.path.basename(file)))
+                if not match:
+                    if os.path.isdir(file):
+                        print(map(lambda x: os.path.join(file, x), os.listdir(file)))
+                        self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, link=link, no_update=True)
+                        continue
+                    assert match
                 media_name = match.group(2)
                 logging.info("Detected name %s", media_name)
             if os.path.isdir(file):
@@ -253,7 +258,8 @@ class Application(MediaReader):
                     self.search_add(media_name, server_id=local_server_id, exact=True)
                 names.add(media_name)
 
-        [self.update_media(media_data) for media_data in self._get_media(name=local_server_id)]
+        if not no_update:
+            [self.update_media(media_data) for media_data in self._get_media(name=local_server_id)]
 
     def maybe_fetch_extra_cookies(self):
         for server in self.get_servers():
