@@ -156,15 +156,15 @@ class Funimation(Server):
                 video = chapter["languages"]["japanese"]["alpha"]
                 exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                 if exp["experienceId"] == int(chapter_data["id"]):
-                    subtitles = [track["src"] for track in exp["sources"][0]["textTracks"] if track["language"] == "en"]
-                    if subtitles:
-                        _, ext = os.path.splitext(subtitles[0])
-                        r = self.session_get(subtitles[0])
-                        path = os.path.join(dir_path, str(chapter_data["id"]) + ext)
-                        with open(path, "wb") as fp:
-                            fp.write(r.content)
-                        return path
-                    logging.info("No subtitles found for %s", chapter_data["id"])
+                    for track in exp["sources"][0]["textTracks"]:
+                        if track["language"] == "en":
+                            subtitle_src = track["src"]
+                            _, ext = os.path.splitext(subtitle_src)
+                            path = os.path.join(dir_path, str(chapter_data["id"]) + ext)
+                            if not os.path.exists(path):
+                                r = self.session_get(subtitle_src)
+                                with open(path, "wb") as fp:
+                                    fp.write(r.content)
 
     def _get_page_path(self, media_data, chapter_data, dir_path, index, page_data):
         return os.path.join(dir_path, "{}.{}".format(chapter_data["id"], page_data["ext"]))
