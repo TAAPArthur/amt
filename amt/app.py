@@ -64,30 +64,27 @@ class Application(MediaReader):
                 return media_data
         raise ValueError("Could not find media to add")
 
+    def _name_matches_media(self, name, media_data):
+        return (name.lower().startswith(media_data["name"].lower()) or
+                name.lower().startswith(media_data["season_title"].lower()) or
+                name.lower() in (media_data["name"].lower(), media_data["season_title"].lower()))
+
     def _search_for_tracked_media(self, name, media_type, exact=False, local_only=False):
-        def clean_name(x):
-            return re.sub(r"\W*", "", x.lower())
-        clean_entry_name = clean_name(name)
-        prefix_entry_name = clean_entry_name.split(":")[0]
+        alt_names = dict.fromkeys([name, re.sub(r"\W*$", "", name), re.sub(r"[^\w\d\s]+.*$", "", name)])
         media_data = None
 
-        known_matching_media = list(filter(lambda x: not self.get_tracker_info(x) and
-                                           (not media_type or media_type & x["media_type"]) and (
-            clean_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(clean_entry_name)
-            or clean_entry_name == clean_name(x["season_title"])
-        ), self.get_media_in_library()))
-        if not known_matching_media and not exact:
+        for name in alt_names:
             known_matching_media = list(filter(lambda x: not self.get_tracker_info(x) and
-                                               (not media_type or media_type & x["media_type"]) and (
-                prefix_entry_name == clean_name(x["name"]) or clean_name(x["name"]).startswith(prefix_entry_name)
-            ), self.get_media_in_library()))
+                                               (not media_type or media_type & x["media_type"]) and
+                                               (self._name_matches_media(name, x)), self.get_media_in_library()))
+            if known_matching_media:
+                break
 
         if known_matching_media:
             logging.debug("Checking among known media")
             media_data = self.select_media(known_matching_media, "Select from known media: ")
 
         elif not local_only:
-            alt_names = dict.fromkeys([name, re.sub(r"\W*$", "", name), re.sub(r"[^\w\d\s]+.*$", "", name)])
             for name in alt_names:
                 media_data = self.search_add(name, media_type=media_type)
                 if media_data:
