@@ -1164,7 +1164,7 @@ class ArgsTest(MinimalUnitTestClass):
             ("ANIME", "Alien 9", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
             ("MANGA", "shamanking0", 1, "shamanking0_vol1.pdf"),
             ("NOVEL", "i-refuse-to-be-your-enemy", 5, "i-refuse-to-be-your-enemy-volume-5.epub"),
-
+            ("ANIME", "Minami-ke", 2, "Minami-ke - S01E02.mkv"),
         ]
 
         self.settings.anime_viewer = "[ -f {media} ] && echo {title}"

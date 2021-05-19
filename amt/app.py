@@ -236,7 +236,7 @@ class Application(MediaReader):
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             media_name = name
             if not name:
-                match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]*\w+[\w';:\. ]+\w[!?]*)(.*\.\w+)$", re.sub(volume_regex, "", file))
+                match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)(.*\.\w+)$", re.sub(volume_regex, "", file))
                 assert match
                 media_name = match.group(2)
                 logging.info("Detected name %s", media_name)
