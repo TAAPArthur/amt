@@ -4,7 +4,6 @@ import re
 import time
 from functools import cache
 
-from PIL import Image
 from requests.exceptions import HTTPError
 
 from .job import Job
@@ -288,6 +287,7 @@ class Server(GenericServer):
         job.run()
 
         if self.settings.force_odd_pages and self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2:
+            from PIL import Image
             full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
             image = Image.new('RGB', (100, 100))
             image.save(full_path, "jpeg")
