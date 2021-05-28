@@ -2,6 +2,8 @@ import os
 import re
 from shlex import quote
 
+import m3u8
+
 from ..server import ANIME
 from .crunchyroll import GenericCrunchyrollServer
 
@@ -96,6 +98,11 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def post_download(self, media_data, chapter_data, dir_path):
         pathWithoutExt = os.path.join(dir_path, chapter_data["id"])
         self.settings.convert(self.extension, f"{quote(dir_path)}/*.{self.extension}", pathWithoutExt)
+
+    def get_stream_data(self, media_data, chapter_data):
+        assert media_data["media_type"] == ANIME
+        m3u8_url = self.get_stream_url(media_data=media_data, chapter_data=chapter_data)
+        return [self.create_page_data(url=segment.uri, encryption_key=segment.key) for segment in m3u8.load(m3u8_url).segments]
 
     def get_media_chapter_data(self, media_data, chapter_data):
         return self.get_stream_data(media_data, chapter_data)
