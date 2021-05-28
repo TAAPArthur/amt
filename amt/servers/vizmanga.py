@@ -48,7 +48,7 @@ class VizManga(Server):
 
     def needs_authentication(self):
         r = self.session_get(self.refresh_login_url)
-        soup = BeautifulSoup(r.content, "lxml")
+        soup = self.soupify(BeautifulSoup, r)
         account = soup.find("div", id="o_account-links-content")
         self.is_premium = self.wsj_subscriber_regex.search(r.text).group(1) == "true"
         return not account or account["logged_in"] == "false"
@@ -69,7 +69,7 @@ class VizManga(Server):
     def get_media_list(self):
         r = self.session_get(self.api_series_url)
 
-        soup = BeautifulSoup(r.content, "lxml")
+        soup = self.soupify(BeautifulSoup, r)
         divs = soup.findAll("a", {"class": "disp-bl pad-b-rg pos-r bg-off-black color-white hover-bg-red"})
         result = []
         for div in divs:
@@ -81,7 +81,7 @@ class VizManga(Server):
 
     def update_media_data(self, media_data):
         r = self.session_get(self.api_chapters_url.format(media_data["id"]))
-        soup = BeautifulSoup(r.content, "lxml")
+        soup = self.soupify(BeautifulSoup, r)
 
         # Chapters
         chapters = soup.findAll("a", {"class": "o_chapter-container"})

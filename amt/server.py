@@ -202,6 +202,9 @@ class Server(GenericServer):
     def session_post(self, url, **kwargs):
         return self._request(False, url, **kwargs)
 
+    def soupify(self, BeautifulSoup, r):
+        return BeautifulSoup(r.text, self.settings.bs4_parser)
+
     def relogin(self):
         if self.is_logged_in:
             return True

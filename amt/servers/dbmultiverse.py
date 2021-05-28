@@ -22,7 +22,7 @@ class Dbmultiverse(Server):
 
         r = self.session_get(self.media_url)
 
-        soup = BeautifulSoup(r.text, "lxml")
+        soup = self.soupify(BeautifulSoup, r)
 
         chapters = soup.findAll("div", {"class": "cadrelect chapters"})
         chapters.sort(key=lambda x: int(x["ch"]))
@@ -36,13 +36,13 @@ class Dbmultiverse(Server):
     def get_media_chapter_data(self, media_data, chapter_data):
         r = self.session_get(self.chapter_url.format(chapter_data["id"]))
 
-        soup = BeautifulSoup(r.text, "lxml")
+        soup = self.soupify(BeautifulSoup, r)
         page_info = soup.find("div", {"class": "pageslist"}).findAll("img")
 
         pages = []
         for page in page_info:
             r = self.session_get(self.page_url.format(page["title"]))
-            soup = BeautifulSoup(r.text, "lxml")
+            soup = self.soupify(BeautifulSoup, r)
             img = soup.find("img", {"id": "balloonsimg"})
             url = img["src"] if img else soup.find("div", id="balloonsimg").get("style").split(";")[0].split(":")[1][4:-1]
             parsed = urlparse.urlparse(url)

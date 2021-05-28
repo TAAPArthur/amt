@@ -34,7 +34,7 @@ class Funimation(Server):
 
     def _get_csrf(self):
         r = self.session_get_cache(self.login_url)
-        soup = BeautifulSoup(r.text, "lxml")
+        soup = self.soupify(BeautifulSoup, r)
         return soup.find("input", {"name": self.CSRF_NAME})["value"]
 
     def needs_authentication(self):
@@ -65,7 +65,7 @@ class Funimation(Server):
 
     def _get_media_list(self, url, limit=-1):
         r = self.session_get_cache(url)
-        soup = BeautifulSoup(r.text, "xml")
+        soup = self.soupify(BeautifulSoup, r)
         media_data = []
         for item in soup.findAll("item")[:limit]:
             title = item.find("title").text
@@ -93,7 +93,8 @@ class Funimation(Server):
         match = self.showID_regex.search(r.text)
         showID = match.group(1)
 
-        src = BeautifulSoup(r.text, "lxml").find("iframe", {"name": "player"})["src"]
+        soup = self.soupify(BeautifulSoup, r)
+        src = soup.find("iframe", {"name": "player"})["src"]
         match = self.player_regex.search(src)
         return int(match.group(1)), showID
 

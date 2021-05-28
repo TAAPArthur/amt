@@ -39,6 +39,7 @@ class Settings:
 
     # HTTP related; Generally used as args to requests
     _verify = True
+    bs4_parser = "html.parser"
     max_retires = 3
     status_to_retry = [429, 500, 502, 504]
     user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0"

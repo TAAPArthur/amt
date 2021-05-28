@@ -53,7 +53,7 @@ class WLN_Updates(Server):
 
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"])
-        soup = BeautifulSoup(r.text, "lxml")
+        soup = self.soupify(BeautifulSoup, r)
         p = soup.find_all("p")
         with open(path, 'w') as fp:
             fp.write("<?xml version='1.0' encoding='UTF-8'?>\n")
