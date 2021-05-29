@@ -186,9 +186,6 @@ class Server(GenericServer):
     def add_cookie(self, name, value, domain=None, path="/"):
         self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
 
-    def session_get_cache(self, url, **kwargs):
-        return self.settings.get_cache(url, lambda: self._request_or_prompt_incapsula(url, **kwargs))
-
     def session_get_protected(self, url, **kwargs):
         return self._request_or_prompt_incapsula(url, **kwargs)
 

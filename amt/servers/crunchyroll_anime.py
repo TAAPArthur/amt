@@ -41,7 +41,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         return media_data
 
     def update_media_data(self, media_data: dict):
-        r = self.session_get_cache(self.list_media.format(self.get_session_id(), media_data["id"]))
+        r = self.session_get(self.list_media.format(self.get_session_id(), media_data["id"]))
         data = r.json()["data"]
         for chapter in data:
             if chapter["collection_id"] == media_data["season_id"] and not chapter["clip"]:

@@ -33,7 +33,7 @@ class Funimation(Server):
     extension = "mp4"
 
     def _get_csrf(self):
-        r = self.session_get_cache(self.login_url)
+        r = self.session_get(self.login_url)
         soup = self.soupify(BeautifulSoup, r)
         return soup.find("input", {"name": self.CSRF_NAME})["value"]
 
@@ -64,13 +64,13 @@ class Funimation(Server):
             return False
 
     def _get_media_list(self, url, limit=-1):
-        r = self.session_get_cache(url)
+        r = self.session_get(url)
         soup = self.soupify(BeautifulSoup, r)
         media_data = []
         for item in soup.findAll("item")[:limit]:
             title = item.find("title").text
             id = item.find("id").text
-            r = self.session_get_cache(self.episode_url.format(id))
+            r = self.session_get(self.episode_url.format(id))
             data = r.json()
             season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"]) for item in data["items"]}
             experiences = {item["item"]["seasonId"]: item["mostRecentSvod"]["experience"] for item in data["items"]}
@@ -88,7 +88,7 @@ class Funimation(Server):
         return self._get_media_list(self.search_url.format(term.replace(" ", "%20")), limit=2)
 
     def _get_episode_id(self, url):
-        r = self.session_get_cache(url)
+        r = self.session_get(url)
 
         match = self.showID_regex.search(r.text)
         showID = match.group(1)
@@ -100,7 +100,7 @@ class Funimation(Server):
 
     def update_media_data(self, media_data: dict, r=None):
         if not r:
-            r = self.session_get_cache(self.show_api_url.format(media_data["alt_id"]))
+            r = self.session_get(self.show_api_url.format(media_data["alt_id"]))
 
         for season in r.json()["seasons"]:
             if season["seasonPk"] == media_data["season_id"]:
@@ -115,7 +115,7 @@ class Funimation(Server):
 
     def get_media_data_from_url(self, url):
         chapter_id, _ = self._get_episode_id(url)
-        r = self.session_get_cache(self.show_api_url.format(chapter_id))
+        r = self.session_get(self.show_api_url.format(chapter_id))
         data = r.json()
         for season in data["seasons"]:
             for episode in season["episodes"]:
