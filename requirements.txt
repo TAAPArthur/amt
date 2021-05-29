@@ -7,8 +7,7 @@ argcomplete
 # Needed for Viz
 Pillow
 
-# Needed for Crunchyroll
-pycryptodome
+# Needed for downloading Crunchyroll Anime
 m3u8
 
 # Needed for a good experience with Funimation
