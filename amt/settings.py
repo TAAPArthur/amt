@@ -17,8 +17,8 @@ class Settings:
 
     # Password manager related settings
     password_manager_enabled = True
-    password_save_cmd = "tpm insert {}"
-    password_load_cmd = "tpm show {}"
+    password_save_cmd = "${{AMT_PASSWORD_MANAGER:-tpm}} insert {}"
+    password_load_cmd = "${{AMT_PASSWORD_MANAGER:-tpm}} show {}"
     credential_separator = "\t"
     env_override_prefix = "PASSWORD_OVERRIDE_"
 
