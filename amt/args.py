@@ -92,6 +92,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         view_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
         view_parser.add_argument("-l", "--limit", default=0, type=int)
         view_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
+        view_parser.add_argument("--abs", default=False, action="store_const", const=True)
         view_parser.add_argument("name", choices=app.get_all_names(MANGA | NOVEL), default=None, nargs="?")
         view_parser.add_argument("num", default=None, nargs="*", type=float)
 
@@ -302,7 +303,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "upgrade":
         app.upgrade_state()
     elif action == "view":
-        print(app.view_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit, ignore_errors=namespace.ignore_errors, num_list=namespace.num))
+        print(app.view_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit, ignore_errors=namespace.ignore_errors, num_list=namespace.num, force_abs=namespace.abs))
 
     if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):
         app.save()
