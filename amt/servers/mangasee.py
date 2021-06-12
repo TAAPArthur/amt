@@ -1,6 +1,8 @@
 import json
 import re
 
+import cloudscraper
+
 from ..server import Server
 
 
@@ -18,13 +20,20 @@ class Mangasee(Server):
     page_regex = re.compile(r"vm.CurChapter = (.*);")
     domain_regex = re.compile(r"vm.CurPathName\w* = \"(.*)\";")
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.session = cloudscraper.create_scraper(sess=self.session, browser={
+            'browser': 'firefox',
+            'platform': 'linux',
+            'desktop': True
+        })
+
     def get_media_list(self):
         r = self.session_post(self.media_list_url)
         data = r.json()
         return [self.create_media_data(media_data["i"], media_data["s"]) for media_data in data]
 
     def update_media_data(self, media_data):
-
         r = self.session_get(self.manga_url.format(media_data["id"]))
         match = self.chapter_regex.search(r.text)
         chapters_text = match.group(1)
