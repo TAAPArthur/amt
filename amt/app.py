@@ -21,10 +21,12 @@ class Application(MediaReader):
         for i, result in enumerate(results):
             print("{:4}| {}:{}\t{} {} ({})".format(i, result["server_id"], result["id"], result["name"], result["season_title"], TYPE_NAMES[result["media_type"]]))
 
-    def select_media(self, results, prompt):
+    def select_media(self, term, results, prompt):
         index = 0
 
+        print("Looking for", term)
         if not self.auto_select and len(results) > 1:
+            self.print_results(results)
             index = input(prompt)
         try:
             return results[int(index)]
@@ -36,10 +38,7 @@ class Application(MediaReader):
         results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude)
         if len(results) == 0:
             return None
-        print("Looking for", term)
-        self.print_results(results)
-
-        media_data = self.select_media(results, "Select media: ")
+        media_data = self.select_media(term, results, "Select media: ")
         if not no_add and media_data:
             self.add_media(media_data)
         return media_data
@@ -49,7 +48,7 @@ class Application(MediaReader):
         if media_data:
             self.update_media(media_data)
             self.list_chapters(media_data)
-            chapter = self.select_media(self._get_sorted_chapters(media_data), "Select episode")
+            chapter = self.select_media(term, self._get_sorted_chapters(media_data), "Select episode")
             if media_data["media_type"] == ANIME:
                 return self.play(name=media_data, num_list=[chapter["number"]], force_abs=True, quality=quality)
             else:
@@ -82,7 +81,7 @@ class Application(MediaReader):
 
         if known_matching_media:
             logging.debug("Checking among known media")
-            media_data = self.select_media(known_matching_media, "Select from known media: ")
+            media_data = self.select_media(name, known_matching_media, "Select from known media: ")
 
         elif not local_only:
             for name in alt_names:
