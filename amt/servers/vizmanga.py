@@ -141,8 +141,15 @@ class VizManga(Server):
 
         _key = 42016
         exif = orig.getexif()
-        key = [int(i, 16) for i in exif[_key].split(":")]
-        width, height = exif[256], exif[257]
+        if _key in exif:
+            key = [int(i, 16) for i in exif[_key].split(":")]
+            width, height = exif[256], exif[257]
+        else:
+            exif_regex = re.compile(b'.+?([a-f0-9]{2}(?::[a-f0-9]{2})+)')
+            exif_ = exif_regex.search(orig.info.get('exif'))
+            assert exif_ is not None
+            key = [int(i, 16) for i in exif_.group(1).decode().split(':')]
+            width, height = exif[256], exif[257]
 
         small_width = int(width / 10)
         small_height = int(height / 15)
