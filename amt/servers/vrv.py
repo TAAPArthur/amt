@@ -26,7 +26,7 @@ class Vrv(Server):
     login_api_url = api_base + "/core/authenticate/by:credentials"
     key_pair_url = api_base + "/core/index"
 
-    search_api_url = api_base + "/disc/public/v1/US/M2/-/-/search?q={}&n=6"
+    _search_api_url = None
     _series_api_url = None
     _season_api_url = None
     _seasons_api_url = None
@@ -50,12 +50,17 @@ class Vrv(Server):
             self._season_api_url = self.api_base + links["episodes"]["href"].replace("{?", "?season_id={")
             self._seasons_api_url = self.api_base + links["seasons"]["href"].replace("{?", "?series_id={")
             self._series_api_url = self.api_base + links["series"]["href"] + "?"
-            # _search_api_url =self.api_base + links["search_results"]["href"].replace("{?", "?{")
+            self._search_api_url = self.api_base + links["search_results"]["href"] + "?q={}&n=6"
 
     @property
     def series_api_url(self):
         self._load_urls()
         return self._series_api_url
+
+    @property
+    def search_api_url(self):
+        self._load_urls()
+        return self._search_api_url
 
     @property
     def season_api_url(self):
@@ -130,7 +135,7 @@ class Vrv(Server):
     def search(self, term):
         r = self.session_get_with_key_pair(self.search_api_url.format(term))
         media = []
-        for item in r.json()["items"][0]["items"]:
+        for item in r.json()["items"]:
             if item["type"] == "series":
                 series_id = item["id"]
                 data = self.session_get_with_key_pair(self.seasons_api_url.format(series_id=series_id)).json()
