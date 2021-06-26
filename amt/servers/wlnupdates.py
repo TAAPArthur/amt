@@ -41,12 +41,20 @@ class WLN_Updates(Server):
         for chapter in data["releases"]:
             if chapter["srcurl"] and chapter["chapter"]:
                 match = self.number_in_chapter_url_regex.findall(chapter["srcurl"])
-                number = match[-1].replace("-", ".") if match else chapter["chapter"]
+                number = float(match[-1].replace("-", ".")) if match else float(chapter["chapter"])
+                formatted_srcurl = chapter["srcurl"][:-1] if chapter["srcurl"][-1] == "/" else chapter["srcurl"]
+                title = formatted_srcurl.split("/")[-1]
                 if number not in visted_chapters:
-                    formatted_srcurl = chapter["srcurl"][:-1] if chapter["srcurl"][-1] == "/" else chapter["srcurl"]
-                    title = formatted_srcurl.split("/")[-1]
                     visted_chapters.add(number)
                     self.update_chapter_data(media_data, id=title, number=number, alt_id=chapter["srcurl"], title=title)
+        if len(media_data["chapters"]) > 2:
+            sorted_list = sorted(map(lambda x: (x["number"], x["id"]), media_data["chapters"].values()))
+            while True:
+                if sorted_list[-1][0] - sorted_list[-2][0] > 10:
+                    del media_data["chapters"][sorted_list[-1][1]]
+                    sorted_list.pop()
+                else:
+                    break
 
     def get_media_chapter_data(self, media_data, chapter_data):
         return [self.create_page_data(url=chapter_data["alt_id"])]
