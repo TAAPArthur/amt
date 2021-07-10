@@ -489,21 +489,21 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def test_preserve_read_status_on_update(self):
         media_list = self.add_test_media()
-        self.media_reader.mark_up_to_date()
+        self.media_reader.mark_read()
         for i in range(2):
             for media_data in media_list:
                 assert all(map(lambda x: x["read"], media_data["chapters"].values()))
             self.media_reader.update()
 
-    def test_mark_up_to_date(self):
+    def test_mark_read(self):
         media_list = self.add_test_media(self.test_server)
-        self.media_reader.mark_up_to_date(self.test_server.id)
+        self.media_reader.mark_read(self.test_server.id)
         for media_data in media_list:
             assert all(map(lambda x: x["read"], media_data["chapters"].values()))
-        self.media_reader.mark_up_to_date(self.test_server.id, N=-1)
+        self.media_reader.mark_read(self.test_server.id, N=-1)
         for media_data in media_list:
             assert all(map(lambda x: x["read"], media_data["chapters"].values()))
-        self.media_reader.mark_up_to_date(self.test_server.id, N=-1, force=True)
+        self.media_reader.mark_read(self.test_server.id, N=-1, force=True)
         for media_data in media_list:
             chapter_list = list(sorted(media_data["chapters"].values(), key=lambda x: x["number"]))
             assert all(map(lambda x: x["read"], chapter_list[:-1]))
@@ -858,20 +858,20 @@ class ArgsTest(MinimalUnitTestClass):
         assert all([self.app.get_tracker_info(media_data) for media_data in media_list if media_data["name"] in tracked_media])
         assert len(tracked_media) < len(tracked_media2)
 
-    def test_mark_up_to_date(self):
+    def test_mark_read(self):
         media_list = self.add_test_media()
         media_data = media_list[0]
         name = media_data.global_id
-        parse_args(app=self.media_reader, args=["mark-up-to-date", name])
+        parse_args(app=self.media_reader, args=["mark-read", name])
         assert all(map(lambda x: x["read"], media_data["chapters"].values()))
-        parse_args(app=self.media_reader, args=["mark-up-to-date", "--force", name, "-1"])
+        parse_args(app=self.media_reader, args=["mark-read", "--force", name, "-1"])
         assert not all(map(lambda x: x["read"], media_data["chapters"].values()))
-        parse_args(app=self.media_reader, args=["mark-up-to-date", "--abs", "--force", name, "-1"])
+        parse_args(app=self.media_reader, args=["mark-unread", name])
         assert not any(map(lambda x: x["read"], media_data["chapters"].values()))
 
     def test_sync_progress(self):
         parse_args(app=self.media_reader, args=["--auto", "load"])
-        parse_args(app=self.media_reader, args=["mark-up-to-date"])
+        parse_args(app=self.media_reader, args=["mark-read"])
         parse_args(app=self.media_reader, args=["sync"])
         for i in range(2):
             assert self.media_reader.get_media_in_library()
@@ -924,7 +924,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_update_replace(self):
         fake_chapter_id = "fakeId"
         media_list = self.add_test_media()
-        self.app.mark_up_to_date()
+        self.app.mark_read()
         original_len = len(media_list[0]["chapters"])
         parse_args(app=self.media_reader, args=["update", "--replace"])
         assert fake_chapter_id not in media_list[0]["chapters"]
@@ -955,7 +955,7 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         parse_args(app=self.media_reader, args=["--auto", "load", "--local-only"])
         media_data = list(self.media_reader.get_media_in_library())[0]
-        self.app.mark_up_to_date()
+        self.app.mark_read()
 
         assert self.media_reader.get_tracker_info(media_data)
         parse_args(app=self.media_reader, args=["--auto", "migrate", media_data["name"]])
@@ -971,7 +971,7 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["--auto", "load", "--local-only"])
         media_data = list(self.media_reader.get_media_in_library())[0]
 
-        self.app.mark_up_to_date()
+        self.app.mark_read()
         parse_args(app=self.media_reader, args=["migrate", "--self", media_data["name"]])
         self.assertEqual(1, len(self.media_reader.get_media_in_library()))
 
@@ -1005,7 +1005,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_clean_read(self):
         self.add_test_media(self.test_server)
         self.app.download_unread_chapters()
-        self.media_reader.mark_up_to_date()
+        self.media_reader.mark_read()
         parse_args(app=self.media_reader, args=["clean", "--remove-read"])
         self.verifyNoChaptersDownloaded()
 

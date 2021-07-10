@@ -178,9 +178,13 @@ def parse_args(args=None, app=None, already_upgraded=False):
         sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
         sync_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
 
-        mark_parsers = sub_parsers.add_parser("mark-up-to-date", description="Mark all known chapters as read")
+        mark_unread_parsers = sub_parsers.add_parser("mark-unread", description="Mark all known chapters as unread")
+        mark_unread_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+        mark_unread_parsers.add_argument("name", default=None, choices=app.get_all_names(), nargs="?")
+
+        mark_parsers = sub_parsers.add_parser("mark-read", description="Mark all known chapters as read")
         mark_parsers.add_argument("--abs", action="store_const", const=True, default=False, help="Treat N as an abs number")
-        mark_parsers.add_argument("--force", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
+        mark_parsers.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
         mark_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         mark_parsers.add_argument("name", default=None, choices=app.get_all_names(), nargs="?")
         mark_parsers.add_argument("N", type=int, default=0, nargs="?", help="Consider the last N chapters as not up-to-date")
@@ -257,8 +261,11 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.load_from_tracker(user_name=namespace.name, exact=False, media_type_filter=MEDIA_TYPES.get(namespace.media_type, None), local_only=namespace.local_only, update_progress_only=namespace.progress_only, force=namespace.force)
     elif action == "login":
         app.test_login(namespace.servers, force=namespace.force)
-    elif action == "mark-up-to-date":
-        app.mark_up_to_date(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), N=namespace.N, force=namespace.force, abs=namespace.abs)
+    elif action == "mark-read":
+        app.mark_read(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), N=namespace.N, force=namespace.force, abs=namespace.abs)
+        app.list()
+    elif action == "mark-unread":
+        app.mark_read(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), N=-1, force=True, abs=True)
         app.list()
     elif action == "js-cookie-parser":
         app.maybe_fetch_extra_cookies()
