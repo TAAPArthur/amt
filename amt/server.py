@@ -94,8 +94,8 @@ class GenericServer:
 
     ################ OPTIONAL #####################
 
-    def _get_dir(self, media_data, chapter_data):
-        return self.settings.get_chapter_dir(media_data, chapter_data)
+    def _get_dir(self, media_data, chapter_data, skip_create=False):
+        return self.settings.get_chapter_dir(media_data, chapter_data, skip_create=skip_create)
 
     def _get_page_path(self, media_data, chapter_data, dir_path, index, page_data):
         return os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + page_data["ext"])

@@ -140,9 +140,10 @@ class Settings:
     def get_media_dir(self, media_data):
         return os.path.join(self.get_server_dir(media_data["server_id"]), media_data["dir_name"])
 
-    def get_chapter_dir(self, media_data, chapter_data):
+    def get_chapter_dir(self, media_data, chapter_data, skip_create=False):
         dir = os.path.join(self.get_media_dir(media_data), "%06.1f" % chapter_data["number"])
-        os.makedirs(dir, exist_ok=True)
+        if not skip_create:
+            os.makedirs(dir, exist_ok=True)
         return dir
 
     def get_incapsula(self, server_id: str) -> (str, str):

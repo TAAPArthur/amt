@@ -287,12 +287,11 @@ class Application(MediaReader):
                             shutil.rmtree(media_path)
                         elif remove_read:
                             media_data = media_dirs[media_path]
-                            for media_dir in os.listdir(server_path):
-                                for chapter_data in self._get_sorted_chapters(media_data):
-                                    if chapter_data["read"]:
-                                        chapter_path = server._get_dir(media_data, chapter_data)
-                                        logging.info("Removing %s because it has been read", chapter_path)
-                                        shutil.rmtree(chapter_path)
+                            for chapter_data in self._get_sorted_chapters(media_data):
+                                chapter_path = server._get_dir(media_data, chapter_data, skip_create=True)
+                                if chapter_data["read"] and os.path.exists(chapter_path):
+                                    logging.info("Removing %s because it has been read", chapter_path)
+                                    shutil.rmtree(chapter_path)
 
             elif remove_disabled_servers:
                 logging.info("Removing %s because it is not enabled", server_path)
