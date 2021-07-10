@@ -12,7 +12,10 @@ class WLN_Updates(Server):
     extension = "xhtml"
     api_url = "https://www.wlnupdates.com/api"
     stream_url_regex = re.compile(r"wlnupdates.com/series-id/(\d*)/")
-    number_in_chapter_url_regex = re.compile(r"(\d+[-\.]?\d*)/")
+    number_in_chapter_url_regex = re.compile(r"(\d+[-\.]?\d*)")
+    chapter_number_in_chapter_url_regex = re.compile(r"chapter-(\d+)")
+    part_number_in_chapter_url_regex = re.compile(r"part-(\d+)")
+    part_number_alt_in_chapter_url_regex = re.compile(r"-(\d)\d*$")
 
     def search(self, term):
         r = self.session_post("https://www.wlnupdates.com/api", json={"title": term, 'mode': 'search-title'})
@@ -32,6 +35,17 @@ class WLN_Updates(Server):
             r = super().session_post(url, **kwargs)
         return r
 
+    def guess_chapter_number(self, name):
+        match = self.chapter_number_in_chapter_url_regex.search(name)
+        if match:
+            part_match = self.part_number_in_chapter_url_regex.search(name) or self.part_number_alt_in_chapter_url_regex.search(name)
+            return int(match[1]) + (0 if not part_match or part_match[1] == "1" else float("." + part_match[1]))
+
+        match = self.number_in_chapter_url_regex.findall(name)
+        if match:
+            return float(match[-1].replace("-", "."))
+        return None
+
     def update_media_data(self, media_data):
         r = self.session_post("https://www.wlnupdates.com/api", json={"id": media_data["id"], 'mode': 'get-series-data'})
         visted_chapters = set()
@@ -40,10 +54,11 @@ class WLN_Updates(Server):
             media_data["name"] = data["title"]
         for chapter in data["releases"]:
             if chapter["srcurl"] and chapter["chapter"]:
-                match = self.number_in_chapter_url_regex.findall(chapter["srcurl"])
-                number = float(match[-1].replace("-", ".")) if match else float(chapter["chapter"])
                 formatted_srcurl = chapter["srcurl"][:-1] if chapter["srcurl"][-1] == "/" else chapter["srcurl"]
                 title = formatted_srcurl.split("/")[-1]
+                number = self.guess_chapter_number(title) or float(chapter["chapter"])
+                if number > 1e6 or number / float(chapter["chapter"]) > 10:
+                    number = float(chapter["chapter"])
                 if number not in visted_chapters:
                     visted_chapters.add(number)
                     self.update_chapter_data(media_data, id=title, number=number, alt_id=chapter["srcurl"], title=title)
