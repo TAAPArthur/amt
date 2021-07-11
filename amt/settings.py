@@ -76,6 +76,9 @@ class Settings:
     def get_cookie_file(self):
         return os.path.join(self.cache_dir, "cookies.txt")
 
+    def get_stats_file(self):
+        return os.path.join(self.cache_dir, "stats.json")
+
     def get_cookie_files(self):
         yield self.get_cookie_file()
         yield from map(os.path.expanduser, self.cookie_files)

@@ -20,9 +20,8 @@ class TestTracker(Tracker):
         for id, progress, _ in list_of_updates:
             self.media_list[id][2] = progress
 
-    def get_tracker_list(self, user_name=None, id=None):
-
-        return [self.get_media_dict(id=i, media_type=item[0], title=item[1], progress=item[2]) for i, item in enumerate(self.media_list)] if not self.customList else self.customList
+    def get_tracker_list(self, user_name=None, id=None, status="CURRENT"):
+        return [self.get_media_dict(id=i, media_type=item[0], name=item[1], progress=item[2]) for i, item in enumerate(self.media_list)] if not self.customList else self.customList
 
     def set_custom_anime_list(self, l, media_type=ANIME):
         self.customList = [self.get_media_dict(i, media_type, item, 1) for i, item in enumerate(l)]

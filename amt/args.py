@@ -5,6 +5,7 @@ import os
 from .app import Application
 from .server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from .settings import Settings
+from .stats import SortIndex, StatGroup
 
 
 def gen_auto_complete(parser):
@@ -149,6 +150,17 @@ def parse_args(args=None, app=None, already_upgraded=False):
         login_parser = sub_parsers.add_parser("login", description="Relogin to all servers")
         login_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force re-login")
         login_parser.add_argument("--servers", default=None, choices=app.get_servers_ids_with_logins(), nargs="*")
+
+        # stats
+        stats_parser = sub_parsers.add_parser("stats", description="Show tracker stats")
+        stats_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+        stats_parser.add_argument("--refresh", action="store_const", const=True, default=False, help="Don't use cached data")
+        stats_parser.add_argument("--details", action="store_const", const=True, default=False, help="Show media")
+        stats_parser.add_argument("--stat-group", "-g", choices=list(map(lambda x: x.name, StatGroup)), default=StatGroup.NAME.name, help="Choose stat grouping")
+        stats_parser.add_argument("--sort-index", "-s", choices=list(map(lambda x: x.name, SortIndex)), default=SortIndex.SCORE.name, help="Choose sort index")
+        stats_parser.add_argument("--min-count", "-m", type=int, default=0, help="Ignore groups with fewer than N elements")
+        stats_parser.add_argument("--min-score", type=float, default=1, help="Ignore entries with score less than N")
+        stats_parser.add_argument("name", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
 
         # trackers and progress
         sub_parsers.add_parser("auth")
@@ -301,6 +313,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.settings.store_credentials(namespace.server, namespace.username)
     elif action == "share-tracker":
         app.share_tracker(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None))
+    elif action == "stats":
+        app.stats(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), refresh=namespace.refresh, statGroup=StatGroup[namespace.stat_group], sortIndex=SortIndex[namespace.sort_index], min_count=namespace.min_count, min_score=namespace.min_score, details=namespace.details)
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
     elif action == "untrack":
