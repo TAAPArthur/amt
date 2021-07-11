@@ -306,6 +306,7 @@ class Application(MediaReader):
         if not refresh:
             data = saved_data.get(username if username else "", None)
         if not data:
+            logging.info("Loading stats")
             data = list(self.get_primary_tracker().get_full_list_data(user_name=username))
             saved_data.update({username if username else "": data})
             self.state.save_to_file(statsFile, saved_data)

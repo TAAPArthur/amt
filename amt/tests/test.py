@@ -858,6 +858,21 @@ class ArgsTest(MinimalUnitTestClass):
         assert all([self.app.get_tracker_info(media_data) for media_data in media_list if media_data["name"] in tracked_media])
         assert len(tracked_media) < len(tracked_media2)
 
+    def test_stats(self):
+        self.add_test_media()
+        parse_args(app=self.media_reader, args=["stats", "test_user"])
+        parse_args(app=self.media_reader, args=["stats", "--media-type", "ANIME", "test_user"])
+
+    def test_stats_default_user(self):
+        self.add_test_media()
+        parse_args(app=self.media_reader, args=["stats"])
+
+    def test_stats_refresh(self):
+        self.add_test_media()
+        parse_args(app=self.media_reader, args=["stats", "--refresh"])
+        parse_args(app=self.media_reader, args=["stats"])
+        parse_args(app=self.media_reader, args=["stats", "--refresh"])
+
     def test_mark_read(self):
         media_list = self.add_test_media()
         media_data = media_list[0]
@@ -1513,9 +1528,8 @@ class TrackerTest(RealBaseUnitTestClass):
     def test_get_list(self):
         for tracker in self.media_reader.get_trackers():
             with self.subTest(tracker=tracker.id):
-                data = tracker.get_tracker_list(id=1)
+                data = list(tracker.get_tracker_list(id=1))
                 assert data
-                assert isinstance(data, list)
                 assert isinstance(data[0], dict)
 
     def test_no_auth(self):

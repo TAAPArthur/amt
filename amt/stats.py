@@ -51,7 +51,7 @@ def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details=False
         if count >= min_count:
             avgScore = sum([media["score"] for media in media_list]) / count
             totalTime = sum([media["timeSpent"] for media in media_list])
-            weightedScore = sum([media["score"] * media["timeSpent"] / totalTime for media in media_list])
+            weightedScore = sum([media["score"] * media["timeSpent"] / totalTime for media in media_list]) if totalTime else 0
             media_names = ", ".join(map(lambda x: x["name"], sorted(media_list, key=lambda x: x["score"], reverse=not reverse))) if details else None
             stats.append((key, count, avgScore, totalTime / 60, weightedScore, media_names))
     stats.sort(key=lambda x: x[sortIndex], reverse=not reverse)
