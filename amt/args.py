@@ -5,7 +5,7 @@ import os
 from .app import Application
 from .server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from .settings import Settings
-from .stats import SortIndex, StatGroup
+from .stats import Details, SortIndex, StatGroup
 
 
 def gen_auto_complete(parser):
@@ -156,6 +156,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         stats_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         stats_parser.add_argument("--refresh", action="store_const", const=True, default=False, help="Don't use cached data")
         stats_parser.add_argument("--details", action="store_const", const=True, default=False, help="Show media")
+        stats_parser.add_argument("--details-type", choices=list(map(lambda x: x.name, Details)), default=Details.NAME.name, help="How details are displayed")
         stats_parser.add_argument("--stat-group", "-g", choices=list(map(lambda x: x.name, StatGroup)), default=StatGroup.NAME.name, help="Choose stat grouping")
         stats_parser.add_argument("--sort-index", "-s", choices=list(map(lambda x: x.name, SortIndex)), default=SortIndex.SCORE.name, help="Choose sort index")
         stats_parser.add_argument("--min-count", "-m", type=int, default=0, help="Ignore groups with fewer than N elements")
@@ -314,7 +315,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "share-tracker":
         app.share_tracker(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None))
     elif action == "stats":
-        app.stats(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), refresh=namespace.refresh, statGroup=StatGroup[namespace.stat_group], sortIndex=SortIndex[namespace.sort_index], min_count=namespace.min_count, min_score=namespace.min_score, details=namespace.details)
+        app.stats(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), refresh=namespace.refresh, statGroup=StatGroup[namespace.stat_group], sortIndex=SortIndex[namespace.sort_index], min_count=namespace.min_count, min_score=namespace.min_score, details=namespace.details, detailsType=namespace.details_type)
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
     elif action == "untrack":

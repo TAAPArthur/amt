@@ -299,7 +299,7 @@ class Application(MediaReader):
                 logging.info("Removing %s because it is not enabled", server_path)
                 shutil.rmtree(server_path)
 
-    def stats(self, username=None, media_type=None, refresh=False, statGroup=StatGroup.NAME, sortIndex=SortIndex.NAME, reverse=False, min_count=0, min_score=1, details=False):
+    def stats(self, username=None, media_type=None, refresh=False, statGroup=StatGroup.NAME, sortIndex=SortIndex.NAME, reverse=False, min_count=0, min_score=1, details=False, detailsType="name"):
         statsFile = self.settings.get_stats_file()
         data = None
         saved_data = self.state.read_file_as_dict(statsFile) if os.path.exists(statsFile) else {}
@@ -314,7 +314,7 @@ class Application(MediaReader):
         if media_type:
             data = list(filter(lambda x: x["media_type"] == media_type, data))
         groupedData = stats.group_entries(data, min_score=min_score)[statGroup.value]
-        sortedData = stats.compute_stats(groupedData, sortIndex.value, reverse=reverse, min_count=min_count, details=details)
-        print("IDX", stats.get_header_str(statGroup, details))
+        sortedData = stats.compute_stats(groupedData, sortIndex.value, reverse=reverse, min_count=min_count, details=details, detailsType=detailsType)
+        print("IDX", stats.get_header_str(statGroup, details, detailsType=detailsType))
         for i, entry in enumerate(sortedData):
             print(f"{i+1:3} {stats.get_entry_str(entry, details)}")

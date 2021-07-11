@@ -129,7 +129,7 @@ class Anilist(Tracker):
                 score=x["score"],
                 timeSpent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"],
                 year=x["media"]["startDate"]["year"],
-                seasonName="{} {}".format(x["media"]["season"], x["media"]["seasonYear"]) if x["media"]["season"] else str(x["media"]["startDate"]["year"]),
+                season="{} {}".format(x["media"]["season"], x["media"]["seasonYear"]) if x["media"]["season"] else str(x["media"]["startDate"]["year"]),
                 genres=x["media"]["genres"],
                 tags=[x["name"] for x in x["media"]["tags"] if x["rank"] > 70],
                 studio=[n["name"] for n, e in zip(x["media"]["studios"]["nodes"], x["media"]["studios"]["edges"]) if e["isMain"]] if x["media"]["studios"]["nodes"] else []
