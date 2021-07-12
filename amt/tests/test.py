@@ -14,6 +14,7 @@ from PIL import Image
 from .. import servers, tests
 from ..app import Application
 from ..args import parse_args
+from ..job import Job
 from ..media_reader import SERVERS, TRACKERS, import_sub_classes
 from ..server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from ..servers.custom import CustomServer, get_local_server_id
@@ -58,6 +59,7 @@ class TestApplication(Application):
             if os.getenv("ENABLE_ONLY_SERVERS"):
                 enabled_servers = set(os.getenv("ENABLE_ONLY_SERVERS").split(","))
                 _servers = [x for x in SERVERS if x.id in enabled_servers]
+                assert _servers
             else:
                 _servers = [s for s in SERVERS if not s.external]
             _trackers += TRACKERS
@@ -65,6 +67,7 @@ class TestApplication(Application):
             settings.js_enabled_browser = ""
             _servers += LOCAL_SERVERS
 
+        _servers.sort(key=lambda x: x.id)
         super().__init__(_servers, _trackers, settings)
         assert len(self.get_servers()) == len(_servers)
         assert len(self.get_trackers()) == len(_trackers)
@@ -93,6 +96,9 @@ class BaseUnitTestClass(unittest.TestCase):
     def reload(self):
         self.app = self.media_reader = TestApplication(self.real, self.local)
 
+    def for_each(self, func, media_list, raiseException=True):
+        Job(self.settings.threads if not os.getenv("DEBUG") else 0, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
+
     def setUp(self):
         self.stream_handler = logging.StreamHandler(sys.stdout)
         logger = logging.getLogger()
@@ -108,6 +114,9 @@ class BaseUnitTestClass(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         self.app.session.close()
+        for server in self.media_reader.get_servers():
+            if server.session != self.app.session:
+                server.session.close()
         logging.getLogger().removeHandler(self.stream_handler)
 
     def add_arbitrary_media(self):
@@ -152,7 +161,8 @@ class BaseUnitTestClass(unittest.TestCase):
                             self.assertIn(img.format.lower(), valid_image_formats)
                             self.assertIn(file_name.split(".")[-1], valid_image_formats)
                     elif media_data["media_type"] == ANIME:
-                        subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
+                        if path.endswith(server.extension):
+                            subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
 
     def getAllChapters(self):
         for media_data in self.app._get_media():
@@ -661,22 +671,6 @@ class ApplicationTestWithErrors(BaseUnitTestClass):
         self.test_server.inject_error()
         assert self.app.download_unread_chapters()
         assert self.test_server.was_error_thrown()
-
-
-class RealArgsTest(RealBaseUnitTestClass):
-    def test_circumvent_bot_protection(self):
-        self.settings.js_enabled_browser = True
-        parse_args(app=self.media_reader, args=["js-cookie-parser"])
-        for server in self.app.get_servers():
-            if server.domain:
-                server.session_get_protected("https://" + server.domain)
-
-    @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
-    def test_load_from_tracker(self):
-        anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
-        self.app.get_primary_tracker().set_custom_anime_list(anime)
-        parse_args(app=self.media_reader, args=["--auto", "load", "--media-type=ANIME"])
-        self.assertEqual(len(anime), len(self.media_reader.get_media_ids_in_library()))
 
 
 class CustomTest(MinimalUnitTestClass):
@@ -1300,37 +1294,35 @@ class ServerTest(RealBaseUnitTestClass):
         super().setUp()
 
     def test_get_media_list(self):
-        for server in self.media_reader.get_servers():
-            media_list = None
-            with self.subTest(server=server.id, method="get_media_list"):
+        def func(server):
+            with self.subTest(server=server.id):
+                media_list = None
                 media_list = server.get_media_list()
                 assert media_list
                 assert isinstance(media_list, list)
                 assert all([isinstance(x, dict) for x in media_list])
                 assert all([x["media_type"] == server.media_type for x in media_list])
-            if not media_list:
-                continue
-            with self.subTest(server=server.id, method="search"):
+
                 search_media_list = server.search(media_list[0]["name"])
                 assert isinstance(search_media_list, list)
                 assert all([isinstance(x, dict) for x in search_media_list])
 
-            for i in (0, -1):
-                with self.subTest(server=server.id, method="update_media_data", i=i):
+                for i in (0, -1):
                     media_data = media_list[i]
                     return_val = server.update_media_data(media_data)
                     assert not return_val
                     assert isinstance(media_data["chapters"], dict)
+        self.for_each(func, self.media_reader.get_servers())
 
-    def test_media_download_stream(self, stream=False):
-        for server in self.media_reader.get_servers():
+    def test_media_download_stream(self):
+        def func(server):
             with self.subTest(server=server.id):
                 media_list = server.get_media_list()
                 if not media_list:
                     self.skipTest("Can't load media")
                 media_data = server.get_media_list()[0]
                 self.app.add_media(media_data)
-                for chapter_data in filter(lambda x: not x["premium"], media_data["chapters"].values()):
+                for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
                     with self.subTest(server=server.id, stream=True):
                         if media_data["media_type"] & ANIME:
                             assert self.app.play(media_data.global_id, num_list=[chapter_data["number"]])
@@ -1340,36 +1332,29 @@ class ServerTest(RealBaseUnitTestClass):
                         self.verify_download(media_data, chapter_data)
                         assert not server.download_chapter(media_data, chapter_data, page_limit=1)
                     break
+        self.for_each(func, self.media_reader.get_servers())
 
     def test_login_fail(self):
-        for server in self.media_reader.get_servers():
-            if not server.has_login:
-                continue
+        self.app.settings.password_manager_enabled = True
+        self.app.settings.password_load_cmd = r"echo -e A\\tB"
 
-            with self.subTest(server=server.id, method="login"):
-                try:
-                    assert not server.login("A", "B")
-                except:
-                    pass
-
-            server.settings.password_manager_enabled = False
+        def func(server_id):
+            server = self.app.get_server(server_id)
             with self.subTest(server=server.id, method="relogin"):
                 assert not server.relogin()
-
-            server.settings.password_manager_enabled = True
-            server.settings.password_load_cmd = r"echo -e A\\tB"
-            with self.subTest(server=server.id, method="relogin"):
-                assert not server.relogin()
+        self.for_each(func, self.media_reader.get_servers_ids_with_logins())
 
     def test_search_media(self):
         interesting_media = ["Gintama", "One Piece"]
         for media in interesting_media:
             with self.subTest(media_name=media):
                 self.media_reader.media.clear()
-                media_data = self.media_reader.search_for_media(media)
+                media_data = self.media_reader.search_for_media(media, limit_per_server=2, raiseException=True)
                 self.assertTrueOrSkipTest(media)
                 for data in media_data:
-                    self.media_reader.add_media(data)
+                    self.media_reader.add_media(data, no_update=True)
+                self.media_reader.update()
+                for data in media_data:
                     self.verify_unique_numbers(data["chapters"])
                 self.assertEqual(len(self.media_reader.get_media_in_library()), len(media_data))
 
@@ -1395,6 +1380,13 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b", "1079937", "1174339", "1174543"),
     ]
 
+    @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
+    def test_verify_valid_stream_urls(self):
+        for url, media_id, season_id, chapter_id in self.streamable_urls:
+            with self.subTest(url=url):
+                servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
+                self.assertEquals(len(servers), 1)
+
     def test_media_add_from_url(self):
         for url, media_id, season_id, chapter_id in self.streamable_urls:
             with self.subTest(url=url):
@@ -1419,13 +1411,49 @@ class ServerStreamTest(RealBaseUnitTestClass):
     def test_media_steam(self):
         url_list = self.streamable_urls if not os.getenv("PREMIUM_TEST") else self.streamable_urls + self.premium_streamable_urls
         for url, media_id, season_id, chapter_id in url_list:
-            for url, media_id, season_id, chapter_id in self.streamable_urls:
-                with self.subTest(url=url):
-                    servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                    self.assertTrueOrSkipTest(servers)
-                    for server in servers:
-                        if server.media_type == ANIME:
-                            assert self.app.stream(url)
+            with self.subTest(url=url):
+                servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
+                self.assertTrueOrSkipTest(servers)
+                for server in servers:
+                    if server.media_type == ANIME:
+                        assert self.app.stream(url)
+
+
+class TrackerTest(RealBaseUnitTestClass):
+
+    def test_num_trackers(self):
+        assert self.media_reader.get_primary_tracker()
+        assert self.media_reader.get_secondary_trackers()
+
+    def test_get_list(self):
+        for tracker in self.media_reader.get_trackers():
+            with self.subTest(tracker=tracker.id):
+                data = list(tracker.get_tracker_list(id=1))
+                assert data
+                assert isinstance(data[0], dict)
+
+    def test_no_auth(self):
+        self.settings.password_manager_enabled = False
+        for tracker in self.media_reader.get_trackers():
+            if tracker.id != TestTracker.id:
+                with self.subTest(tracker=tracker.id):
+                    self.assertRaises(ValueError, tracker.update, [])
+
+
+class RealArgsTest(RealBaseUnitTestClass):
+    def test_circumvent_bot_protection(self):
+        self.settings.js_enabled_browser = True
+        parse_args(app=self.media_reader, args=["js-cookie-parser"])
+        for server in self.app.get_servers():
+            if server.is_protected:
+                server.session_get_protected(f"https://{server.domain}")
+
+    @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
+    def test_load_from_tracker(self):
+        anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
+        self.app.get_primary_tracker().set_custom_anime_list(anime)
+        parse_args(app=self.media_reader, args=["--auto", "load", "--media-type=ANIME"])
+        self.assertEqual(len(anime), len(self.media_reader.get_media_ids_in_library()))
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):
@@ -1512,31 +1540,6 @@ class PremiumTest(RealBaseUnitTestClass):
             if server.has_login:
                 with self.subTest(server=server.id):
                     assert not server.needs_authentication()
-
-
-class TrackerTest(RealBaseUnitTestClass):
-
-    def test_num_trackers(self):
-        assert self.media_reader.get_primary_tracker()
-        assert self.media_reader.get_secondary_trackers()
-
-    def test_get_list(self):
-        for tracker in self.media_reader.get_trackers():
-            with self.subTest(tracker=tracker.id):
-                data = list(tracker.get_tracker_list(id=1))
-                assert data
-                assert isinstance(data[0], dict)
-
-    def test_no_auth(self):
-        self.settings.password_manager_enabled = False
-        for tracker in self.media_reader.get_trackers():
-            if tracker.id != TestTracker.id:
-                with self.subTest(tracker=tracker.id):
-                    try:
-                        tracker.update([])
-                        assert False
-                    except ValueError:
-                        pass
 
 
 def load_tests(loader, tests, pattern):

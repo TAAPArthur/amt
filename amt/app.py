@@ -240,10 +240,9 @@ class Application(MediaReader):
                 match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)(.*\.\w+)$", re.sub(volume_regex, "", os.path.basename(file)))
                 if not match:
                     if os.path.isdir(file):
-                        print(map(lambda x: os.path.join(file, x), os.listdir(file)))
                         self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, link=link, no_update=True)
                         continue
-                    assert match
+                assert match
                 media_name = match.group(2)
                 logging.info("Detected name %s", media_name)
             if os.path.isdir(file):

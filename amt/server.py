@@ -157,7 +157,7 @@ class Server(GenericServer):
         kwargs["verify"] = self.settings.isVerifyingSSL()
         r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
         if r.status_code != 200:
-            logging.warning("HTTP Error: %d %s", r.status_code, r.text)
+            logging.warning("HTTP Error: %d", r.status_code)
             if r.status_code == 401 and self.has_login and self.domain:
                 try:
                     self.session.cookies.clear(self.domain)

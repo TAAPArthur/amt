@@ -146,9 +146,6 @@ class MediaReader:
     def get_servers_ids_with_logins(self):
         return [k for k in self._servers.keys() if self.get_server(k).has_login]
 
-    def get_protected_servers_ids(self):
-        return [k for k in self._servers.keys() if self.get_server(k).is_protected]
-
     def get_server(self, id):
         return self._servers.get(id, None)
 
@@ -192,12 +189,12 @@ class MediaReader:
     def for_each(self, func, media_list, raiseException=False):
         return Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
-    def search_for_media(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[]):
-        def func(x): return x.search(term)
+    def search_for_media(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[], limit_per_server=None, raiseException=False):
+        def func(x): return x.search(term)[:limit_per_server]
         if server_id:
             results = func(self.get_server(server_id))
         else:
-            results = self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), self.get_servers()))
+            results = self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), self.get_servers()), raiseException=raiseException)
         if exact:
             results = list(filter(lambda x: x["name"] == term, results))
         return results

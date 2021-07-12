@@ -44,7 +44,7 @@ class Job:
         else:
             self.worker()
         if self.exception:
-            logging.error("Error occured: %s", self.exception)
+            logging.error("Error occurred: %s", self.exception)
             if self.raiseException:
                 raise self.exception
         return self.results
