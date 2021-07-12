@@ -127,13 +127,13 @@ class Anilist(Tracker):
                 progressVolumes=x["progressVolumes"],
                 name=x["media"]["title"]["english"] or x["media"]["title"]["romaji"],
                 score=x["score"],
-                timeSpent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"],
+                timeSpent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"] or x["progressVolumes"] or 0,
                 year=x["media"]["startDate"]["year"],
                 season="{} {}".format(x["media"]["season"], x["media"]["seasonYear"]) if x["media"]["season"] else str(x["media"]["startDate"]["year"]),
                 genres=x["media"]["genres"],
                 tags=[x["name"] for x in x["media"]["tags"] if x["rank"] > 70],
                 studio=[n["name"] for n, e in zip(x["media"]["studios"]["nodes"], x["media"]["studios"]["edges"]) if e["isMain"]] if x["media"]["studios"]["nodes"] else []
-            ) for x in data["data"]["Page"]["mediaList"] if x["progress"]]
+            ) for x in data["data"]["Page"]["mediaList"]]
             if data["data"]["Page"]["pageInfo"]["hasNextPage"]:
                 pageIndex += 1
             else:

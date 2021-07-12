@@ -41,7 +41,7 @@ def group_entries(media_list, min_score=1):
     decadeData = defaultdict(list)
     allData = defaultdict(list)
     for media in media_list:
-        if media["score"] >= min_score:
+        if media["score"] >= min_score and (media["progress"] or media["progressVolumes"]):
             [tagData[x].append(media) for x in media["tags"]]
             [genereData[x].append(media) for x in media["genres"]]
             yearData[str(media["year"])].append(media)
