@@ -124,7 +124,7 @@ class Anilist(Tracker):
                 id=x["id"],
                 media_type=ANIME if x["media"]["type"] == "ANIME" else MEDIA_TYPES.get(x["media"]["format"], MANGA),
                 progress=x["progress"],
-                progress_volumes=x["progressVolumes"],
+                progressVolumes=x["progressVolumes"],
                 name=x["media"]["title"]["english"] or x["media"]["title"]["romaji"],
                 score=x["score"],
                 timeSpent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"],
@@ -144,10 +144,10 @@ class Anilist(Tracker):
             logging.error("Access token is not set")
             raise ValueError
 
-        for id, progress, progress_in_volumes in list_of_updates:
+        for id, progress, progressVolumes in list_of_updates:
             variables = {"id": id, "progress": int(progress)}
-            logging.debug("Updating %d to %d, Volume: %d", id, int(progress), progress_in_volumes)
-            query = self.update_list_query_volumes if progress_in_volumes else self.update_list_query
+            logging.debug("Updating %d to %d, Volume: %d", id, int(progress), progressVolumes)
+            query = self.update_list_query_volumes if progressVolumes else self.update_list_query
             response = self.session.post(self.url, json={"query": query, "variables": variables}, headers=self.get_auth_header())
             logging.debug(response.text)
 

@@ -5,8 +5,8 @@ class Tracker():
         self.settings = settings
         self.session = session
 
-    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, timeSpent=0, year=0, season=None, genres=[], tags=[], studio=[]):
-        return {"id": id, "media_type": media_type, "name": name, "progress": progress, "progress_volumes": progress_volumes,
+    def get_media_dict(self, id, media_type, name, progress, progressVolumes=None, score=0, timeSpent=0, year=0, season=None, genres=[], tags=[], studio=[]):
+        return {"id": id, "media_type": media_type, "name": name, "progress": progress, "progressVolumes": progressVolumes,
                 "score": score, "timeSpent": timeSpent, "year": year, "season": season, "genres": genres, "tags": tags, "studio": studio
                 }
 

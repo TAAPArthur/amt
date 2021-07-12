@@ -434,7 +434,7 @@ class MediaReader:
             if not media_type or media_data["media_type"] == media_type:
                 tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_primary_tracker().id)
                 if tracker_info and (force or media_data["progress"] < int(self.get_last_read(media_data))):
-                    data.append((tracker_info[0], self.get_last_read(media_data), media_data["progress_in_volumes"]))
+                    data.append((tracker_info[0], self.get_last_read(media_data), media_data["progressVolumes"]))
                     last_read = self.get_last_read(media_data)
                     logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], last_read)
                     media_data["progress"] = last_read

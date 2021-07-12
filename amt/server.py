@@ -301,8 +301,8 @@ class Server(GenericServer):
     def get_media_title(self, media_data, chapter):
         return "{}: #{} {}".format(media_data["name"], chapter["number"], chapter["title"])
 
-    def create_media_data(self, id, name, season_id=None, season_title="", media_type=None, dir_name=None, offset=0, alt_id=None, progress_in_volumes=False):
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=media_type or self.media_type, progress=0, season_id=season_id, season_title=season_title, offset=offset, chapters={}, alt_id=alt_id, trackers={}, progress_in_volumes=progress_in_volumes))
+    def create_media_data(self, id, name, season_id=None, season_title="", media_type=None, dir_name=None, offset=0, alt_id=None, progressVolumes=False):
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=media_type or self.media_type, progress=0, season_id=season_id, season_title=season_title, offset=offset, chapters={}, alt_id=alt_id, trackers={}, progressVolumes=progressVolumes))
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False):
         id = str(id)

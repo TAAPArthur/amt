@@ -11,7 +11,7 @@ class JNovelClub(Server):
     extension = "epub"
     media_type = NOVEL
     sync_removed = True
-    progress_in_volumes = True
+    progressVolumes = True
 
     login_url = "https://api.j-novel.club/api/users/login"
     api_domain = "https://labs.j-novel.club"
@@ -47,7 +47,7 @@ class JNovelClub(Server):
         return self.create_media_data(data["slug"], data["title"])
 
     def _create_media_data_helper(self, data):
-        return [self.create_media_data(media_data["slug"], media_data["title"], progress_in_volumes=self.progress_in_volumes) for media_data in data if MEDIA_TYPES[media_data["type"]] == self.media_type]
+        return [self.create_media_data(media_data["slug"], media_data["title"], progressVolumes=self.progressVolumes) for media_data in data if MEDIA_TYPES[media_data["type"]] == self.media_type]
 
     def get_media_list(self):
         r = self.session_get(self.series_url)
@@ -95,7 +95,7 @@ class JNovelClubParts(JNovelClub):
     part_to_series_url = JNovelClub.api_base_url + "/parts/{}/serie?format=json"
     parts_url = JNovelClub.api_base_url + "/volumes/{}/parts?format=json"
     pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
-    progress_in_volumes = False
+    progressVolumes = False
 
     stream_url_regex = re.compile(r"https://j-novel.club/read/([\w\d\-]+)")
     time_to_live_sec = 3600 * 24 * 7

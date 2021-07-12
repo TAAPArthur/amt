@@ -154,7 +154,7 @@ class Application(MediaReader):
                 media_data_list = [media_data]
 
             for media_data in media_data_list:
-                progress = entry["progress"] if not media_data["progress_in_volumes"] else entry["progress_volumes"]
+                progress = entry["progress"] if not media_data["progressVolumes"] else entry["progressVolumes"]
                 self.mark_chapters_until_n_as_read(media_data, progress, force=force)
                 media_data["progress"] = progress
             count += 1
