@@ -1471,7 +1471,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
 
         self.assertTrue(os.path.exists(media_path))
         self.app.update(media_data)
-        self.assertTrue(not os.path.exists(media_path))
+        self.assertFalse(os.listdir(media_path))
 
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")

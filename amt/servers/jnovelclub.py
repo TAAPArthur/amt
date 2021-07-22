@@ -10,7 +10,6 @@ class JNovelClub(Server):
     id = "j_novel_club"
     extension = "epub"
     media_type = NOVEL
-    sync_removed = True
     progressVolumes = True
 
     login_url = "https://api.j-novel.club/api/users/login"
@@ -104,7 +103,7 @@ class JNovelClubParts(JNovelClub):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
 
         for chapter_data in media_data["chapters"].values():
-            chapter_path = self.settings.get_chapter_dir(media_data, chapter_data)
+            chapter_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
             if os.path.exists(chapter_path) and (time.time() - os.path.getmtime(chapter_path)) > self.time_to_live_sec:
                 shutil.rmtree(chapter_path)
         for volume in r.json()["volumes"]:
