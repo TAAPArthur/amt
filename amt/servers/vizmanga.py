@@ -70,7 +70,7 @@ class VizManga(Server):
         r = self.session_get(self.api_series_url)
 
         soup = self.soupify(BeautifulSoup, r)
-        divs = soup.findAll("a", {"class": "disp-bl pad-b-rg pos-r bg-off-black color-white hover-bg-red"})
+        divs = soup.findAll("a", {"class": "o_chapters-link"})
         result = []
         for div in divs:
             id = div["href"].split("/")[-1]
