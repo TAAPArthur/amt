@@ -1388,7 +1388,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193", "260315", "21563", "652193"),
         ("https://www.funimation.com/en/shows/one-piece/im-luffy-the-man-whos-gonna-be-king-of-the-pirates/?lang=japanese", "20224", "20227", "22333"),
         ("https://www.viz.com/shonenjump/one-piece-chapter-1/chapter/5090?action=read", "one-piece", None, "5090"),
-        ("https://www.wlnupdates.com/series-id/49815/itai-no-wa-iya-nanode-bogyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", 49815, None, None),
+        ("https://www.wlnupdates.com/series-id/49815/itai-no-wa-iya-nanode-bogyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", "49815", None, None),
     ]
 
     premium_streamable_urls = [

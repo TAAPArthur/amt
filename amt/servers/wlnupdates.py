@@ -27,7 +27,7 @@ class WLN_Updates(Server):
 
     def get_media_data_from_url(self, url):
         sid = self.stream_url_regex.search(url).group(1)
-        media_data = self.create_media_data(sid)
+        media_data = self.create_media_data(sid, "")
         self.update_media_data(media_data)
         return media_data
 
@@ -54,7 +54,7 @@ class WLN_Updates(Server):
         r = self.session_post("https://www.wlnupdates.com/api", json={"id": media_data["id"], 'mode': 'get-series-data'})
         visted_chapters = set()
         data = r.json()["data"]
-        if "name" not in media_data:
+        if not media_data.get("name", None):
             media_data["name"] = data["title"]
         for chapter in data["releases"]:
             if chapter["srcurl"] and chapter["chapter"]:
