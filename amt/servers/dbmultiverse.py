@@ -11,7 +11,7 @@ class Dbmultiverse(Server):
     name = "Dragon Ball Multiverse"
 
     base_url = "https://www.dragonball-multiverse.com"
-    media_url = base_url + "/en/chapters.html"
+    media_url = base_url + "/en/chapters.html?comic=page"
     chapter_url = base_url + "/en/chapters.html?chapter={}"
     page_url = base_url + "/en/page-{0}.html"
 
@@ -25,13 +25,12 @@ class Dbmultiverse(Server):
         soup = self.soupify(BeautifulSoup, r)
 
         chapters = soup.findAll("div", {"class": "cadrelect chapters"})
-        chapters.sort(key=lambda x: int(x["ch"]))
-        lastest_chapter = int(chapters[-1]["ch"])
+        chapter_map = {int(x["ch"].replace("page", "")): x for x in chapters}
+        lastest_chapter = max(chapter_map.keys())
+        del chapter_map[lastest_chapter]
 
-        for chapter in chapters:
-            id = chapter["ch"]
-            if id != lastest_chapter:
-                self.update_chapter_data(media_data, id=id, number=int(id), title=chapter.find("h4").getText())
+        for id, chapter in chapter_map.items():
+            self.update_chapter_data(media_data, id=id, number=int(id), title=chapter.find("h4").getText())
 
     def get_media_chapter_data(self, media_data, chapter_data):
         r = self.session_get(self.chapter_url.format(chapter_data["id"]))
