@@ -132,6 +132,9 @@ class Vrv(Server):
         self.key_pair = {}
         return True
 
+    def get_media_list(self):
+        return self.search("One")
+
     def search(self, term):
         r = self.session_get_with_key_pair(self.search_api_url.format(term))
         media = []

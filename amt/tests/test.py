@@ -1306,11 +1306,7 @@ class ServerTest(RealBaseUnitTestClass):
         for server in self.media_reader.get_servers():
             media_list = None
             with self.subTest(server=server.id, method="get_media_list"):
-                media_list = server.search("One Piece")
-                if not media_list:
-                    media_list = server.search("Attack")
-                if not media_list:
-                    self.skipTest("Can't load media")
+                media_list = server.get_media_list()
                 assert media_list
                 assert isinstance(media_list, list)
                 assert all([isinstance(x, dict) for x in media_list])

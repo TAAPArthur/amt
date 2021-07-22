@@ -17,8 +17,12 @@ class WLN_Updates(Server):
     part_number_in_chapter_url_regex = re.compile(r"part-(\d+)")
     part_number_alt_in_chapter_url_regex = re.compile(r"-(\d)\d*$")
 
+    def get_media_list(self):
+        r = self.session_post("https://www.wlnupdates.com/api", json={"mode": "search-advanced", "series-type": {"Translated": "included"}})
+        return [self.create_media_data(x["id"], x["title"]) for x in r.json()["data"]]
+
     def search(self, term):
-        r = self.session_post("https://www.wlnupdates.com/api", json={"title": term, 'mode': 'search-title'})
+        r = self.session_post("https://www.wlnupdates.com/api", json={"title": term, "mode": "search-title"})
         return [self.create_media_data(x["sid"], x["match"][0][1]) for x in r.json()["data"]["results"]]
 
     def get_media_data_from_url(self, url):

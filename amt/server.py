@@ -41,9 +41,9 @@ class GenericServer:
 
     def get_media_list(self):
         """
-        Returns an arbitrary selection of media; Used solely for tests
+        Returns an arbitrary selection of media
         """
-        return self.search("One")
+        raise NotImplementedError
 
     def search(self, term):
         """
