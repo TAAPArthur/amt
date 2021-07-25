@@ -12,7 +12,7 @@ class TestTracker(Tracker):
             self.media_list.extend([
                 [MEDIA_TYPES[media_type_name], f"{media_type_name}1", 0, 0],
                 [MEDIA_TYPES[media_type_name], f"{media_type_name}Unknown", 1, 0],
-                [MEDIA_TYPES[media_type_name], f"{media_type_name}InProgress", 1, 0],
+                [MEDIA_TYPES[media_type_name], f"{media_type_name}InProgress", 1, 9],
                 [MEDIA_TYPES[media_type_name], f"{media_type_name}2", 0, 9]
             ])
 

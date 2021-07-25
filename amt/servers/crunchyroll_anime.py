@@ -50,10 +50,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         for chapter in data:
             if chapter["collection_id"] == media_data["season_id"] and not chapter["clip"]:
                 special = False
-                if not chapter["episode_number"]:
-                    special = True
-                    chapter["episode_number"] = 0
-                elif chapter["episode_number"][-1].isalpha():
+                if chapter["episode_number"] and chapter["episode_number"][-1].isalpha():
                     special = True
                     chapter["episode_number"] = chapter["episode_number"][:-1]
 

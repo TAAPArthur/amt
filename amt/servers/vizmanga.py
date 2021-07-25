@@ -1,4 +1,3 @@
-import logging
 import re
 
 from bs4 import BeautifulSoup
@@ -120,14 +119,9 @@ class VizManga(Server):
 
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"], headers={"Referer": "https://www.viz.com"})
-        if r.status_code != 200:
-            logging.warning("Could not load page_data['url']; Response code %d", r.status_code)
-            return
         real_img_url = r.text.strip()
 
         r = self.session_get(real_img_url, stream=True)
-        if r.status_code != 200:
-            return None
 
         orig = Image.open(r.raw)  # type: Image.Image
         solution = VizManga.solve_image(orig)

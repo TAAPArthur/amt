@@ -58,14 +58,13 @@ class Mangaplus(Server):
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"])
 
+        content = r.content
         if page_data["encryption_key"] is not None:
             # Decryption
             key_stream = [int(v, 16) for v in RE_ENCRYPTION_KEY.findall(page_data["encryption_key"])]
             block_size_in_bytes = len(key_stream)
 
             content = bytes([int(v) ^ key_stream[index % block_size_in_bytes] for index, v in enumerate(r.content)])
-        else:
-            content = r.content
 
         with open(path, "wb") as fp:
             fp.write(content)

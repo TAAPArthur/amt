@@ -27,13 +27,11 @@ class Mangadex(Server):
 
     def get_media_list(self):
         r = self.session_get(self.list_url)
-        return self._get_media_list(r.json())["results"]
+        return self._get_media_list(r.json()["results"])
 
     def search(self, term):
         r = self.session_get(self.search_url.format(term))
-        if r.status_code == 204:
-            return None
-        return self._get_media_list(r.json())["results"]
+        return self._get_media_list(r.json()["results"])
 
     def get_media_data_from_url(self, url):
         chapter_id = self.stream_url_regex.search(url).group(1)
@@ -52,8 +50,6 @@ class Mangadex(Server):
         chapterNumberToPublishDate = {}
         while True:
             r = self.session_get(self.manga_chapters_url.format(media_data["id"], offset))
-            if r.status_code == 204:
-                break
             data = r.json()
             for chapter in data["results"]:
                 chapter_data = chapter["data"]

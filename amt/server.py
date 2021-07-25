@@ -316,6 +316,7 @@ class Server(GenericServer):
                 special = True
                 number = float(number.replace("-", "."))
         elif number is None:
+            special = True
             number = 0
         if number % 1 == 0:
             number = int(number)

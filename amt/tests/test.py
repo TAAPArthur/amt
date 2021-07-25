@@ -1314,24 +1314,29 @@ class ServerTest(RealBaseUnitTestClass):
                     assert isinstance(media_data["chapters"], dict)
         self.for_each(func, self.media_reader.get_servers())
 
+    def _download_helper(self, server, media_data):
+        for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
+            with self.subTest(server=server.id, stream=True):
+                if media_data["media_type"] & ANIME:
+                    assert self.app.play(media_data.global_id, num_list=[chapter_data["number"]])
+            with self.subTest(server=server.id, stream=False):
+                unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
+                assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=2)
+                self.verify_download(media_data, chapter_data)
+                assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+            return True
+        return False
+
     def test_media_download_stream(self):
         def func(server):
             with self.subTest(server=server.id):
                 media_list = server.get_media_list()
                 if not media_list:
                     self.skipTest("Can't load media")
-                media_data = server.get_media_list()[0]
-                self.app.add_media(media_data)
-                for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
-                    with self.subTest(server=server.id, stream=True):
-                        if media_data["media_type"] & ANIME:
-                            assert self.app.play(media_data.global_id, num_list=[chapter_data["number"]])
-                    with self.subTest(server=server.id, stream=False):
-                        unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
-                        assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=2)
-                        self.verify_download(media_data, chapter_data)
-                        assert not server.download_chapter(media_data, chapter_data, page_limit=1)
-                    break
+                for media_data in server.get_media_list():
+                    self.app.add_media(media_data)
+                    if self._download_helper(server, media_data):
+                        break
         self.for_each(func, self.media_reader.get_servers())
 
     def test_login_fail(self):
@@ -1366,6 +1371,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
         ("https://mangasee123.com/read-online/Bobobo-Bo-Bo-Bobo-chapter-214-page-1.html", "Bobobo-Bo-Bo-Bobo", None, "102140"),
         ("https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
+        ("https://www.crunchyroll.com/gintama/gintama-season-2-253-265-gintama-classic-it-takes-a-bit-of-courage-to-enter-a-street-vendors-stand-615207", "47620", "20725", "615207"),
         ("https://www.crunchyroll.com/manga/to-your-eternity/read/1", "499", None, "16329"),
         ("https://www.crunchyroll.com/one-piece/episode-1-im-luffy-the-man-whos-gonna-be-king-of-the-pirates-650673", "257631", "21685", "650673"),
         ("https://www.crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209", "269787", "25186", "796209"),
@@ -1471,6 +1477,12 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         for name, chapter in entires:
             with self.subTest(name=name):
                 self.assertEqual(chapter, server.guess_chapter_number(name))
+
+    def test_wlnupdates_complex_entry(self):
+        url = "https://www.wlnupdates.com/series-id/49815/itai-no-wa-iya-nanode-bogyo-ryoku-ni-kyokufuri-shitai-to-omoimasu"
+        self.app.add_from_url(url)
+        media_data = list(self.app.get_media_in_library())[0]
+        self.verify_unique_numbers(media_data["chapters"])
 
     def test_crunchyroll_session(self):
         from ..servers.crunchyroll import Crunchyroll
