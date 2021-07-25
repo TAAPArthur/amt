@@ -3,7 +3,13 @@ APP_NAME := amt
 test:
 	coverage run --source=amt -m unittest --buffer $(TEST_ARGS)
 
-coverage: test
+debug:
+	DEBUG=1 coverage run --source=amt -m unittest --buffer -f -v $(TEST_ARGS)
+
+quick-test:
+	QUICK=1 coverage run --source=amt -m unittest --buffer $(TEST_ARGS)
+
+coverage:
 	coverage html
 
 install:
