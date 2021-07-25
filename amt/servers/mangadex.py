@@ -49,6 +49,7 @@ class Mangadex(Server):
     def update_media_data(self, media_data):
 
         offset = 0
+        chapterNumberToPublishDate = {}
         while True:
             r = self.session_get(self.manga_chapters_url.format(media_data["id"], offset))
             if r.status_code == 204:
@@ -57,7 +58,14 @@ class Mangadex(Server):
             for chapter in data["results"]:
                 chapter_data = chapter["data"]
                 attr = chapter_data["attributes"]
-                self.update_chapter_data(media_data, id=chapter_data["id"], number=attr["chapter"], title=attr["title"])
+                if attr["translatedLanguage"] == self.lang:
+                    if attr["chapter"] in chapterNumberToPublishDate:
+                        if chapterNumberToPublishDate[attr["chapter"]] < attr["publishAt"]:
+                            continue
+                        else:
+                            del media_data["chapters"][chapterNumberToPublishDate[attr["chapter"]]]
+                    chapterNumberToPublishDate[attr["chapter"]] = attr["publishAt"]
+                    self.update_chapter_data(media_data, id=chapter_data["id"], number=attr["chapter"], title=attr["title"])
             offset += data["limit"]
             if offset > data["total"]:
                 break
