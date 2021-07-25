@@ -20,7 +20,7 @@ class Animelab(Server):
     video_url = base_url + "/api/videos/show/{}/subtitles?videoId={}&position=2&forward=true"
     login_url = base_url + "/login"
 
-    stream_url_regex = re.compile(r"https://www.animelab.com/player/(\w*)")
+    stream_url_regex = re.compile(r"animelab.com/player/(\w*)")
     series_info_url_regex = re.compile(r"var seasonShelf\s*=\s*(.*);")
     series_info_from_player_regex = re.compile(r"var videos = new AnimeLabApp.VideoCollection\((.*)\);\s*$")
 

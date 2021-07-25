@@ -28,7 +28,7 @@ class Funimation(Server):
     # list_url = "https://prod-api-funimationnow.dadcdigital.com/api/funimation/shows/"
 
     media_type = ANIME
-    stream_url_regex = re.compile(r"https?://(?:www\.)funimation(.com|now.uk)")
+    stream_url_regex = re.compile(r"funimation(.com|now.uk)")
     showID_regex = re.compile(r"KANE_customdimensions.showID = '(\d*)'")
     extension = "mp4"
 

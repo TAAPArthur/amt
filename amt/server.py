@@ -226,7 +226,7 @@ class Server(GenericServer):
         return '%04d' % page_index
 
     def can_stream_url(self, url):
-        return self.stream_url_regex and self.stream_url_regex.match(url)
+        return self.stream_url_regex and self.stream_url_regex.search(url)
 
     @staticmethod
     def get_download_marker():

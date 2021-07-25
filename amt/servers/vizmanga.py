@@ -29,7 +29,7 @@ class VizManga(Server):
     page_regex = re.compile(r"var pages\s*=\s*(\d*);")
     wsj_subscriber_regex = re.compile(r"var is_wsj_subscriber = (\w*);")
 
-    stream_url_regex = re.compile(r"https://www.viz.com/shonenjump/([\w\-]*)-chapter-1/chapter/(\d+)")
+    stream_url_regex = re.compile(r"viz.com/shonenjump/([\w\-]*)-chapter-1/chapter/(\d+)")
 
     series_name_regex = re.compile(r"var seriesTitle\s*=\s*.([\w ]*).;")
 

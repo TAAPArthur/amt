@@ -19,7 +19,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
     media_type = ANIME
 
-    stream_url_regex = re.compile(r"https://www.crunchyroll.com/([^/]*)/.*-(\d+)$")
+    stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/.*-(\d+)$")
 
     extension = "ts"
 
@@ -61,7 +61,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     def get_media_data_from_url(self, url):
 
-        match = self.stream_url_regex.match(url)
+        match = self.stream_url_regex.search(url)
         media_name_hint = match.group(1)
         # media_name_prefix_hint = media_name_hint.split("-")[0]
         chapter_id = match.group(2)

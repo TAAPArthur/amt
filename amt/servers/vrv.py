@@ -14,7 +14,7 @@ class Vrv(Server):
     home = "https://vrv.co/"
     media_type = ANIME
     extension = "mp4"
-    stream_url_regex = re.compile(r"https?://vrv.co/watch/(\w*)/.+")
+    stream_url_regex = re.compile(r"vrv.co/watch/(\w*)/.+")
     is_premium = True
 
     api_param_regex = re.compile(r"window.__APP_CONFIG__\s*=\s*(.*);")
@@ -153,7 +153,7 @@ class Vrv(Server):
                 self.update_chapter_data(media_data, episode["id"], episode["title"], episode["episode_number"], premium=episode["is_premium_only"], special=episode["is_clip"], date=episode["episode_air_date"])
 
     def get_media_data_from_url(self, url):
-        match = self.stream_url_regex.match(url)
+        match = self.stream_url_regex.search(url)
         if match:
             episode_id = match.group(1)
             r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=episode_id))
@@ -163,7 +163,7 @@ class Vrv(Server):
             return media_data
 
     def get_chapter_id_for_url(self, url):
-        return self.stream_url_regex.match(url).group(1)
+        return self.stream_url_regex.search(url).group(1)
 
     def get_stream_urls(self, media_data, chapter_data):
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))

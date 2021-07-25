@@ -18,7 +18,7 @@ class Mangaplus(Server):
     api_chapter_url = api_url + "/manga_viewer?chapter_id={0}&split=yes&img_quality=high&format=json"
     media_url = base_url + "/titles/{0}?format=json"
 
-    stream_url_regex = re.compile(r"https://mangaplus.shueisha.co.jp/viewer/(\d+)")
+    stream_url_regex = re.compile(r"mangaplus.shueisha.co.jp/viewer/(\d+)")
 
     def get_media_data_from_url(self, url):
         chapter_id = self.get_chapter_id_for_url(url)

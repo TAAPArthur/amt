@@ -96,7 +96,7 @@ class JNovelClubParts(JNovelClub):
     pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
     progressVolumes = False
 
-    stream_url_regex = re.compile(r"https://j-novel.club/read/([\w\d\-]+)")
+    stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+)")
     time_to_live_sec = 3600 * 24 * 7
 
     def update_media_data(self, media_data: dict):
