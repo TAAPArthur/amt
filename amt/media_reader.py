@@ -40,6 +40,7 @@ class MediaReader:
     cookie_hash = None
     _servers = {}
     _trackers = []
+    primary_tracker = None
 
     def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
         self.settings = settings if settings else Settings()
@@ -67,6 +68,7 @@ class MediaReader:
             if cls.id:
                 instance = cls(self.session, self.settings)
                 self._trackers.append(instance)
+        self.set_primary_tracker(self.get_trackers()[0])
         self.load_session_cookies()
         self.state.load()
         self.state.configure_media(self._servers)
@@ -74,10 +76,13 @@ class MediaReader:
         self.bundles = self.state.bundles
 
     def get_primary_tracker(self):
-        return self._trackers[0]
+        return self.primary_tracker
+
+    def set_primary_tracker(self, tracker):
+        self.primary_tracker = tracker
 
     def get_secondary_trackers(self):
-        return self._trackers[1:]
+        return [x for x in self.get_trackers() if x != self.get_primary_tracker()]
 
     def get_trackers(self):
         return self._trackers

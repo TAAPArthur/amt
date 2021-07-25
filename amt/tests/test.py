@@ -1445,6 +1445,21 @@ class TrackerTest(RealBaseUnitTestClass):
                 with self.subTest(tracker=tracker.id):
                     self.assertRaises(ValueError, tracker.update, [])
 
+    @patch("builtins.input", return_value="0")
+    def test_arg(self, input):
+        self.settings.password_manager_enabled = False
+        for tracker in self.media_reader.get_trackers():
+            self.app.set_primary_tracker(tracker)
+            parse_args(app=self.media_reader, args=["auth"])
+
+    def test_load_stats(self):
+        for tracker in self.media_reader.get_trackers():
+            if tracker.id != TestTracker.id:
+                self.app.set_primary_tracker(tracker)
+                parse_args(app=self.media_reader, args=["--auto", "load", "--id=1"])
+                self.assertTrue(self.media_reader.get_media_ids_in_library())
+                parse_args(app=self.media_reader, args=["stats", "--id=1"])
+
 
 class RealArgsTest(RealBaseUnitTestClass):
     def test_circumvent_bot_protection(self):
