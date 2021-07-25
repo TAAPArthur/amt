@@ -19,6 +19,7 @@ class Mangasee(Server):
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
     page_regex = re.compile(r"vm.CurChapter = (.*);")
     domain_regex = re.compile(r"vm.CurPathName\w* = \"(.*)\";")
+    stream_url_regex = re.compile(r"mangasee123.com/read-online/(.*)-chapter-(\d*\.?\d?)-page")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,8 +29,22 @@ class Mangasee(Server):
             'desktop': True
         })
 
+    def get_media_data_from_url(self, url):
+        media_id = self.stream_url_regex.search(url).group(1)
+        for media_data in self.get_media_list():
+            if media_data["id"] == media_id:
+                return media_data
+
+    def get_chapter_id_for_url(self, url):
+        chapter_num = float(self.stream_url_regex.search(url).group(2))
+        media_data = self.get_media_data_from_url(url)
+        self.update_media_data(media_data)
+        for chapter_data in media_data["chapters"].values():
+            if chapter_data["number"] == chapter_num:
+                return chapter_data["id"]
+
     def get_media_list(self):
-        r = self.session_post(self.media_list_url)
+        r = self.session_get(self.media_list_url)
         data = r.json()
         return [self.create_media_data(media_data["i"], media_data["s"]) for media_data in data]
 
