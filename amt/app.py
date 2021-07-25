@@ -298,7 +298,7 @@ class Application(MediaReader):
                 logging.info("Removing %s because it is not enabled", server_path)
                 shutil.rmtree(server_path)
 
-    def stats(self, username=None, media_type=None, refresh=False, statGroup=StatGroup.NAME, sortIndex=SortIndex.NAME, reverse=False, min_count=0, min_score=1, details=False, detailsType="name"):
+    def stats(self, username=None, user_id=None, media_type=None, refresh=False, statGroup=StatGroup.NAME, sortIndex=SortIndex.NAME, reverse=False, min_count=0, min_score=1, details=False, detailsType="name"):
         statsFile = self.settings.get_stats_file()
         data = None
         saved_data = self.state.read_file_as_dict(statsFile) if os.path.exists(statsFile) else {}
@@ -306,7 +306,7 @@ class Application(MediaReader):
             data = saved_data.get(username if username else "", None)
         if not data:
             logging.info("Loading stats")
-            data = list(self.get_primary_tracker().get_full_list_data(user_name=username))
+            data = list(self.get_primary_tracker().get_full_list_data(id=user_id, user_name=username))
             saved_data.update({username if username else "": data})
             self.state.save_to_file(statsFile, saved_data)
         assert data

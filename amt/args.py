@@ -161,6 +161,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         stats_parser.add_argument("--sort-index", "-s", choices=list(map(lambda x: x.name, SortIndex)), default=SortIndex.SCORE.name, help="Choose sort index")
         stats_parser.add_argument("--min-count", "-m", type=int, default=0, help="Ignore groups with fewer than N elements")
         stats_parser.add_argument("--min-score", type=float, default=1, help="Ignore entries with score less than N")
+        stats_parser.add_argument("--id", default=None, nargs="?", help="id to load tracking info of")
         stats_parser.add_argument("name", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
 
         # trackers and progress
@@ -171,6 +172,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
         load_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
         load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
         load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media")
+        load_parser.add_argument("--id", default=None, nargs="?", help="id to load tracking info of")
         load_parser.add_argument("name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
 
         untrack_paraser = sub_parsers.add_parser("untrack", description="Removing tracker info")
@@ -271,7 +273,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "list-chapters":
         app.list_chapters(namespace.name)
     elif action == "load":
-        app.load_from_tracker(user_name=namespace.name, exact=False, media_type_filter=MEDIA_TYPES.get(namespace.media_type, None), local_only=namespace.local_only, update_progress_only=namespace.progress_only, force=namespace.force)
+        app.load_from_tracker(user_name=namespace.name, user_id=namespace.id, exact=False, media_type_filter=MEDIA_TYPES.get(namespace.media_type, None), local_only=namespace.local_only, update_progress_only=namespace.progress_only, force=namespace.force)
     elif action == "login":
         app.test_login(namespace.servers, force=namespace.force)
     elif action == "mark-read":
@@ -315,7 +317,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "share-tracker":
         app.share_tracker(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None))
     elif action == "stats":
-        app.stats(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), refresh=namespace.refresh, statGroup=StatGroup[namespace.stat_group], sortIndex=SortIndex[namespace.sort_index], min_count=namespace.min_count, min_score=namespace.min_score, details=namespace.details, detailsType=namespace.details_type)
+        app.stats(namespace.name, user_id=namespace.id, media_type=MEDIA_TYPES.get(namespace.media_type, None), refresh=namespace.refresh, statGroup=StatGroup[namespace.stat_group], sortIndex=SortIndex[namespace.sort_index], min_count=namespace.min_count, min_score=namespace.min_score, details=namespace.details, detailsType=namespace.details_type)
     elif action == "sync":
         app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
     elif action == "untrack":
