@@ -1380,6 +1380,7 @@ class ServerTest(RealBaseUnitTestClass):
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
         ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),
+        ("https://mangadex.org/chapter/6a0a63c1-3f57-4685-be6c-14e3ca7eb180/1", "a2c1d849-af05-4bbc-b2a7-866ebb10331f", None, "6a0a63c1-3f57-4685-be6c-14e3ca7eb180"),
         ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
         ("https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
         ("https://www.crunchyroll.com/manga/to-your-eternity/read/1", "499", None, "16329"),
