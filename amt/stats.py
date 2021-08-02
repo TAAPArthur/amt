@@ -68,8 +68,8 @@ def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details=False
 
 
 def get_header_str(statGroup, details=False, detailsType=Details.NAME.name):
-    return f"{statGroup.name:30.30}\t" + "\t".join(list(map(lambda x: x.name, SortIndex))[1:]) + (f"\t{detailsType}" if details else "")
+    return f"{statGroup.name:50.50}\t" + "\t".join(list(map(lambda x: x.name, SortIndex))[1:]) + (f"\t{detailsType}" if details else "")
 
 
 def get_entry_str(entry, details=False):
-    return "{:30.30}\t{:5}\t{:5.2f}\t{:5.1f}\t{:5.2f}".format(entry[0], entry[1], entry[2], entry[3], entry[4]) + (f"\t{entry[-1]}" if details else "")
+    return "{:50.50}\t{:5}\t{:5.2f}\t{:5.1f}\t{:5.2f}".format(entry[0], entry[1], entry[2], entry[3], entry[4]) + (f"\t{entry[-1]}" if details else "")
