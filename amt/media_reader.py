@@ -321,8 +321,6 @@ class MediaReader:
                     media_data = server.get_media_data_from_url(url)
                     known = self.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
                 media_data, chapter = known
-                streamable_url = server.get_stream_url(media_data, chapter, quality=quality)
-                logging.info("Streaming %s", streamable_url)
                 dir_path = server._get_dir(media_data, chapter)
 
                 if download:
@@ -330,6 +328,8 @@ class MediaReader:
                 else:
                     if not server.is_fully_downloaded(media_data, chapter):
                         server.pre_download(media_data, chapter, dir_path=dir_path)
+                        streamable_url = server.get_stream_url(media_data, chapter, quality=quality)
+                        logging.info("Streaming %s", streamable_url)
                     if self.settings.open_anime_viewer(streamable_url, server.get_media_title(media_data, chapter), wd=dir_path):
                         chapter["read"] = True
                         if cont:
