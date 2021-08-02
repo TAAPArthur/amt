@@ -1509,9 +1509,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         session = server.get_session_id()
         assert bad_session != session
         assert session == server.get_session_id()
-        assert not server.api_auth_token
         assert server.needs_authentication()
-        assert not server.api_auth_token
 
     def test_jnovel_club_parts_autodelete(self):
         from ..servers.jnovelclub import JNovelClubParts

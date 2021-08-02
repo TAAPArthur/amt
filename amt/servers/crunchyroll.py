@@ -29,11 +29,11 @@ class GenericCrunchyrollServer(Server):
         return Crunchyroll._api_session_id
 
     def _store_login_data(self, data):
-        self.api_auth_token = data["data"]["auth"]
+        Crunchyroll._api_auth_token = data["data"]["auth"]
         self.is_premium = data["data"]["user"]["premium"]
 
     def needs_authentication(self):
-        if self.api_auth_token:
+        if Crunchyroll._api_auth_token:
             return False
         r = self.session_get(self.api_auth_url.format(self.get_session_id()))
         data = r.json()
@@ -149,7 +149,7 @@ class Crunchyroll(GenericCrunchyrollServer):
     api_chapter_url = api_base_url + "/list_chapter?session_id={}&chapter_id={}&auth={}"
     api_chapters_url = api_base_url + "/chapters?series_id={}"
 
-    api_auth_token = None
+    _api_auth_token = None
     _api_session_id = None
     possible_page_url_keys = ["encrypted_mobile_image_url", "encrypted_composed_image_url"]
     page_url_key = possible_page_url_keys[0]
@@ -198,7 +198,7 @@ class Crunchyroll(GenericCrunchyrollServer):
             self.update_chapter_data(media_data, id=chapter["chapter_id"], number=chapter["number"], title=chapter["locale"][self.locale]["name"], premium=True, date=date)
 
     def get_media_chapter_data(self, media_data, chapter_data):
-        r = self.session_get(self.api_chapter_url.format(self.get_session_id(), chapter_data["id"], self.api_auth_token))
+        r = self.session_get(self.api_chapter_url.format(self.get_session_id(), chapter_data["id"], Crunchyroll._api_auth_token))
         raw_pages = r.json()["pages"]
         raw_pages.sort(key=lambda x: int(x["number"]))
         pages = [self.create_page_data(url=page["locale"][self.locale][self.page_url_key]) for page in raw_pages if page["locale"]]
