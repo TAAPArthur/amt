@@ -67,6 +67,13 @@ class JNovelClub(Server):
         r = self.session_get(self.pages_url.format(chapter_data["id"]))
         return [self.create_page_data(url=r.json()["downloads"][0]["link"])]
 
+    def download_sources(self, resources_path, path, url, text):
+        img_path = os.path.join(resources_path, os.path.basename(url))
+        with open(img_path, 'wb') as fp:
+            fp.write(self.session_get(url).content)
+        text = text.replace(url, os.path.relpath(img_path, os.path.dirname(path)))
+        return text
+
     def save_chapter_page(self, page_data, path):
         resources_path = os.path.join(os.path.dirname(path), ".resourses")
         os.makedirs(resources_path, exist_ok=True)
@@ -75,11 +82,9 @@ class JNovelClub(Server):
         try:
             from bs4 import BeautifulSoup
             soup = self.soupify(BeautifulSoup, r)
-            for img in soup.findAll("img"):
-                img_path = os.path.join(resources_path, os.path.basename(img["src"]))
-                with open(img_path, 'wb') as fp:
-                    fp.write(self.session_get(img["src"]).content)
-                text = text.replace(img["src"], os.path.relpath(img_path, os.path.dirname(path)))
+            for tagName, linkField in (("img", "src"), ("link", "href")):
+                for element in soup.findAll(tagName):
+                    text = self.download_sources(resources_path, path, element[linkField], text)
         except ImportError:
             pass
         text = self.settings.auto_replace_if_enabled(text, server_id=self.id)
