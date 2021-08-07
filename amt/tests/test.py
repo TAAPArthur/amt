@@ -281,6 +281,21 @@ class SettingsTest(BaseUnitTestClass):
             sorted_chapters_by_number = sorted(media_data["chapters"].values(), key=lambda x: x["number"])
             self.assertEqual(sorted_chapters_by_number, list(map(lambda x: x[1], sorted_paths)))
 
+    def test_auto_replace(self):
+        self.settings.auto_replace = True
+        with open(self.settings.get_translation_file(), 'w') as f:
+            f.write("s/Big Sister/Onee-san/g\n")
+            f.write("Big Brother ([A-Z]\w*)/\\1 onii-san\n")
+
+        text = "Big Sister where is Big Brother X"
+        target = "Onee-san where is X onii-san"
+        self.assertEqual(self.settings.auto_replace_if_enabled(text), target)
+
+    def test_auto_replace_file_does_not_exist(self):
+        self.settings.auto_replace = True
+        text = "Big Sister where is Big Brother X"
+        self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
+
 
 class ServerWorkflowsTest(BaseUnitTestClass):
 

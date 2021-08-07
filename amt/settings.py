@@ -2,11 +2,13 @@ import getpass
 import json
 import logging
 import os
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
 from shlex import quote
 from subprocess import DEVNULL, CalledProcessError
+from threading import Lock
 
 from . import cookie_manager
 
@@ -21,6 +23,8 @@ class Settings:
     password_load_cmd = "${{AMT_PASSWORD_MANAGER:-tpm}} show {}"
     credential_separator = "\t"
     env_override_prefix = "PASSWORD_OVERRIDE_"
+
+    _lock = Lock()
 
     # External commands and formats
     bundle_cmds = {
@@ -60,6 +64,8 @@ class Settings:
     # Server specific settings
     server_specific_settings = {}
     force_odd_pages = True
+    auto_replace = True
+    lang = ("en", "en-US", "English")
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config", APP_NAME))
@@ -75,12 +81,42 @@ class Settings:
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.bundle_dir, exist_ok=True)
         os.makedirs(self.media_dir, exist_ok=True)
+        self._translations = None
 
     def get_cookie_file(self):
         return os.path.join(self.cache_dir, "cookies.txt")
 
     def get_stats_file(self):
         return os.path.join(self.cache_dir, "stats.json")
+
+    def get_translation_file(self):
+        return os.path.join(self.config_dir, "translations.txt")
+
+    def get_translations(self):
+        with self._lock:
+            if self._translations:
+                return self._translations
+            self._translations = []
+
+            try:
+                with open(self.get_translation_file(), 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and line[0] != "#":
+                            if line.count("/") == 1:
+                                src, target = line.split("/")
+                            else:
+                                _, src, target, _ = line.split("/")
+                            self._translations.append((src, target))
+            except FileNotFoundError:
+                pass
+        return self._translations
+
+    def auto_replace_if_enabled(self, text, server_id=None):
+        if self.get("auto_replace", server_id=server_id):
+            for src, target in self.get_translations():
+                text = re.sub(src, target, text)
+        return text
 
     def get_cookie_files(self):
         yield self.get_cookie_file()

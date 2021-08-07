@@ -82,6 +82,7 @@ class JNovelClub(Server):
                 text = text.replace(img["src"], os.path.relpath(img_path, os.path.dirname(path)))
         except ImportError:
             pass
+        text = self.settings.auto_replace_if_enabled(text, server_id=self.id)
         with open(path, 'w') as fp:
             fp.write(text)
 
