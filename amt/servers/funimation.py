@@ -72,12 +72,12 @@ class Funimation(Server):
             id = item.find("id").text
             r = self.session_get(self.episode_url.format(id))
             data = r.json()
-            season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"]) for item in data["items"]}
+            season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"], audio) for item in data["items"] for audio in item["audio"]}
             experiences = {item["item"]["seasonId"]: item["mostRecentSvod"]["experience"] for item in data["items"]}
 
-            for seasonId, seasonTitle in season_data:
+            for seasonId, seasonTitle, lang in season_data:
                 experience = experiences[seasonId]
-                media_data.append(self.create_media_data(id=id, name=title, season_id=seasonId, season_title=seasonTitle, alt_id=experience))
+                media_data.append(self.create_media_data(id=id, name=title, season_id=seasonId, season_title=seasonTitle, alt_id=experience, lang=lang.lower()))
 
         return media_data
 
@@ -105,8 +105,8 @@ class Funimation(Server):
         for season in r.json()["seasons"]:
             if season["seasonPk"] == media_data["season_id"]:
                 for chapter in season["episodes"]:
-                    if chapter["languages"] and "japanese" in chapter["languages"]:
-                        video = chapter["languages"]["japanese"]["alpha"]
+                    if chapter["languages"] and media_data["lang"] in chapter["languages"]:
+                        video = chapter["languages"][media_data["lang"]]["alpha"]
                         exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                         alt_exp = video["uncut"] if "uncut" in video else video["simulcast"]
                         premium = exp["svodOnly"]
@@ -119,14 +119,14 @@ class Funimation(Server):
         data = r.json()
         for season in data["seasons"]:
             for episode in season["episodes"]:
-                for lang in episode["languages"].values():
-                    video = lang["alpha"]
+                for lang, videos in episode["languages"].items():
+                    video = videos["alpha"]
                     for typeKey in ("simulcast", "uncut"):
                         if typeKey not in video:
                             continue
                         exp = video[typeKey]
                         if int(exp["experienceId"]) == int(chapter_id):
-                            media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id)
+                            media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id, lang=lang.lower())
                             self.update_media_data(media_data, r=r)
                             return media_data
 
@@ -155,7 +155,7 @@ class Funimation(Server):
         for season in r.json()["seasons"]:
             for chapter in season["episodes"]:
                 try:
-                    video = chapter["languages"]["japanese"]["alpha"]
+                    video = chapter["languages"][media_data["lang"]]["alpha"]
                     exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                     if exp["experienceId"] == int(chapter_data["id"]):
                         for track in exp["sources"][0]["textTracks"]:
