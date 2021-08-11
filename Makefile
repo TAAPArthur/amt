@@ -6,6 +6,9 @@ test:
 debug:
 	DEBUG=1 coverage run --source=amt -m unittest --buffer -f -v $(TEST_ARGS)
 
+inspect:
+	DEBUG=1 coverage run --source=amt -m unittest -v $(TEST_ARGS)
+
 quick-test:
 	QUICK=1 coverage run --source=amt -m unittest --buffer $(TEST_ARGS)
 

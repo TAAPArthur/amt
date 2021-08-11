@@ -11,14 +11,14 @@ def json_decoder(obj):
 
 
 class State:
-    bundles = {}
-    media = {}
-    all_media = {}
-    hashes = {}
     version = 1
 
     def __init__(self, settings):
         self.settings = settings
+        self.bundles = {}
+        self.media = {}
+        self.all_media = {}
+        self.hashes = {}
 
     @staticmethod
     def get_hash(json_dict):

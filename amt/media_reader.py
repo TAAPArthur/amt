@@ -154,17 +154,14 @@ class MediaReader:
     def get_server(self, id):
         return self._servers.get(id, None)
 
-    def get_media_in_library(self):
+    def get_media(self):
         return self.media.values()
 
-    def get_media_ids_in_library(self):
+    def get_media_ids(self):
         return self.media.keys()
 
     def _get_media(self, media_type=ALL_MEDIA, name=None, shuffle=False):
-        if isinstance(name, dict):
-            yield name
-            return
-        media = self.get_media_in_library()
+        media = self.get_media()
         if shuffle:
             media = list(media)
             random.shuffle(media)
@@ -176,6 +173,8 @@ class MediaReader:
             yield media_data
 
     def _get_single_media(self, media_type=None, name=None):
+        if isinstance(name, dict):
+            return name
         return next(self._get_media(media_type=media_type, name=name))
 
     def _get_unreads(self, media_type, name=None, shuffle=False, limit=None, any_unread=False):
@@ -306,7 +305,7 @@ class MediaReader:
 
     def get_media_by_chapter_id(self, server_id, chapter_id, media_list=None):
         if chapter_id:
-            for media in (media_list if media_list else self.get_media_in_library()):
+            for media in (media_list if media_list else self.get_media()):
                 if media["server_id"] == server_id:
                     l = list(filter(lambda x: chapter_id in (x["id"], x["alt_id"]), media["chapters"].values()))
                     if l:
@@ -410,7 +409,7 @@ class MediaReader:
 
     def get_tracked_media(self, tracker_id, tracking_id):
         media_data_list = []
-        for media_data in self.get_media_in_library():
+        for media_data in self.get_media():
             tacker_info = self.get_tracker_info(media_data, tracker_id)
             if tacker_info and tacker_info[0] == tracking_id:
                 media_data_list.append(media_data)
@@ -432,7 +431,7 @@ class MediaReader:
     def sync_progress(self, force=False, media_type=None, dry_run=False):
         data = []
         tracker = self.get_primary_tracker()
-        for media_data in self.get_media_in_library():
+        for media_data in self.get_media():
             if not media_type or media_data["media_type"] == media_type:
                 tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_primary_tracker().id)
                 if tracker_info and (force or media_data["progress"] < int(self.get_last_read(media_data))):

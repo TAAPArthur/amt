@@ -77,7 +77,7 @@ class Application(MediaReader):
         for name in alt_names:
             known_matching_media = list(filter(lambda x: not self.get_tracker_info(x) and
                                                (not media_type or media_type & x["media_type"]) and
-                                               (self._name_matches_media(name, x)), self.get_media_in_library()))
+                                               (self._name_matches_media(name, x)), self.get_media()))
             if known_matching_media:
                 break
 
@@ -169,7 +169,7 @@ class Application(MediaReader):
             print(id)
 
     def list(self):
-        for i, result in enumerate(self.get_media_in_library()):
+        for i, result in enumerate(self.get_media()):
             last_chapter_num = self.get_last_chapter_number(result)
             last_read = self.get_last_read(result)
             print("{:4}|\t{}\t{} {}\t{}/{}".format(i, result.global_id, result["name"], result["season_title"], last_read, last_chapter_num))
@@ -205,8 +205,6 @@ class Application(MediaReader):
         return not failures
 
     def upgrade_state(self):
-        media = self.get_media_in_library()
-
         def _upgrade_dict(current_dict, new_dict):
             for old_key in current_dict.keys() - new_dict.keys():
                 logging.info("Removing old key %s", old_key)
@@ -215,7 +213,7 @@ class Application(MediaReader):
                 logging.info("Adding new key %s", new_key)
                 current_dict[new_key] = new_dict[new_key]
 
-        for media_data in media:
+        for media_data in self.get_media():
             server = self.get_server(media_data["server_id"])
             new_data = server.create_media_data(media_data["id"], media_data["name"])
             _upgrade_dict(media_data, new_data)
@@ -254,7 +252,7 @@ class Application(MediaReader):
                 logging.info("Importing to %s", dest)
                 func(file, dest)
             if media_name not in names:
-                if not any([x["name"] == media_name for x in self.get_media_in_library()]):
+                if not any([x["name"] == media_name for x in self.get_media()]):
                     self.search_add(media_name, server_id=local_server_id, exact=True)
                 names.add(media_name)
 
@@ -268,10 +266,10 @@ class Application(MediaReader):
 
     def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, remove_not_on_disk=False, bundles=False):
         if remove_not_on_disk:
-            for media_data in [x for x in self.get_media_in_library() if not os.path.exists(self.settings.get_chapter_metadata_file(x))]:
+            for media_data in [x for x in self.get_media() if not os.path.exists(self.settings.get_chapter_metadata_file(x))]:
                 logging.info("Removing metadata for %s because it doesn't exist on disk", media_data["name"])
                 self.remove_media(media_data)
-        media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media_in_library()}
+        media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media()}
         if bundles:
             logging.info("Removing all bundles")
             shutil.rmtree(self.settings.bundle_dir)
