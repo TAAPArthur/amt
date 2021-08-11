@@ -114,7 +114,7 @@ class MediaData(dict):
 
     @property
     def global_id(self):
-        return "{}:{}{}".format(self["server_id"], self["id"], (self["season_id"] if self["season_id"] else ""))
+        return "{}:{}{}{}".format(self["server_id"], self["id"], (self["season_id"] if self["season_id"] else ""), self.get("lang", "")[:3])
 
 
 class ChapterData(dict):

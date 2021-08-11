@@ -21,14 +21,15 @@ class Application(MediaReader):
 
     def print_results(self, results):
         for i, result in enumerate(results):
-            print("{:4}| {}:{}\t{} {} ({})".format(i, result["server_id"], result["id"], result["name"], result["season_title"], TYPE_NAMES[result["media_type"]]))
+            print("{:4}| {}\t{} {} ({})".format(i, result.global_id, result["name"], result["season_title"], TYPE_NAMES[result["media_type"]]))
 
-    def select_media(self, term, results, prompt):
+    def select_media(self, term, results, prompt, no_print=False):
         index = 0
 
         print("Looking for", term)
         if not self.auto_select and len(results) > 1:
-            self.print_results(results)
+            if not no_print:
+                self.print_results(results)
             index = input(prompt)
         try:
             return results[int(index)]
@@ -50,11 +51,12 @@ class Application(MediaReader):
         if media_data:
             self.update_media(media_data)
             self.list_chapters(media_data)
-            chapter = self.select_media(term, self._get_sorted_chapters(media_data), "Select episode")
-            if media_data["media_type"] == ANIME:
-                return self.play(name=media_data, num_list=[chapter["number"]], force_abs=True, quality=quality)
-            else:
-                return self.view_chapters(name=media_data, num_list=[chapter["number"]], force_abs=True)
+            chapter = self.select_media(term, self._get_sorted_chapters(media_data), "Select episode", no_print=True)
+            if chapter:
+                if media_data["media_type"] == ANIME:
+                    return self.play(name=media_data, num_list=[chapter["number"]], force_abs=True, quality=quality)
+                else:
+                    return self.view_chapters(name=media_data, num_list=[chapter["number"]], force_abs=True)
 
     def add_from_url(self, url):
         for server in self.get_servers():
