@@ -175,7 +175,7 @@ class Vrv(Server):
 
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
         r = self.session_get_mem_cache(r.json()["playback"])
-        subtitles = r.json()["subtitles"]["en-US"]
+        subtitles = r.json()["subtitles"][self.settings.getLanguageCountryCode(self.id)]
         r = self.session_get(subtitles["url"])
         path = os.path.join(dir_path, f"{chapter_data['id']}.{subtitles['format']}")
         with open(path, 'w') as fp:

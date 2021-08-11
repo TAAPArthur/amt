@@ -5,7 +5,6 @@ from ..server import Server
 
 class Mangadex(Server):
     id = "mangadex"
-    lang_name = "English"
     extension = "png"
 
     api_base_url = "https://api.mangadex.org"
@@ -22,7 +21,7 @@ class Mangadex(Server):
     def _get_media_list(self, data):
         results = []
         for result in data:
-            results.append(self.create_media_data(id=result["data"]["id"], name=result["data"]["attributes"]["title"]["en"]))
+            results.append(self.create_media_data(id=result["data"]["id"], name=list(result["data"]["attributes"]["title"].values())[0]))
         return results
 
     def get_media_list(self):
@@ -54,7 +53,7 @@ class Mangadex(Server):
             for chapter in data["results"]:
                 chapter_data = chapter["data"]
                 attr = chapter_data["attributes"]
-                if attr["translatedLanguage"] == self.lang:
+                if attr["translatedLanguage"] == self.settings.getLanguageCode(self.id):
                     if attr["chapter"] in chapterNumberToPublishDate:
                         if chapterNumberToPublishDate[attr["chapter"]] < attr["publishAt"]:
                             continue

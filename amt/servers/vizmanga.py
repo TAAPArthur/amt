@@ -10,8 +10,6 @@ from ..server import Server
 
 class VizManga(Server):
     id = "vizmanga"
-    lang = "en"
-    locale = "enUS"
 
     domain = "viz.com"
 

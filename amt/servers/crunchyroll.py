@@ -195,13 +195,13 @@ class Crunchyroll(GenericCrunchyrollServer):
             if raw_date_str:
                 date = raw_date_str.split(" ")[0]
 
-            self.update_chapter_data(media_data, id=chapter["chapter_id"], number=chapter["number"], title=chapter["locale"][self.locale]["name"], premium=True, date=date)
+            self.update_chapter_data(media_data, id=chapter["chapter_id"], number=chapter["number"], title=chapter["locale"][self.settings.getLanguageCountryCodeAlpha(self.id)]["name"], premium=True, date=date)
 
     def get_media_chapter_data(self, media_data, chapter_data):
         r = self.session_get(self.api_chapter_url.format(self.get_session_id(), chapter_data["id"], Crunchyroll._api_auth_token))
         raw_pages = r.json()["pages"]
         raw_pages.sort(key=lambda x: int(x["number"]))
-        pages = [self.create_page_data(url=page["locale"][self.locale][self.page_url_key]) for page in raw_pages if page["locale"]]
+        pages = [self.create_page_data(url=page["locale"][self.settings.getLanguageCountryCodeAlpha(self.id)][self.page_url_key]) for page in raw_pages if page["locale"]]
 
         return pages
 

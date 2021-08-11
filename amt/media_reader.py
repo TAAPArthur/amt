@@ -55,7 +55,6 @@ class MediaReader:
 
         self.session.headers.update({
             "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",
-            "Accept-Language": "en,en-US;q=0.9",
             "Connection": "keep-alive",
             "User-Agent": self.settings.user_agent
         })

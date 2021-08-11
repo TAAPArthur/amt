@@ -31,8 +31,6 @@ class GenericServer:
     extension = "jpeg"
     external = False
     is_protected = False
-    lang = 'en'
-    locale = 'enUS'
     media_type = MANGA
     stream_url_regex = None
     is_premium = False

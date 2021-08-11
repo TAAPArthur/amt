@@ -11,9 +11,18 @@ class Dbmultiverse(Server):
     name = "Dragon Ball Multiverse"
 
     base_url = "https://www.dragonball-multiverse.com"
-    media_url = base_url + "/en/chapters.html?comic=page"
-    chapter_url = base_url + "/en/chapters.html?chapter={}"
-    page_url = base_url + "/en/page-{0}.html"
+
+    @property
+    def media_url(self):
+        return self.base_url + "/" + self.settings.getLanguageCode(self.id) + "/chapters.html?comic=page"
+
+    @property
+    def chapter_url(self):
+        return self.base_url + "/" + self.settings.getLanguageCode(self.id) + "/chapters.html?chapter={}"
+
+    @property
+    def page_url(self):
+        return self.base_url + "/" + self.settings.getLanguageCode(self.id) + "/page-{0}.html"
 
     def get_media_list(self):
         return [self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM)")]

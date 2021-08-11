@@ -281,3 +281,18 @@ class Settings:
                 logging.info("Converting %s to %s", files, targetFile)
                 self.run_cmd(cmd.format(input=files, output=targetFile))
                 self.run_cmd(cleanupCmd.format(files))
+
+    def _getLanguage(self, server_id):
+        return self.get("lang", server_id=server_id)
+
+    def getLanguageCode(self, server_id):
+        return self._getLanguage(server_id)[0]
+
+    def getLanguageCountryCode(self, server_id):
+        return self._getLanguage(server_id)[1]
+
+    def getLanguageCountryCodeAlpha(self, server_id):
+        return self.getLanguageCountryCode(server_id).replace("-", "")
+
+    def getLanguageName(self, server_id):
+        return self._getLanguage(server_id)[2]

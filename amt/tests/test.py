@@ -258,6 +258,12 @@ class SettingsTest(BaseUnitTestClass):
                 finally:
                     del os.environ[self.settings.env_override_prefix + server_id]
 
+    def test_get_lang(self):
+        assert self.settings.getLanguageCode()
+        assert self.settings.getLanguageCountryCode()
+        assert self.settings.getLanguageCountryCodeAlpha()
+        assert self.settings.getLanguageName()
+
     def test_bundle(self):
         name = self.settings.bundle("")
         assert name.endswith("." + self.settings.bundle_format)

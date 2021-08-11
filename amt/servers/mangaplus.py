@@ -7,8 +7,6 @@ RE_ENCRYPTION_KEY = re.compile(".{1,2}")
 
 class Mangaplus(Server):
     id = "mangaplus"
-    lang = "en"
-    language = "english"
     sync_removed = True
 
     base_url = "https://mediaplus.shueisha.co.jp"
@@ -37,7 +35,7 @@ class Mangaplus(Server):
         results = []
         r = self.session_get(self.api_search_url)
         for series in r.json()["success"]["allTitlesView"]["titles"]:
-            if series.get("language", "ENGLISH") == self.language.upper() and term in series["name"].lower():
+            if series.get("language", "ENGLISH") == self.settings.getLanguageName(self.id).upper() and term in series["name"].lower():
                 results.append(self.create_media_data(id=series["titleId"], name=series["name"]))
         return results
 
