@@ -286,7 +286,7 @@ class Server(GenericServer):
             job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
         job.run()
 
-        if self.settings.force_odd_pages and self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2:
+        if self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2 and self.settings.get("force_odd_pages", server_id=self.id):
             from PIL import Image
             full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
             image = Image.new('RGB', (100, 100))

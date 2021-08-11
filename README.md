@@ -63,9 +63,6 @@ There didn't seem to be adequate alternatives that had the following features
 * Supports external password managers, image and media players
 * No GUI
 
-## TODO
-* Server specific settings
-
 ## Caveats
 * Images with vastly different resolution don't show up ideally in zathura. Bundling one server at a time and using a official sources mitigates the problem.
 * Crunchyoll "seasons" don't aren't in sync with the actual seasons. For Non-consecutive cours may or may not be reported as 1 season. Long running series like One Piece and Gintama are broken into seasons arbitrary. This would only affect tracking and can be mitigatred with the "offset" command

@@ -50,13 +50,16 @@ class Settings:
 
     # MISC
     auto_upgrade_state = True
-    force_odd_pages = True
     free_only = False
     no_load_session = False
     no_save_session = False
     shell = True
     suppress_cmd_output = False
     threads = 8  # per server thread count
+
+    # Server specific settings
+    server_specific_settings = {}
+    force_odd_pages = True
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config", APP_NAME))
@@ -93,17 +96,22 @@ class Settings:
     def get_members(clazz):
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("_")]
 
-    def set(self, name, value):
+    def set(self, name, value, server_id=None):
         if isinstance(self.get(name), bool) and not isinstance(value, bool):
             value = value.lower() not in ["false", 0, ""]
 
         if isinstance(value, str) and (isinstance(self.get(name), int) or isinstance(value, float)):
             value = type(self.get(name))(value)
-        setattr(self, name, value)
+        if server_id:
+            if not server_id in self.server_specific_settings:
+                self.server_specific_settings[server_id] = {}
+            self.server_specific_settings[server_id][name] = value
+        else:
+            setattr(self, name, value)
         return value
 
-    def get(self, name):
-        return getattr(self, name)
+    def get(self, name, server_id=None):
+        return getattr(self, name) if not server_id else self.server_specific_settings.get(server_id, {}).get(name, self.get(name))
 
     def save(self):
         with open(self.get_settings_file(), "w") as f:

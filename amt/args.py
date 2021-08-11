@@ -210,6 +210,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         # settings
         settings_parsers = sub_parsers.add_parser("setting")
+        settings_parsers.add_argument("--server", default=None, choices=app.get_servers_ids(), nargs="?", help="Get/set for specific server")
         settings_parsers.add_argument("setting", choices=Settings.get_members())
         settings_parsers.add_argument("value", default=None, nargs="?")
 
@@ -307,9 +308,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.select_chapter(namespace.term, quality=namespace.quality, server_id=namespace.server, media_type=MEDIA_TYPES.get(namespace.media_type, None), exact=namespace.exact)
     elif action == "setting":
         if namespace.value:
-            app.settings.set(namespace.setting, namespace.value)
+            app.settings.set(namespace.setting, namespace.value, server_id=namespace.server)
             app.settings.save()
-        print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting)))
+        print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting, server_id=namespace.server)))
     elif action == "stream":
         app.stream(namespace.url, cont=namespace.cont, download=namespace.download, quality=namespace.quality)
     elif action == "set-password":
