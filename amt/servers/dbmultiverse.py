@@ -11,25 +11,21 @@ class Dbmultiverse(Server):
     name = "Dragon Ball Multiverse"
 
     base_url = "https://www.dragonball-multiverse.com"
-
-    @property
-    def media_url(self):
-        return self.base_url + "/" + self.settings.getLanguageCode(self.id) + "/chapters.html?comic=page"
-
-    @property
-    def chapter_url(self):
-        return self.base_url + "/" + self.settings.getLanguageCode(self.id) + "/chapters.html?chapter={}"
-
-    @property
-    def page_url(self):
-        return self.base_url + "/" + self.settings.getLanguageCode(self.id) + "/page-{0}.html"
+    media_url = base_url + "/{}/chapters.html?comic=page"
+    chapter_url = base_url + "/{}/chapters.html?chapter={}"
+    page_url = base_url + "/{}/page-{}.html"
 
     def get_media_list(self):
-        return [self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM)")]
+        r = self.session_get(self.base_url)
+        soup = self.soupify(BeautifulSoup, r)
+        media_list = []
+        for element in soup.find("div", {"id": "langs"}).findAll("a"):
+            media_list.append(self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM) " + element["title"], lang=element["href"].split("/")[1]))
+        return media_list
 
     def update_media_data(self, media_data):
 
-        r = self.session_get(self.media_url)
+        r = self.session_get(self.media_url.format(media_data["lang"]))
 
         soup = self.soupify(BeautifulSoup, r)
 
@@ -42,14 +38,14 @@ class Dbmultiverse(Server):
             self.update_chapter_data(media_data, id=id, number=int(id), title=chapter.find("h4").getText())
 
     def get_media_chapter_data(self, media_data, chapter_data):
-        r = self.session_get(self.chapter_url.format(chapter_data["id"]))
+        r = self.session_get(self.chapter_url.format(media_data["lang"], chapter_data["id"]))
 
         soup = self.soupify(BeautifulSoup, r)
         page_info = soup.find("div", {"class": "pageslist"}).findAll("img")
 
         pages = []
         for page in page_info:
-            r = self.session_get(self.page_url.format(page["title"]))
+            r = self.session_get(self.page_url.format(media_data["lang"], page["title"]))
             soup = self.soupify(BeautifulSoup, r)
             img = soup.find("img", {"id": "balloonsimg"})
             url = img["src"] if img else soup.find("div", id="balloonsimg").get("style").split(";")[0].split(":")[1][4:-1]
