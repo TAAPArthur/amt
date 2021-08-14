@@ -158,7 +158,7 @@ class Funimation(Server):
                     exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                     if exp["experienceId"] == int(chapter_data["id"]):
                         for track in exp["sources"][0]["textTracks"]:
-                            if track["language"] == self.settings.getLanguageCode(self.id):
+                            if self.settings.is_allowed_text_lang(track["language"], media_data):
                                 subtitle_src = track["src"]
                                 _, ext = os.path.splitext(subtitle_src)
                                 path = os.path.join(dir_path, str(chapter_data["id"]) + ext)

@@ -66,7 +66,7 @@ class Settings:
     specific_settings = {}
     force_odd_pages = True
     auto_replace = True
-    lang = ("en", "en-US", "English")
+    text_languages = ("en", "en-US", "English")
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config", APP_NAME))
@@ -130,6 +130,9 @@ class Settings:
             for src, target in self.get_replacements(media_data=media_data):
                 text = re.sub(src, target, text)
         return text
+
+    def is_allowed_text_lang(self, lang, media_data):
+        return lang in self.get_field("text_languages", media_data)
 
     def get_cookie_files(self):
         yield self.get_cookie_file()
@@ -293,18 +296,3 @@ class Settings:
                 logging.info("Converting %s to %s", files, targetFile)
                 self.run_cmd(cmd.format(input=files, output=targetFile))
                 self.run_cmd(cleanupCmd.format(files))
-
-    def _getLanguage(self, server_id):
-        return self.get_field("lang", server_id=server_id)
-
-    def getLanguageCode(self, server_id):
-        return self._getLanguage(server_id)[0]
-
-    def getLanguageCountryCode(self, server_id):
-        return self._getLanguage(server_id)[1]
-
-    def getLanguageCountryCodeAlpha(self, server_id):
-        return self.getLanguageCountryCode(server_id).replace("-", "")
-
-    def getLanguageName(self, server_id):
-        return self._getLanguage(server_id)[2]

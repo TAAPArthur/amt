@@ -54,7 +54,7 @@ class Mangadex(Server):
             for chapter in data["results"]:
                 chapter_data = chapter["data"]
                 attr = chapter_data["attributes"]
-                if attr["translatedLanguage"] == self.settings.getLanguageCode(self.id):
+                if self.settings.is_allowed_text_lang(attr["translatedLanguage"], media_data):
                     if attr["chapter"] in chapterNumberToPublishDate:
                         if chapterNumberToPublishDate[attr["chapter"]] < attr["publishAt"]:
                             continue

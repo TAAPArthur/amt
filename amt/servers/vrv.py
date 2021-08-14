@@ -175,21 +175,24 @@ class Vrv(Server):
 
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
         r = self.session_get_mem_cache(r.json()["playback"])
-        subtitles = r.json()["subtitles"][self.settings.getLanguageCountryCode(self.id)]
-        r = self.session_get(subtitles["url"])
-        path = os.path.join(dir_path, f"{chapter_data['id']}.{subtitles['format']}")
-        with open(path, 'w') as fp:
-            iterable = iter(r.content.decode().splitlines())
-            buffer = None
-            for line in iterable:
-                if self.subtitle_regex.match(line):
-                    buffer = None  # ignore blank line
-                    # don't output this line
-                    next(iterable)  # skip line with timestamp
-                else:
-                    if buffer is not None:
-                        fp.write(f"{buffer}\n")
-                    buffer = line
-            fp.write(f"{buffer}\n")
+        subtitle_data = r.json()["subtitles"]
+        for lang in subtitle_data:
+            if self.settings.is_allowed_text_lang(lang, media_data):
+                subtitles = subtitle_data[lang]
+                r = self.session_get(subtitles["url"])
+                path = os.path.join(dir_path, f"{chapter_data['id']}.{subtitles['format']}")
+                with open(path, 'w') as fp:
+                    iterable = iter(r.content.decode().splitlines())
+                    buffer = None
+                    for line in iterable:
+                        if self.subtitle_regex.match(line):
+                            buffer = None  # ignore blank line
+                            # don't output this line
+                            next(iterable)  # skip line with timestamp
+                        else:
+                            if buffer is not None:
+                                fp.write(f"{buffer}\n")
+                            buffer = line
+                    fp.write(f"{buffer}\n")
 
         return path

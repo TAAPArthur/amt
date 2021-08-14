@@ -35,8 +35,8 @@ class Mangaplus(Server):
         results = []
         r = self.session_get(self.api_search_url)
         for series in r.json()["success"]["allTitlesView"]["titles"]:
-            if series.get("language", "ENGLISH") == self.settings.getLanguageName(self.id).upper() and term in series["name"].lower():
-                results.append(self.create_media_data(id=series["titleId"], name=series["name"]))
+            if term in series["name"].lower():
+                results.append(self.create_media_data(id=series["titleId"], name=series["name"], lang=series.get("language", "English").lower()))
         return results
 
     def update_media_data(self, media_data):
