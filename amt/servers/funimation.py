@@ -143,10 +143,7 @@ class Funimation(Server):
 
         # r.json()["items"] returns a list of mp4 and m38 streams
         logging.info("Sources: %s", [item["src"] for item in r.json()["items"]])
-        for item in r.json()["items"]:
-            if item["videoType"] == "mp4":
-                return [item["src"]]
-        return [r.json()["items"][0]["src"]]
+        return [item["src"] for item in r.json()["items"]]
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
         r = self.session_get(self.show_api_url.format(chapter_data["id"]))
