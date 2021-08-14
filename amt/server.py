@@ -255,11 +255,12 @@ class Server(GenericServer):
 
         job = Job(self.settings.threads, raiseException=True)
         for index, page_data in enumerate(list_of_pages[:page_limit]):
+            page_data["media_data"] = media_data
             full_path = self._get_page_path(media_data, chapter_data, dir_path, index, page_data)
             job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
         job.run()
 
-        if self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2 and self.settings.get("force_odd_pages", server_id=self.id):
+        if self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2 and self.settings.get_field("force_odd_pages", media_data=media_data):
             from PIL import Image
             full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
             image = Image.new('RGB', (100, 100))

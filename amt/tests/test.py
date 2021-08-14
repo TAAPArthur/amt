@@ -806,16 +806,16 @@ class ArgsTest(MinimalUnitTestClass):
         self.app.settings.save()
         for key_value in key_values:
             parse_args(app=self.media_reader, args=["setting", key_value[0], key_value[1]])
-            self.assertEqual(self.settings.get(key_value[0]), key_value[-1])
+            self.assertEqual(self.settings.get_field(key_value[0]), key_value[-1])
             self.app.settings.load()
-            self.assertEqual(self.settings.get(key_value[0]), key_value[-1])
+            self.assertEqual(self.settings.get_field(key_value[0]), key_value[-1])
 
     def test_set_settings_server_specific(self):
         self.settings.force_odd_pages = 0
         key, value = "force_odd_pages", 1
-        parse_args(app=self.media_reader, args=["setting", "--server", TestServer.id, key, str(value)])
-        self.assertEqual(self.settings.get(key, server_id=TestServer.id), value)
-        self.assertEqual(self.settings.get(key), 0)
+        parse_args(app=self.media_reader, args=["setting", "--target", TestServer.id, key, str(value)])
+        self.assertEqual(self.settings.get_field(key, TestServer.id), value)
+        self.assertEqual(self.settings.get_field(key), 0)
 
     @patch("getpass.getpass", return_value="0")
     def test_set_password(self, input):

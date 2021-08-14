@@ -62,8 +62,8 @@ class Settings:
     suppress_cmd_output = False
     threads = 8  # per server thread count
 
-    # Server specific settings
-    server_specific_settings = {}
+    # Server or media specific settings
+    specific_settings = {}
     force_odd_pages = True
     auto_replace = True
     lang = ("en", "en-US", "English")
@@ -113,8 +113,8 @@ class Settings:
                 pass
         return self._translations
 
-    def auto_replace_if_enabled(self, text, server_id=None):
-        if self.get("auto_replace", server_id=server_id):
+    def auto_replace_if_enabled(self, text, media_data=None, server_id=None):
+        if self.get_field("auto_replace", media_data=media_data, id=server_id):
             for src, target in self.get_translations():
                 text = re.sub(src, target, text)
         return text
@@ -127,29 +127,33 @@ class Settings:
     def get_members(clazz):
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("_")]
 
-    def set(self, name, value, server_id=None):
-        if isinstance(self.get(name), bool) and not isinstance(value, bool):
+    def set_field(self, name, value, server_or_media_id=None):
+        current_field = self.get_field(name, server_or_media_id)
+        if isinstance(current_field, bool) and not isinstance(value, bool):
             value = value.lower() not in ["false", 0, ""]
 
-        if isinstance(value, str) and (isinstance(self.get(name), int) or isinstance(value, float)):
-            value = type(self.get(name))(value)
-        if server_id:
-            if not server_id in self.server_specific_settings:
-                self.server_specific_settings[server_id] = {}
-            self.server_specific_settings[server_id][name] = value
+        if isinstance(value, str) and (isinstance(current_field, int) or isinstance(value, float)):
+            value = type(current_field)(value)
+        if server_or_media_id:
+            if not server_or_media_id in self.specific_settings:
+                self.specific_settings[server_or_media_id] = {}
+            self.specific_settings[server_or_media_id][name] = value
         else:
             setattr(self, name, value)
         return value
 
-    def get(self, name, server_id=None):
-        return getattr(self, name) if not server_id else self.server_specific_settings.get(server_id, {}).get(name, self.get(name))
+    def get_field(self, name, media_data=None):
+        for key in [media_data.global_id, media_data["name"], media_data["server_id"]] if isinstance(media_data, dict) else [media_data]:
+            if key and key in self.specific_settings and name in self.specific_settings[key]:
+                return self.specific_settings[key][name]
+        return getattr(self, name)
 
     def save(self):
         with open(self.get_settings_file(), "w") as f:
             settings_to_save = {}
             members = Settings.get_members()
             for attr in members:
-                settings_to_save[attr] = self.get(attr)
+                settings_to_save[attr] = self.get_field(attr)
             json.dump(settings_to_save, f, indent=4)
 
     def load(self):
@@ -158,14 +162,14 @@ class Settings:
                 saved_settings = json.load(f)
                 for attr in Settings.get_members():
                     if attr in saved_settings:
-                        self.set(attr, saved_settings[attr])
+                        self.set_field(attr, saved_settings[attr])
         except FileNotFoundError:
             pass
         if self.allow_env_override:
             for attr in Settings.get_members():
                 env_var = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
                 if env_var is not None:
-                    self.set(attr, env_var)
+                    self.set_field(attr, env_var)
         os.environ["USER_AGENT"] = self.user_agent
 
     def get_settings_file(self):
@@ -279,7 +283,7 @@ class Settings:
                 self.run_cmd(cleanupCmd.format(files))
 
     def _getLanguage(self, server_id):
-        return self.get("lang", server_id=server_id)
+        return self.get_field("lang", server_id=server_id)
 
     def getLanguageCode(self, server_id):
         return self._getLanguage(server_id)[0]

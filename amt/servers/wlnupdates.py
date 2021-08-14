@@ -86,6 +86,6 @@ class WLN_Updates(Server):
             fp.write("<?xml version='1.0' encoding='UTF-8'?>\n")
             fp.write("<html><body>\n")
             for paragraph in p:
-                text = self.settings.auto_replace_if_enabled(paragraph.getText(), server_id=self.id)
+                text = self.settings.auto_replace_if_enabled(paragraph.getText(), media_data=page_data["media_data"])
                 fp.write(f"<p>{text}</p>\n")
             fp.write("</body></html>")

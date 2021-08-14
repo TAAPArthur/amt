@@ -202,7 +202,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
         # settings
         settings_parsers = sub_parsers.add_parser("setting")
-        settings_parsers.add_argument("--server", default=None, choices=app.get_servers_ids(), nargs="?", help="Get/set for specific server")
+        settings_parsers.add_argument("--target", default=None, choices=app.get_all_names(), nargs="?", help="Get/set for specific settings")
         settings_parsers.add_argument("setting", choices=Settings.get_members())
         settings_parsers.add_argument("value", default=None, nargs="?")
 
@@ -280,7 +280,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "get-stream-url":
         app.get_stream_url(name=namespace.name, shuffle=namespace.shuffle)
     elif action == "get-file":
-        print(app.settings.get(f"get_{namespace.file}")())
+        print(getattr(app.settings, f"get_{namespace.file}")())
     elif action == "play":
         print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle, num_list=namespace.num, quality=namespace.quality, any_unread=namespace.any_unread, force_abs=namespace.abs))
     elif action == "read":
@@ -298,9 +298,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.select_chapter(namespace.term, quality=namespace.quality, server_id=namespace.server, media_type=MEDIA_TYPES.get(namespace.media_type, None), exact=namespace.exact)
     elif action == "setting":
         if namespace.value:
-            app.settings.set(namespace.setting, namespace.value, server_id=namespace.server)
+            app.settings.set_field(namespace.setting, namespace.value, server_or_media_id=namespace.target)
             app.settings.save()
-        print("{} = {}".format(namespace.setting, app.settings.get(namespace.setting, server_id=namespace.server)))
+        print("{} = {}".format(namespace.setting, app.settings.get_field(namespace.setting, namespace.target)))
     elif action == "stream":
         app.stream(namespace.url, cont=namespace.cont, download=namespace.download, quality=namespace.quality)
     elif action == "set-password":
