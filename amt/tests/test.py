@@ -83,7 +83,7 @@ class BaseUnitTestClass(unittest.TestCase):
         Job(self.settings.threads if not os.getenv("DEBUG") else 0, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
     def setup_settings(self):
-        self.app.settings.env_override_prefix = None
+        self.app.settings.password_override_prefix = None
         self.app.settings.free_only = True
         self.app.settings.no_save_session = True
         self.app.settings.no_load_session = True
@@ -221,6 +221,19 @@ class SettingsTest(BaseUnitTestClass):
 
         assert Settings(home=TEST_HOME).password_save_cmd == "dummy_cmd"
 
+    def test_settings_env_override(self):
+        os.environ["AMT_PASSWORD_LOAD_CMD"] = "1"
+        self.settings.load()
+        self.assertEqual(self.settings.password_load_cmd, "1")
+
+    @patch("builtins.input", return_value="0")
+    @patch("getpass.getpass", return_value="1")
+    def test_settings_env_override_ask_credentials(self, _username, _password):
+        os.environ["AMT_PASSWORD_LOAD_CMD"] = ""
+        self.settings.load()
+        self.assertEqual(self.settings.password_load_cmd, "")
+        self.assertEquals(("0", "1"), self.app.settings.get_credentials(TestServerLogin.id))
+
     def test_credentials(self):
         server_id = "test"
         assert not self.settings.get_credentials(server_id)
@@ -244,19 +257,19 @@ class SettingsTest(BaseUnitTestClass):
                 self.assertEqual((username, password), self.settings.get_credentials(TestServer.id))
 
     def test_credentials_override(self):
-        self.settings.env_override_prefix = "prefix"
+        self.settings.password_override_prefix = "prefix"
         server_id = "test"
         username, password = "user", "pass"
         for sep in self.separators:
             self.settings.credential_separator = sep
             with self.subTest(sep=sep):
-                os.environ[self.settings.env_override_prefix + server_id] = f"{username}{sep}{password}"
+                os.environ[self.settings.password_override_prefix + server_id] = f"{username}{sep}{password}"
                 try:
                     self.assertEqual(username, self.settings.get_credentials(server_id)[0])
                     self.assertEqual(password, self.settings.get_credentials(server_id)[1])
                     assert not self.settings.get_credentials("bad_id")
                 finally:
-                    del os.environ[self.settings.env_override_prefix + server_id]
+                    del os.environ[self.settings.password_override_prefix + server_id]
 
     def test_get_lang(self):
         assert self.settings.getLanguageCode()

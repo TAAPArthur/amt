@@ -15,12 +15,16 @@ APP_NAME = "amt"
 
 class Settings:
 
+    # env
+    allow_env_override = True
+    env_override_prefix = "AMT_"
+
     # Password manager related settings
     password_manager_enabled = True
-    password_save_cmd = "${{AMT_PASSWORD_MANAGER:-tpm}} insert {}"
-    password_load_cmd = "${{AMT_PASSWORD_MANAGER:-tpm}} show {}"
+    password_save_cmd = "tpm insert {}"
+    password_load_cmd = "tpm show {}"
     credential_separator = "\t"
-    env_override_prefix = "PASSWORD_OVERRIDE_"
+    password_override_prefix = "PASSWORD_OVERRIDE_"
 
     _lock = Lock()
 
@@ -152,12 +156,16 @@ class Settings:
         try:
             with open(self.get_settings_file(), "r") as f:
                 saved_settings = json.load(f)
-                members = Settings.get_members()
-                for attr in members:
+                for attr in Settings.get_members():
                     if attr in saved_settings:
                         self.set(attr, saved_settings[attr])
         except FileNotFoundError:
             pass
+        if self.allow_env_override:
+            for attr in Settings.get_members():
+                env_var = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
+                if env_var is not None:
+                    self.set(attr, env_var)
         os.environ["USER_AGENT"] = self.user_agent
 
     def get_settings_file(self):
@@ -186,18 +194,22 @@ class Settings:
 
     def get_credentials(self, server_id: str) -> (str, str):
         """Returns the saved username, password"""
-        if self.env_override_prefix:
-            var = os.getenv(self.env_override_prefix + server_id) or os.getenv(self.env_override_prefix + server_id.upper())
+        if self.password_override_prefix:
+            var = os.getenv(self.password_override_prefix + server_id) or os.getenv(self.password_override_prefix + server_id.upper())
             if var:
                 return var.split(self.credential_separator)
-        if self.password_manager_enabled and self.password_load_cmd:
-            try:
-                logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
-                output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
-                login, password = output.split(self.credential_separator)
-                return login, password
-            except subprocess.CalledProcessError:
-                logging.info("Unable to load credentials for %s", server_id)
+        if self.password_manager_enabled:
+            with self._lock:
+                if self.password_load_cmd:
+                    try:
+                        logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
+                        output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
+                        login, password = output.split(self.credential_separator)
+                        return login, password
+                    except subprocess.CalledProcessError:
+                        logging.info("Unable to load credentials for %s", server_id)
+                else:
+                    return input("Username: "), getpass.getpass()
 
     def store_credentials(self, server_id, username, password=None):
         """Stores the username, password for the given server_id"""
