@@ -8,6 +8,7 @@ from ..server import Server
 
 class Mangasee(Server):
     id = "mangasee"
+    official = False
 
     base_url = "https://mangasee123.com"
     media_list_url = base_url + "/_search.php"

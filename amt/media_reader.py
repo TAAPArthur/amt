@@ -62,7 +62,8 @@ class MediaReader:
         for cls in server_list:
             if cls.id:
                 instance = cls(self.session, self.settings)
-                self._servers[instance.id] = instance
+                if not self.settings.allow_only_official_servers or instance.official:
+                    self._servers[instance.id] = instance
         for cls in tracker_list:
             if cls.id:
                 instance = cls(self.session, self.settings)

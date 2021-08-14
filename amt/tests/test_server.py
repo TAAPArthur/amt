@@ -96,6 +96,11 @@ class TestServerLogin(TestServer):
         self._is_logged_in = False
 
 
+class TestUnofficialServer(TestServer):
+    id = "test_unofficial_server_manga"
+    official = False
+
+
 class TestAnimeServer(TestServer):
     id = "test_server_anime"
     media_type = ANIME

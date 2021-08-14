@@ -69,7 +69,8 @@ class TestApplication(Application):
 
         _servers.sort(key=lambda x: x.id)
         super().__init__(_servers, _trackers, settings)
-        assert len(self.get_servers()) == len(_servers)
+        if not settings.allow_only_official_servers:
+            assert len(self.get_servers()) == len(_servers)
         assert len(self.get_trackers()) == len(_trackers)
         assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
@@ -125,7 +126,7 @@ class BaseUnitTestClass(unittest.TestCase):
             self.media_reader.add_media(media_data)
 
     def add_test_media(self, server=None, no_update=False):
-        media_list = server.get_media_list() if server else self.test_server.get_media_list() + self.test_anime_server.get_media_list() + self.media_reader.get_server(TestServerLogin.id).get_media_list()
+        media_list = server.get_media_list() if server else [x for server in self.app.get_servers() for x in server.get_media_list()]
         for media_data in media_list:
             self.media_reader.add_media(media_data, no_update=no_update)
         assert media_list
@@ -367,6 +368,21 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
 
 class MediaReaderTest(BaseUnitTestClass):
+    def test_disable_unofficial_servers(self):
+        self.add_test_media()
+
+        for i in range(2):
+            self.assertFalse(all(map(lambda x: self.app.get_server(x["server_id"]).official, self.app.get_media_in_library())))
+            self.app.save()
+            self.app.settings.allow_only_official_servers = True
+            self.app.settings.save()
+            self.reload()
+            self.assertTrue(self.app.settings.allow_only_official_servers)
+            self.assertTrue(self.app.get_media_in_library())
+            self.assertTrue(all(map(lambda x: self.app.get_server(x["server_id"]).official, self.app.get_media_in_library())))
+            self.app.settings.allow_only_official_servers = False
+            self.app.settings.save()
+            self.reload()
 
     def test_load_cookies_no_exists(self):
         self.app.settings.no_load_session = False

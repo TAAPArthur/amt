@@ -34,8 +34,9 @@ class GenericServer:
     media_type = MANGA
     stream_url_regex = None
     is_premium = False
-    # If set updating will cause chapters that are now longer available on the server to be removed
+    # If set, updating will cause chapters that are now longer available on the server to be removed
     sync_removed = False
+    official = True
 
     def get_media_list(self):
         """
