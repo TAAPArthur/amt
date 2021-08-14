@@ -302,7 +302,7 @@ class SettingsTest(BaseUnitTestClass):
 
     def test_auto_replace(self):
         self.settings.auto_replace = True
-        with open(self.settings.get_translation_file(), 'w') as f:
+        with open(self.settings.get_replacement_file(), 'w') as f:
             f.write("s/Big Sister/Onee-san/g\n")
             f.write("Big Brother ([A-Z]\w*)/\\1 onii-san\n")
 
@@ -314,6 +314,19 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.auto_replace = True
         text = "Big Sister where is Big Brother X"
         self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
+
+    def test_auto_replace_dir(self):
+        self.settings.auto_replace = True
+        os.mkdir(self.settings.get_replacement_dir())
+        path = os.path.join(self.settings.get_replacement_dir(), TestServer.id)
+        with open(path, 'w') as f:
+            f.write("s/A/B/g\n")
+        with open(self.settings.get_replacement_file(), 'w') as f:
+            f.write("s/B/C/g\n")
+        text = "A A"
+        target = "B B"
+        self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
+        self.assertEqual(self.settings.auto_replace_if_enabled(text, TestServer.id), target)
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):

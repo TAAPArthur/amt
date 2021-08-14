@@ -82,7 +82,7 @@ class Settings:
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.bundle_dir, exist_ok=True)
         os.makedirs(self.media_dir, exist_ok=True)
-        self._translations = None
+        self._replacements = None
 
     def get_cookie_file(self):
         return os.path.join(self.cache_dir, "cookies.txt")
@@ -90,17 +90,16 @@ class Settings:
     def get_stats_file(self):
         return os.path.join(self.cache_dir, "stats.json")
 
-    def get_translation_file(self):
-        return os.path.join(self.config_dir, "translations.txt")
+    def get_replacement_file(self):
+        return os.path.join(self.config_dir, "replacements.txt")
 
-    def get_translations(self):
-        with self._lock:
-            if self._translations:
-                return self._translations
-            self._translations = []
+    def get_replacement_dir(self):
+        return os.path.join(self.config_dir, "replacements.d")
 
+    def get_replacements(self, media_data=None):
+        def parse_file(f, replacements):
             try:
-                with open(self.get_translation_file(), 'r') as f:
+                with open(f, 'r') as f:
                     for line in f:
                         line = line.strip()
                         if line and line[0] != "#":
@@ -108,14 +107,27 @@ class Settings:
                                 src, target = line.split("/")
                             else:
                                 _, src, target, _ = line.split("/")
-                            self._translations.append((src, target))
+                            replacements.append((src, target))
             except FileNotFoundError:
                 pass
-        return self._translations
+        with self._lock:
+            if self._replacements is None:
+                self._replacements = {"": []}
+                parse_file(self.get_replacement_file(), self._replacements[""])
+                if os.path.exists(self.get_replacement_dir()):
+                    for specific_replacement_file in os.listdir(self.get_replacement_dir()):
+                        self._replacements[specific_replacement_file] = []
+                        parse_file(os.path.join(self.get_replacement_dir(), specific_replacement_file), self._replacements[specific_replacement_file])
 
-    def auto_replace_if_enabled(self, text, media_data=None, server_id=None):
-        if self.get_field("auto_replace", media_data=media_data, id=server_id):
-            for src, target in self.get_translations():
+        yield from self._replacements[""]
+
+        for key in [media_data["server_id"], media_data["name"], media_data.global_id, id] if isinstance(media_data, dict) else [media_data]:
+            if key and key in self._replacements:
+                yield from self._replacements[key]
+
+    def auto_replace_if_enabled(self, text, media_data=None):
+        if self.get_field("auto_replace", media_data=media_data):
+            for src, target in self.get_replacements(media_data=media_data):
                 text = re.sub(src, target, text)
         return text
 
