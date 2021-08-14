@@ -251,6 +251,10 @@ class Settings:
     def run_cmd(self, cmd, wd=None):
         subprocess.check_call(cmd, stdout=DEVNULL if self.suppress_cmd_output else None, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
 
+    @staticmethod
+    def _smart_quote(name):
+        return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
+
     def bundle(self, img_dirs):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
         name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), str(hash(arg))[1:8], self.bundle_format))
@@ -259,16 +263,10 @@ class Settings:
         self.run_cmd(cmd)
         return name
 
-    @staticmethod
-    def _smart_quote(name):
-        return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
-
     def _open_viewer(self, viewer, name, title=None, wd=None):
         try:
-            if isinstance(name, str):
-                name = Settings._smart_quote(name)
-            else:
-                name = " ".join(map(Settings._smart_quote, name))
+            assert isinstance(name, str)
+            name = Settings._smart_quote(name)
             cmd = viewer.format(media=name, title=quote(title)) if title else viewer.format(name)
             logging.info("Running cmd %s: %s shell = %s, wd=%s", viewer, cmd, self.shell, wd)
             self.run_cmd(cmd, wd=wd)

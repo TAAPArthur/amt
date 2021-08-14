@@ -10,7 +10,7 @@ from .stats import Details, SortIndex, StatGroup
 
 def gen_auto_complete(parser):
     """ Support autocomplete via argcomplete if installed"""
-    try:
+    try:  # pragma: no cover
         import argcomplete
         argcomplete.autocomplete(parser)
     except ImportError:

@@ -240,7 +240,7 @@ class SettingsTest(BaseUnitTestClass):
         assert not self.settings.get_credentials(server_id)
         username, password = "user", "pass"
         self.settings.store_credentials(server_id, username, password)
-        assert (username, password) == self.settings.get_credentials(server_id)
+        self.assertEqual((username, password), self.settings.get_credentials(server_id))
         tracker_id = "test-tracker"
         assert not self.settings.get_credentials(tracker_id)
         assert not self.settings.get_secret(tracker_id)
@@ -1411,8 +1411,12 @@ class ServerTest(RealBaseUnitTestClass):
 
         def func(server_id):
             server = self.app.get_server(server_id)
-            with self.subTest(server=server.id, method="relogin"):
-                assert not server.relogin()
+            try:
+                with self.subTest(server=server.id, method="relogin"):
+                    assert not server.relogin()
+            finally:
+                assert server.needs_to_login()
+
         self.for_each(func, self.media_reader.get_servers_ids_with_logins())
 
 
@@ -1444,7 +1448,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         for url, media_id, season_id, chapter_id in self.streamable_urls:
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                self.assertEquals(len(servers), 1)
+                self.assertEqual(len(servers), 1)
 
     def test_media_add_from_url(self):
         def func(url_data):

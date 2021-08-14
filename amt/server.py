@@ -36,7 +36,7 @@ class GenericServer:
     sync_removed = False
     official = True
 
-    def get_media_list(self):
+    def get_media_list(self):  # pragma: no cover
         """
         Returns an arbitrary selection of media
         """
@@ -50,7 +50,7 @@ class GenericServer:
         term_lower = term.lower()
         return list(filter(lambda x: term_lower in x['name'].lower(), self.get_media_list()))
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data):  # pragma: no cover
         """
         Returns media data from API
 
@@ -76,17 +76,17 @@ class GenericServer:
         with open(path, 'wb') as fp:
             fp.write(content)
 
-    def get_media_data_from_url(self, url):
+    def get_media_data_from_url(self, url):  # pragma: no cover
         raise NotImplementedError
 
-    def get_chapter_id_for_url(self, url):
-        return None
+    def get_chapter_id_for_url(self, url):  # pragma: no cover
+        raise NotImplementedError
 
     ################ ANIME ONLY #####################
     def get_stream_url(self, media_data, chapter_data, quality=0):
         return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[quality]
 
-    def get_stream_urls(self, media_data=None, chapter_data=None):
+    def get_stream_urls(self, media_data=None, chapter_data=None):  # pragma: no cover
         return []
 
     ################ OPTIONAL #####################
@@ -120,7 +120,7 @@ class GenericServer:
         """
         return self.has_login and not self.is_logged_in
 
-    def login(self, username, password):
+    def login(self, username, password):  # pragma: no cover
         assert False
         return False
 
@@ -210,10 +210,10 @@ class Server(GenericServer):
         open(full_path, 'w').close()
 
     def download_if_missing(self, func, full_path):
-        logging.info("downloading %s", full_path)
         if os.path.exists(full_path):
             logging.debug("Page %s already download", full_path)
         else:
+            logging.info("downloading %s", full_path)
             temp_path = os.path.join(os.path.dirname(full_path), ".tmp-" + os.path.basename(full_path))
             func(temp_path)
             os.rename(temp_path, full_path)

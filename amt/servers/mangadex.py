@@ -47,20 +47,18 @@ class Mangadex(Server):
     def update_media_data(self, media_data):
 
         offset = 0
-        chapterNumberToPublishDate = {}
+        visited_chapter_numbers = set()
         while True:
             r = self.session_get(self.manga_chapters_url.format(media_data["id"], offset))
             data = r.json()
-            for chapter in data["results"]:
+
+            for chapter in sorted(data["results"], key=lambda x: x["data"]["attributes"]["publishAt"], reverse=True):
                 chapter_data = chapter["data"]
                 attr = chapter_data["attributes"]
                 if self.settings.is_allowed_text_lang(attr["translatedLanguage"], media_data):
-                    if attr["chapter"] in chapterNumberToPublishDate:
-                        if chapterNumberToPublishDate[attr["chapter"]] < attr["publishAt"]:
-                            continue
-                        else:
-                            del media_data["chapters"][chapterNumberToPublishDate[attr["chapter"]]]
-                    chapterNumberToPublishDate[attr["chapter"]] = attr["publishAt"]
+                    if attr["chapter"] in visited_chapter_numbers:
+                        continue
+                    visited_chapter_numbers.add(attr["chapter"])
                     self.update_chapter_data(media_data, id=chapter_data["id"], number=attr["chapter"], title=attr["title"])
             offset += data["limit"]
             if offset > data["total"]:

@@ -70,12 +70,9 @@ class WLN_Updates(Server):
                     self.update_chapter_data(media_data, id=title, number=number, alt_id=chapter["srcurl"], title=title)
         if len(media_data["chapters"]) > 2:
             sorted_list = sorted(map(lambda x: (x["number"], x["id"]), media_data["chapters"].values()))
-            while True:
-                if sorted_list[-1][0] - sorted_list[-2][0] > 10:
-                    del media_data["chapters"][sorted_list[-1][1]]
-                    sorted_list.pop()
-                else:
-                    break
+            while sorted_list[-1][0] - sorted_list[-2][0] > 10:
+                del media_data["chapters"][sorted_list[-1][1]]
+                sorted_list.pop()
 
     def get_media_chapter_data(self, media_data, chapter_data):
         return [self.create_page_data(url=chapter_data["alt_id"])]

@@ -4,7 +4,7 @@ import re
 from ..server import ANIME, Server
 
 
-class Animelab(Server):
+class Animelab(Server):  # pragma: no cover
     #id = 'animelab'
     domain = "animelab.com"
     media_type = ANIME

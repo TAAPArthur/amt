@@ -13,11 +13,11 @@ class Tracker():
     def auth(self):
         pass
 
-    def update(self, list_of_updates):
-        pass
+    def update(self, list_of_updates):  # pragma: no cover
+        raise NotImplementedError
 
     def get_full_list_data(self, user_name=None, id=None):
         return self.get_tracker_list(user_name, id, status=None)
 
-    def get_tracker_list(self, user_name=None, id=None, status="CURRENT"):
-        pass
+    def get_tracker_list(self, user_name=None, id=None, status="CURRENT"):  # pragma: no cover
+        raise NotImplementedError

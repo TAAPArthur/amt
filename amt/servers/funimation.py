@@ -147,19 +147,16 @@ class Funimation(Server):
 
         for season in r.json()["seasons"]:
             for chapter in season["episodes"]:
-                try:
-                    video = chapter["languages"][media_data["lang"]]["alpha"]
-                    exp = video["simulcast"] if "simulcast" in video else video["uncut"]
-                    if exp["experienceId"] == int(chapter_data["id"]):
-                        for track in exp["sources"][0]["textTracks"]:
-                            if self.settings.is_allowed_text_lang(track["language"], media_data):
-                                subtitle_src = track["src"]
-                                _, ext = os.path.splitext(subtitle_src)
-                                path = os.path.join(dir_path, str(chapter_data["id"]) + ext)
-                                if not os.path.exists(path):
-                                    r = self.session_get(subtitle_src)
-                                    with open(path, "wb") as fp:
-                                        fp.write(r.content)
-                        break
-                except:
-                    pass
+                video = chapter["languages"][media_data["lang"]]["alpha"]
+                exp = video["simulcast"] if "simulcast" in video else video["uncut"]
+                if exp["experienceId"] == int(chapter_data["id"]) and "textTracks" in exp["sources"][0]:
+                    for track in exp["sources"][0]["textTracks"]:
+                        if self.settings.is_allowed_text_lang(track["language"], media_data):
+                            subtitle_src = track["src"]
+                            _, ext = os.path.splitext(subtitle_src)
+                            path = os.path.join(dir_path, str(chapter_data["id"]) + ext)
+                            if not os.path.exists(path):
+                                r = self.session_get(subtitle_src)
+                                with open(path, "wb") as fp:
+                                    fp.write(r.content)
+                    break
