@@ -7,6 +7,7 @@ class TestTracker(Tracker):
     customList = []
 
     def __init__(self, session, settings=None):
+        super().__init__(session, settings)
         self.media_list = []
         for media_type_name in MEDIA_TYPES:
             self.media_list.extend([

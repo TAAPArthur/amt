@@ -90,6 +90,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.app.settings.password_manager_enabled = True
         self.app.settings.password_load_cmd = r"echo -e a\\tb"
         self.app.settings.shell = True
+        self.app.settings.threads = max(8, len(self.app.get_servers()))
         if not self.real:
             self.app.settings.threads = 0
 
@@ -330,7 +331,6 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
     def setUp(self):
         super().setUp()
-        self.app.settings.threads = Settings.threads
         self.app.settings.password_manager_enabled = True
 
     def test_media_reader_add_remove_media(self):
@@ -1378,7 +1378,7 @@ class ServerTest(RealBaseUnitTestClass):
                     assert self.app.play(media_data.global_id, num_list=[chapter_data["number"]])
             with self.subTest(server=server.id, stream=False):
                 unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
-                assert not server.external == server.download_chapter(media_data, chapter_data, page_limit=2)
+                self.assertNotEqual(server.external, server.download_chapter(media_data, chapter_data, page_limit=2))
                 self.verify_download(media_data, chapter_data)
                 assert not server.download_chapter(media_data, chapter_data, page_limit=1)
             return True
@@ -1405,20 +1405,6 @@ class ServerTest(RealBaseUnitTestClass):
             with self.subTest(server=server.id, method="relogin"):
                 assert not server.relogin()
         self.for_each(func, self.media_reader.get_servers_ids_with_logins())
-
-    def test_search_media(self):
-        interesting_media = ["Gintama", "One Piece"]
-        for media in interesting_media:
-            with self.subTest(media_name=media):
-                self.media_reader.media.clear()
-                media_data = self.media_reader.search_for_media(media, limit_per_server=2, raiseException=True)
-                self.assertTrueOrSkipTest(media)
-                for data in media_data:
-                    self.media_reader.add_media(data, no_update=True)
-                self.media_reader.update()
-                for data in media_data:
-                    self.verify_unique_numbers(data["chapters"])
-                self.assertEqual(len(self.media_reader.get_media()), len(media_data))
 
 
 class ServerStreamTest(RealBaseUnitTestClass):
@@ -1452,7 +1438,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 self.assertEquals(len(servers), 1)
 
     def test_media_add_from_url(self):
-        for url, media_id, season_id, chapter_id in self.streamable_urls:
+        def func(url_data):
+            url, media_id, season_id, chapter_id = url_data
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
                 self.assertTrueOrSkipTest(servers)
@@ -1471,16 +1458,20 @@ class ServerStreamTest(RealBaseUnitTestClass):
                             self.assertEqual(str(chapter_data["id"]), str(chapter_id))
                             self.assertTrue(chapter_id in media_data["chapters"])
                         assert self.app.add_from_url(url)
+        self.for_each(func, self.streamable_urls)
 
     def test_media_steam(self):
         url_list = self.streamable_urls if not os.getenv("PREMIUM_TEST") else self.streamable_urls + self.premium_streamable_urls
-        for url, media_id, season_id, chapter_id in url_list:
+
+        def func(url_data):
+            url, media_id, season_id, chapter_id = url_data
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
                 self.assertTrueOrSkipTest(servers)
                 for server in servers:
                     if server.media_type == ANIME:
                         assert self.app.stream(url)
+        self.for_each(func, url_list)
 
 
 class TrackerTest(RealBaseUnitTestClass):
@@ -1510,6 +1501,7 @@ class TrackerTest(RealBaseUnitTestClass):
             self.app.set_primary_tracker(tracker)
             parse_args(app=self.media_reader, args=["auth"])
 
+    @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
     def test_load_stats(self):
         for tracker in self.media_reader.get_trackers():
             if tracker.id != TestTracker.id:
@@ -1580,6 +1572,20 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         self.assertTrue(os.path.exists(media_path))
         self.app.update(media_data)
         self.assertFalse(os.listdir(media_path))
+
+    def test_search_for_long_running_media(self):
+        interesting_media = ["Gintama", "One Piece"]
+
+        def func(media):
+            with self.subTest(media_name=media):
+                media_data = self.media_reader.search_for_media(media, limit_per_server=2, raiseException=True)
+                self.assertTrueOrSkipTest(media)
+                for data in media_data:
+                    self.media_reader.add_media(data, no_update=True)
+        self.for_each(func, interesting_media)
+        self.media_reader.update()
+        for media_data in self.media_reader.get_media():
+            self.verify_unique_numbers(media_data["chapters"])
 
 
 @unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
