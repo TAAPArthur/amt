@@ -92,8 +92,6 @@ class BaseUnitTestClass(unittest.TestCase):
         self.app.settings.shell = True
         if not self.real:
             self.app.settings.threads = 0
-        if self.local:
-            self.app.settings.js_enabled_browser = ""
 
         self.app.settings.suppress_cmd_output = True
         self.app.settings.anime_viewer = "echo {media} {title}"
@@ -222,10 +220,6 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.save()
 
         assert Settings(home=TEST_HOME).password_save_cmd == "dummy_cmd"
-
-    def test_settings_no_load_js_cookies(self):
-        self.settings.js_enabled_browser = False
-        assert not self.settings.load_js_cookies(None, None)
 
     def test_credentials(self):
         server_id = "test"
@@ -785,15 +779,6 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(self.app.session.cookies.get(key), value)
         parse_args(app=self.media_reader, args=["--clear-cookies", "list"])
         self.assertNotEqual(self.app.session.cookies.get(key), value)
-
-    def test_js_cookie_parser(self):
-        parse_args(app=self.media_reader, args=["js-cookie-parser"])
-
-    def test_incap_cookies(self):
-        value = "value"
-        self.app.session.cookies.clear()
-        parse_args(app=self.media_reader, args=["add-incapsula", TestAnimeServer.id, value])
-        self.assertEqual(list(self.app.session.cookies.values())[0], value)
 
     def test_get_settings(self):
         parse_args(app=self.media_reader, args=["setting", "password_manager_enabled"])
@@ -1512,12 +1497,6 @@ class TrackerTest(RealBaseUnitTestClass):
 
 
 class RealArgsTest(RealBaseUnitTestClass):
-    def test_circumvent_bot_protection(self):
-        self.settings.js_enabled_browser = True
-        parse_args(app=self.media_reader, args=["js-cookie-parser"])
-        for server in self.app.get_servers():
-            if server.is_protected:
-                server.session_get_protected(f"https://{server.domain}")
 
     @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
     def test_load_from_tracker(self):

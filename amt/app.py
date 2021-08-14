@@ -259,11 +259,6 @@ class Application(MediaReader):
         if not no_update:
             [self.update_media(media_data) for media_data in self._get_media(name=local_server_id)]
 
-    def maybe_fetch_extra_cookies(self):
-        for server in self.get_servers():
-            if server.is_protected:
-                server.session_get_protected("https://" + server.domain)
-
     def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, remove_not_on_disk=False, bundles=False):
         if remove_not_on_disk:
             for media_data in [x for x in self.get_media() if not os.path.exists(self.settings.get_chapter_metadata_file(x))]:

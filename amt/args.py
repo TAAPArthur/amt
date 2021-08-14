@@ -38,14 +38,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
         cookie_parser.add_argument("name")
         cookie_parser.add_argument("value")
 
-        incap_cookie_parser = sub_parsers.add_parser("add-incapsula", description="Add incapsula cookie")
-        incap_cookie_parser.add_argument("--path", default="/")
-        incap_cookie_parser.add_argument("--name", default="incap_ses_979_998813")
-        incap_cookie_parser.add_argument("id", choices=[server.id for server in app.get_servers() if server.domain])
-        incap_cookie_parser.add_argument("value")
-
-        sub_parsers.add_parser("js-cookie-parser", description="Open browser for all protected servers")
-
         # add remove
         search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
         search_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
@@ -248,7 +240,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
     action = namespace.type
     app.auto_select = namespace.auto
-    if action == "add-cookie" or action == "add-incapsula":
+    if action == "add-cookie":
         server = app.get_server(namespace.id)
         server.add_cookie(namespace.name, namespace.value, domain=app.get_server(namespace.id).domain, path=namespace.path)
     elif action == "add-from-url":
@@ -283,8 +275,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
     elif action == "mark-unread":
         app.mark_read(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), N=-1, force=True, abs=True)
         app.list()
-    elif action == "js-cookie-parser":
-        app.maybe_fetch_extra_cookies()
     elif action == "offset":
         app.offset(namespace.name, offset=namespace.N)
     elif action == "get-stream-url":

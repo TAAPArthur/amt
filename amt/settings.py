@@ -10,8 +10,6 @@ from shlex import quote
 from subprocess import DEVNULL, CalledProcessError
 from threading import Lock
 
-from . import cookie_manager
-
 APP_NAME = "amt"
 
 
@@ -49,8 +47,6 @@ class Settings:
 
     # Cookies
     cookie_files = ["/tmp/cookies.txt"]
-    incapsula_prompt = ""
-    js_enabled_browser = True
 
     # MISC
     allow_only_official_servers = False
@@ -123,12 +119,6 @@ class Settings:
         yield self.get_cookie_file()
         yield from map(os.path.expanduser, self.cookie_files)
 
-    def load_js_cookies(self, url, session):
-        if self.js_enabled_browser:
-            cookie_manager.update_session(url, session)
-            return True
-        return False
-
     @classmethod
     def get_members(clazz):
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("_")]
@@ -193,13 +183,6 @@ class Settings:
         if not skip_create:
             os.makedirs(dir, exist_ok=True)
         return dir
-
-    def get_incapsula(self, server_id: str) -> (str, str):
-        output = subprocess.check_output(self.incapsula_prompt.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
-        if output.startswith("incap_ses_"):
-            return output.split("=", 1)
-        else:
-            return "incap_ses_979_998813", output
 
     def get_credentials(self, server_id: str) -> (str, str):
         """Returns the saved username, password"""

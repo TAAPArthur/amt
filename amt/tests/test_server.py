@@ -136,6 +136,3 @@ class TestAnimeServer(TestServer):
             TestAnimeServer.TEST_VIDEO_PATH = TEST_BASE + "test_video.mp4"
             subprocess.check_call(["ffmpeg", "-y", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", TestAnimeServer.TEST_VIDEO_PATH])
         os.link(TestAnimeServer.TEST_VIDEO_PATH, path)
-
-    def session_get_protected(self, url, **kwargs):
-        return None

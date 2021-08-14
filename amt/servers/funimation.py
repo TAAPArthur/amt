@@ -9,7 +9,6 @@ from ..server import ANIME, Server
 
 class Funimation(Server):
     id = "funimation"
-    is_protected = True
 
     CSRF_NAME = "csrfmiddlewaretoken"
     domain = "funimation.com"
@@ -140,7 +139,7 @@ class Funimation(Server):
         else:
             chapter_id = chapter_data["id"]
 
-        r = self.session_get_protected(self.sources_api_url.format(chapter_id))
+        r = self.session_get(self.sources_api_url.format(chapter_id))
 
         # r.json()["items"] returns a list of mp4 and m38 streams
         logging.info("Sources: %s", [item["src"] for item in r.json()["items"]])
@@ -150,7 +149,7 @@ class Funimation(Server):
         return [r.json()["items"][0]["src"]]
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
-        r = self.session_get_protected(self.show_api_url.format(chapter_data["id"]))
+        r = self.session_get(self.show_api_url.format(chapter_data["id"]))
 
         for season in r.json()["seasons"]:
             for chapter in season["episodes"]:

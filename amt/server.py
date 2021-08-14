@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import time
 from functools import cache
 
 from requests.exceptions import HTTPError
@@ -30,7 +29,6 @@ class GenericServer:
     domain = None
     extension = "jpeg"
     external = False
-    is_protected = False
     media_type = MANGA
     stream_url_regex = None
     is_premium = False
@@ -127,11 +125,6 @@ class GenericServer:
         return False
 
 
-# Global constants
-incapsula_flag = "Request unsuccessful. Incapsula incident ID:"
-incapsula_regex = re.compile(r"/_Incapsula_Resource\?SWJIYLWA=[0-9a-z]*,[0-9a-z]*")
-
-
 class Server(GenericServer):
 
     session = None
@@ -166,31 +159,12 @@ class Server(GenericServer):
         r.raise_for_status()
         return r
 
-    def _request_or_prompt_incapsula(self, url, no_load_cookies=False, **kwargs):
-        r = self.session_get(url, **kwargs)
-        for i in range(self.settings.max_retires):
-            if (incapsula_flag in r.text or incapsula_regex.search(r.text)):
-                time.sleep(1)
-                if self.settings.incapsula_prompt:
-                    logging.info("Detected _Incapsula_Resource")
-                    name, value = self.settings.get_incapsula(self.id)
-                    self.session.cookies.set(name, value, domain=self.domain, path="/")
-                r = self._request(True, url)
-        if incapsula_flag in r.text or incapsula_regex.search(r.text):
-            if not no_load_cookies and self.settings.load_js_cookies(url, self.session):
-                return self._request_or_prompt_incapsula(url, True, **kwargs)
-            raise ValueError(r.text[-500:])
-        return r
-
     def add_cookie(self, name, value, domain=None, path="/"):
         self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
 
-    def session_get_protected(self, url, **kwargs):
-        return self._request_or_prompt_incapsula(url, **kwargs)
-
     @cache
     def session_get_mem_cache(self, url, **kwargs):
-        return self._request_or_prompt_incapsula(url, **kwargs)
+        return self.session_get(url, **kwargs)
 
     def session_get(self, url, **kwargs):
         return self._request(True, url, **kwargs)
