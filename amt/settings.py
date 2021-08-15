@@ -54,7 +54,6 @@ class Settings:
 
     # MISC
     allow_only_official_servers = False
-    auto_upgrade_state = True
     free_only = False
     no_load_session = False
     no_save_session = False

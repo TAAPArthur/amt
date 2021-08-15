@@ -415,6 +415,9 @@ class MediaReader:
                 media_data_list.append(media_data)
         return media_data_list
 
+    def has_tracker_info(self, media_data, tracker_id=None):
+        return self.get_tracker_info(media_data, tracker_id=tracker_id) is not None
+
     def get_tracker_info(self, media_data, tracker_id=None):
         if not tracker_id:
             tracker_id = self.get_primary_tracker().id

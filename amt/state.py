@@ -77,8 +77,11 @@ class State:
             if not media_data.chapters:
                 media_data.chapters = self.read_file_as_dict(self.settings.get_chapter_metadata_file(media_data))
 
-        if self.all_media.get("version", 0) != self.version:
-            self.all_media["version"] = self.version
+    def is_out_of_date(self):
+        return self.all_media.get("version", 0) != self.version
+
+    def update_verion(self):
+        self.all_media["version"] = self.version
 
     def configure_media(self, server_list):
         for key in list(self.media.keys()):

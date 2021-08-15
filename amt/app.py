@@ -37,8 +37,11 @@ class Application(MediaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def search_add(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[], no_add=False):
+    def search_add(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[], no_add=False, media_id=None, sort_func=None):
         results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude)
+        results = list(filter(lambda x: not media_id or str(x["id"]) == str(media_id), results))
+        if sort_func:
+            results.sort(key=sort_func)
         if len(results) == 0:
             return None
         media_data = self.select_media(term, results, "Select media: ")
@@ -97,22 +100,34 @@ class Application(MediaReader):
             return False
         return media_data
 
-    def migrate(self, name, move_self=False):
+    def upgrade_state(self, force=False):
+        if self.state.is_out_of_date() or force:
+            self.migrate(None, move_self=True, force_same_id=True)
+            self.state.update_verion()
+
+    def migrate(self, name, exact=False, move_self=False, force_same_id=False):
+        media_list = []
+        last_read_list = []
         for media_data in list(self._get_media(name=name)):
             self.remove_media(media_data)
             if move_self:
-                new_media_data = self.search_add(media_data["name"], server_id=media_data["server_id"])
+                def func(x): return -sum([media_data.get(key, None) == x[key] for key in x])
+                new_media_data = self.search_add(media_data["name"], exact=exact, server_id=media_data["server_id"], media_id=media_data["id"] if force_same_id else None, sort_func=func)
             else:
-                new_media_data = self.search_add(media_data["name"], media_type=media_data["media_type"], servers_to_exclude=[media_data["server_id"]])
+                new_media_data = self.search_add(media_data["name"], exact=exact, media_type=media_data["media_type"], servers_to_exclude=[media_data["server_id"]])
             self.copy_tracker(media_data, new_media_data)
-            self.mark_chapters_until_n_as_read(new_media_data, self.get_last_read(media_data))
+            media_list.append(new_media_data)
+            last_read_list.append(self.get_last_read(media_data))
+
+        self.for_each(self.update_media, media_list)
+        for media_data, last_read in zip(media_list, last_read_list):
+            self.mark_chapters_until_n_as_read(new_media_data, last_read)
 
     def share_tracker(self, name=None, media_type=None, exact=True):
         tracker = self.get_primary_tracker()
         for media_data in self._get_media(name=name, media_type=media_type):
-            info = self.get_tracker_info(media_data, tracker.id)
-            if info:
-                tracking_id, tracker_title = info
+            if self.has_tracker_info(media_data, tracker.id):
+                tracking_id, tracker_title = self.get_tracker_info(media_data, tracker.id)
                 other_media = self._search_for_tracked_media(tracker_title, media_type, local_only=True)
                 if other_media:
                     assert media_data != other_media
@@ -122,8 +137,9 @@ class Application(MediaReader):
     def copy_tracker(self, src, dst):
         src_media_data = self._get_single_media(name=src)
         dst_media_data = self._get_single_media(name=dst)
-        tracking_id, tracker_title = self.get_tracker_info(src_media_data, self.get_primary_tracker().id)
-        self.track(dst_media_data, self.get_primary_tracker().id, tracking_id, tracker_title)
+        if self.has_tracker_info(src_media_data):
+            tracking_id, tracker_title = self.get_tracker_info(src_media_data)
+            self.track(dst_media_data, self.get_primary_tracker().id, tracking_id, tracker_title)
 
     def remove_tracker(self, name, media_type=None):
         for media_data in self._get_media(name=name, media_type=media_type):
@@ -205,24 +221,6 @@ class Application(MediaReader):
                     logging.error("Failed to login into %s", server.id)
                     failures = True
         return not failures
-
-    def upgrade_state(self):
-        def _upgrade_dict(current_dict, new_dict):
-            for old_key in current_dict.keys() - new_dict.keys():
-                logging.info("Removing old key %s", old_key)
-                current_dict.pop(old_key)
-            for new_key in new_dict.keys() - current_dict.keys():
-                logging.info("Adding new key %s", new_key)
-                current_dict[new_key] = new_dict[new_key]
-
-        for media_data in self.get_media():
-            server = self.get_server(media_data["server_id"])
-            new_data = server.create_media_data(media_data["id"], media_data["name"])
-            _upgrade_dict(media_data, new_data)
-            os.makedirs(self.settings.get_media_dir(media_data), exist_ok=True)
-            for chapter_data in media_data["chapters"].values():
-                server.update_chapter_data(new_data, chapter_data["id"], chapter_data["title"], chapter_data["number"])
-                _upgrade_dict(chapter_data, new_data["chapters"][chapter_data["id"]])
 
     def import_media(self, files, media_type, link=False, name=None, no_update=False):
         func = shutil.move if not link else os.link

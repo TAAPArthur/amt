@@ -1299,17 +1299,16 @@ class ArgsTest(MinimalUnitTestClass):
             assert os.path.exists(path3)
 
     def test_upgrade(self):
-        media_list = self.add_test_media(self.test_anime_server)
+        self.add_test_media(self.test_anime_server)
+        ids = list(self.media_reader.get_media_ids())
         removed_key = "removed_key"
-        media_list[0][removed_key] = False
-        media_list[1].pop("media_type")
-        next(iter(media_list[2]["chapters"].values())).pop("special")
-        next(iter(media_list[3]["chapters"].values()))["old_chapter_field"] = 10
-        parse_args(app=self.media_reader, args=["upgrade"])
-        assert removed_key not in media_list[0]
-        assert "media_type" in media_list[1]
-        assert "special" in next(iter(media_list[2]["chapters"].values()))
-        assert "old_chapter_field" not in next(iter(media_list[3]["chapters"].values()))
+        self.app.media[ids[0]][removed_key] = False
+        next(iter(self.app.media[ids[1]]["chapters"].values())).pop("special")
+        next(iter(self.app.media[ids[2]]["chapters"].values()))["old_chapter_field"] = 10
+        parse_args(app=self.media_reader, args=["upgrade", "-f"])
+        assert removed_key not in self.app.media[ids[0]]
+        self.assertTrue(all(["special" in x for x in self.app.media[ids[1]]["chapters"].values()]))
+        self.assertTrue(all(["old_chapter_field" not in x for x in self.app.media[ids[2]]["chapters"].values()]))
 
     def test_upgrade_change_in_chapter_format_as_needed(self):
         media_list = self.add_test_media(self.test_anime_server)
@@ -1321,29 +1320,6 @@ class ArgsTest(MinimalUnitTestClass):
         self.reload()
         for media_data in self.app.get_media():
             assert media_data.chapters
-
-    def test_auto_upgrade_disabled_broken(self):
-        media_list = self.add_test_media(self.test_anime_server)
-        media_list[1].pop("media_type")
-
-        def _upgrade_state():
-            pass
-        self.app.upgrade_state = _upgrade_state
-        for b in (True, False):
-            self.settings.auto_upgrade_state = b
-            self.assertRaises(KeyError, parse_args, app=self.media_reader, args=["list"])
-            assert "media_type" not in media_list[1]
-
-    def test_auto_upgrade_seamless(self):
-        self.settings.max_retires = 10
-        media_list = self.add_test_media(self.test_anime_server)
-        media_list[1].pop("media_type")
-        self.app.save()
-        parse_args(app=self.media_reader, args=["setting", "max_retires", "1"])
-        self.assertEqual(self.settings.max_retires, 1)
-        self.reload()
-        for media_data in self.app.get_media():
-            assert "media_type" in media_data
 
 
 class ServerTest(RealBaseUnitTestClass):
