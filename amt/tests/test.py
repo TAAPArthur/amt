@@ -20,6 +20,7 @@ from ..server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from ..servers.custom import CustomServer, get_local_server_id
 from ..settings import Settings
 from ..state import State
+from ..util.decoder import GenericDecoder
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
                           TestServerLogin)
 from .test_tracker import TestTracker
@@ -204,6 +205,98 @@ class MinimalUnitTestClass(BaseUnitTestClass):
 class RealBaseUnitTestClass(BaseUnitTestClass):
     def init(self):
         self.real = True
+
+
+class UtilTest(BaseUnitTestClass):
+    simple_img = [
+        [1, 1, 1, 1, 2, 2, 0, 0],
+        [1, 1, 1, 1, 2, 2, 0, 0],
+        [1, 1, 1, 1, 2, 2, 2, 9],
+
+        [1, 1, 1, 1, 2, 2, 2, 9],
+        [3, 3, 3, 3, 4, 4, 2, 9],
+        [3, 3, 3, 3, 4, 4, 4, 9],
+
+        [0, 0, 3, 3, 3, 4, 4, 9],
+        [0, 0, 9, 9, 9, 9, 9, 9]
+    ], (3, 3), ((0, 1), (2, 3))
+    scrambled_img = [
+        [1, 2, 2, 1, 2, 2, 0, 0],
+        [1, 2, 2, 3, 4, 4, 0, 0],
+        [1, 2, 2, 3, 4, 4, 2, 9],
+
+        [1, 1, 1, 1, 1, 1, 2, 9],
+        [3, 3, 3, 1, 1, 1, 2, 9],
+        [3, 3, 3, 1, 1, 1, 2, 9],
+
+        [0, 0, 3, 3, 3, 4, 4, 9],
+        [0, 0, 9, 9, 9, 9, 9, 9]
+    ], (3, 3), ((3, 0), (2, 1))
+    descrambled = [
+        [1, 1, 1, 2, 2, 9],
+        [1, 1, 1, 2, 2, 9],
+        [1, 1, 1, 2, 2, 9],
+
+        [3, 3, 3, 4, 4, 9],
+        [3, 3, 3, 4, 4, 9],
+        [9, 9, 9, 9, 9, 9],
+    ]
+
+    def assert_img_eq(self, img1, img2):
+        self.assertEqual(img1.size, img2.size)
+        pixels1, pixels2 = img1.load(), img2.load()
+        for y in range(img1.height):
+            for x in range(img1.width):
+                self.assertEqual(pixels1[x, y], pixels2[x, y])
+
+    def create_img_from_array(self, array):
+        img = Image.new("I", (len(array[0]), len(array)))
+        img.putdata([col for row in array for col in row])
+        self.assertEqual(img.size, (len(array[0]), len(array)))
+        return img
+
+    def do_image_decoding(self, source_arr, dims, solution_grid, correct_img):
+        img = self.create_img_from_array(source_arr)
+        final_img, sorted_cells = GenericDecoder.solve_image_helper(img, W=dims[0], H=dims[1], offset=(1, 1))
+        self.assertTrue(final_img)
+        self.assert_img_eq(final_img, self.create_img_from_array(correct_img))
+        self.assertEqual(GenericDecoder.cells_to_int_matrix(sorted_cells), solution_grid)
+
+    def test_image_decoding_simple(self):
+        self.do_image_decoding(self.simple_img[0], self.simple_img[1], self.simple_img[2], self.descrambled)
+
+    def test_image_decoding_scrambled(self):
+        self.do_image_decoding(self.scrambled_img[0], self.scrambled_img[1], self.scrambled_img[2], self.descrambled)
+
+    def test_solve_image_degenerate(self):
+        img = Image.new("RGB", (512, 256))
+        final_img = GenericDecoder.solve_image(img)
+        self.assertTrue(final_img)
+        self.assert_img_eq(final_img, Image.new("RGB", final_img.size))
+
+    def test_solve_image_exp_reduction(self):
+        # grid with "2" being an incorrect value
+        array = [
+                [1, 1, 1, 1, 0, 0, 0, 0],
+                [1, 1, 1, 1, 0, 0, 0, 0],
+                [1, 1, 1, 1, 0, 2, 0, 0],
+        ]
+        # bunch of identical squares
+        array.extend([[0] * len(array[0])] * 11)
+        img = self.create_img_from_array(array)
+        final_img = GenericDecoder.solve_image_helper(img, W=3, H=3, offset=(1, 1))[0]
+        self.assertTrue(final_img)
+
+    def test_abort_solve_image(self):
+        img = Image.new("RGB", (1080, 720))
+        final_img = GenericDecoder.solve_image(img, max_iters=1)
+        self.assertFalse(final_img)
+
+    def test_solve_image_cache(self):
+        img = Image.new("RGB", (1080, 720))
+        key = "Key"
+        for i in range(100):
+            self.assertTrue(GenericDecoder.solve_image(img, key=key))
 
 
 class SettingsTest(BaseUnitTestClass):
@@ -1583,6 +1676,15 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         assert bad_session != session
         assert session == server.get_session_id()
         assert server.needs_authentication()
+
+    def test_jnovel_club_manga_parts_full_download(self):
+        from ..servers.jnovelclub import JNovelClubMangaParts
+        server = self.media_reader.get_server(JNovelClubMangaParts.id)
+        self.assertTrueOrSkipTest(server)
+        media_data = server.get_media_list()[0]
+        self.app.add_media(media_data)
+        self.assertTrue(media_data["chapters"])
+        self.app.download_unread_chapters(name=media_data.global_id, limit=1)
 
     def test_jnovel_club_parts_autodelete(self):
         from ..servers.jnovelclub import JNovelClubParts

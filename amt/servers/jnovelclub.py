@@ -4,6 +4,7 @@ import shutil
 import time
 
 from ..server import MANGA, MEDIA_TYPES, NOVEL, Server
+from ..util.decoder import GenericDecoder
 
 
 class GenericJNovelClub(Server):
