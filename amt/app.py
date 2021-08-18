@@ -115,7 +115,7 @@ class Application(MediaReader):
                 new_media_data = self.search_add(media_data["name"], exact=exact, server_id=media_data["server_id"], media_id=media_data["id"] if force_same_id else None, sort_func=func)
             else:
                 new_media_data = self.search_add(media_data["name"], exact=exact, media_type=media_data["media_type"], servers_to_exclude=[media_data["server_id"]])
-            self.copy_tracker(media_data, new_media_data)
+            media_data.copy_fields_to(new_media_data)
             media_list.append(new_media_data)
             last_read_list.append(self.get_last_read(media_data))
 

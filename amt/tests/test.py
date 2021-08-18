@@ -1023,6 +1023,15 @@ class ArgsTest(MinimalUnitTestClass):
     def test_search_fail(self):
         parse_args(app=self.media_reader, args=["--auto", "search", "__UnknownMedia__"])
 
+    def test_migrate_offset(self):
+        media_data = self.add_test_media(self.test_server)[0]
+        parse_args(app=self.media_reader, args=["offset", media_data.global_id, "1"])
+        parse_args(app=self.media_reader, args=["migrate", "--self", media_data["name"]])
+        for i in range(2):
+            media_data = self.app._get_single_media(name=media_data.global_id)
+            self.assertEqual(media_data["offset"], 1)
+            self.app.upgrade_state(force=True)
+
     def test_migrate(self):
         parse_args(app=self.media_reader, args=["--auto", "search", "manga"])
         parse_args(app=self.media_reader, args=["--auto", "load", "--local-only"])
@@ -1036,6 +1045,7 @@ class ArgsTest(MinimalUnitTestClass):
         media_data2 = list(self.media_reader.get_media())[0]
         self.assertNotEqual(media_data.global_id, media_data2.global_id)
         self.assertEqual(self.app.get_last_read(media_data), self.app.get_last_read(media_data2))
+        self.assertEqual(media_data["progress"], media_data2["progress"])
         assert self.media_reader.get_tracker_info(media_data2)
 
     def test_migrate_self(self):

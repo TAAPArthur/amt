@@ -119,6 +119,11 @@ class MediaData(dict):
     def global_id(self):
         return "{}:{}{}{}".format(self["server_id"], self["id"], (self["season_id"] if self["season_id"] else ""), self.get("lang", "")[:3])
 
+    def copy_fields_to(self, dest):
+        for key in ("offset", "progress", "progressVolumes", "trackers"):
+            assert key in dest
+            dest[key] = self.get(key)
+
 
 class ChapterData(dict):
     def __init__(self, backing_map):
