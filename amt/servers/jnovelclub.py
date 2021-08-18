@@ -6,12 +6,9 @@ import time
 from ..server import MANGA, MEDIA_TYPES, NOVEL, Server
 
 
-class JNovelClub(Server):
-    id = "j_novel_club"
-    extension = "epub"
-    media_type = NOVEL
-    progressVolumes = True
+class GenericJNovelClub(Server):
 
+    alias = "j_novel_club"
     login_url = "https://api.j-novel.club/api/users/login"
     api_domain = "https://labs.j-novel.club"
     api_base_url = api_domain + "/app/v1"
@@ -39,12 +36,6 @@ class JNovelClub(Server):
         self.needs_authentication()
         return True
 
-    def get_media_data_from_url(self, url):
-        match = self.stream_url_regex.match(url)
-        series_id = match.group(1)
-        data = self.session_get(self.series_info_url.format(series_id)).json()
-        return self.create_media_data(data["slug"], data["title"])
-
     def _create_media_data_helper(self, data):
         return [self.create_media_data(media_data["slug"], media_data["title"], progressVolumes=self.progressVolumes) for media_data in data if MEDIA_TYPES[media_data["type"]] == self.media_type]
 
@@ -57,15 +48,6 @@ class JNovelClub(Server):
         r = self.session_post(self.search_url, json={"query": term, "type": 1 if self.media_type == NOVEL else 2})
         data = r.json()["series"]
         return [self.create_media_data(media_data["slug"], media_data["title"]) for media_data in data]
-
-    def update_media_data(self, media_data: dict):
-        r = self.session_get(self.chapters_url.format(media_data["id"]))
-        for volume in r.json()["volumes"]:
-            self.update_chapter_data(media_data, id=volume["legacyId"], number=volume["number"], title=volume["title"], premium=False, inaccessible=not volume["owned"])
-
-    def get_media_chapter_data(self, media_data, chapter_data):
-        r = self.session_get(self.pages_url.format(chapter_data["id"]))
-        return [self.create_page_data(url=r.json()["downloads"][0]["link"])]
 
     def download_sources(self, resources_path, path, url, text):
         img_path = os.path.join(resources_path, os.path.basename(url))
@@ -92,17 +74,33 @@ class JNovelClub(Server):
             fp.write(text)
 
 
-class JNovelClubParts(JNovelClub):
-    id = "j_novel_club_parts"
+class JNovelClub(GenericJNovelClub):
+    id = "j_novel_club"
+    extension = "epub"
+    media_type = NOVEL
+    progressVolumes = True
+
+    def update_media_data(self, media_data: dict):
+        r = self.session_get(self.chapters_url.format(media_data["id"]))
+        for volume in r.json()["volumes"]:
+            self.update_chapter_data(media_data, id=volume["legacyId"], number=volume["number"], title=volume["title"], premium=False, inaccessible=not volume["owned"])
+
+    def get_media_chapter_data(self, media_data, chapter_data):
+        r = self.session_get(self.pages_url.format(chapter_data["id"]))
+        return [self.create_page_data(url=r.json()["downloads"][0]["link"])]
+
+
+class JNovelClubManga(JNovelClub):
+    id = "j_novel_club_manga"
     alias = "j_novel_club"
-    extension = "xhtml"
+    media_type = MANGA
+
+
+class GenericJNovelClubParts(GenericJNovelClub):
+    progressVolumes = False
 
     part_to_series_url = JNovelClub.api_base_url + "/parts/{}/serie?format=json"
     parts_url = JNovelClub.api_base_url + "/volumes/{}/parts?format=json"
-    pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
-    progressVolumes = False
-
-    stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+)")
     time_to_live_sec = 3600 * 24 * 7
 
     def update_media_data(self, media_data: dict):
@@ -132,7 +130,13 @@ class JNovelClubParts(JNovelClub):
         return self.stream_url_regex.search(url).group(1)
 
 
-class JNovelClubManga(JNovelClub):
-    id = "j_novel_club_manga"
-    alias = "j_novel_club"
-    media_type = MANGA
+class JNovelClubParts(GenericJNovelClubParts):
+    id = "j_novel_club_parts"
+    extension = "xhtml"
+    media_type = NOVEL
+    pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
+
+    stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+)")
+
+    def can_stream_url(self, url):
+        return super().can_stream_url(url) and "-manga-" not in url
