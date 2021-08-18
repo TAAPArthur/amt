@@ -1567,12 +1567,18 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         server.time_to_live_sec = 0
         media_data = server.get_media_list()[0]
         self.app.add_media(media_data)
-        self.app.download_unread_chapters(media_data, limit=1)
-        media_path = self.settings.get_media_dir(media_data)
+        self.assertTrue(media_data["chapters"])
+        self.app.download_unread_chapters(name=media_data.global_id, limit=1)
 
-        self.assertTrue(os.path.exists(media_path))
-        self.app.update(media_data)
-        self.assertFalse(os.listdir(media_path))
+        self.assertTrue(media_data["chapters"])
+        self.assertTrue(os.path.exists(self.settings.get_media_dir(media_data)))
+        self.app.update(name=media_data.global_id)
+        self.assertTrue(media_data["chapters"])
+
+        self.assertTrue(os.path.exists(self.settings.get_media_dir(media_data)))
+        for chapter_data in media_data["chapters"].values():
+            chapter_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
+            self.assertFalse(os.path.exists(chapter_path))
 
     def test_search_for_long_running_media(self):
         interesting_media = ["Gintama", "One Piece"]
