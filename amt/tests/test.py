@@ -1001,9 +1001,18 @@ class ArgsTest(MinimalUnitTestClass):
         list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values()])
         offset_list = list(map(lambda x: x - 1, list_of_numbers))
         parse_args(app=self.media_reader, args=["offset", media_data.global_id, "1"])
-        parse_args(app=self.media_reader, args=["update"])
         self.assertEqual(offset_list, sorted([chapter_data["number"] for chapter_data in chapters.values()]))
         self.verify_unique_numbers(media_data["chapters"])
+
+    def test_offset_upgrade(self):
+        media_data = self.add_test_media()[0]
+        chapters = media_data["chapters"]
+        list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values()])
+        offset_list = list(map(lambda x: x - 1, list_of_numbers))
+        parse_args(app=self.media_reader, args=["offset", "--no-update", media_data.global_id, "1"])
+        self.assertNotEqual(offset_list, sorted([chapter_data["number"] for chapter_data in chapters.values()]))
+        parse_args(app=self.media_reader, args=["update"])
+        self.assertEqual(offset_list, sorted([chapter_data["number"] for chapter_data in chapters.values()]))
 
     def test_search(self):
         assert not len(self.media_reader.get_media())

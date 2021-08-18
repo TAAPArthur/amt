@@ -196,6 +196,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
     mark_parsers.add_argument("N", type=int, default=0, nargs="?", help="Consider the last N chapters as not up-to-date")
 
     offset_parser = sub_parsers.add_parser("offset")
+    offset_parser.add_argument("--no-update", action="store_const", default=False, const=True, help="Skip update; change won't be visible until next update")
     offset_parser.add_argument("name", default=None, choices=app.get_all_names())
     offset_parser.add_argument("N", type=int, default=0, nargs="?", help="Decrease the chapter number reported by the server by N")
 
@@ -268,6 +269,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
         app.list()
     elif action == "offset":
         app.offset(namespace.name, offset=namespace.N)
+        if not namespace.no_update:
+            app.update(namespace.name)
     elif action == "get-stream-url":
         app.get_stream_url(name=namespace.name, shuffle=namespace.shuffle)
     elif action == "get-file":
