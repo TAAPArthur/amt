@@ -34,10 +34,11 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 
 ## Supports
 ### Manga
-* [Viz](http://viz.com)
-* [MangaPlus](https://mangaplus.shueisha.co.jp)
 * [Crunchyroll](https://crunchyroll.com)
 * [DB multiverse](https://www.dragonball-multiverse.com)
+* [J Novel club](https://j-novel.club/)
+* [MangaPlus](https://mangaplus.shueisha.co.jp)
+* [Viz](http://viz.com)
 * mangasee (unofficial)
 * mangadex (unofficial)
 

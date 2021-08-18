@@ -1,8 +1,10 @@
+import logging
 import os
 import re
 import shutil
 import time
 
+from ..job import RetryException
 from ..server import MANGA, MEDIA_TYPES, NOVEL, Server
 from ..util.decoder import GenericDecoder
 
@@ -20,6 +22,7 @@ class GenericJNovelClub(Server):
     search_url = api_base_url + "/series?format=json"
     chapters_url = api_base_url + "/series/{}/volumes?format=json"
     pages_url = api_base_url + "/me/library/volume/{}?format=json"
+    syncrhonize_chapter_downloads = True
 
     def needs_authentication(self):
         # will return 401 for invalid session and 410 for expired session
@@ -142,3 +145,40 @@ class JNovelClubParts(GenericJNovelClubParts):
 
     def can_stream_url(self, url):
         return super().can_stream_url(url) and "-manga-" not in url
+
+
+class JNovelClubMangaParts(GenericJNovelClubParts):
+    id = "j_novel_club_manga_parts"
+    media_type = MANGA
+    stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+-manga-[\w\d\-]+)")
+    pages_url = JNovelClub.api_domain + "/embed/{}"
+
+    uuid_regex = re.compile(r"data-uuid=\"([^\"]*)\"")
+    token_regex = re.compile(r"data-ngtoken=\"([^\"]*)\"")
+
+    encrypted_url = "https://m11.j-novel.club/nebel/wp/{}"
+
+    def get_media_chapter_data(self, media_data, chapter_data):
+        self.session_get("https://j-novel.club/read/{}".format(chapter_data["id"]))
+        r = self.session_get(self.pages_url.format(chapter_data["alt_id"]))
+        uuid = self.uuid_regex.search(r.text).group(1)
+        token = self.token_regex.search(r.text).group(1)
+        url = self.encrypted_url.format(uuid)
+        try:
+            r = self.session_post(url, data=token)
+        except:
+            time.sleep(10)
+            self.session_get("https://j-novel.club/read/{}".format(chapter_data["id"]))
+            r = self.session_post(url, data=token)
+        data = r.json()["readingOrder"]
+
+        return [self.create_page_data(url=link["href"], encryption_key=token) for link in data]
+
+    def save_chapter_page(self, page_data, path):
+        r = self.session_get(page_data["url"], stream=True)
+        max_iterations = 300 if not page_data.get("retry", False) else None
+        success = GenericDecoder.descramble_and_save_img(r.raw, path, key=page_data["encryption_key"], max_iters=max_iterations)
+        if not success:
+            page_data["retry"] = True
+            logging.debug("Failed to descramble %s", page_data["url"])
+            raise RetryException(path)

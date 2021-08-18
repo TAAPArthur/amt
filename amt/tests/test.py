@@ -1540,6 +1540,7 @@ class ServerTest(RealBaseUnitTestClass):
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
         ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),
+        ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1", "seirei-gensouki-spirit-chronicles-manga", None, "seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1"),
         ("https://mangadex.org/chapter/6a0a63c1-3f57-4685-be6c-14e3ca7eb180/1", "a2c1d849-af05-4bbc-b2a7-866ebb10331f", None, "6a0a63c1-3f57-4685-be6c-14e3ca7eb180"),
         ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
         ("https://mangasee123.com/read-online/Bobobo-Bo-Bo-Bobo-chapter-214-page-1.html", "Bobobo-Bo-Bo-Bobo", None, "102140"),
