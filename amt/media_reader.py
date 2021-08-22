@@ -232,9 +232,9 @@ class MediaReader:
                 last_read = max(self.get_last_read(media_data), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
-    def download_unread_chapters(self, name=None, media_type=None, limit=0):
+    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False):
         """Downloads all chapters that are not read"""
-        return sum(self.for_each(self._download_selected_chapters, self._get_unreads(media_type, name=name, limit=limit)))
+        return sum(self.for_each(self._download_selected_chapters, self._get_unreads(media_type, name=name, limit=limit), raiseException=not ignore_errors))
 
     def _get_sorted_chapters(self, media_data):
         return sorted(media_data["chapters"].values(), key=lambda x: x["number"])

@@ -14,22 +14,29 @@ class TestServer(Server):
     id = "test_server_manga"
     extension = "jpeg"
     _prefix = "Manga"
-    _throw_error = False
-    _error_thrown = False
+    error_to_inject = None
+    time_to_error = 0
+    error_count = 0
     domain = "test.com"
     hide = False
     inaccessible = False
 
     def maybe_inject_error(self):
-        if self._throw_error:
-            self._error_thrown = True
-            raise Exception("Injected Error from {}".format(self.id))
+        if self.error_to_inject:
+            self.error_count += 1
+            try:
+                raise self.error_to_inject
+            finally:
+                self.time_to_error -= 1
+                if self.time_to_error == 0:
+                    self.inject_error(None, 0)
 
-    def inject_error(self):
-        self._throw_error = True
+    def inject_error(self, error=Exception("Dummy error"), count=1):
+        self.error_to_inject = error
+        self.time_to_error = count
 
     def was_error_thrown(self):
-        return self._error_thrown
+        return self.error_count
 
     def get_media_list(self):
         self.maybe_inject_error()

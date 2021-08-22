@@ -5,6 +5,16 @@ from queue import Queue
 from threading import Thread
 
 
+class RetryException(Exception):
+    retry_count = 1
+    pass
+
+
+class ItemWrapper():
+    def __init__(self, item):
+        self.item = item
+
+
 class Job:
     def __init__(self, numThreads, iterable=[], raiseException=False):
         self.numThreads = numThreads
@@ -23,12 +33,20 @@ class Job:
 
     def worker(self):
         while not self.queue.empty():
-            func = self.queue.get()
+            item = self.queue.get()
+            func = item if not isinstance(item, ItemWrapper) else item.item
             try:
                 if func:
                     ret = func()
                     self.results.append(ret) if not isinstance(ret, list) else self.results.extend(ret)
             except Exception as e:
+                if isinstance(e, RetryException) and not isinstance(item, ItemWrapper):
+                    if e.retry_count > 0:
+                        e.retry_count -= 1
+                        self.add(ItemWrapper(func))
+                        logging.info("Retry: '%s'; Readding item into queue", e)
+                        continue
+
                 self.exception = e
                 logging.error(e)
                 traceback.print_exc()

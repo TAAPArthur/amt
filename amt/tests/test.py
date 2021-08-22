@@ -14,7 +14,7 @@ from PIL import Image
 from .. import servers, tests
 from ..app import Application
 from ..args import parse_args
-from ..job import Job
+from ..job import Job, RetryException
 from ..media_reader import SERVERS, TRACKERS, import_sub_classes
 from ..server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from ..servers.custom import CustomServer, get_local_server_id
@@ -128,9 +128,9 @@ class BaseUnitTestClass(unittest.TestCase):
         for media_data in server.get_media_list():
             self.media_reader.add_media(media_data)
 
-    def add_test_media(self, server=None, no_update=False):
+    def add_test_media(self, server=None, no_update=False, limit=None):
         media_list = server.get_media_list() if server else [x for server in self.app.get_servers() for x in server.get_media_list()]
-        for media_data in media_list:
+        for media_data in media_list[:limit]:
             self.media_reader.add_media(media_data, no_update=no_update)
         assert media_list
         return media_list
@@ -738,8 +738,32 @@ class ApplicationTestWithErrors(BaseUnitTestClass):
     def test_download_with_error(self):
         self.add_test_media()
         self.test_server.inject_error()
+        self.assertRaises(Exception, self.app.download_unread_chapters)
+        assert self.test_server.was_error_thrown()
+
+    def test_download_with_retry(self):
+        self.add_test_media(self.test_server, limit=1)
+        self.test_server.inject_error(RetryException("Dummy Retry"))
         assert self.app.download_unread_chapters()
         assert self.test_server.was_error_thrown()
+        for media_data in self.app.get_media():
+            for chapter_data in media_data["chapters"].values():
+                self.verify_download(media_data, chapter_data)
+
+    def test_download_with_repeated_failures(self):
+        self.add_test_media(self.test_server, limit=1)
+        self.test_server.inject_error(RetryException(None, "Dummy Retry"), -1)
+        self.assertRaises(RetryException, self.app.download_unread_chapters)
+
+    def test_download_with_retry_multithreaded(self):
+        self.app.settings.threads = 1
+        self.add_test_media(self.test_server, limit=1)
+        self.test_server.inject_error(RetryException(None, "Dummy Retry"))
+        assert self.app.download_unread_chapters()
+        assert self.test_server.was_error_thrown()
+        for media_data in self.app.get_media():
+            for chapter_data in media_data["chapters"].values():
+                self.verify_download(media_data, chapter_data)
 
 
 class CustomTest(MinimalUnitTestClass):
