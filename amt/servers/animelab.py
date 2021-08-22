@@ -1,5 +1,4 @@
 import json
-import os
 import re
 
 from ..server import ANIME, Server
@@ -88,6 +87,3 @@ class Animelab(Server):
                         videos.append((video["bitrate"], video["httpUrl"]))
         videos.sort(reverse=True)
         return [x[1] for x in videos]
-
-    def _get_page_path(self, media_data, chapter_data, dir_path, index, page_data):
-        return os.path.join(dir_path, "{}.{}".format(chapter_data["id"], page_data["ext"]))

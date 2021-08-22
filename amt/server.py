@@ -94,8 +94,8 @@ class GenericServer:
     def _get_dir(self, media_data, chapter_data, skip_create=False):
         return self.settings.get_chapter_dir(media_data, chapter_data, skip_create=skip_create)
 
-    def _get_page_path(self, media_data, chapter_data, dir_path, index, page_data):
-        return os.path.join(dir_path, Server.get_page_name_from_index(index) + "." + page_data["ext"])
+    def _get_page_path(self, dir_path, page_data):
+        return os.path.join(dir_path, Server.get_page_name_from_index(page_data["index"]) + "." + page_data["ext"])
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
         pass
@@ -253,10 +253,14 @@ class Server(GenericServer):
         assert list_of_pages
         logging.info("Downloading %d pages", len(list_of_pages))
 
-        job = Job(self.settings.threads, raiseException=True)
-        for index, page_data in enumerate(list_of_pages[:page_limit]):
+        for i, page_data in enumerate(list_of_pages[:page_limit]):
             page_data["media_data"] = media_data
-            full_path = self._get_page_path(media_data, chapter_data, dir_path, index, page_data)
+            page_data["index"] = i
+
+        # download pages
+        job = Job(self.settings.threads, raiseException=True)
+        for page_data in list_of_pages[:page_limit]:
+            full_path = self._get_page_path(dir_path, page_data)
             job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
         job.run()
 
