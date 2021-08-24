@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from functools import cache
+from threading import Lock
 
 from requests.exceptions import HTTPError
 
@@ -35,6 +36,7 @@ class GenericServer:
     # If set, updating will cause chapters that are now longer available on the server to be removed
     sync_removed = False
     official = True
+    syncrhonize_chapter_downloads = False
 
     def get_media_list(self):  # pragma: no cover
         """
@@ -134,6 +136,7 @@ class Server(GenericServer):
     def __init__(self, session, settings=None):
         self.settings = settings
         self.session = session
+        self._lock = Lock()
 
     @property
     def is_logged_in(self):
@@ -244,7 +247,15 @@ class Server(GenericServer):
         if self.is_fully_downloaded(media_data, chapter_data):
             logging.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
+        try:
+            if self.syncrhonize_chapter_downloads:
+                self._lock.acquire()
+            return self._download_chapter(media_data, chapter_data, page_limit)
+        finally:
+            if self.syncrhonize_chapter_downloads:
+                self._lock.release()
 
+    def _download_chapter(self, media_data, chapter_data, page_limit=None):
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         dir_path = self._get_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
