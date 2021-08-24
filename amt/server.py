@@ -269,7 +269,7 @@ class Server(GenericServer):
             page_data["index"] = i
 
         # download pages
-        job = Job(self.settings.threads, raiseException=True)
+        job = Job(self.settings.get_num_threads(media_data), raiseException=True)
         for page_data in list_of_pages[:page_limit]:
             full_path = self._get_page_path(dir_path, page_data)
             job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))

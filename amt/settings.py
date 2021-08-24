@@ -59,13 +59,13 @@ class Settings:
     no_save_session = False
     shell = True
     suppress_cmd_output = False
-    threads = 8  # per server thread count
 
     # Server or media specific settings
     specific_settings = {}
     force_odd_pages = True
     auto_replace = True
     text_languages = ("en", "en-US", "English")
+    threads = 8  # per server thread count
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config", APP_NAME))
@@ -132,6 +132,9 @@ class Settings:
 
     def is_allowed_text_lang(self, lang, media_data):
         return lang in self.get_field("text_languages", media_data)
+
+    def get_num_threads(self, media_data=None):
+        return self.get_field("threads", media_data)
 
     def get_cookie_files(self):
         yield self.get_cookie_file()
