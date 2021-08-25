@@ -635,6 +635,9 @@ class MediaReaderTest(BaseUnitTestClass):
     def test_stream_anime_bad_url(self):
         assert not self.media_reader.stream("bad_url")
 
+    def test_stream_anime_cont(self):
+        self.assertTrue(self.media_reader.stream(TestAnimeServer.stream_url, cont=True) > 1)
+
     def test_play_anime(self):
         self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
         assert self.media_reader.play(cont=True)

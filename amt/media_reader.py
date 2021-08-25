@@ -161,6 +161,9 @@ class MediaReader:
         return self.media.keys()
 
     def _get_media(self, media_type=ALL_MEDIA, name=None, shuffle=False):
+        if isinstance(name, dict):
+            yield name
+            return
         media = self.get_media()
         if shuffle:
             media = list(media)
@@ -332,7 +335,7 @@ class MediaReader:
                     if self.settings.open_anime_viewer(streamable_url, server.get_media_title(media_data, chapter), wd=dir_path):
                         chapter["read"] = True
                         if cont:
-                            return 1 + self.play(name=known[0].global_id, cont=cont)
+                            return 1 + self.play(name=media_data, cont=cont)
                 return 1
         logging.error("Could not find any matching server")
         return False
