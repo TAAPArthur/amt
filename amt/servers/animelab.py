@@ -77,7 +77,7 @@ class Animelab(Server):
                 self.update_media_data(media_data)
                 return media_data
 
-    def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
+    def get_stream_urls(self, media_data=None, chapter_data=None):
         r = self.session_get(self.video_url.format(media_data["id"], chapter_data["id"]))
         data = r.json()
         videos = []

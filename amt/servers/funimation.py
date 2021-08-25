@@ -133,11 +133,8 @@ class Funimation(Server):
         chapter_id, media_id = self._get_episode_id(url)
         return chapter_id
 
-    def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
-        if url:
-            chapter_id, _ = self._get_episode_id(url)
-        else:
-            chapter_id = chapter_data["id"]
+    def get_stream_urls(self, media_data=None, chapter_data=None):
+        chapter_id = chapter_data["id"]
 
         r = self.session_get(self.sources_api_url.format(chapter_id))
 

@@ -86,7 +86,7 @@ class GenericServer:
     def get_stream_url(self, media_data, chapter_data, quality=0):
         return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[quality]
 
-    def get_stream_urls(self, media_data=None, chapter_data=None, url=None):
+    def get_stream_urls(self, media_data=None, chapter_data=None):
         return []
 
     ################ OPTIONAL #####################
