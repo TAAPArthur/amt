@@ -722,7 +722,7 @@ class ApplicationTestWithErrors(BaseUnitTestClass):
     def test_update_with_error(self):
         self.add_test_media(no_update=True)
         self.test_server.inject_error()
-        assert self.app.update()
+        self.assertRaises(Exception, self.app.update)
         assert self.test_server.was_error_thrown()
 
     def test_download_with_error(self):

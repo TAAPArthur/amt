@@ -370,10 +370,10 @@ class MediaReader:
                 return False
         return num
 
-    def update(self, name=None, media_type=None, download=False, media_type_to_download=MANGA, replace=False):
+    def update(self, name=None, media_type=None, download=False, media_type_to_download=MANGA, replace=False, ignore_errors=False):
         logging.info("Updating: download %s", download)
         def func(x): return self.update_media(x, download, media_type_to_download=media_type_to_download, replace=replace)
-        return self.for_each(func, self._get_media(media_type=media_type, name=name))
+        return self.for_each(func, self._get_media(media_type=media_type, name=name), raiseException=not ignore_errors)
 
     def update_media(self, media_data, download=False, media_type_to_download=MANGA, limit=None, page_limit=None, replace=False):
         """
