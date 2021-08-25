@@ -17,6 +17,8 @@ class WLN_Updates(Server):
     part_number_in_chapter_url_regex = re.compile(r"part-(\d+)")
     part_number_alt_in_chapter_url_regex = re.compile(r"-(\d)\d*$")
 
+    known_sources = {1781: ("Asian Hobbyist", lambda soup: ((e["value"], float(e.getText().split()[-1]), e.getText()) for e in soup.find("select", {"name": "chapter"}).findAll("option")))}
+
     def get_media_list(self):
         r = self.session_post("https://www.wlnupdates.com/api", json={"mode": "search-advanced", "series-type": {"Translated": "included"}})
         return [self.create_media_data(x["id"], x["title"]) for x in r.json()["data"]]
@@ -32,8 +34,7 @@ class WLN_Updates(Server):
         return media_data
 
     def session_post(self, url, **kwargs):
-        super().session_post(url, **kwargs)
-        r = self._request(False, url, **kwargs)
+        r = super().session_post(url, **kwargs)
         for i in range(self.settings.max_retires):
             if not r.json()["error"]:
                 break
@@ -41,38 +42,38 @@ class WLN_Updates(Server):
             r = super().session_post(url, **kwargs)
         return r
 
-    def guess_chapter_number(self, name):
-        match = self.chapter_number_in_chapter_url_regex.search(name)
-        if match:
-            part_match = self.part_number_in_chapter_url_regex.search(name) or self.part_number_alt_in_chapter_url_regex.search(name)
-            return int(match[1]) + (0 if not part_match or part_match[1] == "1" else float("." + part_match[1]))
-
-        match = self.number_in_chapter_url_regex.findall(name)
-        if match:
-            return float(match[-1].replace("-", "."))
-        return None
-
     def update_media_data(self, media_data):
         r = self.session_post("https://www.wlnupdates.com/api", json={"id": media_data["id"], 'mode': 'get-series-data'})
         visted_chapters = set()
         data = r.json()["data"]
         if not media_data.get("name", None):
             media_data["name"] = data["title"]
+        sources = {}
+        sample_url = {}
+
         for chapter in data["releases"]:
-            if chapter["srcurl"] and chapter["chapter"]:
+            translation_id = chapter["tlgroup"]["id"]
+            if translation_id in self.known_sources:
+                sources[translation_id] = sources.get(translation_id, 0) + 1
+                sample_url[translation_id] = chapter["srcurl"]
+
+        for source in sorted(sources.keys(), key=lambda x: sources[x], reverse=True):
+            soup = self.soupify(BeautifulSoup, self.session_get(sample_url[source]))
+            translation_group_name, func = self.known_sources[source]
+            for slug, number, title in func(soup):
+                if number not in visted_chapters:
+                    self.update_chapter_data(media_data, id=f"{number}-{source}", number=number, title=f"{translation_group_name} {title}", alt_id=slug)
+                    visted_chapters.add(number)
+
+        for chapter in data["releases"]:
+            if chapter["srcurl"] and chapter["chapter"] and chapter["tlgroup"]["id"] not in self.known_sources:
                 formatted_srcurl = chapter["srcurl"][:-1] if chapter["srcurl"][-1] == "/" else chapter["srcurl"]
                 title = formatted_srcurl.split("/")[-1]
-                number = self.guess_chapter_number(title) or float(chapter["chapter"])
-                if number > 1e6 or number / float(chapter["chapter"]) > 10:
-                    number = float(chapter["chapter"])
+                number = float(chapter["chapter"])
+                source = chapter["tlgroup"]["id"]
                 if number not in visted_chapters:
                     visted_chapters.add(number)
-                    self.update_chapter_data(media_data, id=title, number=number, alt_id=chapter["srcurl"], title=title)
-        if len(media_data["chapters"]) > 2:
-            sorted_list = sorted(map(lambda x: (x["number"], x["id"]), media_data["chapters"].values()))
-            while sorted_list[-1][0] - sorted_list[-2][0] > 10:
-                del media_data["chapters"][sorted_list[-1][1]]
-                sorted_list.pop()
+                    self.update_chapter_data(media_data, id=f"{number}-{source}", number=number, alt_id=chapter["srcurl"], title=title)
 
     def get_media_chapter_data(self, media_data, chapter_data):
         return [self.create_page_data(url=chapter_data["alt_id"])]

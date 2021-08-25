@@ -1536,21 +1536,6 @@ class RealArgsTest(RealBaseUnitTestClass):
 
 class ServerSpecificTest(RealBaseUnitTestClass):
 
-    def test_wlnupdates_chapter_guess(self):
-        from ..servers.wlnupdates import WLN_Updates
-        server = self.media_reader.get_server(WLN_Updates.id)
-        self.assertTrueOrSkipTest(server)
-
-        entires = [
-            ("tensei-shitara-slime-datta-ken-chapter-4.html", 4),
-            ("tensei-shitara-slime-datta-ken-light-novel-volume-1-chapter-2-part-5", 2.5),
-            ("tensei-shitara-slime-datta-ken-volume-1-chapter-2-battle-at-the-goblin-village-36", 2.3),
-            ("tensei-shitara-slime-datta-ken-volume-1-chapter-1-the-first-friend-part-4", 1.4),
-            ("slime-418", 418.0)]
-        for name, chapter in entires:
-            with self.subTest(name=name):
-                self.assertEqual(chapter, server.guess_chapter_number(name))
-
     def test_wlnupdates_complex_entry(self):
         from ..servers.wlnupdates import WLN_Updates
         server = self.media_reader.get_server(WLN_Updates.id)
@@ -1559,6 +1544,9 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         self.app.add_from_url(url)
         media_data = list(self.app.get_media())[0]
         self.verify_unique_numbers(media_data["chapters"])
+        for i in range(2):
+            self.app.update()
+            self.verify_unique_numbers(media_data["chapters"])
 
     def test_crunchyroll_session(self):
         from ..servers.crunchyroll import Crunchyroll
