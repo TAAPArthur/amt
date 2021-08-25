@@ -1222,8 +1222,11 @@ class ArgsTest(MinimalUnitTestClass):
         server = self.app.get_server(TestAnimeServer.id)
         media_data = server.get_media_data_from_url(TestAnimeServer.stream_url)
         chapter_data = media_data["chapters"][server.get_chapter_id_for_url(TestAnimeServer.stream_url)]
-
         self.verify_download(media_data, chapter_data)
+
+    def test_download_stream(self):
+        parse_args(app=self.media_reader, args=["stream", "--download", TestAnimeServer.stream_url])
+        parse_args(app=self.media_reader, args=["stream", TestAnimeServer.stream_url])
 
     def test_add_from_url_stream_cont(self):
         parse_args(app=self.media_reader, args=["add-from-url", TestAnimeServer.stream_url])
