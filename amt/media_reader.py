@@ -155,17 +155,14 @@ class MediaReader:
     def get_server(self, id):
         return self._servers.get(id, None)
 
-    def get_media(self):
-        return self.media.values()
-
     def get_media_ids(self):
         return self.media.keys()
 
-    def _get_media(self, media_type=ALL_MEDIA, name=None, shuffle=False):
+    def get_media(self, media_type=ALL_MEDIA, name=None, shuffle=False):
         if isinstance(name, dict):
             yield name
             return
-        media = self.get_media()
+        media = self.media.values()
         if shuffle:
             media = list(media)
             random.shuffle(media)
@@ -179,11 +176,11 @@ class MediaReader:
     def _get_single_media(self, media_type=None, name=None):
         if isinstance(name, dict):
             return name
-        return next(self._get_media(media_type=media_type, name=name))
+        return next(self.get_media(media_type=media_type, name=name))
 
-    def _get_unreads(self, media_type, name=None, shuffle=False, limit=None, any_unread=False):
+    def get_unreads(self, media_type, name=None, shuffle=False, limit=None, any_unread=False):
         count = 0
-        for media_data in self._get_media(media_type, name, shuffle):
+        for media_data in self.get_media(media_type, name, shuffle):
             server = self.get_server(media_data["server_id"])
 
             lastRead = self.get_last_read(media_data)
@@ -222,11 +219,11 @@ class MediaReader:
         return max(filter(lambda x: x["read"], media_data["chapters"].values()), key=lambda x: x["number"], default={"number": 0})["number"]
 
     def offset(self, name, offset):
-        for media_data in self._get_media(name=name):
+        for media_data in self.get_media(name=name):
             media_data["offset"] = offset
 
     def mark_read(self, name=None, media_type=None, N=0, force=False, abs=False):
-        for media_data in self._get_media(media_type=media_type, name=name):
+        for media_data in self.get_media(media_type=media_type, name=name):
             last_read = self.get_last_chapter_number(media_data) + N if not abs else N
             if not force:
                 last_read = max(self.get_last_read(media_data), last_read)
@@ -234,7 +231,7 @@ class MediaReader:
 
     def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False):
         """Downloads all chapters that are not read"""
-        return sum(self.for_each(self._download_selected_chapters, self._get_unreads(media_type, name=name, limit=limit), raiseException=not ignore_errors))
+        return sum(self.for_each(self._download_selected_chapters, self.get_unreads(media_type, name=name, limit=limit), raiseException=not ignore_errors))
 
     def _get_sorted_chapters(self, media_data):
         return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
@@ -270,7 +267,7 @@ class MediaReader:
         return server.download_chapter(media_data, chapter)
 
     def view_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False, num_list=None, force_abs=False):
-        chapter_info_list = list((self.get_chapters(NOT_ANIME, name, num_list, force_abs=force_abs) if num_list else self._get_unreads(NOT_ANIME, name=name, limit=limit, shuffle=shuffle)))
+        chapter_info_list = list((self.get_chapters(NOT_ANIME, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(NOT_ANIME, name=name, limit=limit, shuffle=shuffle)))
         self.for_each(self._download_selected_chapters, chapter_info_list, raiseException=not ignore_errors)
         for server, media_data, chapter in chapter_info_list:
             if server.is_fully_downloaded(media_data, chapter):
@@ -285,9 +282,9 @@ class MediaReader:
         paths = []
         bundle_data = []
 
-        self.for_each(self._download_selected_chapters, self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit), raiseException=not ignore_errors)
+        self.for_each(self._download_selected_chapters, self.get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit), raiseException=not ignore_errors)
 
-        for server, media_data, chapter in self._get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit):
+        for server, media_data, chapter in self.get_unreads(MANGA, name=name, shuffle=shuffle, limit=limit):
             if server.is_fully_downloaded(media_data, chapter):
                 paths.append(server.get_children(media_data, chapter))
                 bundle_data.append(dict(media_id=media_data.global_id, chapter_id=chapter["id"]))
@@ -342,7 +339,7 @@ class MediaReader:
         return False
 
     def get_stream_url(self, name=None, shuffle=False):
-        for server, media_data, chapter in self._get_unreads(ANIME, name=name, shuffle=shuffle):
+        for server, media_data, chapter in self.get_unreads(ANIME, name=name, shuffle=shuffle):
             for url in server.get_stream_urls(media_data, chapter):
                 print(url)
 
@@ -358,7 +355,7 @@ class MediaReader:
     def play(self, name=None, shuffle=False, cont=False, num_list=None, quality=0, any_unread=False, force_abs=False):
 
         num = 0
-        for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list, force_abs=force_abs) if num_list else self._get_unreads(ANIME, name=name, shuffle=shuffle, any_unread=any_unread)):
+        for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(ANIME, name=name, shuffle=shuffle, any_unread=any_unread)):
             dir_path = server._get_dir(media_data, chapter)
             if not server.is_fully_downloaded(media_data, chapter):
                 server.pre_download(media_data, chapter, dir_path=dir_path)
@@ -377,7 +374,7 @@ class MediaReader:
     def update(self, name=None, media_type=None, download=False, media_type_to_download=MANGA, replace=False, ignore_errors=False):
         logging.info("Updating: download %s", download)
         def func(x): return self.update_media(x, download, media_type_to_download=media_type_to_download, replace=replace)
-        return self.for_each(func, self._get_media(media_type=media_type, name=name), raiseException=not ignore_errors)
+        return self.for_each(func, self.get_media(media_type=media_type, name=name), raiseException=not ignore_errors)
 
     def update_media(self, media_data, download=False, media_type_to_download=MANGA, limit=None, page_limit=None, replace=False):
         """

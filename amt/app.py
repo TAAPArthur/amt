@@ -108,7 +108,7 @@ class Application(MediaReader):
     def migrate(self, name, exact=False, move_self=False, force_same_id=False):
         media_list = []
         last_read_list = []
-        for media_data in list(self._get_media(name=name)):
+        for media_data in list(self.get_media(name=name)):
             self.remove_media(media_data)
             if move_self:
                 def func(x): return -sum([media_data.get(key, None) == x[key] for key in x])
@@ -125,7 +125,7 @@ class Application(MediaReader):
 
     def share_tracker(self, name=None, media_type=None, exact=True):
         tracker = self.get_primary_tracker()
-        for media_data in self._get_media(name=name, media_type=media_type):
+        for media_data in self.get_media(name=name, media_type=media_type):
             if self.has_tracker_info(media_data, tracker.id):
                 tracking_id, tracker_title = self.get_tracker_info(media_data, tracker.id)
                 other_media = self._search_for_tracked_media(tracker_title, media_type, local_only=True)
@@ -142,7 +142,7 @@ class Application(MediaReader):
             self.track(dst_media_data, self.get_primary_tracker().id, tracking_id, tracker_title)
 
     def remove_tracker(self, name, media_type=None):
-        for media_data in self._get_media(name=name, media_type=media_type):
+        for media_data in self.get_media(name=name, media_type=media_type):
             self.untrack(media_data)
 
     def load_from_tracker(self, user_id=None, user_name=None, media_type_filter=None, exact=True, local_only=False, update_progress_only=False, force=False):
@@ -257,7 +257,7 @@ class Application(MediaReader):
                 names.add(media_name)
 
         if not no_update:
-            [self.update_media(media_data) for media_data in self._get_media(name=local_server_id)]
+            [self.update_media(media_data) for media_data in self.get_media(name=local_server_id)]
 
     def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, remove_not_on_disk=False, bundles=False):
         if remove_not_on_disk:
