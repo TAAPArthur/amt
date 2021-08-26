@@ -393,7 +393,12 @@ class MediaReader:
             chapters = dict(media_data["chapters"])
             media_data["chapters"].clear()
 
-        server.update_media_data(media_data)
+        try:
+            server.update_media_data(media_data)
+        except:
+            if replace:
+                media_data["chapters"] = chapters
+            raise
 
         current_chapter_ids = get_chapter_ids(media_data["chapters"])
         new_chapter_ids = current_chapter_ids - chapter_ids

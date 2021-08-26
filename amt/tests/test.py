@@ -524,6 +524,13 @@ class MediaReaderTest(BaseUnitTestClass):
                 new_chapters2 = self.media_reader.update_media(media_data)
                 assert new_chapters == new_chapters2
 
+    def test_update_replace_error(self):
+        self.add_test_media(server=self.test_server, limit=1)
+        self.media_reader.mark_read()
+        self.test_server.inject_error()
+        self.media_reader.update(replace=True, ignore_errors=True)
+        self.assertAllChaptersRead()
+
     def test_update_hidden_media(self):
         media_list = self.add_test_media(server=self.test_server)
         self.test_server.hide = True
@@ -990,8 +997,9 @@ class ArgsTest(MinimalUnitTestClass):
     def test_update_replace(self):
         fake_chapter_id = "fakeId"
         media_list = self.add_test_media()
-        self.app.mark_read()
         original_len = len(media_list[0]["chapters"])
+        media_list[0]["chapters"][fake_chapter_id] = dict(list(media_list[0]["chapters"].values())[0])
+        self.app.mark_read()
         parse_args(app=self.media_reader, args=["update", "--replace"])
         assert fake_chapter_id not in media_list[0]["chapters"]
         assert original_len == len(media_list[0]["chapters"])
