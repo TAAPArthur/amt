@@ -444,6 +444,13 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                     self.assertEqual(True, server.download_chapter(media_data, chapter_data, page_limit=2))
                     self.verify_download(media_data, chapter_data)
 
+    def test_server_download_errors(self):
+        media_data = self.add_test_media(server=self.test_server, limit=1)[0]
+        self.test_server.inject_error(delay=1)
+        self.assertRaises(Exception, self.app.download_unread_chapters, media_data)
+        self.app.download_unread_chapters(media_data)
+        self.verify_all_chapters_downloaded()
+
     def test_search_media(self):
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id):
@@ -452,30 +459,26 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 assert media_data == list(server.search(name))[0]
                 assert server.search(name[:3])
 
-    def download_matching_chapters(self, server, func):
-        for media in server.get_media_list():
-            server.update_media_data(media)
-            chapters = list(filter(func, media["chapters"].values()))
-            if chapters:
-                server.download_chapter(media_data=media, chapter_data=chapters[0])
-
-    def test_bad_login(self):
+    def login_test_helper(self):
         server = self.media_reader.get_server(TestServerLogin.id)
-        server.fail_login = True
-        self.assertRaises(ValueError, self.download_matching_chapters, server, lambda x: x["premium"])
-        self.assertEqual(1, server.counter)
+        self.add_test_media(server=server)
+        self.assertRaises(ValueError, self.app.download_unread_chapters)
+
+    def test_login_non_premium_account(self):
+        self.media_reader.get_server(TestServerLogin.id).premium_account = False
+        self.login_test_helper()
+
+    def test_login_no_credentials(self):
+        self.settings.password_manager_enabled = False
+        self.login_test_helper()
 
     def test_error_on_login(self):
-        server = self.media_reader.get_server(TestServerLogin.id)
-        server.error_login = True
-        self.assertRaises(ValueError, self.download_matching_chapters, server, lambda x: x["premium"])
-        self.assertEqual(1, server.counter)
+        self.media_reader.get_server(TestServerLogin.id).error_login = True
+        self.login_test_helper()
 
     def test_server_download_inaccessiable(self):
-        server = self.media_reader.get_server(TestServerLogin.id)
-        server.inaccessible = True
-        self.assertRaises(ValueError, self.download_matching_chapters, server, lambda x: x["inaccessible"])
-        self.assertEqual(0, server.counter)
+        self.media_reader.get_server(TestServerLogin.id).inaccessible = True
+        self.login_test_helper()
 
 
 class MediaReaderTest(BaseUnitTestClass):
@@ -600,18 +603,13 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def test_update(self):
         self.media_reader.settings.free_only = False
-        for server in self.media_reader.get_servers():
-            with self.subTest(server=server.id):
-                media_list = server.get_media_list()
-                media_data = media_list[0]
-                assert not self.media_reader.update()
-                new_chapters = self.media_reader.add_media(media_data)
-                assert new_chapters
-                assert not self.media_reader.update()
-
-                media_data["chapters"].clear()
-                new_chapters2 = self.media_reader.update_media(media_data)
-                assert new_chapters == new_chapters2
+        media_data = self.add_test_media(server=self.test_server, limit=1, no_update=True)[0]
+        num_new_chapters = self.media_reader.update_media(media_data)
+        self.assertTrue(num_new_chapters)
+        self.assertFalse(self.media_reader.update_media(media_data))
+        media_data["chapters"].clear()
+        num_new_chapters2 = self.media_reader.update_media(media_data)
+        self.assertEqual(num_new_chapters, num_new_chapters2)
 
     def test_update_replace_error(self):
         self.add_test_media(server=self.test_server, limit=1)
@@ -681,14 +679,13 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def _prepare_for_bundle(self, id=TestServer.id, no_download=False):
         server = self.media_reader.get_server(id)
-        media_list = server.get_media_list()
+        media_list = self.add_test_media(server=server, limit=2)
         num_chapters = 0
         for media_data in media_list:
-            self.media_reader.add_media(media_data)
             num_chapters += len(media_data["chapters"])
 
         if not no_download:
-            self.assertEqual(num_chapters, self.media_reader.download_unread_chapters())
+            self.assertEqual(num_chapters, self.media_reader.download_unread_chapters(any_unread=True))
 
     def test_bundle(self):
         self._prepare_for_bundle()
@@ -730,9 +727,8 @@ class MediaReaderTest(BaseUnitTestClass):
         assert all([x["read"] for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()])
 
     def test_play_offset_anime(self):
-        self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
+        self.add_test_media(self.media_reader.get_server(TestAnimeServer.id))
         self.media_reader.offset(TestAnimeServer.id, 1)
-        self.media_reader.update()
         chapters = [x for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()]
         assert chapters
         assert [x["read"] for x in chapters if x["number"] <= 0]
@@ -886,20 +882,20 @@ class ArgsTest(MinimalUnitTestClass):
 
     def test_test_login(self):
         server = self.app.get_server(TestServerLogin.id)
-        assert server.needs_authentication()
+        self.assertTrue(server.needs_to_login())
 
         parse_args(app=self.media_reader, args=["login", "--server", server.id])
-        assert not server.needs_authentication()
+        self.assertFalse(server.needs_to_login())
         server.reset()
-        assert server.needs_authentication()
+        self.assertTrue(server.needs_to_login())
         parse_args(app=self.media_reader, args=["login"])
-        assert not server.needs_authentication()
+        self.assertFalse(server.needs_to_login())
 
     def test_test_login_fail(self):
         server = self.app.get_server(TestServerLogin.id)
-        server.fail_login = True
+        server.error_login = True
         parse_args(app=self.media_reader, args=["login", "--server", server.id])
-        assert server.needs_authentication()
+        assert server.needs_to_login()
 
     def test_autocomplete_not_found(self):
         with patch.dict(sys.modules, {"argcomplete": None}):
@@ -1096,9 +1092,9 @@ class ArgsTest(MinimalUnitTestClass):
 
     def test_update(self):
         media_list = self.add_test_media(no_update=True)
-        assert len(media_list[0]["chapters"]) == 0
+        self.assertEqual(len(media_list[0]["chapters"]), 0)
         parse_args(app=self.media_reader, args=["update"])
-        assert len(media_list[0]["chapters"])
+        self.assertTrue(media_list[0]["chapters"])
 
     def test_update_replace(self):
         fake_chapter_id = "fakeId"
@@ -1121,8 +1117,8 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(offset_list, sorted([chapter_data["number"] for chapter_data in chapters.values()]))
         self.verify_unique_numbers(media_data["chapters"])
 
-    def test_offset_upgrade(self):
-        media_data = self.add_test_media()[0]
+    def test_offset_update(self):
+        media_data = self.add_test_media(limit=1)[0]
         chapters = media_data["chapters"]
         list_of_numbers = sorted([chapter_data["number"] for chapter_data in chapters.values()])
         offset_list = list(map(lambda x: x - 1, list_of_numbers))
@@ -1240,7 +1236,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_bundle_download_error(self):
         server = self.media_reader.get_server(TestServerLogin.id)
         self.add_test_media(server)
-        server.fail_login = True
+        server.error_login = True
         self.assertRaises(ValueError, parse_args, app=self.media_reader, args=["bundle", TestServerLogin.id])
         assert not self.app.bundles
 
@@ -1286,10 +1282,10 @@ class ArgsTest(MinimalUnitTestClass):
             self.assertEquals(chapter["read"], chapter["number"] in [1, 3])
 
     def test_play_relative(self):
-        media_list = self.add_test_media(self.test_anime_server)
-        chapters = list(self.app._get_sorted_chapters(media_list[0]))
+        media_data = self.add_test_media(self.test_anime_server, limit=1)[0]
+        chapters = list(self.app._get_sorted_chapters(media_data))
         chapters[1]["read"] = True
-        parse_args(app=self.media_reader, args=["play", media_list[0]["name"], "-1"])
+        parse_args(app=self.media_reader, args=["play", media_data["name"], "-1"])
         assert chapters[0]["read"]
 
     def test_play_last_read(self):
@@ -1551,8 +1547,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
                         if chapter_id:
                             self.assertTrue(chapter_id in media_data["chapters"])
                             self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
-                            _, chapter_data = self.app.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
-                            self.assertEqual(str(chapter_data["id"]), str(chapter_id))
+                            self.assertEqual(str(server.get_chapter_id_for_url(url)), str(chapter_id))
                             self.assertTrue(chapter_id in media_data["chapters"])
                         assert self.app.add_from_url(url)
         self.for_each(func, self.streamable_urls)

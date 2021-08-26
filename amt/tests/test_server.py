@@ -12,7 +12,7 @@ TEST_BASE = "/tmp/amt/"
 
 class TestServer(Server):
     id = "test_server_manga"
-    extension = "jpeg"
+    extension = "png"
     _prefix = "Manga"
     error_to_inject = None
     time_to_error = 0
@@ -20,9 +20,13 @@ class TestServer(Server):
     domain = "test.com"
     hide = False
     inaccessible = False
+    error_delay = 0
 
     def maybe_inject_error(self):
         if self.error_to_inject:
+            if self.error_delay > 0:
+                self.error_delay -= 1
+                return
             self.error_count += 1
             try:
                 raise self.error_to_inject
@@ -31,9 +35,10 @@ class TestServer(Server):
                 if self.time_to_error == 0:
                     self.inject_error(None, 0)
 
-    def inject_error(self, error=Exception("Dummy error"), count=1):
+    def inject_error(self, error=Exception("Dummy error"), count=1, delay=0):
         self.error_to_inject = error
         self.time_to_error = count
+        self.error_delay = delay
 
     def was_error_thrown(self):
         return self.error_count
@@ -62,21 +67,21 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=9, title="Chapter10.5", number="10.5"),
             self.update_chapter_data(media_data, id=10, title="Chapter100", number="100"),
             self.update_chapter_data(media_data, id=11, title="Chapter1000", number="1000"),
-            self.update_chapter_data(media_data, id=12, title="Chapter9999", number="9999"),
+            self.update_chapter_data(media_data, id=12, title="Chapter9999", number="9999", premium=self.has_login),
         elif media_id == 3:
             self.update_chapter_data(media_data, id=21, title="Chapter1", number=1, date="2020-07-08"),
             self.update_chapter_data(media_data, id=22, title="Chapter2", number=1.5, date="2020-07-08"),
-            self.update_chapter_data(media_data, id=23, title="Chapter3", number=2, date="2020-07-08"),
-            self.update_chapter_data(media_data, id=24, title="Chapter4", number=3, date="2020-07-08"),
+            self.update_chapter_data(media_data, id=23, title="Chapter3", number=2, date="2020-07-08", premium=self.has_login),
+            self.update_chapter_data(media_data, id=24, title="Chapter4", number=3, date="2020-07-08", premium=self.has_login),
         elif media_id == 4:
             self.update_chapter_data(media_data, id=25, title="Chapter1", number=2, date="1998-08-10"),
-            self.update_chapter_data(media_data, id=26, title="Chapter2", number=1, date="1998-08-10"),
+            self.update_chapter_data(media_data, id=26, title="ChapterSpecial", number=None, date="1998-08-10"),
             self.update_chapter_data(media_data, id=27, title="Chapter0.5", number=0.5, date="1998-08-10", special=True),
             self.update_chapter_data(media_data, id=28, title="Chapter4", number=4, date="1998-08-10", inaccessible=self.inaccessible),
 
     def get_media_chapter_data(self, media_data, chapter_data):
         self.maybe_inject_error()
-        return [self.create_page_data(url="some_url") for k in range(int(media_data["id"]) + 3)]
+        return [self.create_page_data(url=f"https://some_url.com/{chapter_data['id']}.{self.extension}") for k in range(3)]
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()
@@ -88,15 +93,20 @@ class TestServer(Server):
 class TestServerLogin(TestServer):
     id = "test_server_login"
     counter = 0
-    fail_login = False
+    premium_account = True
     error_login = False
+
+    def needs_authentication(self):
+        if self.error_login:
+            raise HTTPError()
+        return super().needs_authentication()
 
     def login(self, username, password):
         self.counter += 1
         if self.error_login:
             raise HTTPError()
-        self.is_premium = not self.fail_login
-        return not self.fail_login
+        self.is_premium = self.premium_account
+        return True
 
     def reset(self):
         self.counter = 0

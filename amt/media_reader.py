@@ -232,9 +232,9 @@ class MediaReader:
                 last_read = max(self.get_last_read(media_data), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
-    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False):
+    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False, any_unread=False):
         """Downloads all chapters that are not read"""
-        return sum(self.for_each(self._download_selected_chapters, self.get_unreads(media_type, name=name, limit=limit), raiseException=not ignore_errors))
+        return sum(self.for_each(self._download_selected_chapters, self.get_unreads(media_type, name=name, any_unread=any_unread, limit=limit), raiseException=not ignore_errors))
 
     def _get_sorted_chapters(self, media_data):
         return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
@@ -295,25 +295,22 @@ class MediaReader:
             return True
         return False
 
-    def get_media_by_chapter_id(self, server_id, chapter_id, media_list=None):
-        if chapter_id:
-            for media in (media_list if media_list else self.get_media()):
-                if media["server_id"] == server_id:
-                    l = list(filter(lambda x: chapter_id in (x["id"], x["alt_id"]), media["chapters"].values()))
-                    if l:
-                        return media, l[0]
-        return None
+    def get_media_by_chapter_id(self, server_id, chapter_id):
+        for media in self.get_media():
+            if media["server_id"] == server_id:
+                if chapter_id in media["chapters"]:
+                    return media, media["chapters"][chapter_id]
+        return None, None
 
     def stream(self, url, cont=False, download=False, quality=0):
         for server in self.get_servers():
             if server.can_stream_url(url):
-                known = self.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url))
-                if not known:
+                chapter_id = server.get_chapter_id_for_url(url)
+                media_data, chapter = self.get_media_by_chapter_id(server.id, chapter_id)
+                if not chapter:
                     media_data = server.get_media_data_from_url(url)
-                    known = self.get_media_by_chapter_id(server.id, server.get_chapter_id_for_url(url), [media_data])
-                media_data, chapter = known
+                    chapter = media_data["chapters"][chapter_id]
                 dir_path = server._get_dir(media_data, chapter)
-
                 if download:
                     server.download_chapter(media_data, chapter)
                 else:
