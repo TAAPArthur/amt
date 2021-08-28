@@ -50,7 +50,7 @@ class GenericJNovelClub(Server):
         return [self.create_media_data(media_data["slug"], media_data["title"]) for media_data in data]
 
     def download_sources(self, resources_path, path, url, text):
-        img_path = os.path.join(resources_path, os.path.basename(url))
+        img_path = os.path.join(resources_path, os.path.basename(url).replace("%20", "_"))
         with open(img_path, 'wb') as fp:
             fp.write(self.session_get(url).content)
         text = text.replace(url, os.path.relpath(img_path, os.path.dirname(path)))
@@ -69,6 +69,7 @@ class GenericJNovelClub(Server):
                     text = self.download_sources(resources_path, path, element[linkField], text)
         except ImportError:
             pass
+
         text = self.settings.auto_replace_if_enabled(text, media_data=page_data["media_data"])
         with open(path, 'w') as fp:
             fp.write(text)
