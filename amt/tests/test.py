@@ -96,11 +96,9 @@ class BaseUnitTestClass(unittest.TestCase):
             self.app.settings.threads = 0
 
         self.app.settings.suppress_cmd_output = True
-        self.app.settings.anime_viewer = "echo {media} {title}"
-        self.app.settings.manga_viewer = "[ -f {} ]"
-        self.app.settings.novel_viewer = "[ -f {} ]"
-        self.app.settings.segment_viewer = "ls {media}; echo {title}"
-        self.app.settings.page_viewer = "ls {}"
+        self.app.settings.viewer = "echo {media} {title}"
+        self.app.settings.specific_settings = {}
+        self.app.settings.bundle_viewer = "[ -f {media} ]"
         self.app.settings.bundle_cmds[self.app.settings.bundle_format] = "ls {files}; touch {name}"
 
     def setUp(self):
@@ -369,10 +367,10 @@ class SettingsTest(BaseUnitTestClass):
     def test_bundle(self):
         name = self.settings.bundle("")
         assert name.endswith("." + self.settings.bundle_format)
-        assert self.settings.open_manga_viewer(name)
-
-        self.settings.manga_viewer = "exit 1; #{}"
-        assert not self.settings.open_manga_viewer(name)
+        self.assertTrue(os.path.exists(name))
+        assert self.settings.open_bundle_viewer(name)
+        self.settings.bundle_viewer = "exit 1"
+        assert not self.settings.open_bundle_viewer(name)
 
     def test_get_chapter_dir_degenerate_name(self):
         server = TestServer(None, self.settings)
@@ -712,7 +710,7 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def test_bundle_fail(self):
         self._prepare_for_bundle()
-        self.settings.manga_viewer = "exit 1; # {};"
+        self.settings.bundle_viewer = "exit 1"
         assert not self.media_reader.read_bundle("none.{}".format(self.settings.bundle_format))
         assert not any([x["read"] for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()])
 
@@ -726,7 +724,7 @@ class MediaReaderTest(BaseUnitTestClass):
         self.verify_all_chapters_read(MANGA)
 
     def test_view_chapters_fail(self):
-        self.settings.page_viewer = "exit 1; # {};"
+        self.settings.viewer = "exit 1"
         self._prepare_for_bundle(TestServer.id)
         assert not self.app.view_chapters()
 
@@ -1239,7 +1237,6 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(1, sum([chapter["read"] for chapter in media_data["chapters"].values()]))
 
     def test_bundle_read(self):
-        self.settings.manga_viewer = "[ -f {} ]"
         media_list = self.add_test_media(self.test_server)
 
         self.app.download_unread_chapters()
@@ -1253,7 +1250,6 @@ class ArgsTest(MinimalUnitTestClass):
         self.verify_all_chapters_read(MANGA)
 
     def test_bundle_read_simple(self):
-        self.settings.manga_viewer = "[ -f {} ]"
         self.add_test_media(self.test_server)
         parse_args(app=self.media_reader, args=["bundle"])
         parse_args(app=self.media_reader, args=["read"])
@@ -1297,7 +1293,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_play_fail(self):
         self.add_test_media(self.test_anime_server)
 
-        self.settings.anime_viewer = "exit 1; #" + self.settings.anime_viewer
+        self.settings.viewer = "exit 1"
         parse_args(app=self.media_reader, args=["play", "-c"])
         assert not self.get_num_chapters_read(ANIME)
 
@@ -1371,7 +1367,7 @@ class ArgsTest(MinimalUnitTestClass):
             ("ANIME", "Minami-ke", 2, "Minami-ke - S01E02.mkv"),
         ]
 
-        self.settings.anime_viewer = "[ -f {media} ] && echo {title}"
+        self.settings.viewer = "[ -f {media} ]"
         for media_type, name, number, file_name in samples:
             with self.subTest(file_name=file_name):
                 with open(file_name, "w") as f:

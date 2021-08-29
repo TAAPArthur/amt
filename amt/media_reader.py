@@ -11,7 +11,7 @@ from urllib3 import Retry
 
 from . import cookie_manager, servers, trackers
 from .job import Job
-from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, NOVEL, Server
+from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
 from .settings import Settings
 from .state import State
 from .tracker import Tracker
@@ -274,8 +274,9 @@ class MediaReader:
         self.for_each(self._download_selected_chapters, chapter_info_list, raiseException=not ignore_errors)
         for server, media_data, chapter in chapter_info_list:
             if server.is_fully_downloaded(media_data, chapter):
+                dir_path = server._get_dir(media_data, chapter)
                 path = server.get_children(media_data, chapter)
-                if media_data["media_type"] == MANGA and self.settings.open_page_viewer(path) or media_data["media_type"] == NOVEL and self.settings.open_novel_viewer(path):
+                if self.settings.open_viewer(path, media_data=media_data, chapter_data=chapter, wd=dir_path):
                     chapter["read"] = True
                 else:
                     return False
@@ -302,7 +303,7 @@ class MediaReader:
     def read_bundle(self, name):
 
         bundle_name = os.path.join(self.settings.bundle_dir, name) if name else max(self.state.bundles.keys())
-        if self.settings.open_manga_viewer(bundle_name):
+        if self.settings.open_bundle_viewer(bundle_name):
             self.state.mark_bundle_as_read(bundle_name)
             return True
         return False
@@ -333,7 +334,7 @@ class MediaReader:
                         server.pre_download(media_data, chapter, dir_path=dir_path)
                     streamable_url = server.get_stream_url(media_data, chapter, quality=quality)
                     logging.info("Streaming %s", streamable_url)
-                    if self.settings.open_anime_viewer(streamable_url, server.get_media_title(media_data, chapter), wd=dir_path):
+                    if self.settings.open_viewer(streamable_url, media_data=media_data, chapter_data=chapter, wd=dir_path):
                         chapter["read"] = True
                         if cont:
                             return 1 + self.play(name=media_data, cont=cont)
@@ -362,9 +363,9 @@ class MediaReader:
             dir_path = server._get_dir(media_data, chapter)
             if not server.is_fully_downloaded(media_data, chapter):
                 server.pre_download(media_data, chapter, dir_path=dir_path)
-            success = self.settings.open_anime_viewer(
+            success = self.settings.open_viewer(
                 server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter, quality=quality),
-                title=server.get_media_title(media_data, chapter), wd=dir_path)
+                media_data=media_data, chapter_data=chapter, wd=dir_path)
             if success:
                 num += 1
                 chapter["read"] = True

@@ -10,6 +10,8 @@ from shlex import quote
 from subprocess import DEVNULL, CalledProcessError
 from threading import Lock
 
+from .server import ANIME, MANGA, NOVEL
+
 APP_NAME = "amt"
 
 
@@ -34,13 +36,10 @@ class Settings:
         "pdf": "convert -density 100 -units PixelsPerInch {name} {files}"
     }
     bundle_format = "cbz"
+    bundle_viewer = "zathura {media}"
     converters = [
         ("ts", "mp4", "cat {input} > {output}", "rm {}"),
     ]
-    anime_viewer = "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media} "
-    novel_viewer = "zathura {}"
-    manga_viewer = "zathura {}"
-    page_viewer = "sxiv {}"
 
     # HTTP related; Generally used as args to requests
     bs4_parser = "html.parser"
@@ -60,12 +59,19 @@ class Settings:
     suppress_cmd_output = False
 
     # Server or media specific settings
-    specific_settings = {}
-    force_odd_pages = True
+    specific_settings = {
+        "viewer": {
+            NOVEL: "zathura {media}",
+            ANIME: "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media}",
+            MANGA: "sxiv {media}"
+        }
+    }
     auto_replace = True
+    chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
+    disable_ssl_verification = False
+    force_odd_pages = True
     text_languages = ("en", "en-US", "English")
     threads = 8  # per server thread count
-    disable_ssl_verification = False
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config", APP_NAME))
@@ -155,17 +161,17 @@ class Settings:
         if isinstance(value, str) and (isinstance(current_field, int) or isinstance(value, float)):
             value = type(current_field)(value)
         if server_or_media_id:
-            if not server_or_media_id in self.specific_settings:
-                self.specific_settings[server_or_media_id] = {}
-            self.specific_settings[server_or_media_id][name] = value
+            if not name in self.specific_settings:
+                self.specific_settings[name] = {}
+            self.specific_settings[name][server_or_media_id] = value
         else:
             setattr(self, name, value)
         return value
 
     def get_field(self, name, media_data=None):
-        for key in [media_data.global_id, media_data["name"], media_data["server_id"]] if isinstance(media_data, dict) else [media_data]:
-            if key and key in self.specific_settings and name in self.specific_settings[key]:
-                return self.specific_settings[key][name]
+        for key in [media_data.global_id, media_data["name"], media_data["server_id"], media_data["media_type"]] if isinstance(media_data, dict) else [media_data]:
+            if name in self.specific_settings and key in self.specific_settings[name]:
+                return self.specific_settings[name][key]
         return getattr(self, name)
 
     def save(self):
@@ -266,7 +272,7 @@ class Settings:
         self.run_cmd(cmd)
         return name
 
-    def _open_viewer(self, viewer, name, title=None, wd=None):
+    def _open_viewer(self, viewer, name, title, wd=None):
         try:
             assert isinstance(name, str)
             name = Settings._smart_quote(name)
@@ -277,17 +283,14 @@ class Settings:
         except CalledProcessError:
             return False
 
-    def open_manga_viewer(self, name):
-        return self._open_viewer(self.manga_viewer, name)
+    def open_viewer(self, files, media_data, chapter_data, wd):
+        viewer = self.get_field("viewer", media_data)
+        title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
+        return self._open_viewer(viewer, files, title=title, wd=wd)
 
-    def open_anime_viewer(self, name, title, wd=None):
-        return self._open_viewer(self.anime_viewer, name, title=title, wd=wd)
-
-    def open_page_viewer(self, images):
-        return self._open_viewer(self.page_viewer, images)
-
-    def open_novel_viewer(self, file):
-        return self._open_viewer(self.novel_viewer, file)
+    def open_bundle_viewer(self, bunldle_path, media_data=None):
+        title = os.path.basename(bunldle_path)
+        return self._open_viewer(self.bundle_viewer, bunldle_path, title=title)
 
     def convert(self, extension, files, destWithoutExt):
         for ext, targetExt, cmd, cleanupCmd in self.converters:
