@@ -63,6 +63,7 @@ class MediaReader:
             if cls.id:
                 instance = cls(self.session, self.settings)
                 if not self.settings.allow_only_official_servers or instance.official:
+                    assert instance.id not in self._servers, "Duplicate server id"
                     self._servers[instance.id] = instance
         for cls in tracker_list:
             if cls.id:
