@@ -73,15 +73,17 @@ class Settings:
     text_languages = ("en", "en-US", "English")
     threads = 8  # per server thread count
 
-    def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
+    def __init__(self, home=Path.home(), no_save_session=False, no_load=False, skip_env_override=False):
+        self.home = home
         self.config_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config", APP_NAME))
         self.cache_dir = os.getenv("XDG_CACHE_HOME", os.path.join(home, ".cache", APP_NAME))
         self.data_dir = os.getenv("XDG_DATA_HOME", os.path.join(home, ".local/share", APP_NAME))
         self.bundle_dir = os.path.join(self.data_dir, "Bundles")
         self.media_dir = os.path.join(self.data_dir, "Media")
         self.no_save_session = no_save_session
+        self._dirty_list = set()
         if not no_load:
-            self.load()
+            self.load(skip_env_override=skip_env_override)
         os.makedirs(self.config_dir, exist_ok=True)
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
@@ -164,8 +166,10 @@ class Settings:
             if not name in self.specific_settings:
                 self.specific_settings[name] = {}
             self.specific_settings[name][server_or_media_id] = value
+            self._dirty_list.add("specific_settings")
         else:
             setattr(self, name, value)
+            self._dirty_list.add(name)
         return value
 
     def get_field(self, name, media_data=None):
@@ -174,15 +178,21 @@ class Settings:
                 return self.specific_settings[name][key]
         return getattr(self, name)
 
-    def save(self):
+    def save(self, save_all=False):
         with open(self.get_settings_file(), "w") as f:
             settings_to_save = {}
             members = Settings.get_members()
             for attr in members:
-                settings_to_save[attr] = self.get_field(attr)
+                if save_all or attr in self._dirty_list:
+                    settings_to_save[attr] = self.get_field(attr)
             json.dump(settings_to_save, f, indent=4)
+        self._dirty_list.clear()
 
-    def load(self):
+    def reset(self):
+        for attr in Settings.get_members():
+            self.set_field(attr, getattr(Settings, attr))
+
+    def load(self, skip_env_override=False):
         try:
             with open(self.get_settings_file(), "r") as f:
                 saved_settings = json.load(f)
@@ -191,7 +201,7 @@ class Settings:
                         self.set_field(attr, saved_settings[attr])
         except FileNotFoundError:
             pass
-        if self.allow_env_override:
+        if not skip_env_override and self.allow_env_override:
             for attr in Settings.get_members():
                 env_var = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
                 if env_var is not None:

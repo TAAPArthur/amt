@@ -17,6 +17,14 @@ def gen_auto_complete(parser):
         pass
 
 
+def get_set_setting(app_settings, field_name, save_env=False, value=None, target=None, save_all=False):
+    settings = Settings(home=app_settings.home, skip_env_override=not save_env)
+    if value:
+        settings.set_field(field_name, value, server_or_media_id=target)
+        settings.save(save_all=save_all)
+    print("{} = {}".format(field_name, settings.get_field(field_name, target)))
+
+
 def parse_args(args=None, app=None, already_upgraded=False):
     SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "update", "type", "func"}
 
@@ -217,8 +225,11 @@ def parse_args(args=None, app=None, already_upgraded=False):
     # settings
     settings_parsers = sub_parsers.add_parser("setting")
     settings_parsers.add_argument("--target", default=None, choices=app.get_all_names(), nargs="?", help="Get/set for specific settings")
-    settings_parsers.add_argument("setting", choices=Settings.get_members())
+    settings_parsers.add_argument("field_name", choices=Settings.get_members())
     settings_parsers.add_argument("value", default=None, nargs="?")
+    settings_parsers.add_argument("--save-env", action="store_const", const=True, default=False)
+    settings_parsers.add_argument("--save-all", action="store_const", const=True, default=False)
+    settings_parsers.set_defaults(func=get_set_setting, app_settings=app.settings)
 
     get_file_parsers = sub_parsers.add_parser("get-file")
     get_file_parsers.add_argument("file", default=None, choices=["settings_file", "metadata", "cookie_file"])

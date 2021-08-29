@@ -321,9 +321,3 @@ class Application(MediaReader):
     def add_cookie(self, id, name, value, path):
         server = self.get_server(id)
         server.add_cookie(name, value, domain=server.domain, path=path)
-
-    def setting(self, setting, value=None, target=None):
-        if value:
-            self.settings.set_field(setting, value, server_or_media_id=target)
-            self.settings.save()
-        print("{} = {}".format(setting, self.settings.get_field(setting, target)))

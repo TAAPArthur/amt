@@ -307,7 +307,7 @@ class SettingsTest(BaseUnitTestClass):
 
     def test_settings_save_load(self):
         self.settings.password_save_cmd = "dummy_cmd"
-        self.settings.save()
+        self.settings.save(save_all=True)
 
         assert Settings(home=TEST_HOME).password_save_cmd == "dummy_cmd"
 
@@ -486,7 +486,7 @@ class MediaReaderTest(BaseUnitTestClass):
             self.assertFalse(all(map(lambda x: self.app.get_server(x["server_id"]).official, self.app.get_media())))
             self.app.save()
             self.app.settings.allow_only_official_servers = True
-            self.app.settings.save()
+            self.app.settings.save(save_all=True)
             self.reload()
             self.assertTrue(self.app.settings.allow_only_official_servers)
             self.assertTrue(self.app.get_media_ids())
@@ -932,17 +932,24 @@ class ArgsTest(MinimalUnitTestClass):
                       ("password_manager_enabled", "true", True),
                       ("password_manager_enabled", "false", False)]
 
-        self.app.settings.save()
+        self.settings.password_load_cmd = "tmp_value"
+        os.environ["AMT_PASSWORD_LOAD_CMD"] = "tmp_env_value"
         for key_value in key_values:
             parse_args(app=self.media_reader, args=["setting", key_value[0], key_value[1]])
-            self.assertEqual(self.settings.get_field(key_value[0]), key_value[-1])
             self.app.settings.load()
             self.assertEqual(self.settings.get_field(key_value[0]), key_value[-1])
+        del os.environ["AMT_PASSWORD_LOAD_CMD"]
+        self.app.settings.reset()
+        self.app.settings.load()
+        self.assertEqual(Settings.password_load_cmd, self.settings.password_load_cmd)
+        for i in range(1, len(key_values), 2):
+            self.assertEqual(self.settings.get_field(key_values[i][0]), key_values[i][-1])
 
     def test_set_settings_server_specific(self):
         self.settings.force_odd_pages = 0
         key, value = "force_odd_pages", 1
         parse_args(app=self.media_reader, args=["setting", "--target", TestServer.id, key, str(value)])
+        self.settings.load()
         self.assertEqual(self.settings.get_field(key, TestServer.id), value)
         self.assertEqual(self.settings.get_field(key), 0)
 
