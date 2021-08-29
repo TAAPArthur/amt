@@ -149,7 +149,7 @@ class Server(GenericServer):
     def _request(self, get, url, **kwargs):
         logging.info("Making request to %s", url)
         logging.debug("Request args: %s ", kwargs)
-        kwargs["verify"] = self.settings.isVerifyingSSL()
+        kwargs["verify"] = not self.settings.skip_ssl_verification(self.id)
         r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
         if r.status_code != 200:
             logging.warning("HTTP Error: %d", r.status_code)

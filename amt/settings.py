@@ -43,7 +43,6 @@ class Settings:
     page_viewer = "sxiv {}"
 
     # HTTP related; Generally used as args to requests
-    _verify = True
     bs4_parser = "html.parser"
     max_retires = 3
     status_to_retry = [429, 500, 502, 503, 504]
@@ -66,6 +65,7 @@ class Settings:
     auto_replace = True
     text_languages = ("en", "en-US", "English")
     threads = 8  # per server thread count
+    disable_ssl_verification = False
 
     def __init__(self, home=Path.home(), no_save_session=None, no_load=False):
         self.config_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config", APP_NAME))
@@ -135,6 +135,9 @@ class Settings:
 
     def get_num_threads(self, media_data=None):
         return self.get_field("threads", media_data)
+
+    def skip_ssl_verification(self, server_id=None):
+        return self.get_field("disable_ssl_verification", server_id)
 
     def get_cookie_files(self):
         yield self.get_cookie_file()
@@ -247,9 +250,6 @@ class Settings:
 
     def store_secret(self, server_id, secret):
         self.store_credentials(server_id, secret, "token")
-
-    def isVerifyingSSL(self):
-        return self._verify
 
     def run_cmd(self, cmd, wd=None):
         subprocess.check_call(cmd, stdout=DEVNULL if self.suppress_cmd_output else None, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
