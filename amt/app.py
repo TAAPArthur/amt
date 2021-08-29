@@ -7,7 +7,7 @@ from . import stats
 from .media_reader import MediaReader
 from .server import ANIME, MANGA, NOVEL
 from .servers.custom import get_local_server_id
-from .stats import SortIndex, StatGroup
+from .stats import Details, SortIndex, StatGroup
 
 TYPE_NAMES = {MANGA: "Manga", NOVEL: "Novel", ANIME: "Anime"}
 
@@ -145,7 +145,7 @@ class Application(MediaReader):
         for media_data in self.get_media(name=name, media_type=media_type):
             self.untrack(media_data)
 
-    def load_from_tracker(self, user_id=None, user_name=None, media_type_filter=None, exact=True, local_only=False, update_progress_only=False, force=False):
+    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=True, local_only=False, update_progress_only=False, force=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         count = 0
@@ -153,15 +153,14 @@ class Application(MediaReader):
 
         unknown_media = []
         for entry in data:
-            media_type = entry["media_type"]
-            if media_type_filter and not media_type & media_type_filter:
+            if media_type and not entry["media_type"] & media_type:
                 logging.debug("Skipping %s", entry)
                 continue
             media_data_list = self.get_tracked_media(tracker.id, entry["id"])
             if not media_data_list:
                 if update_progress_only:
                     continue
-                media_data = self._search_for_tracked_media(entry["name"], media_type, exact=exact, local_only=local_only)
+                media_data = self._search_for_tracked_media(entry["name"], entry["media_type"], exact=exact, local_only=local_only)
                 if media_data:
                     self.track(media_data, tracker.id, entry["id"], entry["name"])
                     assert self.get_tracked_media(tracker.id, entry["id"])
@@ -291,7 +290,7 @@ class Application(MediaReader):
                 logging.info("Removing %s because it is not enabled", server_path)
                 shutil.rmtree(server_path)
 
-    def stats(self, username=None, user_id=None, media_type=None, refresh=False, statGroup=StatGroup.NAME, sortIndex=SortIndex.NAME, reverse=False, min_count=0, min_score=1, details=False, detailsType="name"):
+    def stats(self, username=None, user_id=None, media_type=None, refresh=False, stat_group=StatGroup.NAME, sort_index=SortIndex.NAME, reverse=False, min_count=0, min_score=1, details=False, details_type=Details.NAME):
         statsFile = self.settings.get_stats_file()
         data = None
         saved_data = self.state.read_file_as_dict(statsFile) if os.path.exists(statsFile) else {}
@@ -305,8 +304,23 @@ class Application(MediaReader):
         assert data
         if media_type:
             data = list(filter(lambda x: x["media_type"] == media_type, data))
-        groupedData = stats.group_entries(data, min_score=min_score)[statGroup.value]
-        sortedData = stats.compute_stats(groupedData, sortIndex.value, reverse=reverse, min_count=min_count, details=details, detailsType=detailsType)
-        print("IDX", stats.get_header_str(statGroup, details, detailsType=detailsType))
+        groupedData = stats.group_entries(data, min_score=min_score)[stat_group.value]
+        sortedData = stats.compute_stats(groupedData, sort_index.value, reverse=reverse, min_count=min_count, details=details, details_type=details_type)
+        print("IDX", stats.get_header_str(stat_group, details, details_type=details_type))
         for i, entry in enumerate(sortedData):
             print(f"{i+1:3} {stats.get_entry_str(entry, details)}")
+
+    def auth(self):
+        tracker = self.get_primary_tracker()
+        secret = tracker.auth()
+        self.settings.store_secret(tracker.id, secret)
+
+    def add_cookie(self, id, name, value, path):
+        server = self.get_server(id)
+        server.add_cookie(name, value, domain=server.domain, path=path)
+
+    def setting(self, setting, value=None, target=None):
+        if value:
+            self.settings.set_field(setting, value, server_or_media_id=target)
+            self.settings.save()
+        print("{} = {}".format(setting, self.settings.get_field(setting, target)))

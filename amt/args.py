@@ -18,6 +18,7 @@ def gen_auto_complete(parser):
 
 
 def parse_args(args=None, app=None, already_upgraded=False):
+    SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "update", "type", "func"}
 
     app = app if app else Application()
     parser = argparse.ArgumentParser()
@@ -39,20 +40,22 @@ def parse_args(args=None, app=None, already_upgraded=False):
     # add remove
     search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
     search_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
-    search_parsers.add_argument("--server", choices=app.get_servers_ids())
+    search_parsers.add_argument("--server", choices=app.get_servers_ids(), dest="server_id")
     search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     search_parsers.add_argument("term", help="The string to search by")
+    search_parsers.set_defaults(func=app.search_add)
 
     select_chapter_parsers = sub_parsers.add_parser("select", description="Search for and add media")
     select_chapter_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
 
-    select_chapter_parsers.add_argument("--server", choices=app.get_servers_ids())
+    select_chapter_parsers.add_argument("--server", choices=app.get_servers_ids(), dest="server_id")
     select_chapter_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     select_chapter_parsers.add_argument("--quality", "-q", default=0, type=int)
     select_chapter_parsers.add_argument("term", help="The string to search by")
+    select_chapter_parsers.set_defaults(func=app.select_chapter)
 
     migrate_parsers = sub_parsers.add_parser("migrate", description="Move media to another server")
-    migrate_parsers.add_argument("--self", action="store_const", const=True, default=False, help="Re-adds the media")
+    migrate_parsers.add_argument("--self", action="store_const", const=True, default=False, help="Re-adds the media", dest="move_self")
     migrate_parsers.add_argument("name", choices=app.get_all_names(), help="Global id of media to move")
 
     add_parsers = sub_parsers.add_parser("add-from-url", description="Add media by human viewable location")
@@ -60,6 +63,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
     remove_parsers = sub_parsers.add_parser("remove", description="Remove media")
     remove_parsers.add_argument("id", choices=app.get_all_single_names(), help="Global id of media to remove")
+    remove_parsers.set_defaults(func=app.remove_media)
 
     # update and download
     update_parser = sub_parsers.add_parser("update", description="Update all media")
@@ -72,29 +76,34 @@ def parse_args(args=None, app=None, already_upgraded=False):
     download_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
     download_parser.add_argument("--limit", type=int, default=0, help="How many chapters will be downloaded per series")
     download_parser.add_argument("name", choices=app.get_all_names(), default=None, nargs="?", help="Download only series determined by name")
+    download_parser.set_defaults(func=app.download_unread_chapters)
 
     download_specific_parser = sub_parsers.add_parser("download", help="Used to download specific chapters")
-    download_specific_parser.add_argument("id", choices=app.get_all_single_names())
+    download_specific_parser.add_argument("name", choices=app.get_all_single_names())
     download_specific_parser.add_argument("start", type=float, default=0, help="Starting chapter (inclusive)")
     download_specific_parser.add_argument("end", type=float, nargs="?", default=0, help="Ending chapter (inclusive)")
+    download_specific_parser.set_defaults(func=app.download_specific_chapters)
 
     # media consumption
     view_parser = sub_parsers.add_parser("view", help="View pages of chapters")
     view_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
     view_parser.add_argument("-l", "--limit", default=0, type=int)
     view_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
-    view_parser.add_argument("--abs", default=False, action="store_const", const=True)
+    view_parser.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
     view_parser.add_argument("name", choices=app.get_all_names(MANGA | NOVEL), default=None, nargs="?")
-    view_parser.add_argument("num", default=None, nargs="*", type=float)
+    view_parser.add_argument("num_list", default=None, nargs="*", type=float)
+    view_parser.set_defaults(func=app.view_chapters)
 
     bundle_parser = sub_parsers.add_parser("bundle", help="Bundle individual manga pages into a single file")
     bundle_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
     bundle_parser.add_argument("-l", "--limit", default=0, type=int)
     bundle_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
     bundle_parser.add_argument("name", choices=app.get_all_names(MANGA), default=None, nargs="?")
+    bundle_parser.set_defaults(func=app.bundle_unread_chapters)
 
     read_parser = sub_parsers.add_parser("read", help="Open a saved bundle for reading. If the command exits with status 0, then the container chapters will be marked read")
     read_parser.add_argument("name", default=None, nargs="?", choices=os.listdir(app.settings.bundle_dir), help="Name of the bundle")
+    read_parser.set_defaults(func=app.read_bundle)
 
     steam_parser = sub_parsers.add_parser("stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
     steam_parser.add_argument("--cont", default=False, action="store_const", const=True)
@@ -107,9 +116,9 @@ def parse_args(args=None, app=None, already_upgraded=False):
     play_parser.add_argument("-c", "--cont", default=False, action="store_const", const=True, help="Keep playing until all streams have =been consumed or the player exits with non-zero status")
     play_parser.add_argument("--quality", "-q", default=0, type=int)
     play_parser.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
-    play_parser.add_argument("--abs", default=False, action="store_const", const=True)
+    play_parser.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
     play_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
-    play_parser.add_argument("num", default=None, nargs="*", type=float)
+    play_parser.add_argument("num_list", default=None, nargs="*", type=float)
 
     stream_url_parser = sub_parsers.add_parser("get-stream-url", help="Gets the steaming url for the media")
     stream_url_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
@@ -126,9 +135,10 @@ def parse_args(args=None, app=None, already_upgraded=False):
     # external
     import_parser = sub_parsers.add_parser("import")
     import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
-    import_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    import_parser.add_argument("--media-type", default="ANIME", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
     import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
-    import_parser.add_argument("file", nargs="+")
+    import_parser.add_argument("files", nargs="+")
+    import_parser.set_defaults(func=app.import_media)
 
     # info
     sub_parsers.add_parser("list")
@@ -139,20 +149,21 @@ def parse_args(args=None, app=None, already_upgraded=False):
     # credentials
     login_parser = sub_parsers.add_parser("login", description="Relogin to all servers")
     login_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force re-login")
-    login_parser.add_argument("--servers", default=None, choices=app.get_servers_ids_with_logins(), nargs="*")
+    login_parser.add_argument("--servers", default=None, choices=app.get_servers_ids_with_logins(), nargs="*", dest="server_ids")
+    login_parser.set_defaults(func=app.test_login)
 
     # stats
     stats_parser = sub_parsers.add_parser("stats", description="Show tracker stats")
     stats_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
     stats_parser.add_argument("--refresh", action="store_const", const=True, default=False, help="Don't use cached data")
     stats_parser.add_argument("--details", action="store_const", const=True, default=False, help="Show media")
-    stats_parser.add_argument("--details-type", choices=list(map(lambda x: x.name, Details)), default=Details.NAME.name, help="How details are displayed")
-    stats_parser.add_argument("--stat-group", "-g", choices=list(map(lambda x: x.name, StatGroup)), default=StatGroup.NAME.name, help="Choose stat grouping")
-    stats_parser.add_argument("--sort-index", "-s", choices=list(map(lambda x: x.name, SortIndex)), default=SortIndex.SCORE.name, help="Choose sort index")
+    stats_parser.add_argument("--details-type", "-d", choices=list(map(lambda x: x, Details)), type=lambda x: Details[x], default=Details.NAME, help="How details are displayed")
+    stats_parser.add_argument("--stat-group", "-g", choices=list(map(lambda x: x, StatGroup)), type=lambda x: StatGroup[x], default=StatGroup.NAME, help="Choose stat grouping")
+    stats_parser.add_argument("--sort-index", "-s", choices=list(map(lambda x: x, SortIndex)), type=lambda x: SortIndex[x], default=SortIndex.SCORE.name, help="Choose sort index")
     stats_parser.add_argument("--min-count", "-m", type=int, default=0, help="Ignore groups with fewer than N elements")
     stats_parser.add_argument("--min-score", type=float, default=1, help="Ignore entries with score less than N")
-    stats_parser.add_argument("--id", default=None, nargs="?", help="id to load tracking info of")
-    stats_parser.add_argument("name", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
+    stats_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
+    stats_parser.add_argument("username", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
 
     # trackers and progress
     sub_parsers.add_parser("auth")
@@ -161,16 +172,17 @@ def parse_args(args=None, app=None, already_upgraded=False):
     load_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
     load_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
     load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
-    load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media")
-    load_parser.add_argument("--id", default=None, nargs="?", help="id to load tracking info of")
-    load_parser.add_argument("name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
+    load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media", dest="update_progress_only")
+    load_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
+    load_parser.add_argument("user_name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
+    load_parser.set_defaults(func=app.load_from_tracker)
 
     untrack_paraser = sub_parsers.add_parser("untrack", description="Removing tracker info")
     untrack_paraser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
     untrack_paraser.add_argument("name", choices=app.get_all_single_names(), nargs="?", help="Media to untrack")
+    untrack_paraser.set_defaults(func=app.remove_tracker)
 
     copy_tracker_parser = sub_parsers.add_parser("copy-tracker", description="Copies tracking info from src to dest")
-    copy_tracker_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
     copy_tracker_parser.add_argument("src", choices=app.get_all_single_names(), help="Src media")
     copy_tracker_parser.add_argument("dst", choices=app.get_all_single_names(), help="Dst media")
 
@@ -182,10 +194,13 @@ def parse_args(args=None, app=None, already_upgraded=False):
     sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
     sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
     sync_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    sync_parser.set_defaults(func=app.sync_progress)
 
     mark_unread_parsers = sub_parsers.add_parser("mark-unread", description="Mark all known chapters as unread")
     mark_unread_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
     mark_unread_parsers.add_argument("name", default=None, choices=app.get_all_names(), nargs="?")
+    mark_unread_parsers.set_defaults(func=app.mark_read)
+    mark_unread_parsers.set_defaults(force=True, N=-1, abs=True)
 
     mark_parsers = sub_parsers.add_parser("mark-read", description="Mark all known chapters as read")
     mark_parsers.add_argument("--abs", action="store_const", const=True, default=False, help="Treat N as an abs number")
@@ -196,7 +211,7 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
     offset_parser = sub_parsers.add_parser("offset")
     offset_parser.add_argument("name", default=None, choices=app.get_all_names())
-    offset_parser.add_argument("N", type=int, default=0, nargs="?", help="Decrease the chapter number reported by the server by N")
+    offset_parser.add_argument("offset", type=int, default=0, nargs="?", help="Decrease the chapter number reported by the server by N")
 
     # settings
     settings_parsers = sub_parsers.add_parser("setting")
@@ -206,15 +221,18 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
     get_file_parsers = sub_parsers.add_parser("get-file")
     get_file_parsers.add_argument("file", default=None, choices=["settings_file", "metadata", "cookie_file"])
+    get_file_parsers.set_defaults(func=lambda file: print(getattr(app.settings, f"get_{namespace.file}")()))
 
     # upgrade state
     upgrade_parser = sub_parsers.add_parser("upgrade", description="Upgrade old state to newer format")
     upgrade_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
+    upgrade_parser.set_defaults(func=app.upgrade_state)
 
     # store password state
     password_parser = sub_parsers.add_parser("set-password", description="Set password")
-    password_parser.add_argument("server", default=None, choices=app.get_servers_ids_with_logins())
+    password_parser.add_argument("server_id", choices=app.get_servers_ids_with_logins())
     password_parser.add_argument("username")
+    password_parser.set_defaults(func=app.settings.store_credentials)
 
     gen_auto_complete(parser)
 
@@ -226,89 +244,13 @@ def parse_args(args=None, app=None, already_upgraded=False):
     if namespace.clear_cookies:
         app.session.cookies.clear()
 
-    action = namespace.type
     app.auto_select = namespace.auto
-    if action == "add-cookie":
-        server = app.get_server(namespace.id)
-        server.add_cookie(namespace.name, namespace.value, domain=app.get_server(namespace.id).domain, path=namespace.path)
-    elif action == "add-from-url":
-        app.add_from_url(namespace.url)
-    elif action == "auth":
-        tracker = app.get_primary_tracker()
-        secret = tracker.auth()
-        app.settings.store_secret(tracker.id, secret)
-    elif action == "bundle":
-        print(app.bundle_unread_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit, ignore_errors=namespace.ignore_errors))
-    elif action == "clean":
-        app.clean(remove_disabled_servers=namespace.remove_disabled_servers, include_external=namespace.include_external, remove_read=namespace.remove_read, bundles=namespace.bundles, remove_not_on_disk=namespace.remove_not_on_disk)
-    elif action == "copy-tracker":
-        app.copy_tracker(namespace.src, namespace.dst)
-    elif action == "download":
-        app.download_specific_chapters(namespace.id, start=namespace.start, end=namespace.end)
-    elif action == "download-unread":
-        app.download_unread_chapters(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), limit=namespace.limit)
-    elif action == "list":
-        app.list()
-    elif action == "list-servers":
-        app.list_servers()
-    elif action == "list-chapters":
-        app.list_chapters(namespace.name)
-    elif action == "load":
-        app.load_from_tracker(user_name=namespace.name, user_id=namespace.id, exact=False, media_type_filter=MEDIA_TYPES.get(namespace.media_type, None), local_only=namespace.local_only, update_progress_only=namespace.progress_only, force=namespace.force)
-    elif action == "login":
-        app.test_login(namespace.servers, force=namespace.force)
-    elif action == "mark-read":
-        app.mark_read(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), N=namespace.N, force=namespace.force, abs=namespace.abs)
-        app.list()
-    elif action == "mark-unread":
-        app.mark_read(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), N=-1, force=True, abs=True)
-        app.list()
-    elif action == "offset":
-        app.offset(namespace.name, offset=namespace.N)
-        if not namespace.no_update:
-            app.update(namespace.name)
-    elif action == "get-stream-url":
-        app.get_stream_url(name=namespace.name, shuffle=namespace.shuffle)
-    elif action == "get-file":
-        print(getattr(app.settings, f"get_{namespace.file}")())
-    elif action == "play":
-        print(app.play(name=namespace.name, cont=namespace.cont, shuffle=namespace.shuffle, num_list=namespace.num, quality=namespace.quality, any_unread=namespace.any_unread, force_abs=namespace.abs))
-    elif action == "read":
-        print(app.read_bundle(namespace.name))
-    elif action == "migrate":
-        app.migrate(name=namespace.name, move_self=namespace.self)
-    elif action == "remove":
-        app.remove_media(id=namespace.id)
-    elif action == "import":
-        app.import_media(namespace.file, media_type=MEDIA_TYPES.get(namespace.media_type, None) or ANIME, link=namespace.link, name=namespace.name)
-    elif action == "search":
-        if not app.search_add(namespace.term, server_id=namespace.server, media_type=MEDIA_TYPES.get(namespace.media_type, None), exact=namespace.exact):
-            logging.warning("Could not find media %s", namespace.term)
-    elif action == "select":
-        app.select_chapter(namespace.term, quality=namespace.quality, server_id=namespace.server, media_type=MEDIA_TYPES.get(namespace.media_type, None), exact=namespace.exact)
-    elif action == "setting":
-        if namespace.value:
-            app.settings.set_field(namespace.setting, namespace.value, server_or_media_id=namespace.target)
-            app.settings.save()
-        print("{} = {}".format(namespace.setting, app.settings.get_field(namespace.setting, namespace.target)))
-    elif action == "stream":
-        app.stream(namespace.url, cont=namespace.cont, download=namespace.download, quality=namespace.quality)
-    elif action == "set-password":
-        app.settings.store_credentials(namespace.server, namespace.username)
-    elif action == "share-tracker":
-        app.share_tracker(namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None))
-    elif action == "stats":
-        app.stats(namespace.name, user_id=namespace.id, media_type=MEDIA_TYPES.get(namespace.media_type, None), refresh=namespace.refresh, statGroup=StatGroup[namespace.stat_group], sortIndex=SortIndex[namespace.sort_index], min_count=namespace.min_count, min_score=namespace.min_score, details=namespace.details, detailsType=namespace.details_type)
-    elif action == "sync":
-        app.sync_progress(force=namespace.force, media_type=MEDIA_TYPES.get(namespace.media_type, None), dry_run=namespace.dry_run)
-    elif action == "untrack":
-        app.remove_tracker(name=namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None))
-    elif action == "update":
-        app.update(name=namespace.name, media_type=MEDIA_TYPES.get(namespace.media_type, None), download=namespace.download, replace=namespace.replace)
-    elif action == "upgrade":
-        app.upgrade_state(force=namespace.force)
-    elif action == "view":
-        print(app.view_chapters(name=namespace.name, shuffle=namespace.shuffle, limit=namespace.limit, ignore_errors=namespace.ignore_errors, num_list=namespace.num, force_abs=namespace.abs))
+    action = namespace.type
+    kwargs = {k: v for k, v in vars(namespace).items() if k not in SPECIAL_PARAM_NAMES}
+    if "media_type" in namespace:
+        kwargs["media_type"] = MEDIA_TYPES.get(namespace.media_type, None)
+    func = namespace.func if "func" in namespace else getattr(app, action.replace("-", "_"))
+    func(**kwargs)
 
     if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):
         app.save()

@@ -53,7 +53,7 @@ def group_entries(media_list, min_score=1):
     return {x["name"]: [x] for x in media_list}, yearData, decadeData, seasonData, genereData, tagData, studioData, studioSepData, allData
 
 
-def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details=False, detailsType=Details.NAME.value):
+def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details=False, details_type=Details.NAME):
     stats = []
     for key, media_list in media_map.items():
         count = len(media_list)
@@ -61,14 +61,14 @@ def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details=False
             avgScore = sum([media["score"] for media in media_list]) / count
             totalTime = sum([media["timeSpent"] for media in media_list])
             weightedScore = sum([media["score"] * media["timeSpent"] / totalTime for media in media_list]) if totalTime else 0
-            media_names = ", ".join(map(lambda x: str(x[detailsType.lower()]), sorted(media_list, key=lambda x: x["score"], reverse=not reverse))) if details else None
+            media_names = ", ".join(map(lambda x: str(x[details_type.value.lower()]), sorted(media_list, key=lambda x: x["score"], reverse=not reverse))) if details else None
             stats.append((key, count, avgScore, totalTime / 60, weightedScore, media_names))
     stats.sort(key=lambda x: x[sortIndex], reverse=not reverse)
     return stats
 
 
-def get_header_str(statGroup, details=False, detailsType=Details.NAME.name):
-    return f"{statGroup.name:50.50}\t" + "\t".join(list(map(lambda x: x.name, SortIndex))[1:]) + (f"\t{detailsType}" if details else "")
+def get_header_str(statGroup, details=False, details_type=Details.NAME):
+    return f"{statGroup.name:50.50}\t" + "\t".join(list(map(lambda x: x.name, SortIndex))[1:]) + (f"\t{details_type.name}" if details else "")
 
 
 def get_entry_str(entry, details=False):

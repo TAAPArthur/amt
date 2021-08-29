@@ -1029,6 +1029,9 @@ class ArgsTest(MinimalUnitTestClass):
         self.add_test_media()
         parse_args(app=self.media_reader, args=["stats", "test_user"])
         parse_args(app=self.media_reader, args=["stats", "--media-type", "ANIME", "test_user"])
+        parse_args(app=self.media_reader, args=["stats", "-s", "NAME", "test_user"])
+        parse_args(app=self.media_reader, args=["stats", "-g", "NAME", "test_user"])
+        parse_args(app=self.media_reader, args=["stats", "--details", "-d", "NAME", "test_user"])
 
     def test_stats_default_user(self):
         self.add_test_media()
@@ -1625,9 +1628,9 @@ class TrackerTest(RealBaseUnitTestClass):
         for tracker in self.media_reader.get_trackers():
             if tracker.id != TestTracker.id:
                 self.app.set_primary_tracker(tracker)
-                parse_args(app=self.media_reader, args=["--auto", "load", "--id=1"])
+                parse_args(app=self.media_reader, args=["--auto", "load", "--user-id=1"])
                 self.assertTrue(self.media_reader.get_media_ids())
-                parse_args(app=self.media_reader, args=["stats", "--id=1"])
+                parse_args(app=self.media_reader, args=["stats", "--user-id=1"])
 
 
 class RealArgsTest(RealBaseUnitTestClass):
