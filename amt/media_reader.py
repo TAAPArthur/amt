@@ -220,6 +220,9 @@ class MediaReader:
 
     def offset(self, name, offset):
         for media_data in self.get_media(name=name):
+            diff_offset = offset - media_data.get("offset", 0)
+            for chapter in media_data["chapters"].values():
+                chapter["number"] -= diff_offset
             media_data["offset"] = offset
 
     def mark_read(self, name=None, media_type=None, N=0, force=False, abs=False):
