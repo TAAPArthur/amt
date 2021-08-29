@@ -141,7 +141,8 @@ def parse_args(args=None, app=None, already_upgraded=False):
     import_parser.set_defaults(func=app.import_media)
 
     # info
-    sub_parsers.add_parser("list")
+    list_parser = sub_parsers.add_parser("list")
+    list_parser.add_argument("--only-out-of-date", default=False, action="store_const", const=True)
     chapter_parsers = sub_parsers.add_parser("list-chapters")
     chapter_parsers.add_argument("name", choices=app.get_all_names())
     sub_parsers.add_parser("list-servers")

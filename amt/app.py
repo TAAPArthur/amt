@@ -185,11 +185,14 @@ class Application(MediaReader):
         for id in sorted(self.get_servers_ids()):
             print(id)
 
-    def list(self):
-        for i, result in enumerate(self.get_media()):
+    def list(self, only_out_of_date=False):
+        i = 0
+        for result in self.get_media():
             last_chapter_num = self.get_last_chapter_number(result)
             last_read = self.get_last_read(result)
-            print("{:4}|\t{}\t{} {}\t{}/{}".format(i, result.global_id, result["name"], result["season_title"], last_read, last_chapter_num))
+            if not only_out_of_date or last_chapter_num != last_read:
+                print("{:4}|\t{}\t{} {}\t{}/{}".format(i, result.global_id, result["name"], result["season_title"], last_read, last_chapter_num))
+                i = i + 1
 
     def list_chapters(self, name):
         media_data = self._get_single_media(name=name)
