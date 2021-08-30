@@ -184,7 +184,7 @@ class MediaReader:
             server = self.get_server(media_data["server_id"])
 
             lastRead = self.get_last_read(media_data)
-            for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
+            for chapter in media_data.get_sorted_chapters():
                 if not chapter["read"] and (any_unread or chapter["number"] > lastRead):
                     yield server, media_data, chapter
                     count += not chapter["special"]
@@ -236,9 +236,6 @@ class MediaReader:
         """Downloads all chapters that are not read"""
         return sum(self.for_each(self._download_selected_chapters, self.get_unreads(media_type, name=name, any_unread=any_unread, limit=limit), raiseException=not ignore_errors))
 
-    def _get_sorted_chapters(self, media_data):
-        return sorted(media_data["chapters"].values(), key=lambda x: x["number"])
-
     def download_specific_chapters(self, name=None, media_data=None, start=0, end=0):
         media_data = self._get_single_media(name=name)
         server = self.get_server(media_data["server_id"])
@@ -248,22 +245,11 @@ class MediaReader:
     def get_chapters_in_range(self, media_data, start=0, end=0):
         if not end:
             end = start
-        for chapter in self._get_sorted_chapters(media_data):
+        for chapter in media_data.get_sorted_chapters():
             if start <= chapter["number"] and (end <= 0 or chapter["number"] <= end):
                 yield chapter
                 if end == start:
                     break
-
-    def download_chapters(self, media_data, limit=0):
-        last_read = self.get_last_read(media_data)
-        server = self.get_server(media_data["server_id"])
-        counter = 0
-        for chapter in sorted(media_data["chapters"].values(), key=lambda x: x["number"]):
-            if not chapter["read"] and chapter["number"] > last_read and server.download_chapter(media_data, chapter):
-                counter += 1
-                if counter == limit:
-                    break
-        return counter
 
     def _download_selected_chapters(self, x):
         server, media_data, chapter = x
@@ -336,7 +322,7 @@ class MediaReader:
         last_read = self.get_last_read(media_data)
         num_list = list(map(lambda x: last_read + x if x <= 0 and not force_abs else x, num_list))
         server = self.get_server(media_data["server_id"])
-        for chapter in self._get_sorted_chapters(media_data):
+        for chapter in media_data.get_sorted_chapters():
             if chapter["number"] in num_list:
                 yield server, media_data, chapter
 

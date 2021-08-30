@@ -115,6 +115,9 @@ class MediaData(dict):
         else:
             return super().__getitem__(key)
 
+    def get_sorted_chapters(self):
+        return sorted(self["chapters"].values(), key=lambda x: x["number"])
+
     @property
     def global_id(self):
         return "{}:{}{}{}".format(self["server_id"], self["id"], (self["season_id"] if self["season_id"] else ""), self.get("lang", "")[:3])

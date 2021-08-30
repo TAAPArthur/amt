@@ -54,7 +54,7 @@ class Application(MediaReader):
         if media_data:
             self.update_media(media_data)
             self.list_chapters(media_data)
-            chapter = self.select_media(term, self._get_sorted_chapters(media_data), "Select episode", no_print=True)
+            chapter = self.select_media(term, media_data.get_sorted_chapters(), "Select episode", no_print=True)
             if chapter:
                 return self.play(name=media_data, num_list=[chapter["number"]], force_abs=True, quality=quality)
 
@@ -193,7 +193,7 @@ class Application(MediaReader):
 
     def list_chapters(self, name):
         media_data = self._get_single_media(name=name)
-        for chapter in self._get_sorted_chapters(media_data):
+        for chapter in media_data.get_sorted_chapters():
             print("{:4}:{}".format(chapter["number"], chapter["title"]))
 
     def _get_all_names(self, media_type=None, disallow_servers=False):
@@ -280,7 +280,7 @@ class Application(MediaReader):
                             shutil.rmtree(media_path)
                         elif remove_read:
                             media_data = media_dirs[media_path]
-                            for chapter_data in self._get_sorted_chapters(media_data):
+                            for chapter_data in media_data.get_sorted_chapters():
                                 chapter_path = server._get_dir(media_data, chapter_data, skip_create=True)
                                 if chapter_data["read"] and os.path.exists(chapter_path):
                                     logging.info("Removing %s because it has been read", chapter_path)
