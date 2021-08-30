@@ -718,16 +718,6 @@ class MediaReaderTest(BaseUnitTestClass):
         self._prepare_for_bundle(TestAnimeServer.id)
         self.assertFalse(self.media_reader.bundle_unread_chapters())
 
-    def test_view_chapters(self):
-        self._prepare_for_bundle(TestServer.id)
-        assert self.app.view_chapters()
-        self.verify_all_chapters_read(MANGA)
-
-    def test_view_chapters_fail(self):
-        self.settings.viewer = "exit 1"
-        self._prepare_for_bundle(TestServer.id)
-        assert not self.app.view_chapters()
-
     def test_stream_anime_bad_url(self):
         assert not self.media_reader.stream("bad_url")
 
@@ -736,7 +726,7 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def test_play_anime(self):
         self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
-        assert self.media_reader.play(cont=True)
+        assert self.media_reader.play(limit=None)
         assert all([x["read"] for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()])
 
     def test_play_offset_anime(self):
@@ -746,21 +736,21 @@ class MediaReaderTest(BaseUnitTestClass):
         chapters = [x for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()]
         assert chapters
         assert [x["read"] for x in chapters if x["number"] <= 0]
-        assert self.media_reader.play(cont=True)
+        assert self.media_reader.play(limit=None)
 
         assert all([x["read"] for x in chapters if x["number"] > 0])
         assert not any([x["read"] for x in chapters if x["number"] <= 0])
-        assert self.media_reader.play(cont=True, any_unread=True)
+        assert self.media_reader.play(limit=None, any_unread=True)
         assert all([x["read"] for x in chapters])
 
     def test_play_anime_downloaded(self):
         self._prepare_for_bundle(TestAnimeServer.id, no_download=False)
-        assert self.media_reader.play(cont=True)
+        assert self.media_reader.play(limit=None)
         assert all([x["read"] for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()])
 
     def test_play_anime_single(self):
         self._prepare_for_bundle(TestAnimeServer.id, no_download=True)
-        assert self.media_reader.play()
+        assert self.media_reader.play(limit=1)
         read_dist = [((x["id"], x["number"]), x["read"]) for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()]
         read_dist.sort()
         self.assertEqual(1, sum(map(lambda x: x[1], read_dist)))
@@ -1228,21 +1218,6 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["clean", "--remove-not-on-disk"])
         self.assertEqual(0, len(os.listdir(self.settings.get_server_dir(TestServer.id))))
 
-    def test_view_chapter(self):
-        media_list = self.add_test_media(self.test_server)
-        media_data = media_list[0]
-        parse_args(app=self.media_reader, args=["view", "--limit", "2", media_data["name"]])
-        numRead = sum([chapter["read"] for chapter in media_data["chapters"].values()])
-        self.assertEqual(2, numRead)
-
-    def test_view_chapter_specific(self):
-        media_list = self.add_test_media(self.test_server)
-        media_data = media_list[0]
-        parse_args(app=self.media_reader, args=["view", media_data["name"], "2"])
-        for chapter in media_data["chapters"].values():
-            self.assertEqual(chapter["number"] == 2, chapter["read"])
-        self.assertEqual(1, sum([chapter["read"] for chapter in media_data["chapters"].values()]))
-
     def test_bundle_read(self):
         media_list = self.add_test_media(self.test_server)
 
@@ -1293,20 +1268,20 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(len(bundle_data), 2)
 
     def test_play(self):
-        self.add_test_media(self.test_anime_server)
-        parse_args(app=self.media_reader, args=["play", "-c"])
-        self.verify_all_chapters_read(ANIME)
+        self.add_test_media()
+        parse_args(app=self.media_reader, args=["play"])
+        self.verify_all_chapters_read()
 
     def test_play_fail(self):
         self.add_test_media(self.test_anime_server)
 
         self.settings.viewer = "exit 1"
-        parse_args(app=self.media_reader, args=["play", "-c"])
+        parse_args(app=self.media_reader, args=["play"])
         assert not self.get_num_chapters_read(ANIME)
 
     def test_play_specific(self):
         media_list = self.add_test_media(self.test_anime_server)
-        parse_args(app=self.media_reader, args=["play", "-c", media_list[0]["name"], "1", "3"])
+        parse_args(app=self.media_reader, args=["play", media_list[0]["name"], "1", "3"])
         for chapter in self.app._get_sorted_chapters(media_list[0]):
             self.assertEquals(chapter["read"], chapter["number"] in [1, 3])
 
@@ -1390,10 +1365,7 @@ class ArgsTest(MinimalUnitTestClass):
                         self.assertEqual(chapters[0]["number"], number)
                         assert re.search(r"^\w+$", media_data["id"])
                         self.assertEqual(media_data["media_type"], MEDIA_TYPES[media_type])
-                        if media_data["media_type"] == ANIME:
-                            assert self.media_reader.play(name, any_unread=True)
-                        else:
-                            assert self.media_reader.view_chapters(name)
+                        assert self.media_reader.play(name, any_unread=True)
 
     def test_import_directory(self):
         path = os.path.join(TEST_HOME, "test-dir")

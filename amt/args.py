@@ -93,14 +93,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
     download_specific_parser.set_defaults(func=app.download_specific_chapters)
 
     # media consumption
-    view_parser = sub_parsers.add_parser("view", help="View pages of chapters")
-    view_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
-    view_parser.add_argument("-l", "--limit", default=0, type=int)
-    view_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
-    view_parser.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
-    view_parser.add_argument("name", choices=app.get_all_names(MANGA | NOVEL), default=None, nargs="?")
-    view_parser.add_argument("num_list", default=None, nargs="*", type=float)
-    view_parser.set_defaults(func=app.view_chapters)
 
     bundle_parser = sub_parsers.add_parser("bundle", help="Bundle individual manga pages into a single file")
     bundle_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
@@ -113,20 +105,29 @@ def parse_args(args=None, app=None, already_upgraded=False):
     read_parser.add_argument("name", default=None, nargs="?", choices=os.listdir(app.settings.bundle_dir), help="Name of the bundle")
     read_parser.set_defaults(func=app.read_bundle)
 
+    view_parser = sub_parsers.add_parser("view", help="View pages of chapters")
+    view_parser.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
+    view_parser.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
+    view_parser.add_argument("--limit", "-l", default=0, type=int)
+    view_parser.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
+    view_parser.add_argument("name", choices=app.get_all_names(MANGA | NOVEL), default=None, nargs="?")
+    view_parser.add_argument("num_list", default=None, nargs="*", type=float)
+    view_parser.set_defaults(func=app.play)
+
+    play_parser = sub_parsers.add_parser("play", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
+    play_parser.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
+    play_parser.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
+    play_parser.add_argument("--limit", "-l", default=0, type=int)
+    play_parser.add_argument("--quality", "-q", default=0, type=int)
+    play_parser.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
+    play_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
+    play_parser.add_argument("num_list", default=None, nargs="*", type=float)
+
     steam_parser = sub_parsers.add_parser("stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
     steam_parser.add_argument("--cont", default=False, action="store_const", const=True)
     steam_parser.add_argument("--download", default=False, action="store_const", const=True)
     steam_parser.add_argument("--quality", "-q", default=0, type=int)
     steam_parser.add_argument("url")
-
-    play_parser = sub_parsers.add_parser("play", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
-    play_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
-    play_parser.add_argument("-c", "--cont", default=False, action="store_const", const=True, help="Keep playing until all streams have =been consumed or the player exits with non-zero status")
-    play_parser.add_argument("--quality", "-q", default=0, type=int)
-    play_parser.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
-    play_parser.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
-    play_parser.add_argument("name", choices=app.get_all_names(ANIME), default=None, nargs="?")
-    play_parser.add_argument("num_list", default=None, nargs="*", type=float)
 
     stream_url_parser = sub_parsers.add_parser("get-stream-url", help="Gets the steaming url for the media")
     stream_url_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)

@@ -11,7 +11,7 @@ from urllib3 import Retry
 
 from . import cookie_manager, servers, trackers
 from .job import Job
-from .server import ALL_MEDIA, ANIME, MANGA, NOT_ANIME, Server
+from .server import ALL_MEDIA, ANIME, MANGA, Server
 from .settings import Settings
 from .state import State
 from .tracker import Tracker
@@ -269,19 +269,6 @@ class MediaReader:
         server, media_data, chapter = x
         return server.download_chapter(media_data, chapter)
 
-    def view_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False, num_list=None, force_abs=False):
-        chapter_info_list = list((self.get_chapters(NOT_ANIME, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(NOT_ANIME, name=name, limit=limit, shuffle=shuffle)))
-        self.for_each(self._download_selected_chapters, chapter_info_list, raiseException=not ignore_errors)
-        for server, media_data, chapter in chapter_info_list:
-            if server.is_fully_downloaded(media_data, chapter):
-                dir_path = server._get_dir(media_data, chapter)
-                path = server.get_children(media_data, chapter)
-                if self.settings.open_viewer(path, media_data=media_data, chapter_data=chapter, wd=dir_path):
-                    chapter["read"] = True
-                else:
-                    return False
-        return True
-
     def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
         paths = []
         bundle_data = []
@@ -337,7 +324,7 @@ class MediaReader:
                     if self.settings.open_viewer(streamable_url, media_data=media_data, chapter_data=chapter, wd=dir_path):
                         chapter["read"] = True
                         if cont:
-                            return 1 + self.play(name=media_data, cont=cont)
+                            return 1 + self.play(name=media_data)
                 return 1
         logging.error("Could not find any matching server")
         return False
@@ -356,20 +343,22 @@ class MediaReader:
             if chapter["number"] in num_list:
                 yield server, media_data, chapter
 
-    def play(self, name=None, shuffle=False, cont=False, num_list=None, quality=0, any_unread=False, force_abs=False):
-
+    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, quality=0, any_unread=False, force_abs=False):
         num = 0
-        for server, media_data, chapter in (self.get_chapters(ANIME, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(ANIME, name=name, shuffle=shuffle, any_unread=any_unread)):
+        for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(media_type, name=name, limit=limit, shuffle=shuffle, any_unread=any_unread)):
             dir_path = server._get_dir(media_data, chapter)
-            if not server.is_fully_downloaded(media_data, chapter):
-                server.pre_download(media_data, chapter, dir_path=dir_path)
+            if media_data["media_type"] == ANIME:
+                if not server.is_fully_downloaded(media_data, chapter):
+                    server.pre_download(media_data, chapter, dir_path=dir_path)
+            else:
+                server.download_chapter(media_data, chapter)
             success = self.settings.open_viewer(
                 server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter, quality=quality),
                 media_data=media_data, chapter_data=chapter, wd=dir_path)
             if success:
                 num += 1
                 chapter["read"] = True
-                if not cont:
+                if num == limit:
                     break
             else:
                 return False
