@@ -1,6 +1,8 @@
 import json
 import logging
 
+from . import cookie_manager
+
 
 def json_decoder(obj):
     if "server_id" in obj:
@@ -13,12 +15,14 @@ def json_decoder(obj):
 class State:
     version = 1
 
-    def __init__(self, settings):
+    def __init__(self, settings, session):
         self.settings = settings
+        self.session = session
         self.bundles = {}
         self.media = {}
         self.all_media = {}
         self.hashes = {}
+        self.cookie_hash = None
 
     @staticmethod
     def get_hash(json_dict):
@@ -51,12 +55,14 @@ class State:
         return True
 
     def save(self):
+        self.save_session_cookies()
         self.save_to_file(self.settings.get_bundle_metadata_file(), self.bundles)
         self.save_to_file(self.settings.get_metadata(), self.all_media)
         for media_data in self.media.values():
             self.save_to_file(self.settings.get_chapter_metadata_file(media_data), media_data.chapters)
 
     def load(self):
+        self.load_session_cookies()
         self.load_bundles()
         self.load_media()
 
@@ -76,6 +82,43 @@ class State:
                 self.media[media_data.global_id] = media_data
             if not media_data.chapters:
                 media_data.chapters = self.read_file_as_dict(self.settings.get_chapter_metadata_file(media_data))
+
+    def _set_session_hash(self):
+        """
+        Sets saved cookie_hash
+        @return True iff the hash is different than the already saved one
+
+        """
+        cookie_hash = hash(str(self.session.cookies))
+        if cookie_hash != self.cookie_hash:
+            self.cookie_hash = cookie_hash
+            return True
+        return False
+
+    def load_session_cookies(self):
+        """ Load session from disk """
+
+        if self.settings.no_load_session:
+            return
+
+        for path in self.settings.get_cookie_files():
+            try:
+                with open(path, "r") as f:
+                    cookie_manager.load_cookies(f, self.session)
+            except FileNotFoundError:
+                pass
+        self._set_session_hash()
+
+    def save_session_cookies(self, force=False):
+        """ Save session to disk """
+        if self.settings.no_save_session or not self._set_session_hash():
+            return False
+
+        with open(self.settings.get_cookie_file(), "w") as f:
+            for cookie in self.session.cookies:
+                l = [cookie.domain, str(cookie.domain_specified), cookie.path, str(cookie.secure).upper(), str(cookie.expires) if cookie.expires else "", cookie.name, cookie.value]
+                f.write("\t".join(l) + "\n")
+        return True
 
     def is_out_of_date(self):
         return self.all_media.get("version", 0) != self.version
@@ -126,6 +169,12 @@ class MediaData(dict):
         for key in ("offset", "progress", "progressVolumes", "trackers"):
             assert key in dest
             dest[key] = self.get(key)
+
+    def get_last_chapter_number(self):
+        return max(self["chapters"].values(), key=lambda x: x["number"])["number"] if self["chapters"] else 0
+
+    def get_last_read(self):
+        return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={"number": 0})["number"]
 
 
 class ChapterData(dict):
