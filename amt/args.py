@@ -26,7 +26,7 @@ def get_set_setting(app_settings, field_name, save_env=False, value=None, target
 
 
 def parse_args(args=None, app=None, already_upgraded=False):
-    SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "update", "type", "func"}
+    SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "type", "func"}
 
     app = app if app else Application()
     parser = argparse.ArgumentParser()
@@ -34,7 +34,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
     parser.add_argument("--clear-cookies", default=False, action="store_const", const=True, help="Clear all cached cookies")
     parser.add_argument("--log-level", default="INFO", choices=logging._levelToName.values(), help="Controls verbosity of logs")
     parser.add_argument("--no-save", default=False, action="store_const", const=True, help="Do not save state/cookies")
-    parser.add_argument("--update", "-u", default=False, action="store_const", const=True, help="Check for new chapters and download them")
 
     sub_parsers = parser.add_subparsers(dest="type")
 
@@ -251,8 +250,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
 
     namespace = parser.parse_args(args)
     logging.getLogger().setLevel(namespace.log_level)
-    if namespace.update:
-        app.update(download=True)
 
     if namespace.clear_cookies:
         app.session.cookies.clear()
