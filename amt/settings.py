@@ -35,8 +35,6 @@ class Settings:
         "cbz": "zip {name} {files}",
         "pdf": "convert -density 100 -units PixelsPerInch {name} {files}"
     }
-    bundle_format = "cbz"
-    bundle_viewer = "zathura {media}"
     converters = [
         ("ts", "mp4", "cat {input} > {output}", "rm {}"),
     ]
@@ -67,6 +65,8 @@ class Settings:
         }
     }
     auto_replace = True
+    bundle_viewer = "zathura {media}"
+    bundle_format = "cbz"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
     force_odd_pages = True
@@ -274,14 +274,6 @@ class Settings:
     def _smart_quote(name):
         return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
 
-    def bundle(self, img_dirs):
-        arg = " ".join(map(Settings._smart_quote, img_dirs))
-        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), str(hash(arg))[1:8], self.bundle_format))
-        cmd = self.bundle_cmds[self.bundle_format].format(files=arg, name=name)
-        logging.info("Running cmd %s shell = %s", cmd, self.shell)
-        self.run_cmd(cmd)
-        return name
-
     def _open_viewer(self, viewer, name, title, wd=None):
         try:
             assert isinstance(name, str)
@@ -298,9 +290,19 @@ class Settings:
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
         return self._open_viewer(viewer, files, title=title, wd=wd)
 
-    def open_bundle_viewer(self, bunldle_path, media_data=None):
-        title = os.path.basename(bunldle_path)
-        return self._open_viewer(self.bundle_viewer, bunldle_path, title=title)
+    def open_bundle_viewer(self, bundle_path, media_data=None):
+        viewer = self.get_field("bundle_viewer", media_data)
+        title = os.path.basename(bundle_path)
+        return self._open_viewer(viewer, bundle_path, title=title)
+
+    def bundle(self, img_dirs, media_data=None):
+        arg = " ".join(map(Settings._smart_quote, img_dirs))
+        bundle_format = self.get_field("bundle_format", media_data)
+        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), str(hash(arg))[1:8], bundle_format))
+        cmd = self.bundle_cmds[bundle_format].format(files=arg, name=name)
+        logging.info("Running cmd %s shell = %s", cmd, self.shell)
+        self.run_cmd(cmd)
+        return name
 
     def convert(self, extension, files, destWithoutExt):
         for ext, targetExt, cmd, cleanupCmd in self.converters:

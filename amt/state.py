@@ -142,6 +142,11 @@ class State:
         for data in bundled_data:
             self.media[data["media_id"]]["chapters"][data["chapter_id"]]["read"] = True
 
+    def get_lead_media_data(self, bundle):
+        bundled_data = self.bundles[bundle] if isinstance(bundle, str) else bundle
+        for data in bundled_data:
+            return self.media[data["media_id"]]
+
 
 class MediaData(dict):
     def __init__(self, backing_map):
