@@ -1128,7 +1128,7 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["offset", media_data.global_id, "1"])
         parse_args(app=self.media_reader, args=["migrate", "--self", media_data["name"]])
         for i in range(2):
-            media_data = self.app._get_single_media(name=media_data.global_id)
+            media_data = self.app.get_single_media(name=media_data.global_id)
             self.assertEqual(media_data["offset"], 1)
             self.app.upgrade_state(force=True)
 

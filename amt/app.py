@@ -132,8 +132,8 @@ class Application(MediaReader):
                     self.track(other_media, tracker.id, tracking_id, tracker_title)
 
     def copy_tracker(self, src, dst):
-        src_media_data = self._get_single_media(name=src)
-        dst_media_data = self._get_single_media(name=dst)
+        src_media_data = self.get_single_media(name=src)
+        dst_media_data = self.get_single_media(name=dst)
         if self.has_tracker_info(src_media_data):
             tracking_id, tracker_title = self.get_tracker_info(src_media_data)
             self.track(dst_media_data, self.get_primary_tracker().id, tracking_id, tracker_title)
@@ -192,22 +192,21 @@ class Application(MediaReader):
                 i = i + 1
 
     def list_chapters(self, name):
-        media_data = self._get_single_media(name=name)
+        media_data = self.get_single_media(name=name)
         for chapter in media_data.get_sorted_chapters():
             print("{:4}:{}".format(chapter["number"], chapter["title"]))
 
-    def _get_all_names(self, media_type=None, disallow_servers=False):
-        if not disallow_servers:
-            for id in self.get_servers_ids():
-                if not media_type or self.get_server(id).media_type & media_type:
-                    yield id
-        for id, media in self.media.items():
-            if not media_type or media["media_type"] & media_type:
-                yield id
-                yield media["name"]
-
     def get_all_names(self, media_type=None, disallow_servers=False):
-        return list(self._get_all_names(media_type, disallow_servers))
+        names = []
+        if not disallow_servers:
+            for server_id in self.get_servers_ids():
+                if not media_type or self.get_server(server_id).media_type & media_type:
+                    names.append(server_id)
+        for media_id, media in self.media.items():
+            if not media_type or media["media_type"] & media_type:
+                names.append(media_id)
+                names.append(media["name"])
+        return names
 
     def get_all_single_names(self, media_type=None):
         return self.get_all_names(media_type=media_type, disallow_servers=True)

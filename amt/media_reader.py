@@ -140,7 +140,7 @@ class MediaReader:
 
     def remove_media(self, media_data=None, id=None):
         if id:
-            media_data = self._get_single_media(name=id)
+            media_data = self.get_single_media(name=id)
         del self.media[media_data.global_id]
 
     def get_servers(self):
@@ -173,7 +173,7 @@ class MediaReader:
                 continue
             yield media_data
 
-    def _get_single_media(self, media_type=None, name=None):
+    def get_single_media(self, media_type=None, name=None):
         if isinstance(name, dict):
             return name
         return next(self.get_media(media_type=media_type, name=name))
@@ -237,7 +237,7 @@ class MediaReader:
         return sum(self.for_each(self._download_selected_chapters, self.get_unreads(media_type, name=name, any_unread=any_unread, limit=limit), raiseException=not ignore_errors))
 
     def download_specific_chapters(self, name=None, media_data=None, start=0, end=0):
-        media_data = self._get_single_media(name=name)
+        media_data = self.get_single_media(name=name)
         server = self.get_server(media_data["server_id"])
         for chapter in self.get_chapters_in_range(media_data, start=start, end=end):
             server.download_chapter(media_data, chapter)
@@ -318,7 +318,7 @@ class MediaReader:
                 print(url)
 
     def get_chapters(self, media_type, name, num_list, force_abs=False):
-        media_data = self._get_single_media(media_type=media_type, name=name)
+        media_data = self.get_single_media(media_type=media_type, name=name)
         last_read = self.get_last_read(media_data)
         num_list = list(map(lambda x: last_read + x if x <= 0 and not force_abs else x, num_list))
         server = self.get_server(media_data["server_id"])
