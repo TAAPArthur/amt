@@ -26,6 +26,8 @@ class State:
 
     @staticmethod
     def get_hash(json_dict):
+        if not json_dict:
+            return 0, ""
         json_str = json.dumps(json_dict, indent=4, sort_keys=True)
         return hash(json_str), json_str
 
