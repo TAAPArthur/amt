@@ -120,17 +120,6 @@ class Application(MediaReader):
         for media_data, last_read in zip(media_list, last_read_list):
             self.mark_chapters_until_n_as_read(new_media_data, last_read)
 
-    def share_tracker(self, name=None, media_type=None, exact=True):
-        tracker = self.get_primary_tracker()
-        for media_data in self.get_media(name=name, media_type=media_type):
-            if self.has_tracker_info(media_data, tracker.id):
-                tracking_id, tracker_title = self.get_tracker_info(media_data, tracker.id)
-                other_media = self._search_for_tracked_media(tracker_title, media_type, local_only=True)
-                if other_media:
-                    assert media_data != other_media
-                    logging.info("Sharing tracker of %s with %s", media_data.global_id, other_media.global_id)
-                    self.track(other_media, tracker.id, tracking_id, tracker_title)
-
     def copy_tracker(self, src, dst):
         src_media_data = self.get_single_media(name=src)
         dst_media_data = self.get_single_media(name=dst)

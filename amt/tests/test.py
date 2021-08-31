@@ -998,15 +998,6 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(app=self.media_reader, args=["copy-tracker", media_list[0]["name"], media_list[1]["name"]])
         self.assertEquals(self.app.get_tracker_info(media_list[0]), self.app.get_tracker_info(media_list[1]))
 
-    def test_share_tracker(self):
-        media_list = self.add_test_media()
-        parse_args(app=self.media_reader, args=["--auto", "load", "test_user"])
-        tracked_media = [media_data["name"] for media_data in media_list if self.app.get_tracker_info(media_data)]
-        parse_args(app=self.media_reader, args=["--auto", "share-tracker"])
-        tracked_media2 = [media_data["name"] for media_data in media_list if self.app.get_tracker_info(media_data)]
-        assert all([self.app.get_tracker_info(media_data) for media_data in media_list if media_data["name"] in tracked_media])
-        assert len(tracked_media) < len(tracked_media2)
-
     def test_stats(self):
         self.add_test_media()
         parse_args(app=self.media_reader, args=["stats", "test_user"])

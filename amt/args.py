@@ -195,10 +195,6 @@ def parse_args(args=None, app=None, already_upgraded=False):
     copy_tracker_parser.add_argument("src", choices=app.get_all_single_names(), help="Src media")
     copy_tracker_parser.add_argument("dst", choices=app.get_all_single_names(), help="Dst media")
 
-    share_tracker_parser = sub_parsers.add_parser("share-tracker", description="Checks local media to see if tracking info can be shared")
-    share_tracker_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
-    share_tracker_parser.add_argument("name", choices=app.get_all_single_names(), default=None, nargs="?")
-
     sync_parser = sub_parsers.add_parser("sync", description="Attempts to update tracker with current progress")
     sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
     sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
