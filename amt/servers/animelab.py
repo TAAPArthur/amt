@@ -14,7 +14,7 @@ class Animelab(Server):  # pragma: no cover
     search_url = base_url + "/shows/autocomplete?searchTerms={}"
     search_info_url = base_url + "/shows/search?searchTerms={}"
     series_url = base_url + "/shows/{}"
-    populars_url = base_url + "/api/shows/popular?limit=5&page=1"
+    populars_url = base_url + "/api/shows/popular?limit={}&page=1"
     episode_url = base_url + "/api/videoentries/show/{}?limit=99"
     video_url = base_url + "/api/videos/show/{}/subtitles?videoId={}&position=2&forward=true"
     login_url = base_url + "/login"
@@ -36,19 +36,19 @@ class Animelab(Server):  # pragma: no cover
         self.is_premium = False
         return True
 
-    def get_media_list(self):
-        r = self.session_get(self.populars_url)
+    def get_media_list(self, limit=5):
+        r = self.session_get(self.populars_url.format(limit))
         media_data = []
         for series in r.json()["list"]:
             for season in series["seasons"]:
                 media_data.append(self.create_media_data(id=series["id"], name=series["name"], season_id=season["id"], season_title=season["name"]))
         return media_data
 
-    def search(self, term):
+    def search(self, term, limit=5):
         r = self.session_get(self.search_url.format(term))
         data = r.json()["data"]
         media_data = []
-        for name in data[:5]:
+        for name in data[:limit]:
             r = self.session_get(self.search_info_url.format(name))
             match = self.series_info_url_regex.search(r.text)
             url = self.base_url + json.loads(match.group(1))["collection"]["url"]

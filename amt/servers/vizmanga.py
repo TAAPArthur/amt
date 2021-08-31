@@ -63,13 +63,13 @@ class VizManga(Server):
             })
         return not self.needs_authentication()
 
-    def get_media_list(self):
+    def get_media_list(self, limit=None):
         r = self.session_get(self.api_series_url)
 
         soup = self.soupify(BeautifulSoup, r)
         divs = soup.findAll("a", {"class": "o_chapters-link"})
         result = []
-        for div in divs:
+        for div in divs[:limit]:
             id = div["href"].split("/")[-1]
             name = div.find("div", {"class", "pad-x-rg pad-t-rg pad-b-sm type-sm type-rg--sm type-md--lg type-center line-solid"}).getText().strip()
             result.append(self.create_media_data(id=id, name=name))

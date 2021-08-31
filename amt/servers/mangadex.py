@@ -10,8 +10,8 @@ class Mangadex(Server):
 
     api_base_url = "https://api.mangadex.org"
 
-    list_url = api_base_url + "/manga?limit=100"
-    search_url = api_base_url + "/manga?title={}"
+    list_url = api_base_url + "/manga?limit={}"
+    search_url = api_base_url + "/manga?title={}&limit={}"
     manga_chapters_url = api_base_url + "/chapter?manga={}&limit=100&offset={}"
     server_url = api_base_url + "/at-home/server/{}"
     chapter_url = api_base_url + "/chapter/{}"
@@ -25,12 +25,12 @@ class Mangadex(Server):
             results.append(self.create_media_data(id=result["data"]["id"], name=list(result["data"]["attributes"]["title"].values())[0]))
         return results
 
-    def get_media_list(self):
-        r = self.session_get(self.list_url)
+    def get_media_list(self, limit=100):
+        r = self.session_get(self.list_url.format(limit if limit else 0))
         return self._get_media_list(r.json()["results"])
 
-    def search(self, term):
-        r = self.session_get(self.search_url.format(term))
+    def search(self, term, limit=100):
+        r = self.session_get(self.search_url.format(term, limit if limit else 0))
         return self._get_media_list(r.json()["results"])
 
     def get_media_data_from_url(self, url):

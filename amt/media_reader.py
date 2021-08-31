@@ -144,8 +144,8 @@ class MediaReader:
         os.makedirs(self.settings.get_media_dir(media_data), exist_ok=True)
         return [] if no_update else self.update_media(media_data)
 
-    def search_for_media(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[], limit_per_server=None, raiseException=False):
-        def func(x): return x.search(term)[:limit_per_server]
+    def search_for_media(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[], limit=None, raiseException=False):
+        def func(x): return x.search(term, limit=limit)
         if server_id:
             results = func(self.get_server(server_id))
         else:
@@ -154,8 +154,8 @@ class MediaReader:
             results = list(filter(lambda x: x["name"] == term, results))
         return results
 
-    def search_add(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[], no_add=False, media_id=None, sort_func=None):
-        results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude)
+    def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], no_add=False, media_id=None, sort_func=None):
+        results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude, limit=limit)
         results = list(filter(lambda x: not media_id or str(x["id"]) == str(media_id), results))
         if sort_func:
             results.sort(key=sort_func)

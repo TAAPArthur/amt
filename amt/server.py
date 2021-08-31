@@ -38,19 +38,19 @@ class GenericServer:
     official = True
     syncrhonize_chapter_downloads = False
 
-    def get_media_list(self):  # pragma: no cover
+    def get_media_list(self, limit=None):  # pragma: no cover
         """
         Returns an arbitrary selection of media
         """
         raise NotImplementedError
 
-    def search(self, term):
+    def search(self, term, limit=None):
         """
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
         term_lower = term.lower()
-        return list(filter(lambda x: term_lower in x['name'].lower(), self.get_media_list()))
+        return list(filter(lambda x: term_lower in x['name'].lower(), self.get_media_list(limit=limit)))
 
     def update_media_data(self, media_data):  # pragma: no cover
         """

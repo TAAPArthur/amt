@@ -50,7 +50,7 @@ class Vrv(Server):
             self._season_api_url = self.api_base + links["episodes"]["href"].replace("{?", "?season_id={")
             self._seasons_api_url = self.api_base + links["seasons"]["href"].replace("{?", "?series_id={")
             self._series_api_url = self.api_base + links["series"]["href"] + "?"
-            self._search_api_url = self.api_base + links["search_results"]["href"] + "?q={}&n=6"
+            self._search_api_url = self.api_base + links["search_results"]["href"] + "?q={}&n={}"
 
     @property
     def series_api_url(self):
@@ -132,18 +132,18 @@ class Vrv(Server):
         self.key_pair = {}
         return True
 
-    def get_media_list(self):
-        return self.search("One")
+    def get_media_list(self, limit=None):
+        return self.search("One", limit=limit)
 
-    def search(self, term):
-        r = self.session_get_with_key_pair(self.search_api_url.format(term))
+    def search(self, term, limit=None):
+        r = self.session_get_with_key_pair(self.search_api_url.format(term, 6))
         media = []
-        for item in r.json()["items"]:
-            if item["type"] == "series":
-                series_id = item["id"]
-                data = self.session_get_with_key_pair(self.seasons_api_url.format(series_id=series_id)).json()
-                for season in data["items"]:
-                    media.append(self.create_media_data(series_id, item["title"], season_id=season["id"], season_title=season["title"]))
+        items = list(filter(lambda item: item["type"] == "series", r.json()["items"]))
+        for item in items[:limit]:
+            series_id = item["id"]
+            data = self.session_get_with_key_pair(self.seasons_api_url.format(series_id=series_id)).json()
+            for season in data["items"]:
+                media.append(self.create_media_data(series_id, item["title"], season_id=season["id"], season_title=season["title"]))
         return media
 
     def update_media_data(self, media_data: dict, r=None):

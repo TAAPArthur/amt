@@ -11,7 +11,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     api_base_url = "http://api.crunchyroll.com"
     list_all_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}"
-    search_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}&filter=prefix:{}"
+    search_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}&filter=prefix:{}&limit={}"
     list_media = api_base_url + "/list_media.0.json?limit=2000&media_type=anime&session_id={}&series_id={}"
     stream_url = api_base_url + "/info.0.json?fields=media.stream_data&locale=enUS&session_id={}&media_id={}"
     episode_url = api_base_url + "/info.0.json?session_id={}&media_id={}"
@@ -31,11 +31,11 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
             if not season_id or season["collection_id"] == season_id:
                 yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], season_title=season["season"] if unique_seasons else season["collection_id"], dir_name=item_alt_id)
 
-    def get_media_list(self):
-        return self.search("")
+    def get_media_list(self, limit=None):
+        return self.search("", limit=limit)
 
-    def search(self, term):
-        r = self.session_get(self.search_series.format(self.get_session_id(), term.replace(" ", "%20")) if term else self.list_all_series.format(self.get_session_id()))
+    def search(self, term, limit=None):
+        r = self.session_get(self.search_series.format(self.get_session_id(), term.replace(" ", "%20"), limit if limit else 0) if term else self.list_all_series.format(self.get_session_id()))
         data = r.json()["data"]
         media_data = []
         for item in data:

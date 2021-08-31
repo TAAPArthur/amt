@@ -18,8 +18,8 @@ class CustomServer(Server):
     number_regex = re.compile(r"(\d+\.?\d*)[ \.]")
     id_formatter_regex = re.compile(r"\W+")
 
-    def get_media_list(self):
-        return [self.create_media_data(id=self.id_formatter_regex.sub("_", dir), name=dir, dir_name=dir) for dir in os.listdir(self.settings.get_server_dir(self.id))] if os.path.exists(self.settings.get_server_dir(self.id)) else []
+    def get_media_list(self, limit=None):
+        return [self.create_media_data(id=self.id_formatter_regex.sub("_", dir), name=dir, dir_name=dir) for dir in os.listdir(self.settings.get_server_dir(self.id))][:limit] if os.path.exists(self.settings.get_server_dir(self.id)) else []
 
     def update_media_data(self, media_data):
         for fileName in os.listdir(self.settings.get_media_dir(media_data)):

@@ -19,13 +19,13 @@ class WLN_Updates(Server):
 
     known_sources = {1781: ("Asian Hobbyist", lambda soup: ((e["value"], float(e.getText().split()[-1]), e.getText()) for e in soup.find("select", {"name": "chapter"}).findAll("option")))}
 
-    def get_media_list(self):
+    def get_media_list(self, limit=None):
         r = self.session_post("https://www.wlnupdates.com/api", json={"mode": "search-advanced", "series-type": {"Translated": "included"}})
-        return [self.create_media_data(x["id"], x["title"]) for x in r.json()["data"]]
+        return [self.create_media_data(x["id"], x["title"]) for x in r.json()["data"][:limit]]
 
-    def search(self, term):
+    def search(self, term, limit=None):
         r = self.session_post("https://www.wlnupdates.com/api", json={"title": term, "mode": "search-title"})
-        return [self.create_media_data(x["sid"], x["match"][0][1]) for x in r.json()["data"]["results"]]
+        return [self.create_media_data(x["sid"], x["match"][0][1]) for x in r.json()["data"]["results"][:limit]]
 
     def get_media_data_from_url(self, url):
         sid = self.stream_url_regex.search(url).group(1)

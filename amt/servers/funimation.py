@@ -23,7 +23,7 @@ class Funimation(Server):
     player_regex = re.compile(r"/player/(\d*)")
 
     search_url = "https://api-funimation.dadcdigital.com/xml/longlist/content/page/?id=search&q={}"
-    list_url = "https://api-funimation.dadcdigital.com/xml/longlist/content/page/?id=shows&limit=5"
+    list_url = "https://api-funimation.dadcdigital.com/xml/longlist/content/page/?id=shows&limit={}"
     # list_url = "https://prod-api-funimationnow.dadcdigital.com/api/funimation/shows/"
 
     media_type = ANIME
@@ -62,7 +62,7 @@ class Funimation(Server):
             logging.info(data["error"])
             return False
 
-    def _get_media_list(self, url, limit=-1):
+    def _get_media_list(self, url, limit=None):
         r = self.session_get(url)
         soup = self.soupify(BeautifulSoup, r)
         media_data = []
@@ -80,11 +80,11 @@ class Funimation(Server):
 
         return media_data
 
-    def get_media_list(self):
-        return self._get_media_list(self.list_url)
+    def get_media_list(self, limit=5):
+        return self._get_media_list(self.list_url.format(limit if limit else 0))
 
-    def search(self, term, alt_id=None):
-        return self._get_media_list(self.search_url.format(term.replace(" ", "%20")), limit=2)
+    def search(self, term, alt_id=None, limit=2):
+        return self._get_media_list(self.search_url.format(term.replace(" ", "%20")), limit=limit)
 
     def _get_episode_id(self, url):
         r = self.session_get(url)

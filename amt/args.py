@@ -47,6 +47,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     # add remove
     search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
     search_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    search_parsers.add_argument("--limit", type=int, default=None, help="How many chapters will be downloaded per series")
     search_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
     search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     search_parsers.add_argument("term", help="The string to search by")

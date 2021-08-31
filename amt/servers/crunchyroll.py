@@ -173,13 +173,13 @@ class Crunchyroll(GenericCrunchyrollServer):
         # Don't know why 66 is special
         return bytes(b ^ 66 for b in buffer)
 
-    def get_media_list(self):
-        return [self.create_media_data(id=id, name=name, locale="enUS") for id, name in SERIES_DATA.items()]
+    def get_media_list(self, limit=None):
+        return [self.create_media_data(id=id, name=name, locale="enUS") for id, name in SERIES_DATA.items()][:limit]
 
-    def search(self, term):
+    def search(self, term, limit=None):
         regex = re.compile(r"[^\w\d]")
         term = regex.sub("", term.lower())
-        return list(filter(lambda x: term in regex.sub("", x["name"].lower()), self.get_media_list()))
+        return list(filter(lambda x: term in regex.sub("", x["name"].lower()), self.get_media_list()))[:limit]
 
     def update_media_data(self, media_data: dict):
         r = self.session_get(self.api_chapters_url.format(media_data["id"]))

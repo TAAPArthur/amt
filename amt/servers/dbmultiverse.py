@@ -15,11 +15,11 @@ class Dbmultiverse(Server):
     chapter_url = base_url + "/{}/chapters.html?chapter={}"
     page_url = base_url + "/{}/page-{}.html"
 
-    def get_media_list(self):
+    def get_media_list(self, limit=None):
         r = self.session_get(self.base_url)
         soup = self.soupify(BeautifulSoup, r)
         media_list = []
-        for element in soup.find("div", {"id": "langs"}).findAll("a"):
+        for element in soup.find("div", {"id": "langs"}).findAll("a")[:limit]:
             media_list.append(self.create_media_data(id=1, name="Dragon Ball Multiverse (DBM) " + element["title"], lang=element["href"].split("/")[1]))
         return media_list
 

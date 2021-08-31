@@ -43,14 +43,14 @@ class GenericJNovelClub(Server):
     def _create_media_data_helper(self, data):
         return [self.create_media_data(media_data["slug"], media_data["title"], progressVolumes=self.progressVolumes) for media_data in data if MEDIA_TYPES[media_data["type"]] == self.media_type]
 
-    def get_media_list(self):
+    def get_media_list(self, limit=None):
         r = self.session_get(self.series_url)
         data = r.json()["series"]
-        return self._create_media_data_helper(data)
+        return self._create_media_data_helper(data)[:limit]
 
-    def search(self, term):
+    def search(self, term, limit=None):
         r = self.session_post(self.search_url, json={"query": term, "type": 1 if self.media_type == NOVEL else 2})
-        data = r.json()["series"]
+        data = r.json()["series"][:limit]
         return [self.create_media_data(media_data["slug"], media_data["title"]) for media_data in data]
 
     def download_sources(self, resources_path, path, url, text):

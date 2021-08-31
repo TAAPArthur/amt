@@ -43,10 +43,10 @@ class TestServer(Server):
     def was_error_thrown(self):
         return self.error_count
 
-    def get_media_list(self):
+    def get_media_list(self, limit=None):
         self.maybe_inject_error()
         media_type_name = [x for x in MEDIA_TYPES if MEDIA_TYPES[x] == self.media_type][0]
-        return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-=")]
+        return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-=")][:limit]
 
     def update_media_data(self, media_data):
         self.maybe_inject_error()
