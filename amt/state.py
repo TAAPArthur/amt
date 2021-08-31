@@ -181,6 +181,12 @@ class MediaData(dict):
     def get_last_read(self):
         return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={"number": 0})["number"]
 
+    def get_labels(self, reverse=False):
+        labels = [self.global_id, self["name"], self["server_id"], self["media_type"]]
+        if reverse:
+            labels.reverse()
+        return labels
+
 
 class ChapterData(dict):
     def __init__(self, backing_map):

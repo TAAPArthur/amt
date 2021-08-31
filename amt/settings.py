@@ -128,7 +128,7 @@ class Settings:
 
         yield from self._replacements[""]
 
-        for key in [media_data["server_id"], media_data["name"], media_data.global_id, id] if isinstance(media_data, dict) else [media_data]:
+        for key in media_data.get_labels(reverse=True) if isinstance(media_data, dict) else [media_data]:
             if key and key in self._replacements:
                 yield from self._replacements[key]
 
@@ -173,7 +173,7 @@ class Settings:
         return value
 
     def get_field(self, name, media_data=None):
-        for key in [media_data.global_id, media_data["name"], media_data["server_id"], media_data["media_type"]] if isinstance(media_data, dict) else [media_data]:
+        for key in media_data.get_labels() if isinstance(media_data, dict) else [media_data]:
             if name in self.specific_settings and key in self.specific_settings[name]:
                 return self.specific_settings[name][key]
         return getattr(self, name)
