@@ -95,7 +95,7 @@ class Funimation(Server):
         soup = self.soupify(BeautifulSoup, r)
         src = soup.find("iframe", {"name": "player"})["src"]
         match = self.player_regex.search(src)
-        return int(match.group(1)), showID
+        return match.group(1), showID
 
     def update_media_data(self, media_data: dict, r=None):
         if not r:
@@ -110,7 +110,7 @@ class Funimation(Server):
                         alt_exp = video["uncut"] if "uncut" in video else video["simulcast"]
                         premium = exp["svodOnly"]
                         special = chapter["mediaCategory"] != "episode"
-                        self.update_chapter_data(media_data, id=exp["experienceId"], number=chapter["episodeId"], title=chapter["episodeTitle"], premium=premium, special=special, alt_id=alt_exp["experienceId"])
+                        self.update_chapter_data(media_data, id=alt_exp["experienceId"], number=chapter["episodeId"], title=chapter["episodeTitle"], premium=premium, special=special, alt_id=exp["experienceId"])
 
     def get_media_data_from_url(self, url):
         chapter_id, _ = self._get_episode_id(url)
@@ -134,22 +134,20 @@ class Funimation(Server):
         return chapter_id
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
-        chapter_id = chapter_data["id"]
-
+        chapter_id = chapter_data["alt_id"]
         r = self.session_get(self.sources_api_url.format(chapter_id))
-
         # r.json()["items"] returns a list of mp4 and m38 streams
         logging.info("Sources: %s", [item["src"] for item in r.json()["items"]])
         return [item["src"] for item in r.json()["items"]]
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
-        r = self.session_get(self.show_api_url.format(chapter_data["id"]))
+        r = self.session_get(self.show_api_url.format(chapter_data["alt_id"]))
 
         for season in r.json()["seasons"]:
             for chapter in season["episodes"]:
                 video = chapter["languages"][media_data["lang"]]["alpha"]
                 exp = video["simulcast"] if "simulcast" in video else video["uncut"]
-                if exp["experienceId"] == int(chapter_data["id"]) and "textTracks" in exp["sources"][0]:
+                if exp["experienceId"] == int(chapter_data["alt_id"]) and "textTracks" in exp["sources"][0]:
                     for track in exp["sources"][0]["textTracks"]:
                         if self.settings.is_allowed_text_lang(track["language"], media_data):
                             subtitle_src = track["src"]
