@@ -562,27 +562,14 @@ class MediaReaderTest(BaseUnitTestClass):
         self.assertEqual(old_hash, State.get_hash(self.media_reader.media))
 
     def test_mark_chapters_until_n_as_read(self):
+        media_data = self.add_test_media(server=self.test_server, limit=1)[0]
+        assert len(media_data["chapters"]) > 2
+        last_chapter_num = max(media_data["chapters"].values(), key=lambda x: x["number"])["number"]
+        last_chapter_num_read = last_chapter_num - 1
+        assert last_chapter_num > 1
+        self.media_reader.mark_chapters_until_n_as_read(media_data, last_chapter_num_read)
 
-        for server in self.media_reader.get_servers():
-            with self.subTest(server=server.id):
-                self.media_reader.media.clear()
-                media_list = server.get_media_list()
-                media_data = media_list[0]
-                self.media_reader.add_media(media_data)
-                assert len(media_data["chapters"]) > 2
-                last_chapter_num = max(media_data["chapters"].values(), key=lambda x: x["number"])["number"]
-                last_chapter_num_read = last_chapter_num - 1
-                assert last_chapter_num > 1
-                self.media_reader.mark_chapters_until_n_as_read(media_data, last_chapter_num_read)
-
-                assert all(map(lambda x: x["read"], filter(lambda x: last_chapter_num_read >= x["number"], media_data["chapters"].values())))
-
-                def fake_download_chapter(media_data, chapter_data):
-                    assert chapter_data["number"] > last_chapter_num_read
-                    return True
-
-                server.download_chapter = fake_download_chapter
-                self.media_reader.download_unread_chapters()
+        assert all(map(lambda x: x["read"], filter(lambda x: last_chapter_num_read >= x["number"], media_data["chapters"].values())))
 
     def test_download_unread_chapters(self):
         media_list = self.add_test_media(self.test_server)
@@ -1415,50 +1402,32 @@ class ServerTest(RealBaseUnitTestClass):
     def setUp(self):
         super().setUp()
 
-    def test_get_media_list(self):
+    def test_workflow(self):
         def func(server):
-            with self.subTest(server=server.id):
-                media_list = None
+            media_list = None
+            with self.subTest(server=server.id, list=True):
                 media_list = server.get_media_list()
                 assert media_list
                 assert isinstance(media_list, list)
                 assert all([isinstance(x, dict) for x in media_list])
                 assert all([x["media_type"] == server.media_type for x in media_list])
 
-                search_media_list = server.search(media_list[0]["name"])
+            with self.subTest(server=server.id, list=False):
+                search_media_list = server.search(media_list[0]["name"], limit=1)
                 assert isinstance(search_media_list, list)
                 assert all([isinstance(x, dict) for x in search_media_list])
-
-                for i in (0, -1):
-                    media_data = media_list[i]
-                    return_val = server.update_media_data(media_data)
-                    assert not return_val
-                    assert isinstance(media_data["chapters"], dict)
-        self.for_each(func, self.media_reader.get_servers())
-
-    def _download_helper(self, server, media_data):
-        for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
-            with self.subTest(server=server.id, stream=True):
-                if media_data["media_type"] & ANIME:
-                    assert self.media_reader.play(media_data.global_id, num_list=[chapter_data["number"]])
-            with self.subTest(server=server.id, stream=False):
-                unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
-                self.assertNotEqual(server.external, server.download_chapter(media_data, chapter_data, page_limit=2))
-                self.verify_download(media_data, chapter_data)
-                assert not server.download_chapter(media_data, chapter_data, page_limit=1)
-            return True
-        return False
-
-    def test_media_download_stream(self):
-        def func(server):
-            with self.subTest(server=server.id):
-                media_list = server.get_media_list()
-                if not media_list:
-                    self.skipTest("Can't load media")
-                for media_data in media_list:
-                    self.media_reader.add_media(media_data)
-                    if self._download_helper(server, media_data):
-                        break
+            for media_data in media_list:
+                self.media_reader.add_media(media_data)
+                for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
+                    with self.subTest(server=server.id, stream=True):
+                        if media_data["media_type"] & ANIME:
+                            assert self.media_reader.play(media_data.global_id, num_list=[chapter_data["number"]])
+                    if not os.getenv("SKIP_DOWNLOAD"):
+                        with self.subTest(server=server.id, stream=False):
+                            self.assertNotEqual(server.external, server.download_chapter(media_data, chapter_data, page_limit=2))
+                            self.verify_download(media_data, chapter_data)
+                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+                    return True
         self.for_each(func, self.media_reader.get_servers())
 
     def test_login_fail(self):
@@ -1480,7 +1449,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
         ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),
         ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1", "seirei-gensouki-spirit-chronicles-manga", None, "seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1"),
-        ("https://mangadex.org/chapter/6a0a63c1-3f57-4685-be6c-14e3ca7eb180/1", "a2c1d849-af05-4bbc-b2a7-866ebb10331f", None, "6a0a63c1-3f57-4685-be6c-14e3ca7eb180"),
+        ("https://mangadex.org/chapter/ea697e18-470c-4e80-baf0-a3972720178f/1", "8a3d319d-2d10-4364-928c-0f30fd367c24", None, "ea697e18-470c-4e80-baf0-a3972720178f"),
         ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
         ("https://mangasee123.com/read-online/Bobobo-Bo-Bo-Bobo-chapter-214-page-1.html", "Bobobo-Bo-Bo-Bobo", None, "102140"),
         ("https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
@@ -1623,7 +1592,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         media_data = server.get_media_list()[0]
         self.media_reader.add_media(media_data)
         self.assertTrue(media_data["chapters"])
-        self.media_reader.download_unread_chapters(name=media_data.global_id, limit=1)
+        self.media_reader.download_unread_chapters(name=media_data.global_id, limit=1, page_limit=7)
 
     def test_jnovel_club_parts_autodelete(self):
         from ..servers.jnovelclub import JNovelClubParts
@@ -1650,7 +1619,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
 
         def func(media):
             with self.subTest(media_name=media):
-                media_data = self.media_reader.search_for_media(media, limit_per_server=2, raiseException=True)
+                media_data = self.media_reader.search_for_media(media, media_type=ANIME, limit=2, raiseException=True)
                 self.assertTrueOrSkipTest(media)
                 for data in media_data:
                     self.media_reader.add_media(data, no_update=True)
