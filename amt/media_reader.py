@@ -556,8 +556,9 @@ class MediaReader:
         media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media()}
         if bundles:
             logging.info("Removing all bundles")
-            shutil.rmtree(self.settings.bundle_dir)
             self.bundles.clear()
+            shutil.rmtree(self.settings.bundle_dir)
+            os.mkdir(self.settings.bundle_dir)
         for dir in os.listdir(self.settings.media_dir):
             server = self.get_server(dir)
             server_path = os.path.join(self.settings.media_dir, dir)
