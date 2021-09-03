@@ -153,3 +153,13 @@ class TestAnimeServer(TestServer):
             TestAnimeServer.TEST_VIDEO_PATH = TEST_BASE + "test_video.mp4"
             subprocess.check_call(["ffmpeg", "-y", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", TestAnimeServer.TEST_VIDEO_PATH])
         os.link(TestAnimeServer.TEST_VIDEO_PATH, path)
+
+
+class TestNovel(TestServer):
+    id = "test_server_novel"
+    media_type = MediaType.NOVEL
+    extension = "txt"
+
+    def save_chapter_page(self, page_data, path):
+        with open(path, "w") as f:
+            f.write("text")

@@ -94,15 +94,18 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader.settings.password_manager_enabled = True
         self.media_reader.settings.password_load_cmd = r"echo -e a\\tb"
         self.media_reader.settings.shell = True
-        self.media_reader.settings.threads = max(8, len(self.media_reader.get_servers()))
         if not self.real:
             self.media_reader.settings.threads = 0
+        else:
+            self.media_reader.settings.threads = max(8, len(self.media_reader.get_servers()))
 
         self.media_reader.settings.suppress_cmd_output = True
         self.media_reader.settings.viewer = "echo {media} {title}"
         self.media_reader.settings.specific_settings = {}
         self.media_reader.settings.bundle_viewer = "[ -f {media} ]"
         self.media_reader.settings.bundle_cmds[self.media_reader.settings.bundle_format] = "ls {files}; touch {name}"
+
+        self.assertFalse(self.media_reader.settings.skip_ssl_verification())
 
     def setUp(self):
         self.stream_handler = logging.StreamHandler(sys.stdout)
@@ -157,12 +160,13 @@ class BaseUnitTestClass(unittest.TestCase):
                     assert os.path.exists(path)
                     if skip_file_type_validation:
                         continue
-                    if media_data["media_type"] == MediaType.MANGA:
+                    media_type = MediaType(media_data["media_type"])
+                    if media_type == MediaType.MANGA:
                         with open(path, "rb") as img_file:
                             img = Image.open(img_file)
                             self.assertIn(img.format.lower(), valid_image_formats)
                             self.assertIn(file_name.split(".")[-1], valid_image_formats)
-                    elif media_data["media_type"] == MediaType.ANIME:
+                    elif media_type == MediaType.ANIME:
                         if path.endswith(server.extension):
                             subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
 
@@ -412,6 +416,7 @@ class SettingsTest(BaseUnitTestClass):
         self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
 
     def test_auto_replace_dir(self):
+        media_data = self.add_test_media(server=self.test_server, limit=1)[0]
         self.settings.auto_replace = True
         os.mkdir(self.settings.get_replacement_dir())
         path = os.path.join(self.settings.get_replacement_dir(), TestServer.id)
@@ -422,7 +427,7 @@ class SettingsTest(BaseUnitTestClass):
         text = "A A"
         target = "B B"
         self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
-        self.assertEqual(self.settings.auto_replace_if_enabled(text, TestServer.id), target)
+        self.assertEqual(self.settings.auto_replace_if_enabled(text, media_data), target)
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
@@ -430,6 +435,12 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def setUp(self):
         super().setUp()
         self.media_reader.settings.password_manager_enabled = True
+
+    def test_skip_servers_that_cannot_be_imported(self):
+        with patch.dict(sys.modules, {"amt.tests.test_server": None}):
+            remaining_servers = set()
+            import_sub_classes(tests, TestServer, remaining_servers)
+            self.assertNotEqual(remaining_servers, TEST_SERVERS)
 
     def test_media_reader_add_remove_media(self):
         for server in self.media_reader.get_servers():
@@ -514,7 +525,7 @@ class MediaReaderTest(BaseUnitTestClass):
         self.settings.cookie_files = []
         with open(self.settings.get_cookie_file(), "w") as f:
             f.write("\t".join([TestServer.domain, "TRUE", "/", "FALSE", "1640849596", name, value, "None"]))
-            f.write("\n")
+            f.write("\n#Comment\n")
             f.write("\t".join([f"#HttpOnly_.{TestServer.domain}", "TRUE", "/", "FALSE", "1640849596", name2, value2, "None"]))
 
         self.media_reader.state.load_session_cookies()
@@ -682,7 +693,6 @@ class MediaReaderTest(BaseUnitTestClass):
             names.add(self.media_reader.bundle_unread_chapters(shuffle=True))
         assert names
         assert all(names)
-        assert len(names) > 1
 
     def test_bundle_no_unreads(self):
         assert not self.media_reader.bundle_unread_chapters()
@@ -762,12 +772,10 @@ class ApplicationTest(BaseUnitTestClass):
 
     @patch("builtins.input", return_value="0")
     def test_load_from_tracker(self, input):
-        c, n = self.media_reader.load_from_tracker(1)
-        assert c
-        self.assertEqual(n, c)
-        c2, n2 = self.media_reader.load_from_tracker(1)
-        self.assertEqual(c, c2)
-        self.assertEqual(0, n2)
+        n = self.media_reader.load_from_tracker(1)
+        self.assertTrue(n)
+        self.assertEqual(n, len(self.media_reader.get_media_ids()))
+        self.assertEqual(0, self.media_reader.load_from_tracker(1))
 
     def test_select_chapter(self):
         self.media_reader.auto_select = True
@@ -914,12 +922,12 @@ class ArgsTest(MinimalUnitTestClass):
             self.assertEqual(self.settings.get_field(key_values[i][0]), key_values[i][-1])
 
     def test_set_settings_server_specific(self):
-        self.settings.force_odd_pages = 0
+        self.settings.set_field("force_odd_pages", False)
         key, value = "force_odd_pages", 1
         parse_args(media_reader=self.media_reader, args=["setting", "--target", TestServer.id, key, str(value)])
         self.settings.load()
         self.assertEqual(self.settings.get_field(key, TestServer.id), value)
-        self.assertEqual(self.settings.get_field(key), 0)
+        self.assertEqual(self.settings.get_field(key), False)
 
     @patch("getpass.getpass", return_value="0")
     def test_set_password(self, input):

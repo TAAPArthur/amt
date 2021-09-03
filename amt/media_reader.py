@@ -32,6 +32,7 @@ def import_sub_classes(m, base_class, results):
                 if issubclass(obj, base_class) and obj.id:
                     results.add(obj)
         except ImportError:
+            logging.debug("Could not import %s", name)
             pass
 
 
@@ -508,7 +509,6 @@ class MediaReader:
     def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=True, local_only=False, update_progress_only=False, force=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
-        count = 0
         new_count = 0
 
         unknown_media = []
@@ -534,12 +534,11 @@ class MediaReader:
                 progress = entry["progress"] if not media_data["progressVolumes"] else entry["progressVolumes"]
                 self.mark_chapters_until_n_as_read(media_data, progress, force=force)
                 media_data["progress"] = progress
-            count += 1
         if unknown_media:
             logging.info("Could not find any of %s", unknown_media)
 
         self.list()
-        return count, new_count
+        return new_count
     # MISC
 
     def offset(self, name, offset):

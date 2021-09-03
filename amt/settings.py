@@ -128,9 +128,10 @@ class Settings:
 
         yield from self._replacements[""]
 
-        for key in media_data.get_labels(reverse=True) if isinstance(media_data, dict) else [media_data]:
-            if key and key in self._replacements:
-                yield from self._replacements[key]
+        if media_data:
+            for key in media_data.get_labels(reverse=True):
+                if key and key in self._replacements:
+                    yield from self._replacements[key]
 
     def auto_replace_if_enabled(self, text, media_data=None):
         if self.get_field("auto_replace", media_data=media_data):
