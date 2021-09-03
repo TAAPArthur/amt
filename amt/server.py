@@ -8,13 +8,7 @@ from requests.exceptions import HTTPError
 
 from .job import Job
 from .state import MediaData
-
-MANGA = 1
-NOVEL = 2
-ANIME = 4
-NOT_ANIME = MANGA | NOVEL
-ALL_MEDIA = NOT_ANIME | ANIME
-MEDIA_TYPES = {"MANGA": MANGA, "NOVEL": NOVEL, "ANIME": ANIME}
+from .util.media_type import MediaType
 
 
 class GenericServer:
@@ -30,7 +24,7 @@ class GenericServer:
     domain = None
     extension = "jpeg"
     external = False
-    media_type = MANGA
+    media_type = MediaType.MANGA
     stream_url_regex = None
     is_premium = False
     # If set, updating will cause chapters that are now longer available on the server to be removed
@@ -273,7 +267,7 @@ class Server(GenericServer):
             job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
         job.run()
 
-        if self.media_type == MANGA and len(list_of_pages[:page_limit]) % 2 and self.settings.get_field("force_odd_pages", media_data=media_data):
+        if self.media_type == MediaType.MANGA and len(list_of_pages[:page_limit]) % 2 and self.settings.get_field("force_odd_pages", media_data=media_data):
             from PIL import Image
             full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
             image = Image.new('RGB', (100, 100))
@@ -285,8 +279,8 @@ class Server(GenericServer):
 
         return True
 
-    def create_media_data(self, id, name, season_id=None, season_title="", media_type=None, dir_name=None, offset=0, alt_id=None, progressVolumes=False, **kwargs):
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=media_type or self.media_type, progress=0, season_id=season_id, season_title=season_title, offset=offset, chapters={}, alt_id=alt_id, trackers={}, progressVolumes=progressVolumes, **kwargs))
+    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progressVolumes=False, **kwargs):
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, chapters={}, alt_id=alt_id, trackers={}, progressVolumes=progressVolumes, **kwargs))
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():

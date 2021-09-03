@@ -3,12 +3,13 @@ from time import sleep
 
 from bs4 import BeautifulSoup
 
-from ..server import NOVEL, Server
+from ..server import Server
+from ..util.media_type import MediaType
 
 
 class WLN_Updates(Server):
     id = "wlnupdates"
-    media_type = NOVEL
+    media_type = MediaType.NOVEL
     extension = "xhtml"
     api_url = "https://www.wlnupdates.com/api"
     stream_url_regex = re.compile(r"wlnupdates.com/series-id/(\d*)/")

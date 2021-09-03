@@ -2,6 +2,7 @@ import json
 import logging
 
 from . import cookie_manager
+from .util.media_type import MediaType
 
 
 def json_decoder(obj):
@@ -184,7 +185,7 @@ class MediaData(dict):
         return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={"number": 0})["number"]
 
     def get_labels(self, reverse=False):
-        labels = [self.global_id, self["name"], self["server_id"], self["media_type"]]
+        labels = [self.global_id, self["name"], self["server_id"], MediaType(self["media_type"]).name]
         if reverse:
             labels.reverse()
         return labels

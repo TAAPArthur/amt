@@ -16,11 +16,11 @@ from ..args import parse_args
 from ..job import Job, RetryException
 from ..media_reader import SERVERS, TRACKERS, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
-from ..server import ANIME, MANGA, MEDIA_TYPES, NOVEL
 from ..servers.custom import CustomServer, get_local_server_id
 from ..settings import Settings
 from ..state import State
 from ..util.decoder import GenericDecoder
+from ..util.media_type import MediaType
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
                           TestServerLogin)
 from .test_tracker import TestTracker
@@ -132,7 +132,7 @@ class BaseUnitTestClass(unittest.TestCase):
         assert media_list
         return media_list
 
-    def getChapters(self, media_type=ANIME | MANGA):
+    def getChapters(self, media_type=MediaType.ANIME | MediaType.MANGA):
         return [x for media_data in self.media_reader.get_media(media_type=media_type) for x in media_data["chapters"].values()]
 
     def verify_all_chapters_read(self, media_type=None):
@@ -157,12 +157,12 @@ class BaseUnitTestClass(unittest.TestCase):
                     assert os.path.exists(path)
                     if skip_file_type_validation:
                         continue
-                    if media_data["media_type"] == MANGA:
+                    if media_data["media_type"] == MediaType.MANGA:
                         with open(path, "rb") as img_file:
                             img = Image.open(img_file)
                             self.assertIn(img.format.lower(), valid_image_formats)
                             self.assertIn(file_name.split(".")[-1], valid_image_formats)
-                    elif media_data["media_type"] == ANIME:
+                    elif media_data["media_type"] == MediaType.ANIME:
                         if path.endswith(server.extension):
                             subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
 
@@ -207,6 +207,13 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
 
 
 class UtilTest(BaseUnitTestClass):
+    def test(self):
+        for media_type in list(MediaType):
+            self.assertEqual(media_type, MediaType.get(media_type.name))
+        self.assertEqual(MediaType.MANGA, MediaType.get("bad_name", MediaType.MANGA))
+
+
+class DecoderTest(BaseUnitTestClass):
     simple_img = [
         [1, 1, 1, 1, 2, 2, 0, 0],
         [1, 1, 1, 1, 2, 2, 0, 0],
@@ -819,7 +826,7 @@ class CustomTest(MinimalUnitTestClass):
 
     def setup_customer_server_data(self):
 
-        for media_type in (MANGA, ANIME, NOVEL):
+        for media_type in list(MediaType):
             local_server_id = get_local_server_id(media_type)
             dir = self.settings.get_server_dir(local_server_id)
             image = Image.new("RGB", (100, 100))
@@ -837,12 +844,12 @@ class CustomTest(MinimalUnitTestClass):
                     image.save(os.path.join(parent_dir, chapter_name), "jpeg")
 
     def test_custom_bundle(self):
-        server = self.media_reader.get_server(get_local_server_id(MANGA))
+        server = self.media_reader.get_server(get_local_server_id(MediaType.MANGA))
         self.add_test_media(server)
         self.assertTrue(self.media_reader.bundle_unread_chapters())
 
     def test_custom_update(self):
-        server = self.media_reader.get_server(get_local_server_id(MANGA))
+        server = self.media_reader.get_server(get_local_server_id(MediaType.MANGA))
         media_list = self.add_test_media(server)
         assert media_list
         for media_data in media_list:
@@ -952,8 +959,8 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(media_data["progress"], media_data.get_last_read())
 
     def test_load_filter_by_type(self):
-        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--media-type=ANIME", "test_user"])
-        assert all([x["media_type"] == ANIME for x in self.media_reader.get_media()])
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", f"--media-type={MediaType.ANIME.name}", "test_user"])
+        assert all([x["media_type"] == MediaType.ANIME for x in self.media_reader.get_media()])
 
     def test_load_add_progress_only(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--progress-only", "test_user"])
@@ -985,7 +992,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_stats(self):
         self.add_test_media()
         parse_args(media_reader=self.media_reader, args=["stats", "test_user"])
-        parse_args(media_reader=self.media_reader, args=["stats", "--media-type", "ANIME", "test_user"])
+        parse_args(media_reader=self.media_reader, args=["stats", "--media-type", MediaType.ANIME.name, "test_user"])
         parse_args(media_reader=self.media_reader, args=["stats", "-s", "NAME", "test_user"])
         parse_args(media_reader=self.media_reader, args=["stats", "-g", "NAME", "test_user"])
         parse_args(media_reader=self.media_reader, args=["stats", "--details", "-d", "NAME", "test_user"])
@@ -1189,13 +1196,13 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertTrue(os.path.exists(name))
         self.assertEqual(len(bundle_data), sum([len(x["chapters"]) for x in media_list]))
         parse_args(media_reader=self.media_reader, args=["read", os.path.basename(name)])
-        self.verify_all_chapters_read(MANGA)
+        self.verify_all_chapters_read(MediaType.MANGA)
 
     def test_bundle_read_simple(self):
         self.add_test_media(self.test_server)
         parse_args(media_reader=self.media_reader, args=["bundle"])
         parse_args(media_reader=self.media_reader, args=["read"])
-        self.verify_all_chapters_read(MANGA)
+        self.verify_all_chapters_read(MediaType.MANGA)
 
     def test_bundle_download_error(self):
         server = self.media_reader.get_server(TestServerLogin.id)
@@ -1237,7 +1244,7 @@ class ArgsTest(MinimalUnitTestClass):
 
         self.settings.viewer = "exit 1"
         parse_args(media_reader=self.media_reader, args=["play"])
-        assert not self.get_num_chapters_read(ANIME)
+        assert not self.get_num_chapters_read(MediaType.ANIME)
 
     def test_play_specific(self):
         media_data = self.add_test_media(self.test_anime_server)[0]
@@ -1257,12 +1264,12 @@ class ArgsTest(MinimalUnitTestClass):
         chapters = list(media_data.get_sorted_chapters())
         chapters[1]["read"] = True
         parse_args(media_reader=self.media_reader, args=["play", media_data["name"], "0"])
-        self.assertEquals(1, self.get_num_chapters_read(ANIME))
+        self.assertEquals(1, self.get_num_chapters_read(MediaType.ANIME))
 
     def test_get_stream_url(self):
         self.add_test_media(self.test_anime_server)
         parse_args(media_reader=self.media_reader, args=["get-stream-url"])
-        assert not self.get_num_chapters_read(ANIME)
+        assert not self.get_num_chapters_read(MediaType.ANIME)
 
     def test_stream(self):
         parse_args(media_reader=self.media_reader, args=["stream", TestAnimeServer.stream_url])
@@ -1286,7 +1293,7 @@ class ArgsTest(MinimalUnitTestClass):
     def test_add_from_url_stream_cont(self):
         parse_args(media_reader=self.media_reader, args=["add-from-url", TestAnimeServer.stream_url])
         parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.stream_url])
-        self.verify_all_chapters_read(ANIME)
+        self.verify_all_chapters_read(MediaType.ANIME)
 
     def test_add_from_url_bad(self):
         self.assertRaises(ValueError, parse_args, media_reader=self.media_reader, args=["add-from-url", "bad-url"])
@@ -1294,19 +1301,19 @@ class ArgsTest(MinimalUnitTestClass):
 
     def test_import_auto_detect_name(self):
         samples = [
-            ("ANIME", "Banner of the Stars", 1, "01. Banner of the Stars (Seikai no Senki) [480p][author].mkv"),
-            ("ANIME", "Magical Girl Lyrical Nanoha", 13, "[author] Magical Girl Lyrical Nanoha - 13 (type) [deadbeef].mkv"),
-            ("ANIME", "Magical Girl Lyrical Nanoha A's", 999, "[author] Magical Girl Lyrical Nanoha A's - 999.mkv"),
-            ("ANIME", "Steins;Gate", 1, "01 - Steins;Gate.mkv"),
-            ("ANIME", "Kaguya-sama", 1, "Kaguya-sama - 01.mkv"),
-            ("ANIME", "ViVid Strike!", 1, "[First Name] ViVid Strike! - 01 [BD 1080p][247EFC8F].mkv"),
-            ("ANIME", "Specials", 5.5, "[First Name] Specials - 05.5 [BD 1080p][247EFC8F].mkv"),
-            ("ANIME", "Ending", 0, "[First Name] Ending - ED [BD 1080p][247EFC8F].mkv"),
-            ("ANIME", "Attack No. 1", 2, "Attack No. 1 - 02.mkv"),
-            ("ANIME", "Alien 9", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
-            ("MANGA", "shamanking0", 1, "shamanking0_vol1.pdf"),
-            ("NOVEL", "i-refuse-to-be-your-enemy", 5, "i-refuse-to-be-your-enemy-volume-5.epub"),
-            ("ANIME", "Minami-ke", 2, "Minami-ke - S01E02.mkv"),
+            (MediaType.ANIME, "Banner of the Stars", 1, "01. Banner of the Stars (Seikai no Senki) [480p][author].mkv"),
+            (MediaType.ANIME, "Magical Girl Lyrical Nanoha", 13, "[author] Magical Girl Lyrical Nanoha - 13 (type) [deadbeef].mkv"),
+            (MediaType.ANIME, "Magical Girl Lyrical Nanoha A's", 999, "[author] Magical Girl Lyrical Nanoha A's - 999.mkv"),
+            (MediaType.ANIME, "Steins;Gate", 1, "01 - Steins;Gate.mkv"),
+            (MediaType.ANIME, "Kaguya-sama", 1, "Kaguya-sama - 01.mkv"),
+            (MediaType.ANIME, "ViVid Strike!", 1, "[First Name] ViVid Strike! - 01 [BD 1080p][247EFC8F].mkv"),
+            (MediaType.ANIME, "Specials", 5.5, "[First Name] Specials - 05.5 [BD 1080p][247EFC8F].mkv"),
+            (MediaType.ANIME, "Ending", 0, "[First Name] Ending - ED [BD 1080p][247EFC8F].mkv"),
+            (MediaType.ANIME, "Attack No. 1", 2, "Attack No. 1 - 02.mkv"),
+            (MediaType.ANIME, "Alien 9", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
+            (MediaType.MANGA, "shamanking0", 1, "shamanking0_vol1.pdf"),
+            (MediaType.NOVEL, "i-refuse-to-be-your-enemy", 5, "i-refuse-to-be-your-enemy-volume-5.epub"),
+            (MediaType.ANIME, "Minami-ke", 2, "Minami-ke - S01E02.mkv"),
         ]
 
         self.settings.viewer = "[ -f {media} ]"
@@ -1315,7 +1322,7 @@ class ArgsTest(MinimalUnitTestClass):
                 with open(file_name, "w") as f:
                     f.write("dummy_data")
                 assert os.path.exists(file_name)
-                parse_args(media_reader=self.media_reader, args=["import", "--media-type", media_type, file_name])
+                parse_args(media_reader=self.media_reader, args=["import", "--media-type", media_type.name, file_name])
                 assert not os.path.exists(file_name)
                 assert any([x["name"] == name for x in self.media_reader.get_media()])
                 for media_data in self.media_reader.get_media():
@@ -1324,7 +1331,7 @@ class ArgsTest(MinimalUnitTestClass):
                         self.assertEqual(len(chapters), 1)
                         self.assertEqual(chapters[0]["number"], number)
                         assert re.search(r"^\w+$", media_data["id"])
-                        self.assertEqual(media_data["media_type"], MEDIA_TYPES[media_type])
+                        self.assertEqual(media_data["media_type"], media_type)
                         assert self.media_reader.play(name, any_unread=True)
 
     def test_import_directory(self):
@@ -1343,7 +1350,7 @@ class ArgsTest(MinimalUnitTestClass):
             with open(name, "w") as f:
                 f.write("dummy_data")
         for name_list in (file_names, file_names2):
-            parse_args(media_reader=self.media_reader, args=["import", "--media-type=ANIME"] + name_list)
+            parse_args(media_reader=self.media_reader, args=["import", f"--media-type={MediaType.ANIME.name}"] + name_list)
             self.assertEqual(2, len(self.media_reader.get_media_ids()))
             for name in name_list:
                 with self.subTest(file_name=name):
@@ -1367,9 +1374,9 @@ class ArgsTest(MinimalUnitTestClass):
         assert any([x["name"] == "testMedia" for x in self.media_reader.get_media()])
         assert not os.path.exists(path2)
 
-        for i, media_type in enumerate(MEDIA_TYPES.keys()):
+        for i, media_type in enumerate(list(MediaType)):
             name = "name" + str(i)
-            parse_args(media_reader=self.media_reader, args=["import", "--link", "--name", name, "--media-type", media_type, path3])
+            parse_args(media_reader=self.media_reader, args=["import", "--link", "--name", name, "--media-type", media_type.name, path3])
             assert any([x["name"] == name for x in self.media_reader.get_media()])
             self.assertEqual(3 + i, len(self.media_reader.get_media_ids()))
             assert os.path.exists(path3)
@@ -1420,7 +1427,7 @@ class ServerTest(RealBaseUnitTestClass):
                 self.media_reader.add_media(media_data)
                 for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
                     with self.subTest(server=server.id, stream=True):
-                        if media_data["media_type"] & ANIME:
+                        if media_data["media_type"] & MediaType.ANIME:
                             assert self.media_reader.play(media_data.global_id, num_list=[chapter_data["number"]])
                     if not os.getenv("SKIP_DOWNLOAD"):
                         with self.subTest(server=server.id, stream=False):
@@ -1507,7 +1514,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
                 self.assertTrueOrSkipTest(servers)
                 for server in servers:
-                    if server.media_type == ANIME:
+                    if server.media_type == MediaType.ANIME:
                         assert self.media_reader.stream(url)
         self.for_each(func, url_list)
 
@@ -1555,7 +1562,7 @@ class RealArgsTest(RealBaseUnitTestClass):
     def test_load_from_tracker(self):
         anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
         self.media_reader.get_primary_tracker().set_custom_anime_list(anime)
-        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--media-type=ANIME"])
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", f"--media-type={MediaType.ANIME.name}"])
         self.assertEqual(len(anime), len(self.media_reader.get_media_ids()))
 
 
@@ -1619,7 +1626,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
 
         def func(media):
             with self.subTest(media_name=media):
-                media_data = self.media_reader.search_for_media(media, media_type=ANIME, limit=2, raiseException=True)
+                media_data = self.media_reader.search_for_media(media, media_type=MediaType.ANIME, limit=2, raiseException=True)
                 self.assertTrueOrSkipTest(media)
                 for data in media_data:
                     self.media_reader.add_media(data, no_update=True)

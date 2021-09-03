@@ -1,15 +1,16 @@
 import os
 import re
 
-from ..server import ANIME, MANGA, NOVEL, Server
+from ..server import Server
+from ..util.media_type import MediaType
 
 
 def get_local_server_id(media_type):
-    if media_type == ANIME:
+    if media_type == MediaType.ANIME:
         return LocalAnimeServer.id
-    elif media_type == MANGA:
+    elif media_type == MediaType.MANGA:
         return LocalMangaServer.id
-    elif media_type == NOVEL:
+    elif media_type == MediaType.NOVEL:
         return LocalLightNovelServer.id
 
 
@@ -45,14 +46,14 @@ class CustomServer(Server):
 
 class LocalAnimeServer(CustomServer):
     id = "local_anime"
-    media_type = ANIME
+    media_type = MediaType.ANIME
 
 
 class LocalMangaServer(CustomServer):
     id = "local_manga"
-    media_type = MANGA
+    media_type = MediaType.MANGA
 
 
 class LocalLightNovelServer(CustomServer):
-    id = "local_novels"
-    media_type = NOVEL
+    id = "local_novel"
+    media_type = MediaType.NOVEL

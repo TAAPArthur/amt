@@ -3,7 +3,7 @@ import logging
 import os
 
 from .media_reader_cli import MediaReaderCLI
-from .server import ANIME, MANGA, MEDIA_TYPES, NOVEL
+from .server import MediaType
 from .settings import Settings
 from .stats import Details, SortIndex, StatGroup
 
@@ -46,7 +46,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # add remove
     search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
-    search_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     search_parsers.add_argument("--limit", type=int, default=None, help="How many chapters will be downloaded per series")
     search_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
     search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
@@ -54,7 +54,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     search_parsers.set_defaults(func=media_reader.search_add)
 
     select_chapter_parsers = sub_parsers.add_parser("select", description="Search for and add media")
-    select_chapter_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    select_chapter_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
 
     select_chapter_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
     select_chapter_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
@@ -77,11 +77,11 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     update_parser = sub_parsers.add_parser("update", description="Update all media")
     update_parser.add_argument("--download", "-d", action="store_const", const=True, default=False, help="Update and download")
     update_parser.add_argument("--replace", "-r", action="store_const", const=True, default=False, help="Replace existing metadata instead of media_readerending")
-    update_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    update_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     update_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?", help="Update only specified media")
 
     download_parser = sub_parsers.add_parser("download-unread", help="Downloads all chapters that have not been read")
-    download_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    download_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     download_parser.add_argument("--limit", type=int, default=0, help="How many chapters will be downloaded per series")
     download_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?", help="Download only series determined by name")
     download_parser.set_defaults(func=media_reader.download_unread_chapters)
@@ -98,7 +98,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     bundle_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
     bundle_parser.add_argument("-l", "--limit", default=0, type=int)
     bundle_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
-    bundle_parser.add_argument("name", choices=media_reader.get_all_names(MANGA), default=None, nargs="?")
+    bundle_parser.add_argument("name", choices=media_reader.get_all_names(MediaType.MANGA), default=None, nargs="?")
     bundle_parser.set_defaults(func=media_reader.bundle_unread_chapters)
 
     read_parser = sub_parsers.add_parser("read", help="Open a saved bundle for reading. If the command exits with status 0, then the container chapters will be marked read")
@@ -110,7 +110,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     view_parser.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
     view_parser.add_argument("--limit", "-l", default=0, type=int)
     view_parser.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
-    view_parser.add_argument("name", choices=media_reader.get_all_names(MANGA | NOVEL), default=None, nargs="?")
+    view_parser.add_argument("name", choices=media_reader.get_all_names(MediaType.MANGA | MediaType.NOVEL), default=None, nargs="?")
     view_parser.add_argument("num_list", default=None, nargs="*", type=float)
     view_parser.set_defaults(func=media_reader.play)
 
@@ -120,7 +120,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     play_parser.add_argument("--limit", "-l", default=0, type=int)
     play_parser.add_argument("--quality", "-q", default=0, type=int)
     play_parser.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
-    play_parser.add_argument("name", choices=media_reader.get_all_names(ANIME), default=None, nargs="?")
+    play_parser.add_argument("name", choices=media_reader.get_all_names(MediaType.ANIME), default=None, nargs="?")
     play_parser.add_argument("num_list", default=None, nargs="*", type=float)
 
     steam_parser = sub_parsers.add_parser("stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
@@ -131,7 +131,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     stream_url_parser = sub_parsers.add_parser("get-stream-url", help="Gets the steaming url for the media")
     stream_url_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
-    stream_url_parser.add_argument("name", choices=media_reader.get_all_names(ANIME), default=None, nargs="?")
+    stream_url_parser.add_argument("name", choices=media_reader.get_all_names(MediaType.ANIME), default=None, nargs="?")
 
     # clean
     clean_parser = sub_parsers.add_parser("clean", help="Removes unused media")
@@ -144,7 +144,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     # external
     import_parser = sub_parsers.add_parser("import")
     import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
-    import_parser.add_argument("--media-type", default="ANIME", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    import_parser.add_argument("--media-type", default="ANIME", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
     import_parser.add_argument("files", nargs="+")
     import_parser.set_defaults(func=media_reader.import_media)
@@ -164,7 +164,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # stats
     stats_parser = sub_parsers.add_parser("stats", description="Show tracker stats")
-    stats_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    stats_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     stats_parser.add_argument("--refresh", action="store_const", const=True, default=False, help="Don't use cached data")
     stats_parser.add_argument("--details", action="store_const", const=True, default=False, help="Show media")
     stats_parser.add_argument("--details-type", "-d", choices=list(map(lambda x: x, Details)), type=lambda x: Details[x], default=Details.NAME, help="How details are displayed")
@@ -180,7 +180,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
     load_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
-    load_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    load_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
     load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media", dest="update_progress_only")
     load_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
@@ -188,7 +188,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     load_parser.set_defaults(func=media_reader.load_from_tracker)
 
     untrack_paraser = sub_parsers.add_parser("untrack", description="Removing tracker info")
-    untrack_paraser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    untrack_paraser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     untrack_paraser.add_argument("name", choices=media_reader.get_all_single_names(), nargs="?", help="Media to untrack")
     untrack_paraser.set_defaults(func=media_reader.remove_tracker)
 
@@ -199,11 +199,11 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sync_parser = sub_parsers.add_parser("sync", description="Attempts to update tracker with current progress")
     sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
     sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
-    sync_parser.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    sync_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     sync_parser.set_defaults(func=media_reader.sync_progress)
 
     mark_unread_parsers = sub_parsers.add_parser("mark-unread", description="Mark all known chapters as unread")
-    mark_unread_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    mark_unread_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     mark_unread_parsers.add_argument("name", default=None, choices=media_reader.get_all_names(), nargs="?")
     mark_unread_parsers.set_defaults(func=media_reader.mark_read)
     mark_unread_parsers.set_defaults(force=True, N=-1, abs=True)
@@ -211,7 +211,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     mark_parsers = sub_parsers.add_parser("mark-read", description="Mark all known chapters as read")
     mark_parsers.add_argument("--abs", action="store_const", const=True, default=False, help="Treat N as an abs number")
     mark_parsers.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
-    mark_parsers.add_argument("--media-type", choices=MEDIA_TYPES.keys(), help="Filter for a specific type")
+    mark_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     mark_parsers.add_argument("name", default=None, choices=media_reader.get_all_names(), nargs="?")
     mark_parsers.add_argument("N", type=int, default=0, nargs="?", help="Consider the last N chapters as not up-to-date")
 
@@ -254,8 +254,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     media_reader.auto_select = namespace.auto
     action = namespace.type
     kwargs = {k: v for k, v in vars(namespace).items() if k not in SPECIAL_PARAM_NAMES}
-    if "media_type" in namespace:
-        kwargs["media_type"] = MEDIA_TYPES.get(namespace.media_type, None)
     func = namespace.func if "func" in namespace else getattr(media_reader, action.replace("-", "_"))
     func(**kwargs)
 

@@ -10,7 +10,7 @@ from shlex import quote
 from subprocess import DEVNULL, CalledProcessError
 from threading import Lock
 
-from .server import ANIME, MANGA, NOVEL
+from .util.media_type import MediaType
 
 APP_NAME = "amt"
 
@@ -59,9 +59,9 @@ class Settings:
     # Server or media specific settings
     specific_settings = {
         "viewer": {
-            NOVEL: "zathura {media}",
-            ANIME: "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media}",
-            MANGA: "sxiv {media}"
+            MediaType.NOVEL.name: "zathura {media}",
+            MediaType.ANIME.name: "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media}",
+            MediaType.MANGA.name: "sxiv {media}"
         }
     }
     auto_replace = True

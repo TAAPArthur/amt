@@ -5,7 +5,8 @@ import subprocess
 from PIL import Image
 from requests.exceptions import HTTPError
 
-from ..server import ANIME, MEDIA_TYPES, Server
+from ..server import Server
+from ..util.media_type import MediaType
 
 TEST_BASE = "/tmp/amt/"
 
@@ -45,7 +46,7 @@ class TestServer(Server):
 
     def get_media_list(self, limit=None):
         self.maybe_inject_error()
-        media_type_name = [x for x in MEDIA_TYPES if MEDIA_TYPES[x] == self.media_type][0]
+        media_type_name = self.media_type.name
         return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-=")][:limit]
 
     def update_media_data(self, media_data):
@@ -120,7 +121,7 @@ class TestUnofficialServer(TestServer):
 
 class TestAnimeServer(TestServer):
     id = "test_server_anime"
-    media_type = ANIME
+    media_type = MediaType.ANIME
     _prefix = "Anime"
     extension = "ts"
     TEST_VIDEO_PATH = ""

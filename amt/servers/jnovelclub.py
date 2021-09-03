@@ -4,9 +4,12 @@ import re
 import shutil
 import time
 
+from ..util.media_type import MediaType
+
 from ..job import RetryException
-from ..server import MANGA, MEDIA_TYPES, NOVEL, Server
+from ..server import Server
 from ..util.decoder import GenericDecoder
+from ..util.media_type import MediaType
 
 
 class GenericJNovelClub(Server):
@@ -41,7 +44,7 @@ class GenericJNovelClub(Server):
         return True
 
     def _create_media_data_helper(self, data):
-        return [self.create_media_data(media_data["slug"], media_data["title"], progressVolumes=self.progressVolumes) for media_data in data if MEDIA_TYPES[media_data["type"]] == self.media_type]
+        return [self.create_media_data(item["slug"], item["title"], progressVolumes=self.progressVolumes) for item in data if MediaType[item["type"]] == self.media_type]
 
     def get_media_list(self, limit=None):
         r = self.session_get(self.series_url)
@@ -49,7 +52,7 @@ class GenericJNovelClub(Server):
         return self._create_media_data_helper(data)[:limit]
 
     def search(self, term, limit=None):
-        r = self.session_post(self.search_url, json={"query": term, "type": 1 if self.media_type == NOVEL else 2})
+        r = self.session_post(self.search_url, json={"query": term, "type": 1 if self.media_type == MediaType.NOVEL else 2})
         data = r.json()["series"][:limit]
         return [self.create_media_data(media_data["slug"], media_data["title"]) for media_data in data]
 
@@ -82,7 +85,7 @@ class GenericJNovelClub(Server):
 class JNovelClub(GenericJNovelClub):
     id = "j_novel_club"
     extension = "epub"
-    media_type = NOVEL
+    media_type = MediaType.NOVEL
     progressVolumes = True
 
     def update_media_data(self, media_data: dict):
@@ -98,7 +101,7 @@ class JNovelClub(GenericJNovelClub):
 class JNovelClubManga(JNovelClub):
     id = "j_novel_club_manga"
     alias = "j_novel_club"
-    media_type = MANGA
+    media_type = MediaType.MANGA
 
 
 class GenericJNovelClubParts(GenericJNovelClub):
@@ -138,7 +141,7 @@ class GenericJNovelClubParts(GenericJNovelClub):
 class JNovelClubParts(GenericJNovelClubParts):
     id = "j_novel_club_parts"
     extension = "xhtml"
-    media_type = NOVEL
+    media_type = MediaType.NOVEL
     pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
 
     stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+)")
@@ -149,7 +152,7 @@ class JNovelClubParts(GenericJNovelClubParts):
 
 class JNovelClubMangaParts(GenericJNovelClubParts):
     id = "j_novel_club_manga_parts"
-    media_type = MANGA
+    media_type = MediaType.MANGA
     stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+-manga-[\w\d\-]+)")
     pages_url = JNovelClub.api_domain + "/embed/{}"
 

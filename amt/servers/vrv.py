@@ -6,13 +6,14 @@ from datetime import datetime
 
 from requests_oauthlib import OAuth1
 
-from ..server import ANIME, Server
+from ..server import Server
+from ..util.media_type import MediaType
 
 
 class Vrv(Server):
     id = "vrv"
     home = "https://vrv.co/"
-    media_type = ANIME
+    media_type = MediaType.ANIME
     extension = "mp4"
     stream_url_regex = re.compile(r"vrv.co/watch/(\w*)/.+")
     is_premium = True

@@ -1,13 +1,14 @@
 import json
 import re
 
-from ..server import ANIME, Server
+from ..server import Server
+from ..util.media_type import MediaType
 
 
 class Animelab(Server):  # pragma: no cover
     #id = 'animelab'
     domain = "animelab.com"
-    media_type = ANIME
+    media_type = MediaType.ANIME
     extension = "mp4"
 
     base_url = "https://www.animelab.com"

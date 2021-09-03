@@ -2,7 +2,8 @@ import os
 import re
 from shlex import quote
 
-from ..server import ANIME
+from ..util.media_type import MediaType
+
 from .crunchyroll import GenericCrunchyrollServer
 
 
@@ -17,7 +18,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     episode_url = api_base_url + "/info.0.json?session_id={}&media_id={}"
     bandwidth_regex = re.compile(r"BANDWIDTH=([0-9]*),")
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
-    media_type = ANIME
+    media_type = MediaType.ANIME
 
     stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/.*-(\d+)$")
 
@@ -100,7 +101,6 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     def get_stream_data(self, media_data, chapter_data):
         import m3u8
-        assert media_data["media_type"] == ANIME
         m3u8_url = self.get_stream_url(media_data=media_data, chapter_data=chapter_data)
         return [self.create_page_data(url=segment.uri, encryption_key=segment.key) for segment in m3u8.load(m3u8_url).segments]
 

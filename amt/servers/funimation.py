@@ -4,7 +4,8 @@ import re
 
 from bs4 import BeautifulSoup
 
-from ..server import ANIME, Server
+from ..server import Server
+from ..util.media_type import MediaType
 
 
 class Funimation(Server):
@@ -26,7 +27,7 @@ class Funimation(Server):
     list_url = "https://api-funimation.dadcdigital.com/xml/longlist/content/page/?id=shows&limit={}"
     # list_url = "https://prod-api-funimationnow.dadcdigital.com/api/funimation/shows/"
 
-    media_type = ANIME
+    media_type = MediaType.ANIME
     stream_url_regex = re.compile(r"funimation(.com|now.uk)")
     showID_regex = re.compile(r"KANE_customdimensions.showID = '(\d*)'")
     extension = "mp4"

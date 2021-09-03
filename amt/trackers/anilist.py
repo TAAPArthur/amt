@@ -1,7 +1,7 @@
 import logging
 
-from ..server import ANIME, MANGA, MEDIA_TYPES
 from ..tracker import Tracker
+from ..util.media_type import MediaType
 
 
 class Anilist(Tracker):
@@ -122,7 +122,7 @@ class Anilist(Tracker):
             data = response.json()
             yield from [self.get_media_dict(
                 id=x["id"],
-                media_type=ANIME if x["media"]["type"] == "ANIME" else MEDIA_TYPES.get(x["media"]["format"], MANGA),
+                media_type=MediaType.ANIME if x["media"]["type"] == "ANIME" else MediaType.get(x["media"]["format"], MediaType.MANGA),
                 progress=x["progress"],
                 progressVolumes=x["progressVolumes"],
                 name=x["media"]["title"]["english"] or x["media"]["title"]["romaji"],

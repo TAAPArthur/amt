@@ -3,18 +3,16 @@ import os
 
 from . import stats
 from .media_reader import MediaReader
-from .server import ANIME, MANGA, NOVEL
+from .server import MediaType
 from .stats import Details, SortIndex, StatGroup
-
-TYPE_NAMES = {MANGA: "Manga", NOVEL: "Novel", ANIME: "Anime"}
 
 
 class MediaReaderCLI(MediaReader):
     auto_select = False
 
     def print_results(self, results):
-        for i, result in enumerate(results):
-            print("{:4}| {}\t{} {} ({})".format(i, result.global_id, result["name"], result["season_title"], TYPE_NAMES[result["media_type"]]))
+        for i, media_data in enumerate(results):
+            print("{:4}| {}\t{} {} ({})".format(i, media_data.global_id, media_data["name"], media_data["season_title"], MediaType(media_data["media_type"]).name))
 
     def select_media(self, term, results, prompt, no_print=False):
         index = 0
