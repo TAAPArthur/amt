@@ -1423,15 +1423,17 @@ class ServerTest(RealBaseUnitTestClass):
             media_list = None
             with self.subTest(server=server.id, list=True):
                 media_list = server.get_media_list()
-                assert media_list
+                assert media_list or not server.has_free_chapters
                 assert isinstance(media_list, list)
                 assert all([isinstance(x, dict) for x in media_list])
                 assert all([x["media_type"] == server.media_type for x in media_list])
 
             with self.subTest(server=server.id, list=False):
-                search_media_list = server.search(media_list[0]["name"], limit=1)
+                search_media_list = server.search(media_list[0]["name"] if media_list else "One", limit=1)
+                assert search_media_list or not server.has_free_chapters
                 assert isinstance(search_media_list, list)
                 assert all([isinstance(x, dict) for x in search_media_list])
+
             for media_data in media_list:
                 self.media_reader.add_media(media_data)
                 for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):

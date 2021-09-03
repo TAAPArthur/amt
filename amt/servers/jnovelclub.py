@@ -4,7 +4,7 @@ import re
 import shutil
 import time
 
-from ..util.media_type import MediaType
+from requests.exceptions import HTTPError
 
 from ..job import RetryException
 from ..server import Server
@@ -52,34 +52,9 @@ class GenericJNovelClub(Server):
         return self._create_media_data_helper(data)[:limit]
 
     def search(self, term, limit=None):
-        r = self.session_post(self.search_url, json={"query": term, "type": 1 if self.media_type == MediaType.NOVEL else 2})
+        r = self.session_post(self.search_url, json={"query": term.replace(" (Manga)", ""), "type": 1 if self.media_type == MediaType.NOVEL else 2})
         data = r.json()["series"][:limit]
         return [self.create_media_data(media_data["slug"], media_data["title"]) for media_data in data]
-
-    def download_sources(self, resources_path, path, url, text):
-        img_path = os.path.join(resources_path, os.path.basename(url).replace("%20", "_"))
-        with open(img_path, 'wb') as fp:
-            fp.write(self.session_get(url).content)
-        text = text.replace(url, os.path.relpath(img_path, os.path.dirname(path)))
-        return text
-
-    def save_chapter_page(self, page_data, path):
-        resources_path = os.path.join(os.path.dirname(path), ".resourses")
-        os.makedirs(resources_path, exist_ok=True)
-        r = self.session_get(page_data["url"], stream=True)
-        text = r.text
-        try:
-            from bs4 import BeautifulSoup
-            soup = self.soupify(BeautifulSoup, r)
-            for tagName, linkField in (("img", "src"), ("link", "href")):
-                for element in soup.findAll(tagName):
-                    text = self.download_sources(resources_path, path, element[linkField], text)
-        except ImportError:
-            pass
-
-        text = self.settings.auto_replace_if_enabled(text, media_data=page_data["media_data"])
-        with open(path, 'w') as fp:
-            fp.write(text)
 
 
 class JNovelClub(GenericJNovelClub):
@@ -87,6 +62,22 @@ class JNovelClub(GenericJNovelClub):
     extension = "epub"
     media_type = MediaType.NOVEL
     progressVolumes = True
+    owned_url = "https://api.j-novel.club/api/users/me?filter={'include':[{'ownedBooks':'serie'}]}"
+    has_free_chapters = False
+
+    def filter_owned_volumes(self, media_list_func):
+        try:
+            r = self.session_get(self.owned_url)
+            media_ids = {volume["serie"] for volume in r.json()["ownedBooks"]}
+        except HTTPError:
+            media_ids = []
+        return list(filter(lambda x: x["id"] in media_ids, media_list_func)) if media_ids else []
+
+    def get_media_list(self, limit=None):
+        return self.filter_owned_volumes(super().get_media_list)[:limit]
+
+    def search(self, term, limit=None):
+        return self.filter_owned_volumes(lambda: super().search(term=term))[:limit]
 
     def update_media_data(self, media_data: dict):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
@@ -96,6 +87,26 @@ class JNovelClub(GenericJNovelClub):
     def get_media_chapter_data(self, media_data, chapter_data):
         r = self.session_get(self.pages_url.format(chapter_data["id"]))
         return [self.create_page_data(url=r.json()["downloads"][0]["link"])]
+
+    def save_chapter_page(self, page_data, path):
+        r = self.session_get(page_data["url"], stream=True)
+        if self.media_type == MediaType.NOVEL:
+            try:
+                from io import BytesIO
+                from zipfile import ZipFile
+                with ZipFile(BytesIO(r.content)) as epub, ZipFile(path, "w") as dest:
+                    for zipinfo in epub.infolist():
+                        if zipinfo.filename.endswith("xhtml"):
+                            text = epub.read(zipinfo.filename).decode()
+                            text = self.settings.auto_replace_if_enabled(text, media_data=page_data["media_data"])
+                            dest.writestr(zipinfo, text)
+                        else:
+                            dest.writestr(zipinfo, epub.read(zipinfo.filename))
+                return
+            except ImportError:
+                pass
+        with open(path, 'wb') as fp:
+            fp.write(r.content)
 
 
 class JNovelClubManga(JNovelClub):
@@ -136,6 +147,31 @@ class GenericJNovelClubParts(GenericJNovelClub):
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)
+
+    def download_sources(self, resources_path, path, url, text):
+        img_path = os.path.join(resources_path, os.path.basename(url).replace("%20", "_"))
+        with open(img_path, 'wb') as fp:
+            fp.write(self.session_get(url).content)
+        text = text.replace(url, os.path.relpath(img_path, os.path.dirname(path)))
+        return text
+
+    def save_chapter_page(self, page_data, path):
+        resources_path = os.path.join(os.path.dirname(path), ".resourses")
+        os.makedirs(resources_path, exist_ok=True)
+        r = self.session_get(page_data["url"])
+        text = r.text
+        try:
+            from bs4 import BeautifulSoup
+            soup = self.soupify(BeautifulSoup, r)
+            for tagName, linkField in (("img", "src"), ("link", "href")):
+                for element in soup.findAll(tagName):
+                    text = self.download_sources(resources_path, path, element[linkField], text)
+        except ImportError:
+            pass
+
+        text = self.settings.auto_replace_if_enabled(text, media_data=page_data["media_data"])
+        with open(path, 'w') as fp:
+            fp.write(text)
 
 
 class JNovelClubParts(GenericJNovelClubParts):

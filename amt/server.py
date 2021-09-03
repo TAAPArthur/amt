@@ -31,6 +31,7 @@ class GenericServer:
     sync_removed = False
     official = True
     syncrhonize_chapter_downloads = False
+    has_free_chapters = True
 
     def get_media_list(self, limit=None):  # pragma: no cover
         """
