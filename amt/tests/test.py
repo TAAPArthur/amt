@@ -904,8 +904,8 @@ class ArgsTest(MinimalUnitTestClass):
 
     def test_set_settings(self):
         key_values = [("bundle_format", "jpg"), ("bundle_format", "true"),
-                      ("max_retires", "1", 1),
-                      ("max_retires", "2", 2),
+                      ("max_retries", "1", 1),
+                      ("max_retries", "2", 2),
                       ("password_manager_enabled", "true", True),
                       ("password_manager_enabled", "false", False)]
 

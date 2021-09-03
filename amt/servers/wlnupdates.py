@@ -36,7 +36,7 @@ class WLN_Updates(Server):
 
     def session_post(self, url, **kwargs):
         r = super().session_post(url, **kwargs)
-        for i in range(self.settings.max_retires):
+        for i in range(self.settings.max_retries):
             if not r.json()["error"]:
                 break
             sleep(1)

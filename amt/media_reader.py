@@ -53,9 +53,9 @@ class MediaReader:
         self._servers = {}
         self._trackers = []
 
-        if self.settings.max_retires:
+        if self.settings.max_retries:
             for prefix in ("http://", "https://"):
-                self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retires, status_forcelist=self.settings.status_to_retry)))
+                self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retries, status_forcelist=self.settings.status_to_retry)))
 
         self.session.headers.update({
             "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",

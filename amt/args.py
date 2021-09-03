@@ -151,7 +151,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # info
     list_parser = sub_parsers.add_parser("list")
-    list_parser.add_argument("--only-out-of-date", default=False, action="store_const", const=True)
+    list_parser.add_argument("--out-of-date-only", default=False, action="store_const", const=True)
     chapter_parsers = sub_parsers.add_parser("list-chapters")
     chapter_parsers.add_argument("name", choices=media_reader.get_all_names())
     sub_parsers.add_parser("list-servers")
