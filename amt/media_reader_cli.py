@@ -93,10 +93,10 @@ class MediaReaderCLI(MediaReader):
         assert data
         if media_type:
             data = list(filter(lambda x: x["media_type"] == media_type, data))
-        groupedData = stats.group_entries(data, min_score=min_score)[stat_group.value]
-        sortedData = stats.compute_stats(groupedData, sort_index.value, reverse=reverse, min_count=min_count, details=details, details_type=details_type)
+        grouped_data = stats.group_entries(data, min_score=min_score)[stat_group.value]
+        sorted_data = stats.compute_stats(grouped_data, sort_index.value, reverse=reverse, min_count=min_count, details=details, details_type=details_type)
         print("IDX", stats.get_header_str(stat_group, details, details_type=details_type))
-        for i, entry in enumerate(sortedData):
+        for i, entry in enumerate(sorted_data):
             print(f"{i+1:3} {stats.get_entry_str(entry, details)}")
 
     def auth(self):

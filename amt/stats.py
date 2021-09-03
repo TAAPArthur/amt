@@ -2,7 +2,13 @@ from collections import defaultdict
 from enum import Enum
 
 
-class StatGroup(Enum):
+class BaseEnum(Enum):
+
+    def __str__(self):
+        return self.name
+
+
+class StatGroup(BaseEnum):
     NAME = 0
     YEAR = 1
     DECADE = 2
@@ -14,7 +20,7 @@ class StatGroup(Enum):
     ALL = 8
 
 
-class SortIndex(Enum):
+class SortIndex(BaseEnum):
     NAME = 0
     COUNT = 1
     SCORE = 2
@@ -22,13 +28,13 @@ class SortIndex(Enum):
     WSCORE = 4
 
 
-class Details(Enum):
-    NAME = "name"
-    YEAR = "year"
-    SEASON = "season"
-    GENRE = "genre"
-    TAGS = "tags"
-    STUDIO = "studio"
+class Details(BaseEnum):
+    NAME = 0
+    YEAR = 1
+    SEASON = 2
+    GENRE = 3
+    TAGS = 4
+    STUDIO = 5
 
 
 def group_entries(media_list, min_score=1):
@@ -61,7 +67,7 @@ def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details=False
             avgScore = sum([media["score"] for media in media_list]) / count
             totalTime = sum([media["timeSpent"] for media in media_list])
             weightedScore = sum([media["score"] * media["timeSpent"] / totalTime for media in media_list]) if totalTime else 0
-            media_names = ", ".join(map(lambda x: str(x[details_type.value.lower()]), sorted(media_list, key=lambda x: x["score"], reverse=not reverse))) if details else None
+            media_names = ", ".join(map(lambda x: str(x[details_type.name.lower()]), sorted(media_list, key=lambda x: x["score"], reverse=not reverse))) if details else None
             stats.append((key, count, avgScore, totalTime / 60, weightedScore, media_names))
     stats.sort(key=lambda x: x[sortIndex], reverse=not reverse)
     return stats
