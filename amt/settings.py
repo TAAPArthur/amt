@@ -203,6 +203,11 @@ class Settings:
         except FileNotFoundError:
             pass
         if not skip_env_override and self.allow_env_override:
+            if os.getenv(f"{self.env_override_prefix}QUICK_TRY"):
+                self.password_manager_enabled = True
+                self.password_save_cmd = None
+                self.password_load_cmd = None
+
             for attr in Settings.get_members():
                 env_var = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
                 if env_var is not None:
@@ -233,6 +238,18 @@ class Settings:
             os.makedirs(dir, exist_ok=True)
         return dir
 
+    def _ask_for_credentials(self, server_id: str) -> (str, str):
+        if self.password_load_cmd:
+            try:
+                logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
+                output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
+                login, password = output.split(self.credential_separator)
+                return login, password
+            except subprocess.CalledProcessError:
+                logging.info("Unable to load credentials for %s", server_id)
+        else:
+            return input("Username: "), getpass.getpass()
+
     def get_credentials(self, server_id: str) -> (str, str):
         """Returns the saved username, password"""
         if self.password_override_prefix:
@@ -241,16 +258,7 @@ class Settings:
                 return var.split(self.credential_separator)
         if self.password_manager_enabled:
             with self._lock:
-                if self.password_load_cmd:
-                    try:
-                        logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
-                        output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
-                        login, password = output.split(self.credential_separator)
-                        return login, password
-                    except subprocess.CalledProcessError:
-                        logging.info("Unable to load credentials for %s", server_id)
-                else:
-                    return input("Username: "), getpass.getpass()
+                return self._ask_for_credentials(server_id)
 
     def store_credentials(self, server_id, username, password=None):
         """Stores the username, password for the given server_id"""

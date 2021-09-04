@@ -329,14 +329,15 @@ class SettingsTest(BaseUnitTestClass):
         os.environ["AMT_PASSWORD_LOAD_CMD"] = "1"
         self.settings.load()
         self.assertEqual(self.settings.password_load_cmd, "1")
+        del os.environ["AMT_PASSWORD_LOAD_CMD"]
 
     @patch("builtins.input", return_value="0")
     @patch("getpass.getpass", return_value="1")
     def test_settings_env_override_ask_credentials(self, _username, _password):
-        os.environ["AMT_PASSWORD_LOAD_CMD"] = ""
+        os.environ["AMT_QUICK_TRY"] = "1"
         self.settings.load()
-        self.assertEqual(self.settings.password_load_cmd, "")
         self.assertEquals(("0", "1"), self.media_reader.settings.get_credentials(TestServerLogin.id))
+        del os.environ["AMT_QUICK_TRY"]
 
     def test_credentials(self):
         server_id = "test"
