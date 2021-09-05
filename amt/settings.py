@@ -291,7 +291,7 @@ class Settings:
             logging.info("Running cmd %s: %s shell = %s, wd=%s", viewer, cmd, self.shell, wd)
             self.run_cmd(cmd, wd=wd)
             return True
-        except CalledProcessError:
+        except (CalledProcessError, KeyboardInterrupt):
             return False
 
     def open_viewer(self, files, media_data, chapter_data, wd):
