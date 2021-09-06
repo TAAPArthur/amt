@@ -527,7 +527,7 @@ class MediaReaderTest(BaseUnitTestClass):
         with open(self.settings.get_cookie_file(), "w") as f:
             f.write("\t".join([TestServer.domain, "TRUE", "/", "FALSE", "1640849596", name, value, "None"]))
             f.write("\n#Comment\n")
-            f.write("\t".join([f"#HttpOnly_.{TestServer.domain}", "TRUE", "/", "FALSE", "1640849596", name2, value2, "None"]))
+            f.write("\t".join([TestServer.domain, "TRUE", "/", "FALSE", "1640849596", name2, value2, "None"]))
 
         self.media_reader.state.load_session_cookies()
         assert self.media_reader.session.cookies
