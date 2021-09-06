@@ -237,7 +237,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # upgrade state
     upgrade_parser = sub_parsers.add_parser("upgrade", description="Upgrade old state to newer format")
-    upgrade_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
     upgrade_parser.set_defaults(func=media_reader.upgrade_state)
 
     # store password state
@@ -250,6 +249,9 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     namespace = parser.parse_args(args)
     logging.getLogger().setLevel(namespace.log_level)
+
+    if media_reader.state.is_out_of_date_minor():
+        media_reader.upgrade_state()
 
     if namespace.clear_cookies:
         media_reader.session.cookies.clear()

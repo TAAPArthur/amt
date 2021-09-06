@@ -246,9 +246,17 @@ class MediaReader:
             self.mark_chapters_until_n_as_read(media_data, last_read)
         return failures
 
-    def upgrade_state(self, force=False):
-        if self.state.is_out_of_date() or force:
-            self.migrate(None, move_self=True, force_same_id=True, raw_id=True)
+    def upgrade_state(self):
+        if self.state.is_out_of_date():
+            if self.state.is_out_of_date_minor():
+                for media_data in self.get_media():
+                    server = self.get_server(media_data["server_id"])
+                    updated_media_data = server.create_media_data(media_data["id"], media_data["name"])
+                    for key in updated_media_data.keys():
+                        if key not in media_data:
+                            media_data[key] = updated_media_data[key]
+            else:
+                self.migrate(None, move_self=True, force_same_id=True, raw_id=True)
             self.state.update_verion()
 
     # Updating media

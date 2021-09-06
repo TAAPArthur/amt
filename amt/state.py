@@ -124,10 +124,19 @@ class State:
         return True
 
     def is_out_of_date(self):
-        return self.all_media.get("version", 0) != self.version
+        return State.version > self.all_media.get("version", 0)
+
+    def is_out_of_date_minor(self):
+        """ Is a minor state upgrade needed
+        Minor upgrades are those that can before performed safely, without an
+        internet connect, without user input and the new state is forwards
+        compatible (the upgraded file can be used with an older program (same
+        major version) without any state loss
+        """
+        return State.version - self.all_media.get("version", 0) < 1
 
     def update_verion(self):
-        self.all_media["version"] = self.version
+        self.all_media["version"] = State.version
 
     def configure_media(self, server_list):
         for key in list(self.media.keys()):

@@ -1121,7 +1121,8 @@ class ArgsTest(MinimalUnitTestClass):
         for i in range(2):
             media_data = self.media_reader.get_single_media(name=media_data.global_id)
             self.assertEqual(media_data["offset"], 1)
-            self.media_reader.upgrade_state(force=True)
+            self.media_reader.state.all_media["version"] = 0
+            self.media_reader.upgrade_state()
 
     def test_migrate(self):
 
@@ -1387,21 +1388,35 @@ class ArgsTest(MinimalUnitTestClass):
             self.assertEqual(3 + i, len(self.media_reader.get_media_ids()))
             assert os.path.exists(path3)
 
-    def test_upgrade(self):
+    def _test_upgrade_helper(self, minor):
         self.add_test_media(self.test_anime_server)
         ids = list(self.media_reader.get_media_ids())
         removed_key = "removed_key"
+        new_key = "alt_id"
         self.media_reader.media[ids[0]][removed_key] = False
+        del self.media_reader.media[ids[0]][new_key]
         next(iter(self.media_reader.media[ids[1]]["chapters"].values())).pop("special")
         self.media_reader.mark_read()
 
         next(iter(self.media_reader.media[ids[2]]["chapters"].values()))["old_chapter_field"] = 10
-        parse_args(media_reader=self.media_reader, args=["upgrade", "-f"])
+
+        self.media_reader.state.update_verion()
+        self.media_reader.state.all_media["version"] -= .1 if minor else 1
+        self.assertEqual(self.media_reader.state.is_out_of_date_minor(), minor)
+        parse_args(media_reader=self.media_reader, args=["upgrade" if not minor else "list"])
         self.assertEqual(list(self.media_reader.get_media_ids()), ids)
-        assert removed_key not in self.media_reader.media[ids[0]]
-        self.assertTrue(all(["special" in x for x in self.media_reader.media[ids[1]]["chapters"].values()]))
-        self.assertTrue(all(["old_chapter_field" not in x for x in self.media_reader.media[ids[2]]["chapters"].values()]))
+        self.assertEqual(removed_key in self.media_reader.media[ids[0]], minor)
+        self.assertTrue(new_key in self.media_reader.media[ids[0]])
+        if not minor:
+            self.assertTrue(all(["special" in x for x in self.media_reader.media[ids[1]]["chapters"].values()]))
+            self.assertTrue(all(["old_chapter_field" not in x for x in self.media_reader.media[ids[2]]["chapters"].values()]))
         self.assertTrue(all([media_data.get_last_read() == media_data.get_last_chapter_number() for media_data in self.media_reader.get_media()]))
+
+    def test_upgrade_minor(self):
+        self._test_upgrade_helper(True)
+
+    def test_upgrade_major(self):
+        self._test_upgrade_helper(False)
 
     def test_upgrade_change_in_chapter_format_as_needed(self):
         media_list = self.add_test_media(self.test_anime_server)
