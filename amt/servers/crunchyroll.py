@@ -235,10 +235,9 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def _create_media_data(self, series_id, item_alt_id, season_id=None):
         r = self.session_get(self.series_url.format(self.get_session_id(), series_id))
         season_data = r.json()["data"]
-        unique_seasons = len(set(map(lambda x: x["season"], season_data))) == len(season_data)
         for season in season_data:
             if not season_id or season["collection_id"] == season_id:
-                yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], season_title=season["season"] if unique_seasons else season["collection_id"], dir_name=item_alt_id)
+                yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], dir_name=item_alt_id)
 
     def get_media_list(self, limit=None):
         return self.search("", limit=limit)
