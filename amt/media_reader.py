@@ -158,7 +158,7 @@ class MediaReader:
 
     def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], no_add=False, media_id=None, sort_func=None):
         results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude, limit=limit)
-        results = list(filter(lambda x: not media_id or str(x["id"]) == str(media_id), results))
+        results = list(filter(lambda x: not media_id or str(x["id"]) == str(media_id) or x.global_id == media_id, results))
         if sort_func:
             results.sort(key=sort_func)
         if len(results) == 0:
@@ -221,27 +221,34 @@ class MediaReader:
 
     ############# Upgrade and migration
 
-    def migrate(self, name, exact=False, move_self=False, force_same_id=False):
+    def migrate(self, name, exact=False, move_self=False, force_same_id=False, raw_id=False):
         media_list = []
         last_read_list = []
+        failures = 0
         for media_data in list(self.get_media(name=name)):
             self.remove_media(media_data)
             if move_self:
                 def func(x): return -sum([media_data.get(key, None) == x[key] for key in x])
-                new_media_data = self.search_add(media_data["name"], exact=exact, server_id=media_data["server_id"], media_id=media_data["id"] if force_same_id else None, sort_func=func)
+                new_media_data = self._search_for_tracked_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if not raw_id else media_data["id"] if force_same_id else None, sort_func=func)
             else:
-                new_media_data = self.search_add(media_data["name"], exact=exact, media_type=media_data["media_type"], servers_to_exclude=[media_data["server_id"]])
-            media_data.copy_fields_to(new_media_data)
-            media_list.append(new_media_data)
-            last_read_list.append(media_data.get_last_read())
+                new_media_data = self._search_for_tracked_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]])
+            if new_media_data:
+                media_data.copy_fields_to(new_media_data)
+                media_list.append(new_media_data)
+                last_read_list.append(media_data.get_last_read())
+            else:
+                logging.info("Failed to migrate %s", media_data.global_id)
+                self.add_media(media_data, no_update=True)
+                failures += 1
 
-        self.for_each(self.update_media, media_list)
+        self.for_each(self.update_media, media_list, raiseException=True)
         for media_data, last_read in zip(media_list, last_read_list):
-            self.mark_chapters_until_n_as_read(new_media_data, last_read)
+            self.mark_chapters_until_n_as_read(media_data, last_read)
+        return failures
 
     def upgrade_state(self, force=False):
         if self.state.is_out_of_date() or force:
-            self.migrate(None, move_self=True, force_same_id=True)
+            self.migrate(None, move_self=True, force_same_id=True, raw_id=True)
             self.state.update_verion()
 
     # Updating media
@@ -476,29 +483,30 @@ class MediaReader:
             tracker.update(data)
         return True if data else False
 
-    def _search_for_tracked_media(self, name, media_type, exact=False, local_only=False):
+    def _search_for_tracked_media(self, name, media_type, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
         def name_matches_media(name, media_data):
             return (name.lower().startswith(media_data["name"].lower()) or
                     name.lower().startswith(media_data["season_title"].lower()) or
                     name.lower() in (media_data["name"].lower(), media_data["season_title"].lower()))
 
-        alt_names = dict.fromkeys([name, re.sub(r"\W*$", "", name), re.sub(r"[^\w\d\s]+.*$", "", name)])
-        media_data = None
+        alt_names = dict.fromkeys([name, name.split(" Season")[0], re.sub(r"\W*$", "", name), re.sub(r"\s*[^\w\d\s]+.*$", "", name), re.sub(r"\W.*$", "", name)]) if not exact else [name]
+        media_data = known_matching_media = None
 
-        for name in alt_names:
-            known_matching_media = list(filter(lambda x: not self.get_tracker_info(x) and
-                                               (not media_type or media_type & x["media_type"]) and
-                                               (name_matches_media(name, x)), self.get_media()))
-            if known_matching_media:
-                break
+        if not skip_local_search:
+            for name in alt_names:
+                known_matching_media = list(filter(lambda x: not self.get_tracker_info(x) and
+                                                   (not media_type or media_type & x["media_type"]) and
+                                                   (name_matches_media(name, x)), self.get_media()))
+                if known_matching_media:
+                    break
 
         if known_matching_media:
             logging.debug("Checking among known media")
             media_data = self.select_media(name, known_matching_media, "Select from known media: ")
 
-        elif not local_only:
+        elif not skip_remote_search:
             for name in alt_names:
-                media_data = self.search_add(name, media_type=media_type)
+                media_data = self.search_add(name, media_type=media_type, exact=exact, **kwargs)
                 if media_data:
                     break
         if not media_data:
@@ -506,7 +514,7 @@ class MediaReader:
             return False
         return media_data
 
-    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=True, local_only=False, update_progress_only=False, force=False):
+    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, update_progress_only=False, force=False):
         tracker = self.get_primary_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         new_count = 0
@@ -520,7 +528,7 @@ class MediaReader:
             if not media_data_list:
                 if update_progress_only:
                     continue
-                media_data = self._search_for_tracked_media(entry["name"], entry["media_type"], exact=exact, local_only=local_only)
+                media_data = self._search_for_tracked_media(entry["name"], entry["media_type"], exact=exact, skip_remote_search=local_only)
                 if media_data:
                     self.track(media_data, tracker.id, entry["id"], entry["name"])
                     assert self.get_tracked_media(tracker.id, entry["id"])

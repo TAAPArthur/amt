@@ -47,7 +47,7 @@ class TestServer(Server):
     def get_media_list(self, limit=None):
         self.maybe_inject_error()
         media_type_name = self.media_type.name
-        return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-=")][:limit]
+        return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-="), self.create_media_data(id=5, name=f"{self.id} Unique Manga", unique=True)][:limit]
 
     def update_media_data(self, media_data):
         self.maybe_inject_error()
@@ -79,6 +79,8 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=26, title="ChapterSpecial", number=None, date="1998-08-10"),
             self.update_chapter_data(media_data, id=27, title="Chapter0.5", number=0.5, date="1998-08-10", special=True),
             self.update_chapter_data(media_data, id=28, title="Chapter4", number=4, date="1998-08-10", inaccessible=self.inaccessible),
+        else:
+            self.update_chapter_data(media_data, id=29, title="Chapter1", number=1)
 
     def get_media_chapter_data(self, media_data, chapter_data):
         self.maybe_inject_error()

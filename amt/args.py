@@ -63,6 +63,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     select_chapter_parsers.set_defaults(func=media_reader.select_chapter)
 
     migrate_parsers = sub_parsers.add_parser("migrate", description="Move media to another server")
+    migrate_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
+    migrate_parsers.add_argument("--force-same-id", action="store_const", const=True, default=False, help="Forces the media id to be the same")
     migrate_parsers.add_argument("--self", action="store_const", const=True, default=False, help="Re-adds the media", dest="move_self")
     migrate_parsers.add_argument("name", choices=media_reader.get_all_names(), help="Global id of media to move")
 
@@ -179,9 +181,10 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_parsers.add_parser("auth")
 
     load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
+    load_parser.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     load_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
-    load_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
+    load_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media", dest="update_progress_only")
     load_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
     load_parser.add_argument("user_name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")

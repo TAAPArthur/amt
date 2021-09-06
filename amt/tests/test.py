@@ -1124,34 +1124,30 @@ class ArgsTest(MinimalUnitTestClass):
             self.media_reader.upgrade_state(force=True)
 
     def test_migrate(self):
-        parse_args(media_reader=self.media_reader, args=["--auto", "search", "manga"])
+
+        media_list = self.add_test_media(self.test_server)
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only"])
-        media_data = list(self.media_reader.get_media())[0]
         self.media_reader.mark_read()
+        parse_args(media_reader=self.media_reader, args=["--auto", "migrate", "--exact", self.test_server.id])
+        self.assertEqual(len(self.media_reader.get_media_ids()), len(media_list))
 
-        assert self.media_reader.get_tracker_info(media_data)
-        parse_args(media_reader=self.media_reader, args=["--auto", "migrate", media_data["name"]])
-        self.assertEqual(1, len(self.media_reader.get_media_ids()))
-
-        media_data2 = list(self.media_reader.get_media())[0]
-        self.assertNotEqual(media_data.global_id, media_data2.global_id)
-        self.assertEqual(media_data.get_last_read(), media_data2.get_last_read())
-        self.assertEqual(media_data["progress"], media_data2["progress"])
-        assert self.media_reader.get_tracker_info(media_data2)
+        for media_data in media_list:
+            media_data2 = self.media_reader.get_single_media(name=media_data["name"])
+            if not media_data.get("unique", False):
+                self.assertNotEqual(media_data.global_id, media_data2.global_id)
+            self.assertEqual(media_data.get_last_read(), media_data2.get_last_read())
+            self.assertEqual(media_data["progress"], media_data2["progress"])
+            self.assertEqual(self.media_reader.get_tracker_info(media_data), self.media_reader.get_tracker_info(media_data2))
 
     def test_migrate_self(self):
-        parse_args(media_reader=self.media_reader, args=["--auto", "search", "manga"])
+        media_list = self.add_test_media(self.test_server)
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only"])
-        media_data = list(self.media_reader.get_media())[0]
-
         self.media_reader.mark_read()
-        parse_args(media_reader=self.media_reader, args=["migrate", "--self", media_data["name"]])
-        self.assertEqual(1, len(self.media_reader.get_media_ids()))
+        parse_args(media_reader=self.media_reader, args=["--auto", "migrate", "--self", "--force-same-id", self.test_server.id])
+        self.assertEqual(len(self.media_reader.get_media_ids()), len(media_list))
 
-        media_data2 = list(self.media_reader.get_media())[0]
-        self.assertEqual(media_data.global_id, media_data2.global_id)
-        self.assertEqual(media_data.get_last_read(), media_data2.get_last_read())
-        assert self.media_reader.get_tracker_info(media_data2)
+        for media_data in media_list:
+            self.assertEqual(media_data, self.media_reader.get_single_media(media_data.global_id))
 
     def test_remove(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "manga"])
@@ -1397,11 +1393,15 @@ class ArgsTest(MinimalUnitTestClass):
         removed_key = "removed_key"
         self.media_reader.media[ids[0]][removed_key] = False
         next(iter(self.media_reader.media[ids[1]]["chapters"].values())).pop("special")
+        self.media_reader.mark_read()
+
         next(iter(self.media_reader.media[ids[2]]["chapters"].values()))["old_chapter_field"] = 10
         parse_args(media_reader=self.media_reader, args=["upgrade", "-f"])
+        self.assertEqual(list(self.media_reader.get_media_ids()), ids)
         assert removed_key not in self.media_reader.media[ids[0]]
         self.assertTrue(all(["special" in x for x in self.media_reader.media[ids[1]]["chapters"].values()]))
         self.assertTrue(all(["old_chapter_field" not in x for x in self.media_reader.media[ids[2]]["chapters"].values()]))
+        self.assertTrue(all([media_data.get_last_read() == media_data.get_last_chapter_number() for media_data in self.media_reader.get_media()]))
 
     def test_upgrade_change_in_chapter_format_as_needed(self):
         media_list = self.add_test_media(self.test_anime_server)
