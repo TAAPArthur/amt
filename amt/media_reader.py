@@ -101,7 +101,7 @@ class MediaReader:
     def get_media_ids(self):
         return self.media.keys()
 
-    def get_media(self, name=None, media_type=None, shuffle=False):
+    def get_media(self, name=None, media_type=None, tag=None, shuffle=False):
         if isinstance(name, dict):
             yield name
             return
@@ -113,6 +113,8 @@ class MediaReader:
             if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id):
                 continue
             if media_type and media_data["media_type"] & media_type == 0:
+                continue
+            if tag and tag not in media_data["tags"]:
                 continue
             yield media_data
 
@@ -563,6 +565,15 @@ class MediaReader:
             for chapter in media_data["chapters"].values():
                 chapter["number"] -= diff_offset
             media_data["offset"] = offset
+
+    def tag(self, name, value):
+        for media_data in self.get_media(name=name):
+            media_data["tags"].append(value)
+
+    def untag(self, name, value):
+        for media_data in self.get_media(name=name):
+            if value in media_data["tags"]:
+                media_data["tags"].remove(value)
 
     def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, remove_not_on_disk=False, bundles=False):
         if remove_not_on_disk:

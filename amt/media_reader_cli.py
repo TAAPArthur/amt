@@ -41,13 +41,13 @@ class MediaReaderCLI(MediaReader):
         for id in sorted(self.get_servers_ids()):
             print(id)
 
-    def list(self, out_of_date_only=False):
+    def list(self, name=None, media_type=None, out_of_date_only=False, tag=None):
         i = 0
-        for media_data in self.get_media():
+        for media_data in self.get_media(name=name, media_type=media_type, tag=tag):
             last_chapter_num = media_data.get_last_chapter_number()
             last_read = media_data.get_last_read()
             if not out_of_date_only or last_chapter_num != last_read:
-                print("{:4}|\t{}\t{} {}\t{}/{}".format(i, media_data.global_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num))
+                print("{:4}|\t{}\t{} {}\t{}/{} {}".format(i, media_data.global_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, ",".join(media_data["tags"])))
                 i = i + 1
 
     def list_chapters(self, name):

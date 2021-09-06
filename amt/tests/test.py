@@ -938,6 +938,18 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["set-password", TestServerLogin.id, "username"])
         self.assertEquals(("username", "0"), self.media_reader.settings.get_credentials(TestServerLogin.id))
 
+    def test_tag(self):
+        self.add_test_media()
+        tag_name = "test"
+        for i in range(2):
+            parse_args(media_reader=self.media_reader, args=["untag", tag_name])
+            self.assertFalse(any(map(lambda x: x["tags"], self.media_reader.get_media())))
+            parse_args(media_reader=self.media_reader, args=["list", "--tag", tag_name])
+
+            parse_args(media_reader=self.media_reader, args=["tag", tag_name])
+            self.assertTrue(all(map(lambda x: [tag_name] == x["tags"], self.media_reader.get_media())))
+            parse_args(media_reader=self.media_reader, args=["list", "--tag", tag_name])
+
     def test_print_media_reader_state(self):
         self.add_test_media()
         chapter_id = list(self.media_reader.get_media_ids())[0]
