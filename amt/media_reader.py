@@ -101,7 +101,7 @@ class MediaReader:
     def get_media_ids(self):
         return self.media.keys()
 
-    def get_media(self, media_type=None, name=None, shuffle=False):
+    def get_media(self, name=None, media_type=None, shuffle=False):
         if isinstance(name, dict):
             yield name
             return
@@ -116,14 +116,14 @@ class MediaReader:
                 continue
             yield media_data
 
-    def get_single_media(self, media_type=None, name=None):
+    def get_single_media(self, name=None, media_type=None):
         if isinstance(name, dict):
             return name
         return next(self.get_media(media_type=media_type, name=name))
 
-    def get_unreads(self, media_type, name=None, shuffle=False, limit=None, any_unread=False):
+    def get_unreads(self, name=None, media_type=None, shuffle=False, limit=None, any_unread=False):
         count = 0
-        for media_data in self.get_media(media_type, name, shuffle):
+        for media_data in self.get_media(name, media_type=media_type, shuffle=shuffle):
             server = self.get_server(media_data["server_id"])
 
             lastRead = media_data.get_last_read()
@@ -313,13 +313,13 @@ class MediaReader:
         def download_selected_chapters(x):
             server, media_data, chapter = x
             return server.download_chapter(media_data, chapter, page_limit=page_limit)
-        return sum(self.for_each(download_selected_chapters, self.get_unreads(media_type, name=name, any_unread=any_unread, limit=limit), raiseException=not ignore_errors))
+        return sum(self.for_each(download_selected_chapters, self.get_unreads(name=name, media_type=media_type, any_unread=any_unread, limit=limit), raiseException=not ignore_errors))
 
     def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
         paths = []
         bundle_data = []
         self.download_unread_chapters(name=name, media_type=MediaType.MANGA, limit=limit, ignore_errors=ignore_errors)
-        for server, media_data, chapter in self.get_unreads(MediaType.MANGA, name=name, shuffle=shuffle, limit=limit):
+        for server, media_data, chapter in self.get_unreads(name=name, media_type=MediaType.MANGA, shuffle=shuffle, limit=limit):
             if server.is_fully_downloaded(media_data, chapter):
                 paths.append(server.get_children(media_data, chapter))
                 bundle_data.append(dict(media_id=media_data.global_id, chapter_id=chapter["id"]))
@@ -387,7 +387,7 @@ class MediaReader:
         return False
 
     def get_stream_url(self, name=None, shuffle=False):
-        for server, media_data, chapter in self.get_unreads(MediaType.ANIME, name=name, shuffle=shuffle):
+        for server, media_data, chapter in self.get_unreads(name=name, media_type=MediaType.ANIME, shuffle=shuffle):
             for url in server.get_stream_urls(media_data, chapter):
                 print(url)
 
@@ -402,7 +402,7 @@ class MediaReader:
 
     def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, quality=0, any_unread=False, force_abs=False):
         num = 0
-        for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(media_type, name=name, limit=limit, shuffle=shuffle, any_unread=any_unread)):
+        for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread)):
             dir_path = server._get_dir(media_data, chapter)
             if media_data["media_type"] == MediaType.ANIME:
                 if not server.is_fully_downloaded(media_data, chapter):
