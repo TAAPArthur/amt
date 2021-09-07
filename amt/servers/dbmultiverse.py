@@ -54,9 +54,3 @@ class Dbmultiverse(Server):
             pages.append(self.create_page_data(url=self.base_url + url, ext=ext))
 
         return pages
-
-    def save_chapter_page(self, page_data, path):
-        r = self.session_get(page_data["url"])
-
-        with open(path, "wb") as fp:
-            fp.write(r.content)

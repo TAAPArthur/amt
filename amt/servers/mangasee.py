@@ -78,9 +78,3 @@ class Mangasee(Server):
             number_str = "{:04d}".format(int(chapter_data["number"])) if chapter_data["number"] % 1 == 0 else "{:06.1f}".format(chapter_data["number"])
             pages.append(self.create_page_data(url=self.page_url.format(domain, media_data["id"], number_str, i + 1)))
         return pages
-
-    def save_chapter_page(self, page_data, path):
-        r = self.session_get(page_data["url"])
-        if r.status_code == 200:
-            with open(path, "wb") as fp:
-                fp.write(r.content)
