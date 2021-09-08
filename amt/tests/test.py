@@ -39,6 +39,12 @@ import_sub_classes(tests, TestServer, TEST_SERVERS)
 import_sub_classes(tests, TestTracker, TEST_TRACKERS)
 import_sub_classes(servers, CustomServer, LOCAL_SERVERS)
 
+ENABLE_ONLY_SERVERS = os.getenv("ENABLE_ONLY_SERVERS")
+SKIP_DOWNLOAD = os.getenv("SKIP_DOWNLOAD")
+SINGLE_THREADED = os.getenv("DEBUG")
+PREMIUM_TEST = os.getenv("PREMIUM_TEST")
+QUICK_TEST = os.getenv("QUICK")
+
 
 class TestApplication(MediaReaderCLI):
     def __init__(self, real=False, local=False):
@@ -49,8 +55,8 @@ class TestApplication(MediaReaderCLI):
         _servers = list(TEST_SERVERS)
         _trackers = list(TEST_TRACKERS)
         if real:
-            if os.getenv("ENABLE_ONLY_SERVERS"):
-                enabled_servers = set(os.getenv("ENABLE_ONLY_SERVERS").split(","))
+            if ENABLE_ONLY_SERVERS:
+                enabled_servers = set(ENABLE_ONLY_SERVERS.split(","))
                 _servers = [x for x in SERVERS if x.id in enabled_servers]
                 assert _servers
             else:
@@ -85,7 +91,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader = TestApplication(self.real, self.local)
 
     def for_each(self, func, media_list, raiseException=True):
-        Job(self.settings.threads if not os.getenv("DEBUG") else 0, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
+        Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
     def setup_settings(self):
         self.media_reader.settings.password_override_prefix = None
@@ -95,7 +101,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader.settings.password_manager_enabled = True
         self.media_reader.settings.password_load_cmd = r"echo -e a\\tb"
         self.media_reader.settings.shell = True
-        if not self.real:
+        if not self.real or SINGLE_THREADED:
             self.media_reader.settings.threads = 0
         else:
             self.media_reader.settings.threads = max(8, len(self.media_reader.get_servers()))
@@ -109,6 +115,9 @@ class BaseUnitTestClass(unittest.TestCase):
         self.assertFalse(self.media_reader.settings.skip_ssl_verification())
 
     def setUp(self):
+        # Clear all env variables
+        for k in set(os.environ.keys()):
+            del os.environ[k]
         self.stream_handler = logging.StreamHandler(sys.stdout)
         logger = logging.getLogger()
         logger.handlers = []
@@ -195,7 +204,7 @@ class BaseUnitTestClass(unittest.TestCase):
         assert not self.media_reader.get_media_ids()
 
     def assertTrueOrSkipTest(self, obj):
-        if os.getenv("ENABLE_ONLY_SERVERS") and not obj:
+        if ENABLE_ONLY_SERVERS and not obj:
             self.skipTest("Server not enabled")
         assert obj
 
@@ -205,7 +214,7 @@ class MinimalUnitTestClass(BaseUnitTestClass):
         self.local = True
 
 
-@unittest.skipIf(os.getenv("QUICK"), "Real servers are disabled")
+@unittest.skipIf(QUICK_TEST, "Real servers are disabled")
 class RealBaseUnitTestClass(BaseUnitTestClass):
     def init(self):
         self.real = True
@@ -603,7 +612,7 @@ class MediaReaderTest(BaseUnitTestClass):
 
         for media_data in media_list:
             for chapter_data in media_data["chapters"].values():
-                self.verify_download(media_data, chapter_data, skip_file_type_validation=True)
+                self.verify_download(media_data, chapter_data)
 
     def test_update_no_media(self):
         assert not self.media_reader.update()
@@ -1473,7 +1482,8 @@ class ServerTest(RealBaseUnitTestClass):
                     with self.subTest(server=server.id, stream=True):
                         if media_data["media_type"] & MediaType.ANIME:
                             assert self.media_reader.play(media_data.global_id, num_list=[chapter_data["number"]])
-                    if not os.getenv("SKIP_DOWNLOAD"):
+
+                    if not SKIP_DOWNLOAD:
                         with self.subTest(server=server.id, stream=False):
                             self.assertNotEqual(server.external, server.download_chapter(media_data, chapter_data, page_limit=2))
                             self.verify_download(media_data, chapter_data)
@@ -1520,7 +1530,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b", "1079937", "1174339", "1174543"),
     ]
 
-    @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
+    @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_verify_valid_stream_urls(self):
         for url, media_id, season_id, chapter_id in self.streamable_urls:
             with self.subTest(url=url):
@@ -1550,7 +1560,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         self.for_each(func, self.streamable_urls)
 
     def test_media_steam(self):
-        url_list = self.streamable_urls if not os.getenv("PREMIUM_TEST") else self.streamable_urls + self.premium_streamable_urls
+        url_list = self.streamable_urls if not PREMIUM_TEST else self.streamable_urls + self.premium_streamable_urls
 
         def func(url_data):
             url, media_id, season_id, chapter_id = url_data
@@ -1590,7 +1600,7 @@ class TrackerTest(RealBaseUnitTestClass):
             self.media_reader.set_primary_tracker(tracker)
             parse_args(media_reader=self.media_reader, args=["auth"])
 
-    @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
+    @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_load_stats(self):
         for tracker in self.media_reader.get_trackers():
             if tracker.id != TestTracker.id:
@@ -1602,7 +1612,7 @@ class TrackerTest(RealBaseUnitTestClass):
 
 class RealArgsTest(RealBaseUnitTestClass):
 
-    @unittest.skipIf(os.getenv("ENABLE_ONLY_SERVERS"), "Not all servers are enabled")
+    @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_load_from_tracker(self):
         anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
         self.media_reader.get_primary_tracker().set_custom_anime_list(anime)
@@ -1680,13 +1690,13 @@ class ServerSpecificTest(RealBaseUnitTestClass):
             self.verify_unique_numbers(media_data["chapters"])
 
 
-@unittest.skipUnless(os.getenv("PREMIUM_TEST"), "Premium tests is not enabled")
+@unittest.skipUnless(PREMIUM_TEST, "Premium tests is not enabled")
 class PremiumTest(RealBaseUnitTestClass):
     def setUp(self):
         super().setUp()
         self.settings.password_manager_enabled = True
 
-    @unittest.skipIf(os.getenv("SKIP_DOWNLOAD"), "Download tests is not enabled")
+    @unittest.skipIf(SKIP_DOWNLOAD, "Download tests is not enabled")
     def test_download_premium(self):
         for server in self.media_reader.get_servers():
             if server.has_login and not isinstance(server, TestServer):
