@@ -1,5 +1,4 @@
 import re
-from time import sleep
 
 from bs4 import BeautifulSoup
 
@@ -21,11 +20,11 @@ class WLN_Updates(Server):
     known_sources = {1781: ("Asian Hobbyist", lambda soup: ((e["value"], float(e.getText().split()[-1]), e.getText()) for e in soup.find("select", {"name": "chapter"}).findAll("option")))}
 
     def get_media_list(self, limit=None):
-        r = self.session_post("https://www.wlnupdates.com/api", json={"mode": "search-advanced", "series-type": {"Translated": "included"}})
+        r = self.session_post(self.api_url, json={"mode": "search-advanced", "series-type": {"Translated": "included"}})
         return [self.create_media_data(x["id"], x["title"]) for x in r.json()["data"][:limit]]
 
     def search(self, term, limit=None):
-        r = self.session_post("https://www.wlnupdates.com/api", json={"title": term, "mode": "search-title"})
+        r = self.session_post(self.api_url, json={"title": term, "mode": "search-title"})
         return [self.create_media_data(x["sid"], x["match"][0][1]) for x in r.json()["data"]["results"][:limit]]
 
     def get_media_data_from_url(self, url):
@@ -35,12 +34,11 @@ class WLN_Updates(Server):
         return media_data
 
     def session_post(self, url, **kwargs):
-        r = super().session_post(url, **kwargs)
-        for i in range(self.settings.max_retries):
-            if not r.json()["error"]:
-                break
-            sleep(1)
+        for i in range(100):
             r = super().session_post(url, **kwargs)
+            data = r.json()
+            if not data["error"] or "rate limited" not in data["message"]:
+                break
         return r
 
     def update_media_data(self, media_data):
