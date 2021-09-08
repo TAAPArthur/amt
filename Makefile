@@ -9,18 +9,21 @@ debug:
 inspect:
 	coverage run --source=amt -m unittest -v $(TEST_ARGS)
 
-quick-test:
-	QUICK=1 coverage run --source=amt -m unittest --buffer $(TEST_ARGS)
+quick_test_coverage: export QUICK=1
+quick_test_coverage: test
+	coverage report --omit "*test*,*server*,*tracker*,amt/util/decoder.py" --fail-under=100 --skip-empty -m
 
-coverage:
+full_test_coverage: test
+	coverage report --omit "*test*,amt/trackers/*,$$(grep login -l amt/servers/*.py | sed -z 's/\n/,/g')" --fail-under=100 --skip-empty -m
+	coverage report --omit "*test*" --fail-under=95 --skip-empty
+
+coverage_html:
 	coverage html
 
 install:
-	install -m 0744 -Dt "$(DESTDIR)/usr/lib/python3.9/$(APP_NAME)" $(APP_NAME)/*.py
-	install -m 0744 -Dt "$(DESTDIR)/usr/lib/python3.9/$(APP_NAME)/servers" $(APP_NAME)/servers/*.py
-	install -m 0744 -Dt "$(DESTDIR)/usr/lib/python3.9/$(APP_NAME)/trackers" $(APP_NAME)/trackers/*.py
-	install -m 0744 -Dt "$(DESTDIR)/usr/lib/python3.9/$(APP_NAME)/util" $(APP_NAME)/util/*.py
-	install -D -m 0755 main.py "$(DESTDIR)/usr/bin/amt"
+	python setup.py install "--root=$(DESTDIR)/"
+	install -D -m 0755 main.py "$(DESTDIR)/usr/bin/$(APP_NAME)"
+
 uninstall:
-	rm -rdf "$(DESTDIR)/usr/lib/python3.9/site-packages/$(APP_NAME)"
-	rm -f "$(DESTDIR)/usr/bin/amt"
+	rm -rdf "$(DESTDIR)"/usr/lib/python*/site-packages/"$(APP_NAME)"
+	rm -f "$(DESTDIR)/usr/bin/$(APP_NAME)"

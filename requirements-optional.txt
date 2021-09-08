@@ -1,0 +1,18 @@
+# needed for many servers including Funimation and Viz
+beautifulsoup4
+
+# for auto complete
+argcomplete
+
+# Needed for Viz and JnovelClubMangaParts
+Pillow
+
+# Needed for downloading Crunchyroll Anime
+m3u8
+pycryptodome
+
+# Needed mangasee
+cloudscraper
+
+# Needed for Vrv
+requests_oauthlib
