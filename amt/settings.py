@@ -35,9 +35,6 @@ class Settings:
         "cbz": "zip {name} {files}",
         "pdf": "convert -density 100 -units PixelsPerInch {name} {files}"
     }
-    converters = [
-        ("ts", "mp4", "cat {input} > {output}", "rm {}"),
-    ]
 
     # HTTP related; Generally used as args to requests
     bs4_parser = "html.parser"
@@ -312,11 +309,3 @@ class Settings:
         logging.info("Running cmd %s shell = %s", cmd, self.shell)
         self.run_cmd(cmd)
         return name
-
-    def convert(self, extension, files, destWithoutExt):
-        for ext, targetExt, cmd, cleanupCmd in self.converters:
-            if ext == extension:
-                targetFile = self._smart_quote(f"{destWithoutExt}.{targetExt}")
-                logging.info("Converting %s to %s", files, targetFile)
-                self.run_cmd(cmd.format(input=files, output=targetFile))
-                self.run_cmd(cleanupCmd.format(files))

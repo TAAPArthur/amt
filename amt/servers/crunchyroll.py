@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-from shlex import quote
 
 from ..server import Server
 from ..util.media_type import MediaType
@@ -303,8 +302,8 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         return map(lambda x: x[1], url_bandwidth_tuples)
 
     def post_download(self, media_data, chapter_data, dir_path):
-        pathWithoutExt = os.path.join(dir_path, chapter_data["id"])
-        self.settings.convert(self.extension, f"{quote(dir_path)}/*.{self.extension}", pathWithoutExt)
+        dest = os.path.join(dir_path, chapter_data["id"]) + ".mp4"
+        self.settings.run_cmd(f"cat *.{self.extension} > {dest} && rm *.{self.extension}", wd=dir_path)
 
     def get_stream_data(self, media_data, chapter_data):
         import m3u8
