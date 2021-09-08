@@ -1,0 +1,25 @@
+name: Full Test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        sudo apt-get install ffmpeg
+        python -m pip install --upgrade pip
+        pip install coverage
+        pip install -r requirements.txt
+        pip install -r requirements-optional.txt
+    - name: Test and Code coverage
+      run: |
+        make full_test_coverage
