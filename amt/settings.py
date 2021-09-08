@@ -67,6 +67,7 @@ class Settings:
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
     force_odd_pages = True
+    post_process_cmd = None
     text_languages = ("en", "en-US", "English")
     threads = 8  # per server thread count
 
@@ -290,6 +291,11 @@ class Settings:
             return True
         except (CalledProcessError, KeyboardInterrupt):
             return False
+
+    def post_process(self, media_data, dir_path):
+        cmd = self.get_field("post_process_cmd", media_data)
+        if cmd:
+            self.run_cmd(cmd, wd=dir_path)
 
     def open_viewer(self, files, media_data, chapter_data, wd):
         viewer = self.get_field("viewer", media_data)

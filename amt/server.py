@@ -269,6 +269,7 @@ class Server(GenericServer):
             image.save(full_path, "jpeg")
 
         self.post_download(media_data, chapter_data, dir_path)
+        self.settings.post_process(media_data, dir_path)
         self.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
 

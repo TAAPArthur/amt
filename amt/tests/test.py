@@ -7,6 +7,7 @@ import subprocess
 import sys
 import unittest
 from inspect import findsource
+from subprocess import CalledProcessError
 from unittest.mock import patch
 
 from PIL import Image
@@ -429,6 +430,10 @@ class SettingsTest(BaseUnitTestClass):
         target = "B B"
         self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
         self.assertEqual(self.settings.auto_replace_if_enabled(text, media_data), target)
+
+    def test_post_process_fail(self):
+        self.settings.post_process_cmd = "exit 1"
+        self.assertRaises(CalledProcessError, self.settings.post_process, None, None)
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
