@@ -56,7 +56,7 @@ class Mangadex(Server):
                 chapter_data = chapter["data"]
                 attr = chapter_data["attributes"]
                 if self.settings.is_allowed_text_lang(attr["translatedLanguage"], media_data):
-                    if attr["chapter"] not in visited_chapter_numbers:
+                    if attr["chapter"] not in visited_chapter_numbers and attr["data"]:
                         visited_chapter_numbers.add(attr["chapter"])
                         self.update_chapter_data(media_data, id=chapter_data["id"], number=attr["chapter"], title=attr["title"])
             offset += data["limit"]
