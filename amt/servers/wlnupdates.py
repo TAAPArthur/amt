@@ -9,7 +9,6 @@ from ..util.media_type import MediaType
 class WLN_Updates(Server):
     id = "wlnupdates"
     media_type = MediaType.NOVEL
-    extension = "xhtml"
     api_url = "https://www.wlnupdates.com/api"
     stream_url_regex = re.compile(r"wlnupdates.com/series-id/(\d*)/")
     number_in_chapter_url_regex = re.compile(r"(\d+[-\.]?\d*)")
@@ -75,7 +74,7 @@ class WLN_Updates(Server):
                     self.update_chapter_data(media_data, id=f"{number}-{source}", number=number, alt_id=chapter["srcurl"], title=title)
 
     def get_media_chapter_data(self, media_data, chapter_data):
-        return [self.create_page_data(url=chapter_data["alt_id"])]
+        return [self.create_page_data(url=chapter_data["alt_id"], ext="xhtml")]
 
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"])

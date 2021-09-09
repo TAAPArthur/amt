@@ -11,7 +11,6 @@ TEST_BASE = "/tmp/amt/"
 
 class TestServer(Server):
     id = "test_server_manga"
-    extension = "png"
     _prefix = "Manga"
     error_to_inject = None
     time_to_error = 0
@@ -84,7 +83,7 @@ class TestServer(Server):
         self.maybe_inject_error()
         if self.media_type == MediaType.ANIME:
             return super().get_media_chapter_data(media_data, chapter_data)
-        return [self.create_page_data(url=f"https://some_url.com/{chapter_data['id']}.{self.extension}") for k in range(3)]
+        return [self.create_page_data(url=f"https://some_url.com/{chapter_data['id']}", ext="test") for k in range(3)]
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()
@@ -124,7 +123,6 @@ class TestAnimeServer(TestServer):
     id = "test_server_anime"
     media_type = MediaType.ANIME
     _prefix = "Anime"
-    extension = "ts"
     stream_url = "https://www.test/url/4"
     stream_url_regex = re.compile(r".*/([0-9])")
 
@@ -148,4 +146,3 @@ class TestAnimeServer(TestServer):
 class TestNovel(TestServer):
     id = "test_server_novel"
     media_type = MediaType.NOVEL
-    extension = "txt"

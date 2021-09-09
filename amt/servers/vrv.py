@@ -14,7 +14,6 @@ class Vrv(Server):
     id = "vrv"
     home = "https://vrv.co/"
     media_type = MediaType.ANIME
-    extension = "mp4"
     stream_url_regex = re.compile(r"vrv.co/watch/(\w*)/.+")
     is_premium = True
 

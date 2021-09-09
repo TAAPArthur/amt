@@ -202,7 +202,7 @@ class Crunchyroll(GenericCrunchyrollServer):
         r = self.session_get(self.api_chapter_url.format(self.get_session_id(), chapter_data["id"], Crunchyroll._api_auth_token))
         raw_pages = r.json()["pages"]
         raw_pages.sort(key=lambda x: int(x["number"]))
-        pages = [self.create_page_data(url=page["locale"][media_data["locale"]][self.page_url_key]) for page in raw_pages if page["locale"]]
+        pages = [self.create_page_data(url=page["locale"][media_data["locale"]][self.page_url_key], ext="jpg") for page in raw_pages if page["locale"]]
 
         return pages
 
@@ -226,8 +226,6 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     media_type = MediaType.ANIME
 
     stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/.*-(\d+)$")
-
-    extension = "ts"
 
     def _create_media_data(self, series_id, item_alt_id, season_id=None):
         r = self.session_get(self.series_url.format(self.get_session_id(), series_id))

@@ -30,7 +30,6 @@ class Funimation(Server):
     media_type = MediaType.ANIME
     stream_url_regex = re.compile(r"funimation(.com|now.uk)")
     showID_regex = re.compile(r"KANE_customdimensions.showID = '(\d*)'")
-    extension = "mp4"
 
     def _get_csrf(self):
         r = self.session_get(self.login_url)

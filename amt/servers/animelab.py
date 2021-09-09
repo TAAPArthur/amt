@@ -9,7 +9,6 @@ class Animelab(Server):  # pragma: no cover
     #id = 'animelab'
     domain = "animelab.com"
     media_type = MediaType.ANIME
-    extension = "mp4"
 
     base_url = "https://www.animelab.com"
     search_url = base_url + "/shows/autocomplete?searchTerms={}"

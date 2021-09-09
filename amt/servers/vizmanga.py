@@ -112,7 +112,7 @@ class VizManga(Server):
 
         pages = []
         for i in range(num_pages):
-            pages.append(self.create_page_data(url=self.api_chapter_data_url.format(chapter_data["id"], i)))
+            pages.append(self.create_page_data(url=self.api_chapter_data_url.format(chapter_data["id"], i), ext="jpg"))
         return pages
 
     def save_chapter_page(self, page_data, path):

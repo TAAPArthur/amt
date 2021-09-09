@@ -5,7 +5,6 @@ from ..server import Server
 
 class Mangadex(Server):
     id = "mangadex"
-    extension = "png"
     official = False
 
     api_base_url = "https://api.mangadex.org"

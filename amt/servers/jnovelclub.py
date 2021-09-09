@@ -59,7 +59,6 @@ class GenericJNovelClub(Server):
 
 class JNovelClub(GenericJNovelClub):
     id = "j_novel_club"
-    extension = "epub"
     media_type = MediaType.NOVEL
     progressVolumes = True
     owned_url = "https://api.j-novel.club/api/users/me?filter={'include':[{'ownedBooks':'serie'}]}"
@@ -176,7 +175,6 @@ class GenericJNovelClubParts(GenericJNovelClub):
 
 class JNovelClubParts(GenericJNovelClubParts):
     id = "j_novel_club_parts"
-    extension = "xhtml"
     media_type = MediaType.NOVEL
     pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
 

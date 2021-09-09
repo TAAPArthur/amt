@@ -30,7 +30,6 @@ class GenericServer:
     id = None
     alias = None
     domain = None
-    extension = "jpeg"
     external = False
     media_type = MediaType.MANGA
     stream_url_regex = None
@@ -336,4 +335,5 @@ class Server(GenericServer):
     def create_page_data(self, url, id=None, encryption_key=None, ext=None):
         if not ext:
             ext = get_extension(url)
-        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext or self.extension)
+        assert ext, url
+        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext)
