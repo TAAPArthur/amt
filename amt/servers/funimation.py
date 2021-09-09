@@ -152,7 +152,7 @@ class Funimation(Server):
                         if self.settings.is_allowed_text_lang(track["language"], media_data):
                             subtitle_src = track["src"]
                             _, ext = os.path.splitext(subtitle_src)
-                            path = os.path.join(dir_path, f"{chapter_data['id']}_subtitles{ext}")
+                            path = os.path.join(dir_path, f"{chapter_data['id']}{ext}")
                             if not os.path.exists(path):
                                 r = self.session_get(subtitle_src)
                                 with open(path, "wb") as fp:

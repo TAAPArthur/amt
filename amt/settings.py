@@ -51,13 +51,14 @@ class Settings:
     no_load_session = False
     no_save_session = False
     shell = True
+    subtitles_dir = ".subtitles/"
     suppress_cmd_output = False
 
     # Server or media specific settings
     specific_settings = {
         "viewer": {
             MediaType.NOVEL.name: "zathura {media}",
-            MediaType.ANIME.name: "mpv --sub-file-paths=\"$PWD\" --sub-auto=all --title={title} {media}",
+            MediaType.ANIME.name: "mpv --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
             MediaType.MANGA.name: "sxiv {media}"
         }
     }

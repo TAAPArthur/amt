@@ -259,7 +259,11 @@ class Server(GenericServer):
             if not self.is_premium:
                 logging.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                 raise ValueError("Cannot access premium chapter")
-        self.download_subtitles(media_data, chapter_data, dir_path=dir_path)
+
+        if self.media_type == MediaType.ANIME:
+            sub_dir = os.path.join(dir_path, self.settings.subtitles_dir)
+            os.makedirs(sub_dir, exist_ok=True)
+            self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         if self.is_fully_downloaded(media_data, chapter_data):
