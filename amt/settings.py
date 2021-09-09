@@ -62,11 +62,12 @@ class Settings:
         }
     }
     auto_replace = True
-    bundle_viewer = "zathura {media}"
     bundle_format = "cbz"
+    bundle_viewer = "zathura {media}"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
     force_odd_pages = True
+    merge_ts_files = True
     post_process_cmd = None
     text_languages = ("en", "en-US", "English")
     threads = 8  # per server thread count
@@ -136,6 +137,9 @@ class Settings:
             for src, target in self.get_replacements(media_data=media_data):
                 text = re.sub(src, target, text)
         return text
+
+    def should_merge_ts_files(self, media_data):
+        return self.get_field("merge_ts_files", media_data)
 
     def is_allowed_text_lang(self, lang, media_data):
         return lang in self.get_field("text_languages", media_data)

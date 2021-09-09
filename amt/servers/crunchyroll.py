@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 
 from ..server import Server
@@ -223,7 +222,6 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     list_media = api_base_url + "/list_media.0.json?limit=2000&media_type=anime&session_id={}&series_id={}"
     stream_url = api_base_url + "/info.0.json?fields=media.stream_data&locale=enUS&session_id={}&media_id={}"
     episode_url = api_base_url + "/info.0.json?session_id={}&media_id={}"
-    bandwidth_regex = re.compile(r"BANDWIDTH=([0-9]*),")
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
     media_type = MediaType.ANIME
 
@@ -284,31 +282,5 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         chapter_id = chapter_data["id"]
 
         r = self.session_get(self.stream_url.format(self.get_session_id(), chapter_id))
-        stream = r.json()["data"]["stream_data"]["streams"][0]
-
-        r = self.session_get(stream["url"])
-        bandwidth = None
-        url_bandwidth_tuples = []
-        for line in r.text.splitlines():
-            if line.startswith("#"):
-                match = self.bandwidth_regex.search(line)
-                if match:
-                    bandwidth = int(match.group(1))
-            elif line:
-                url_bandwidth_tuples.append((bandwidth, line))
-        url_bandwidth_tuples.sort(reverse=True)
-        url_bandwidth_tuples.append((0, stream["url"]))
-
-        return map(lambda x: x[1], url_bandwidth_tuples)
-
-    def post_download(self, media_data, chapter_data, dir_path):
-        dest = os.path.join(dir_path, chapter_data["id"]) + ".mp4"
-        self.settings.run_cmd(f"cat *.{self.extension} > {dest} && rm *.{self.extension}", wd=dir_path)
-
-    def get_stream_data(self, media_data, chapter_data):
-        import m3u8
-        m3u8_url = self.get_stream_url(media_data=media_data, chapter_data=chapter_data)
-        return [self.create_page_data(url=segment.uri, encryption_key=segment.key) for segment in m3u8.load(m3u8_url).segments]
-
-    def get_media_chapter_data(self, media_data, chapter_data):
-        return self.get_stream_data(media_data, chapter_data)
+        streams = r.json()["data"]["stream_data"]["streams"]
+        return [stream["url"] for stream in streams]

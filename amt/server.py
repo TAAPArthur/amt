@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import shutil
 from functools import cache
 from threading import Lock
 
@@ -9,6 +10,13 @@ from requests.exceptions import HTTPError
 from .job import Job
 from .state import MediaData
 from .util.media_type import MediaType
+
+
+def get_extension(url):
+    _, ext = os.path.splitext(url.split("?")[0])
+    if ext and ext[0] == ".":
+        ext = ext[1:]
+    return ext
 
 
 class GenericServer:
@@ -60,7 +68,23 @@ class GenericServer:
         Returns a list of page/episode data. For anime (specifically for video files) this may be a list of size 1
         The default implementation is for anime servers and will contain the preferred stream url
         """
-        return [self.create_page_data(url=self.get_stream_url(media_data, chapter_data), ext=self.extension)]
+        last_err = None
+        for url in self.get_stream_urls(media_data=media_data, chapter_data=chapter_data):
+            ext = get_extension(url)
+            try:
+                if ext == "m3u8":
+                    import m3u8
+                    m = m3u8.load(url)
+                    if not m.segments:
+                        playlist = sorted(m.playlists, key=lambda x: x.stream_info.bandwidth, reverse=True)
+                        m = m3u8.load(playlist[0].uri)
+                    assert m.segments
+                    return [self.create_page_data(url=segment.uri, encryption_key=segment.key, ext="ts") for segment in m.segments]
+                else:
+                    return [self.create_page_data(url=url, ext=ext)]
+            except ImportError as e:
+                last_err = e
+        raise last_err
 
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"], stream=True)
@@ -69,7 +93,8 @@ class GenericServer:
         if key:
             from Crypto.Cipher import AES
             key_bytes = self.session_get_mem_cache(key.uri).content
-            content = AES.new(key_bytes, AES.MODE_CBC, key.iv).decrypt(content)
+            iv = int(key.iv, 16).to_bytes(16, "big") if key.iv else None
+            content = AES.new(key_bytes, AES.MODE_CBC, iv).decrypt(content)
         with open(path, 'wb') as fp:
             fp.write(content)
 
@@ -88,17 +113,24 @@ class GenericServer:
 
     ################ OPTIONAL #####################
 
+    def post_download(self, media_data, chapter_data, dir_path, pages):
+        if self.settings.should_merge_ts_files(media_data) and pages[0]["ext"] == "ts":
+            dest = os.path.join(dir_path, chapter_data["id"]) + ".mp4"
+            with open(dest, 'wb') as dest_file:
+                for page in pages:
+                    with open(page["path"], 'rb') as f:
+                        shutil.copyfileobj(f, dest_file)
+            for page in pages:
+                os.remove(page["path"])
+
+    def download_subtitles(self, media_data, chapter_data, dir_path):
+        pass
+
     def _get_dir(self, media_data, chapter_data, skip_create=False):
         return self.settings.get_chapter_dir(media_data, chapter_data, skip_create=skip_create)
 
     def _get_page_path(self, dir_path, page_data):
         return os.path.join(dir_path, Server.get_page_name_from_index(page_data["index"]) + "." + page_data["ext"])
-
-    def download_subtitles(self, media_data, chapter_data, dir_path):
-        pass
-
-    def post_download(self, media_data, chapter_data, dir_path):
-        pass
 
     def is_fully_downloaded(self, media_data, chapter_data):
         dir_path = self._get_dir(media_data, chapter_data)
@@ -254,12 +286,12 @@ class Server(GenericServer):
         for i, page_data in enumerate(list_of_pages[:page_limit]):
             page_data["media_data"] = media_data
             page_data["index"] = i
+            page_data["path"] = self._get_page_path(dir_path, page_data)
 
         # download pages
         job = Job(self.settings.get_num_threads(media_data), raiseException=True)
         for page_data in list_of_pages[:page_limit]:
-            full_path = self._get_page_path(dir_path, page_data)
-            job.add(lambda path=full_path, page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), path))
+            job.add(lambda page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), page_data["path"]))
         job.run()
 
         if self.media_type == MediaType.MANGA and len(list_of_pages[:page_limit]) % 2 and self.settings.get_field("force_odd_pages", media_data=media_data):
@@ -268,7 +300,7 @@ class Server(GenericServer):
             image = Image.new('RGB', (100, 100))
             image.save(full_path, "jpeg")
 
-        self.post_download(media_data, chapter_data, dir_path)
+        self.post_download(media_data, chapter_data, dir_path, list_of_pages[:page_limit])
         self.settings.post_process(media_data, dir_path)
         self.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
@@ -303,7 +335,5 @@ class Server(GenericServer):
 
     def create_page_data(self, url, id=None, encryption_key=None, ext=None):
         if not ext:
-            _, ext = os.path.splitext(url.split("?")[0])
-            if ext and ext[0] == ".":
-                ext = ext[1:]
+            ext = get_extension(url)
         return dict(url=url, id=id, encryption_key=encryption_key, ext=ext or self.extension)

@@ -1,8 +1,6 @@
 import os
 import re
-import subprocess
 
-from PIL import Image
 from requests.exceptions import HTTPError
 
 from ..server import Server
@@ -84,13 +82,14 @@ class TestServer(Server):
 
     def get_media_chapter_data(self, media_data, chapter_data):
         self.maybe_inject_error()
+        if self.media_type == MediaType.ANIME:
+            return super().get_media_chapter_data(media_data, chapter_data)
         return [self.create_page_data(url=f"https://some_url.com/{chapter_data['id']}.{self.extension}") for k in range(3)]
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()
         assert not os.path.exists(path)
-        image = Image.new("RGB", (100, 100))
-        image.save(path, self.extension)
+        open(path, "w").close()
 
 
 class TestServerLogin(TestServer):
@@ -126,10 +125,8 @@ class TestAnimeServer(TestServer):
     media_type = MediaType.ANIME
     _prefix = "Anime"
     extension = "ts"
-    TEST_VIDEO_PATH = ""
     stream_url = "https://www.test/url/4"
     stream_url_regex = re.compile(r".*/([0-9])")
-    is_protected = True
 
     def get_chapter_id_for_url(self, url):
         assert self.can_stream_url(url)
@@ -145,23 +142,10 @@ class TestAnimeServer(TestServer):
     def get_stream_urls(self, media_data=None, chapter_data=None):
         assert isinstance(media_data, dict) if media_data else True
         assert isinstance(chapter_data, dict) if chapter_data else True
-        return [f"https://{self.domain}/url.m3u8?key=1&false"]
-
-    def save_chapter_page(self, page_data, path):
-        self.maybe_inject_error()
-        assert not os.path.exists(path)
-        if not TestAnimeServer.TEST_VIDEO_PATH:
-            os.makedirs(TEST_BASE, exist_ok=True)
-            TestAnimeServer.TEST_VIDEO_PATH = TEST_BASE + "test_video.mp4"
-            subprocess.check_call(["ffmpeg", "-y", "-loglevel", "quiet", "-f", "lavfi", "-i", "testsrc=duration=1:size=10x10:rate=30", TestAnimeServer.TEST_VIDEO_PATH])
-        os.link(TestAnimeServer.TEST_VIDEO_PATH, path)
+        return [f"https://{self.domain}/url.mp4?key=1&false"]
 
 
 class TestNovel(TestServer):
     id = "test_server_novel"
     media_type = MediaType.NOVEL
     extension = "txt"
-
-    def save_chapter_page(self, page_data, path):
-        with open(path, "w") as f:
-            f.write("text")

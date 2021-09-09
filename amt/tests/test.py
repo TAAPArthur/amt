@@ -1646,6 +1646,16 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         assert session == server.get_session_id()
         assert server.needs_authentication()
 
+    def test_missing_m3u8(self):
+        from ..servers.crunchyroll import CrunchyrollAnime
+        server = self.media_reader.get_server(CrunchyrollAnime.id)
+        self.assertTrueOrSkipTest(server)
+        with patch.dict(sys.modules, {"m3u8": None}):
+            media_data = server.get_media_list(limit=1)[0]
+            self.media_reader.add_media(media_data)
+            chapter_data = next(filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()))
+            self.assertRaises(ImportError, server.download_chapter, media_data, chapter_data, 2)
+
     def test_jnovel_club_manga_parts_full_download(self):
         from ..servers.jnovelclub import JNovelClubMangaParts
         server = self.media_reader.get_server(JNovelClubMangaParts.id)
