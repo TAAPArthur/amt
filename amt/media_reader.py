@@ -380,7 +380,7 @@ class MediaReader:
                 if not chapter:
                     media_data = server.get_media_data_from_url(url)
                     chapter = media_data["chapters"][chapter_id]
-                dir_path = server._get_dir(media_data, chapter)
+                dir_path = server.get_chapter_dir(media_data, chapter)
                 if download:
                     server.download_chapter(media_data, chapter)
                 else:
@@ -413,7 +413,7 @@ class MediaReader:
     def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, quality=0, any_unread=False, force_abs=False):
         num = 0
         for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread)):
-            dir_path = server._get_dir(media_data, chapter)
+            dir_path = server.get_chapter_dir(media_data, chapter)
             if media_data["media_type"] == MediaType.ANIME:
                 if not server.is_fully_downloaded(media_data, chapter):
                     server.pre_download(media_data, chapter, dir_path=dir_path)
@@ -599,7 +599,7 @@ class MediaReader:
                         elif remove_read:
                             media_data = media_dirs[media_path]
                             for chapter_data in media_data.get_sorted_chapters():
-                                chapter_path = server._get_dir(media_data, chapter_data, skip_create=True)
+                                chapter_path = server.get_chapter_dir(media_data, chapter_data, skip_create=True)
                                 if chapter_data["read"] and os.path.exists(chapter_path):
                                     logging.info("Removing %s because it has been read", chapter_path)
                                     shutil.rmtree(chapter_path)

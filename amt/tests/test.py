@@ -161,7 +161,7 @@ class BaseUnitTestClass(unittest.TestCase):
         valid_image_formats = ("png", "jpeg", "jpg")
         assert server.is_fully_downloaded(media_data, chapter_data)
 
-        dir_path = server._get_dir(media_data, chapter_data)
+        dir_path = server.get_chapter_dir(media_data, chapter_data)
         for dirpath, dirnames, filenames in os.walk(dir_path):
             for file_name in filenames:
                 assert len(filenames) > 1, f"files: {filenames}, dirnames: {dirnames}"

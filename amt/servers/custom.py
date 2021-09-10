@@ -30,7 +30,7 @@ class CustomServer(Server):
     def is_fully_downloaded(self, media_data, chapter_data):
         return os.path.exists(os.path.join(self.settings.get_media_dir(media_data), chapter_data["id"]))
 
-    def _get_dir(self, media_data, chapter_data):
+    def get_chapter_dir(self, media_data, chapter_data):
         chapter = os.path.join(self.settings.get_media_dir(media_data), chapter_data["id"])
         return chapter if os.path.isdir(chapter) else self.settings.get_media_dir(media_data)
 

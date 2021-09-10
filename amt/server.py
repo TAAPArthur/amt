@@ -126,19 +126,19 @@ class GenericServer:
     def download_subtitles(self, media_data, chapter_data, dir_path):
         pass
 
-    def _get_dir(self, media_data, chapter_data, skip_create=False):
+    def get_chapter_dir(self, media_data, chapter_data, skip_create=False):
         return self.settings.get_chapter_dir(media_data, chapter_data, skip_create=skip_create)
 
     def _get_page_path(self, dir_path, page_data):
         return os.path.join(dir_path, Server.get_page_name_from_index(page_data["index"]) + "." + page_data["ext"])
 
     def is_fully_downloaded(self, media_data, chapter_data):
-        dir_path = self._get_dir(media_data, chapter_data)
+        dir_path = self.get_chapter_dir(media_data, chapter_data)
         full_path = os.path.join(dir_path, self.get_download_marker())
         return os.path.exists(full_path)
 
     def get_children(self, media_data, chapter_data):
-        return "{}/*".format(self._get_dir(media_data, chapter_data))
+        return "{}/*".format(self.get_chapter_dir(media_data, chapter_data))
 
     def needs_authentication(self):
         """
@@ -276,7 +276,7 @@ class Server(GenericServer):
 
     def _download_chapter(self, media_data, chapter_data, page_limit=None):
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
-        dir_path = self._get_dir(media_data, chapter_data)
+        dir_path = self.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
         self.pre_download(media_data, chapter_data, dir_path)
         list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
