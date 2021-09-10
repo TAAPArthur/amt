@@ -227,10 +227,10 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/.*-(\d+)$")
 
-    def _create_media_data(self, series_id, item_alt_id, season_id=None):
+    def _create_media_data(self, series_id, item_alt_id, season_id=None, limit=None):
         r = self.session_get(self.series_url.format(self.get_session_id(), series_id))
         season_data = r.json()["data"]
-        for season in season_data:
+        for season in season_data[:limit]:
             if not season_id or season["collection_id"] == season_id:
                 yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], dir_name=item_alt_id)
 
@@ -243,7 +243,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         media_data = []
         for item in data:
             item_alt_id = item["url"].split("/")[-1]
-            media_data += list([media for media in self._create_media_data(item["series_id"], item_alt_id)])
+            media_data += list([media for media in self._create_media_data(item["series_id"], item_alt_id, limit=limit)])
 
         return media_data
 

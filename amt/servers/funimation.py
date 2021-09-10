@@ -80,7 +80,7 @@ class Funimation(Server):
 
         return media_data
 
-    def get_media_list(self, limit=5):
+    def get_media_list(self, limit=2):
         return self._get_media_list(self.list_url.format(limit if limit else 0))
 
     def search(self, term, alt_id=None, limit=2):
