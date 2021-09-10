@@ -185,41 +185,36 @@ class MediaReader:
         del self.media[media_data.global_id]
 
     def import_media(self, files, media_type, link=False, name=None, no_update=False):
-        func = shutil.move if not link else os.link
-
-        local_server_id = get_local_server_id(media_type)
-        custom_server_dir = self.settings.get_server_dir(local_server_id)
-        os.makedirs(custom_server_dir, exist_ok=True)
-        assert os.path.exists(custom_server_dir)
+        server = self.get_server(get_local_server_id(media_type))
         names = set()
         volume_regex = r"(_|\s)?vol[ume-]*[\w\s]*(\d+)"
         for file in files:
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             media_name = name
             if not name:
+                if os.path.isdir(file):
+                    self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=os.path.basename(file), link=link, no_update=True)
+                    continue
                 match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)(.*\.\w+)$", re.sub(volume_regex, "", os.path.basename(file)))
-                if not match:
-                    if os.path.isdir(file):
-                        self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, link=link, no_update=True)
-                        continue
-                assert match
                 media_name = match.group(2)
                 logging.info("Detected name %s", media_name)
-            if os.path.isdir(file):
-                shutil.move(file, os.path.join(custom_server_dir, name or ""))
+
+            assert not os.path.isdir(file)
+            dest = server.get_import_media_dest(media_name=media_name, file_name=os.path.basename(file))
+            logging.info("Importing to %s", dest)
+            if link:
+                os.link(file, dest)
             else:
-                path = os.path.join(custom_server_dir, media_name)
-                os.makedirs(path, exist_ok=True)
-                dest = os.path.join(path, os.path.basename(file))
-                logging.info("Importing to %s", dest)
-                func(file, dest)
-            if media_name not in names:
-                if not any([x["name"] == media_name for x in self.get_media()]):
-                    self.search_add(media_name, server_id=local_server_id, exact=True)
-                names.add(media_name)
+                shutil.move(file, dest)
+            names.add(media_name)
+
+        for media_name in names:
+            if not any([x["name"] == media_name for x in self.get_media(name=server.id)]):
+                self.search_add(media_name, server_id=server.id, exact=True)
 
         if not no_update:
-            [self.update_media(media_data) for media_data in self.get_media(name=local_server_id)]
+            for media_data in self.get_media(name=server.id):
+                self.update_media(media_data)
 
     ############# Upgrade and migration
 

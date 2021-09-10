@@ -842,35 +842,58 @@ class CustomTest(MinimalUnitTestClass):
         self.setup_customer_server_data()
 
     def setup_customer_server_data(self):
-
         for media_type in list(MediaType):
-            local_server_id = get_local_server_id(media_type)
-            dir = self.settings.get_server_dir(local_server_id)
-            image = Image.new("RGB", (100, 100))
-            for media_name in ["A", "B", "C"]:
-                parent_dir = os.path.join(dir, media_name)
-                for chapter_name in ["01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]:
-                    chapter_dir = os.path.join(parent_dir, chapter_name)
-                    os.makedirs(chapter_dir)
-                    image.save(os.path.join(chapter_dir, "image"), "jpeg")
+            server = self.media_reader.get_server(get_local_server_id(media_type))
 
-            for bundled_media_name in ["A_Bundled", "B_Bundled", "C_Bundled"]:
-                parent_dir = os.path.join(dir, bundled_media_name)
-                os.makedirs(parent_dir)
-                for chapter_name in ["10", "Episode 2"]:
-                    image.save(os.path.join(parent_dir, chapter_name), "jpeg")
+            for media_data in (server.create_media_data("A", "A"), server.create_media_data("B", "B")):
+                for number, chapter_name in enumerate(["00", "01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]):
+                    chapter_id = f"{chapter_name}_{number}"
+                    server.update_chapter_data(media_data, id=chapter_id, title=chapter_name, number=number)
+                    chapter_dir = self.settings.get_chapter_dir(media_data, media_data["chapters"][chapter_id])
+                    open(os.path.join(chapter_dir, "text.xhtml"), "w").close()
+
+            self.add_test_media(server=server)
 
     def test_custom_bundle(self):
-        server = self.media_reader.get_server(get_local_server_id(MediaType.MANGA))
-        self.add_test_media(server)
         self.assertTrue(self.media_reader.bundle_unread_chapters())
 
+    def test_play(self):
+        self.assertTrue(self.media_reader.play())
+
+    def test_detect_chapters(self):
+        for media_type in list(MediaType):
+            self.media_reader.media.clear()
+            with self.subTest(media_type=media_type):
+                server = self.media_reader.get_server(get_local_server_id(media_type))
+                media_list = self.add_test_media(server=server)
+                for media_data in media_list:
+                    self.assertTrue(media_data["chapters"], media_data["name"])
+
     def test_custom_update(self):
-        server = self.media_reader.get_server(get_local_server_id(MediaType.MANGA))
-        media_list = self.add_test_media(server)
-        assert media_list
-        for media_data in media_list:
+        for media_data in self.media_reader.get_media():
             assert not self.media_reader.update_media(media_data)
+
+    def test_custom_save_update(self):
+        all_chapters = self.getChapters()
+        self.assertTrue(all_chapters)
+        funcs = [self.media_reader.save, self.reload, self.media_reader.update]
+        for func in funcs:
+            func()
+            self.assertEqual(len(all_chapters), len(self.getChapters()), func)
+
+    def test_custom_clean(self):
+        self.media_reader.save()
+        all_chapters = self.getChapters()
+        self.assertTrue(all_chapters)
+        self.media_reader.mark_read()
+        self.media_reader.clean(remove_read=True)
+        self.media_reader.update()
+        self.assertEqual(len(all_chapters), len(self.getChapters()))
+        self.media_reader.clean(include_external=True, remove_read=True)
+        self.media_reader.update()
+        self.assertFalse(self.getChapters())
+        for media_data in self.media_reader.get_media():
+            self.assertTrue(os.listdir(self.settings.get_media_dir(media_data)))
 
 
 class ArgsTest(MinimalUnitTestClass):
@@ -1341,6 +1364,7 @@ class ArgsTest(MinimalUnitTestClass):
             (MediaType.MANGA, "shamanking0", 1, "shamanking0_vol1.pdf"),
             (MediaType.NOVEL, "i-refuse-to-be-your-enemy", 5, "i-refuse-to-be-your-enemy-volume-5.epub"),
             (MediaType.ANIME, "Minami-ke", 2, "Minami-ke - S01E02.mkv"),
+            (MediaType.ANIME, "Minami-ke", 3, "Minami-ke - S01E03.mkv"),
         ]
 
         self.settings.viewer = "[ -f {media} ]"
@@ -1351,62 +1375,26 @@ class ArgsTest(MinimalUnitTestClass):
                 assert os.path.exists(file_name)
                 parse_args(media_reader=self.media_reader, args=["import", "--media-type", media_type.name, file_name])
                 assert not os.path.exists(file_name)
-                assert any([x["name"] == name for x in self.media_reader.get_media()])
-                for media_data in self.media_reader.get_media():
-                    if media_data["name"] == name:
-                        chapters = list(media_data["chapters"].values())
-                        self.assertEqual(len(chapters), 1)
-                        self.assertEqual(chapters[0]["number"], number)
-                        assert re.search(r"^\w+$", media_data["id"])
-                        self.assertEqual(media_data["media_type"], media_type)
-                        assert self.media_reader.play(name, any_unread=True)
+                media_data = self.media_reader.get_single_media(name=name)
+
+                self.assertEqual(media_data["chapters"][str(number)]["number"], number)
+                assert re.search(r"^\w+$", media_data["id"])
+                self.assertEqual(media_data["media_type"], media_type)
+                assert self.media_reader.play(name, any_unread=True)
 
     def test_import_directory(self):
-        path = os.path.join(TEST_HOME, "test-dir")
+        media_name = "test_dir"
+        chapter_title = "Anime1 - E10.jpg"
+        path = os.path.join(TEST_HOME, media_name)
         os.mkdir(path)
-        path_file = os.path.join(path, "Anime1 - E10.jpg")
+        path_file = os.path.join(path, chapter_title)
         with open(path_file, "w") as f:
             f.write("dummy_data")
-        parse_args(media_reader=self.media_reader, args=["import", path])
-        assert any([x["name"] == "Anime1" for x in self.media_reader.get_media()])
-
-    def test_import_multiple(self):
-        file_names = ["Media - 1.mp4", "MediaOther - 1.mp4", "Media - 2.mp4"]
-        file_names2 = ["Media - 3.mp4", "MediaOther - 2.mp4", "Media - 4.mp4"]
-        for name in file_names + file_names2:
-            with open(name, "w") as f:
-                f.write("dummy_data")
-        for name_list in (file_names, file_names2):
-            parse_args(media_reader=self.media_reader, args=["import", f"--media-type={MediaType.ANIME.name}"] + name_list)
-            self.assertEqual(2, len(self.media_reader.get_media_ids()))
-            for name in name_list:
-                with self.subTest(file_name=name):
-                    assert any([x["name"] == name.split()[0] for x in self.media_reader.get_media()])
-
-    def test_import(self):
-        image = Image.new("RGB", (100, 100))
-        path = os.path.join(TEST_HOME, "00-file.jpg")
-        path2 = os.path.join(TEST_HOME, "test-dir")
-        os.mkdir(path2)
-        path_file = os.path.join(path2, "10.0 file3.jpg")
-        path3 = os.path.join(TEST_HOME, "11.0 file4.jpg")
-        image.save(path)
-        image.save(path_file)
-        image.save(path3)
         parse_args(media_reader=self.media_reader, args=["import", "--link", path])
-        self.assertEqual(1, len(self.media_reader.get_media_ids()))
-        assert os.path.exists(path)
-        parse_args(media_reader=self.media_reader, args=["import", "--name", "testMedia", path2])
-        assert 2 == len(self.media_reader.get_media_ids())
-        assert any([x["name"] == "testMedia" for x in self.media_reader.get_media()])
-        assert not os.path.exists(path2)
-
-        for i, media_type in enumerate(list(MediaType)):
-            name = "name" + str(i)
-            parse_args(media_reader=self.media_reader, args=["import", "--link", "--name", name, "--media-type", media_type.name, path3])
-            assert any([x["name"] == name for x in self.media_reader.get_media()])
-            self.assertEqual(3 + i, len(self.media_reader.get_media_ids()))
-            assert os.path.exists(path3)
+        assert os.path.exists(path_file)
+        media_data = self.media_reader.get_single_media(name=media_name)
+        chapter_data = list(media_data.get_sorted_chapters())[0]
+        self.assertEqual(chapter_data["title"], chapter_title)
 
     def _test_upgrade_helper(self, minor):
         self.add_test_media(self.test_anime_server)
