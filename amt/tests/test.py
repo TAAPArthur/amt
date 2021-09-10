@@ -17,7 +17,7 @@ from ..args import parse_args
 from ..job import Job, RetryException
 from ..media_reader import SERVERS, TRACKERS, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
-from ..servers.custom import CustomServer, get_local_server_id
+from ..servers.local import LocalServer, get_local_server_id
 from ..settings import Settings
 from ..state import State
 from ..util.decoder import GenericDecoder
@@ -37,7 +37,7 @@ LOCAL_SERVERS = set()
 
 import_sub_classes(tests, TestServer, TEST_SERVERS)
 import_sub_classes(tests, TestTracker, TEST_TRACKERS)
-import_sub_classes(servers, CustomServer, LOCAL_SERVERS)
+import_sub_classes(servers, LocalServer, LOCAL_SERVERS)
 
 ENABLE_ONLY_SERVERS = os.getenv("ENABLE_ONLY_SERVERS")
 SKIP_DOWNLOAD = os.getenv("SKIP_DOWNLOAD")
@@ -836,7 +836,7 @@ class ApplicationTestWithErrors(BaseUnitTestClass):
         self.verify_all_chapters_downloaded()
 
 
-class CustomTest(MinimalUnitTestClass):
+class LocalTest(MinimalUnitTestClass):
     def setUp(self):
         super().setUp()
         self.setup_customer_server_data()

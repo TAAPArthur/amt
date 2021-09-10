@@ -14,7 +14,7 @@ from urllib3 import Retry
 from . import servers, trackers
 from .job import Job
 from .server import Server
-from .servers.custom import get_local_server_id
+from .servers.local import get_local_server_id
 from .settings import Settings
 from .state import State
 from .tracker import Tracker

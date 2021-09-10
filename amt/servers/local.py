@@ -14,7 +14,7 @@ def get_local_server_id(media_type):
         return LocalLightNovelServer.id
 
 
-class CustomServer(Server):
+class LocalServer(Server):
     external = True
     sync_removed = True
 
@@ -58,16 +58,16 @@ class CustomServer(Server):
         return False
 
 
-class LocalAnimeServer(CustomServer):
+class LocalAnimeServer(LocalServer):
     id = "local_anime"
     media_type = MediaType.ANIME
 
 
-class LocalMangaServer(CustomServer):
+class LocalMangaServer(LocalServer):
     id = "local_manga"
     media_type = MediaType.MANGA
 
 
-class LocalLightNovelServer(CustomServer):
+class LocalLightNovelServer(LocalServer):
     id = "local_novel"
     media_type = MediaType.NOVEL
