@@ -154,31 +154,25 @@ class BaseUnitTestClass(unittest.TestCase):
     def get_num_chapters_read(self, media_type=None):
         return sum(map(lambda x: x["read"], self.getChapters(media_type)))
 
-    def verify_download(self, media_data, chapter_data, skip_file_type_validation=False):
+    def verify_download(self, media_data, chapter_data):
         server = self.media_reader.get_server(media_data["server_id"])
-        if server.external:
-            return
-        valid_image_formats = ("png", "jpeg", "jpg")
-        assert server.is_fully_downloaded(media_data, chapter_data)
+        self.assertTrue(server.is_fully_downloaded(media_data, chapter_data))
 
         dir_path = server.get_chapter_dir(media_data, chapter_data)
-        for dirpath, dirnames, filenames in os.walk(dir_path):
-            for file_name in filenames:
-                assert len(filenames) > 1, f"files: {filenames}, dirnames: {dirnames}"
-                if not file_name.startswith("."):
-                    path = os.path.join(dir_path, dirpath, file_name)
-                    assert os.path.exists(path)
-                    if skip_file_type_validation:
-                        continue
-                    media_type = MediaType(media_data["media_type"])
-                    if media_type == MediaType.MANGA:
-                        with open(path, "rb") as img_file:
-                            img = Image.open(img_file)
-                            self.assertIn(img.format.lower(), valid_image_formats)
-                            self.assertIn(file_name.split(".")[-1], valid_image_formats)
-                    elif media_type == MediaType.ANIME:
-                        if path.endswith(server.extension):
-                            subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
+        files = list(filter(lambda x: x[0] != ".", os.listdir(dir_path)))
+        self.assertTrue(files)
+
+        for file_name in files:
+            self.assertEqual(2, len(file_name.split(".")), f"Problem with extension of {file_name}")
+            path = os.path.join(dir_path, file_name)
+            media_type = MediaType(media_data["media_type"])
+            if isinstance(server, TestServer) or server.external:
+                continue
+            if media_type == MediaType.MANGA:
+                with open(path, "rb") as img_file:
+                    Image.open(img_file)
+            elif media_type == MediaType.ANIME:
+                subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
 
     def get_all_chapters(self):
         for media_data in self.media_reader.get_media():
