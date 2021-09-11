@@ -579,9 +579,9 @@ class MediaReader:
             self.bundles.clear()
             shutil.rmtree(self.settings.bundle_dir)
             os.mkdir(self.settings.bundle_dir)
-        for dir in os.listdir(self.settings.media_dir):
-            server = self.get_server(dir)
-            server_path = os.path.join(self.settings.media_dir, dir)
+        for server_dir in os.listdir(self.settings.media_dir):
+            server = self.get_server(server_dir)
+            server_path = os.path.join(self.settings.media_dir, server_dir)
             if server:
                 if include_external or not server.external:
                     for media_dir in os.listdir(server_path):
@@ -589,13 +589,21 @@ class MediaReader:
                         if media_path not in media_dirs:
                             logging.info("Removing %s because it has been removed", media_path)
                             shutil.rmtree(media_path)
-                        elif remove_read:
-                            media_data = media_dirs[media_path]
+                            continue
+                        media_data = media_dirs[media_path]
+                        if remove_read:
                             for chapter_data in media_data.get_sorted_chapters():
                                 chapter_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
                                 if chapter_data["read"] and os.path.exists(chapter_path):
                                     logging.info("Removing %s because it has been read", chapter_path)
                                     shutil.rmtree(chapter_path)
+
+                        chapter_dirs = {os.path.basename(self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)): chapter_data for chapter_data in media_data.get_sorted_chapters()}
+                        for chapter_dir in os.listdir(media_path):
+                            chapter_path = os.path.join(media_path, chapter_dir)
+                            if os.path.isdir(chapter_path) and chapter_path not in chapter_dirs:
+                                logging.info("Removing %s because chapter info has been removed", chapter_path)
+                                shutil.rmtree(chapter_path)
 
             elif remove_disabled_servers:
                 logging.info("Removing %s because it is not enabled", server_path)

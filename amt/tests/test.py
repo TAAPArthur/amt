@@ -1223,6 +1223,16 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["clean", "--remove-read"])
         self.verify_no_chapters_downloaded()
 
+    def test_clean_read_already_removed(self):
+        media_data = self.add_test_media(self.test_server, limit=1)[0]
+        self.media_reader.download_unread_chapters()
+        self.media_reader.mark_read()
+        self.media_reader.save()
+        media_data["chapters"].clear()
+        self.media_reader.save()
+        parse_args(media_reader=self.media_reader, args=["clean"])
+        self.assertEqual(1, len(os.listdir(self.settings.get_media_dir(media_data))))
+
     def test_clean_servers(self):
         self.add_test_media(self.test_server)
         self.media_reader.download_unread_chapters()
