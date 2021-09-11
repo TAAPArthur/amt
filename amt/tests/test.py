@@ -10,8 +10,6 @@ from inspect import findsource
 from subprocess import CalledProcessError
 from unittest.mock import patch
 
-from PIL import Image
-
 from .. import servers, tests
 from ..args import parse_args
 from ..job import Job, RetryException
@@ -20,11 +18,19 @@ from ..media_reader_cli import MediaReaderCLI
 from ..servers.local import LocalServer, get_local_server_id
 from ..settings import Settings
 from ..state import State
-from ..util.decoder import GenericDecoder
 from ..util.media_type import MediaType
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
                           TestServerLogin)
 from .test_tracker import TestTracker
+
+HAS_PIL = True
+try:
+    from PIL import Image
+
+    from ..util.decoder import GenericDecoder
+except:
+    HAS_PIL = False
+
 
 TEST_HOME = TEST_BASE + "test_home/"
 
@@ -111,6 +117,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader.settings.specific_settings = {}
         self.media_reader.settings.bundle_viewer = "[ -f {media} ]"
         self.media_reader.settings.bundle_cmds[self.media_reader.settings.bundle_format] = "ls {files}; touch {name}"
+        self.media_reader.settings.force_page_parity = None
 
     def setUp(self):
         # Clear all env variables
@@ -221,6 +228,7 @@ class UtilTest(BaseUnitTestClass):
         self.assertEqual(MediaType.MANGA, MediaType.get("bad_name", MediaType.MANGA))
 
 
+@unittest.skipIf(not HAS_PIL, "PIL is needed to test")
 class DecoderTest(BaseUnitTestClass):
     simple_img = [
         [1, 1, 1, 1, 2, 2, 0, 0],
@@ -438,6 +446,7 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.post_process_cmd = "exit 1"
         self.assertRaises(CalledProcessError, self.settings.post_process, None, None)
 
+    @unittest.skipIf(not HAS_PIL, "PIL is needed to test")
     def test_force_page_parity(self):
         media_data = self.add_test_media(media_type=MediaType.MANGA, limit=1)[0]
         chapter_data = media_data.get_sorted_chapters()[0]
@@ -460,6 +469,15 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             remaining_servers = set()
             import_sub_classes(tests, TestServer, remaining_servers)
             self.assertNotEqual(remaining_servers, TEST_SERVERS)
+
+    def test_force_page_parity_without_pil(self):
+        self.settings.force_page_parity = 0
+        self.add_test_media(media_type=MediaType.MANGA, limit=1)
+        with patch.dict(sys.modules, {"PIL": None}):
+            # Shouldn't crash
+            self.media_reader.download_unread_chapters(page_limit=1)
+            self.settings.force_page_parity = None
+            self.verify_all_chapters_downloaded()
 
     def test_media_reader_add_remove_media(self):
         for server in self.media_reader.get_servers():
