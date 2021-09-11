@@ -44,7 +44,7 @@ class TestServer(Server):
     def get_media_list(self, limit=None):
         self.maybe_inject_error()
         media_type_name = self.media_type.name
-        return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(][:;_-="), self.create_media_data(id=5, name=f"{self.id} Unique Manga", unique=True)][:limit]
+        return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(]/[:;_-="), self.create_media_data(id=5, name=f"{self.id} Unique Manga", unique=True)][:limit]
 
     def update_media_data(self, media_data):
         self.maybe_inject_error()

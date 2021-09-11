@@ -17,7 +17,7 @@ from ..media_reader import SERVERS, TRACKERS, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
 from ..servers.local import LocalServer, get_local_server_id
 from ..settings import Settings
-from ..state import State
+from ..state import MediaData, State
 from ..util.media_type import MediaType
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
                           TestServerLogin)
@@ -143,8 +143,8 @@ class BaseUnitTestClass(unittest.TestCase):
                 server.session.close()
         logging.getLogger().removeHandler(self.stream_handler)
 
-    def add_test_media(self, server=None, no_update=False, limit=None):
-        media_list = server.get_media_list() if server else [x for server in self.media_reader.get_servers() for x in server.get_media_list()]
+    def add_test_media(self, server=None, media_type=None, no_update=False, limit=None):
+        media_list = server.get_media_list() if server else [x for server in self.media_reader.get_servers() if not media_type or server.media_type & media_type for x in server.get_media_list()]
         for media_data in media_list[:limit]:
             self.media_reader.add_media(media_data, no_update=no_update)
         assert media_list
@@ -203,6 +203,15 @@ class BaseUnitTestClass(unittest.TestCase):
 
     def verify_no_media(self):
         assert not self.media_reader.get_media_ids()
+
+    def verfiy_media_list(self, media_list=None, server=None):
+        if media_list:
+            assert isinstance(media_list, list)
+            assert all([isinstance(x, MediaData) for x in media_list])
+            if not server:
+                server = self.media_reader.get_server(media_list[0]["server_id"])
+            assert all([x["server_id"] == server.id for x in media_list])
+            assert all([x["media_type"] == server.media_type for x in media_list])
 
     def assertTrueOrSkipTest(self, obj):
         if ENABLE_ONLY_SERVERS and not obj:
@@ -327,9 +336,6 @@ class SettingsTest(BaseUnitTestClass):
 
     def setUp(self):
         super().setUp()
-        self.settings.password_manager_enabled = True
-        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
-        self.settings.password_save_cmd = r"cat - > {}{}".format(TEST_HOME, "{}")
 
     def test_settings_save_load(self):
         self.settings.password_save_cmd = "dummy_cmd"
@@ -352,6 +358,9 @@ class SettingsTest(BaseUnitTestClass):
         del os.environ["AMT_QUICK_TRY"]
 
     def test_credentials(self):
+        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
+        self.settings.password_save_cmd = r"cat - > {}{}".format(TEST_HOME, "{}")
+
         server_id = "test"
         assert not self.settings.get_credentials(server_id)
         username, password = "user", "pass"
@@ -365,7 +374,8 @@ class SettingsTest(BaseUnitTestClass):
         assert secret == self.settings.get_secret(tracker_id)
 
     def test_credentials_seperator(self):
-
+        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
+        self.settings.password_save_cmd = r"cat - > {}{}".format(TEST_HOME, "{}")
         username, password = "user", "pass"
         for sep in self.separators:
             self.settings.credential_separator = sep
@@ -374,6 +384,7 @@ class SettingsTest(BaseUnitTestClass):
                 self.assertEqual((username, password), self.settings.get_credentials(TestServer.id))
 
     def test_credentials_override(self):
+        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
         self.settings.password_override_prefix = "prefix"
         server_id = "test"
         username, password = "user", "pass"
@@ -429,10 +440,10 @@ class SettingsTest(BaseUnitTestClass):
         self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
 
     def test_auto_replace_dir(self):
-        media_data = self.add_test_media(server=self.test_server, limit=1)[0]
+        media_data = self.add_test_media(media_type=MediaType.NOVEL, limit=1)[0]
         self.settings.auto_replace = True
         os.mkdir(self.settings.get_replacement_dir())
-        path = os.path.join(self.settings.get_replacement_dir(), TestServer.id)
+        path = os.path.join(self.settings.get_replacement_dir(), media_data["server_id"])
         with open(path, 'w') as f:
             f.write("s/A/B/g\n")
         with open(self.settings.get_replacement_file(), 'w') as f:
@@ -880,7 +891,7 @@ class LocalTest(MinimalUnitTestClass):
                     chapter_dir = self.settings.get_chapter_dir(media_data, media_data["chapters"][chapter_id])
                     open(os.path.join(chapter_dir, "text.xhtml"), "w").close()
 
-            self.add_test_media(server=server)
+            self.verfiy_media_list(self.add_test_media(server=server))
 
     def test_custom_bundle(self):
         self.assertTrue(self.media_reader.bundle_unread_chapters())
@@ -1486,15 +1497,12 @@ class ServerTest(RealBaseUnitTestClass):
             with self.subTest(server=server.id, list=True):
                 media_list = server.get_media_list()
                 assert media_list or not server.has_free_chapters
-                assert isinstance(media_list, list)
-                assert all([isinstance(x, dict) for x in media_list])
-                assert all([x["media_type"] == server.media_type for x in media_list])
+                self.verfiy_media_list(media_list)
 
             with self.subTest(server=server.id, list=False):
                 search_media_list = server.search(media_list[0]["name"] if media_list else "One", limit=1)
                 assert search_media_list or not server.has_free_chapters
-                assert isinstance(search_media_list, list)
-                assert all([isinstance(x, dict) for x in search_media_list])
+                self.verfiy_media_list(search_media_list)
 
             for media_data in media_list:
                 self.media_reader.add_media(media_data)
