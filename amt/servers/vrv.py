@@ -180,7 +180,8 @@ class Vrv(Server):
             if self.settings.is_allowed_text_lang(lang, media_data):
                 subtitles = subtitle_data[lang]
                 r = self.session_get(subtitles["url"])
-                path = os.path.join(dir_path, f"{chapter_data['id']}.{subtitles['format']}")
+                basename = self.settings.get_page_file_name(media_data, chapter_data, ext=subtitles["format"])
+                path = os.path.join(dir_path, basename)
                 with open(path, 'w') as fp:
                     iterable = iter(r.content.decode().splitlines())
                     buffer = None

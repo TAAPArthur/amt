@@ -65,6 +65,7 @@ class Settings:
     auto_replace = True
     bundle_format = "cbz"
     bundle_viewer = "zathura {media}"
+    chapter_page_format = "{page_number:04d}.{ext}"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
     force_odd_pages = True
@@ -297,6 +298,9 @@ class Settings:
         cmd = self.get_field("post_process_cmd", media_data)
         if cmd:
             self.run_cmd(cmd, wd=dir_path)
+
+    def get_page_file_name(self, media_data, chapter_data, ext, page_number=0):
+        return self.get_chapter_page_format(media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"], page_number=page_number, ext=ext)
 
     def open_viewer(self, files, media_data, chapter_data, wd=None):
         viewer = self.get_field("viewer", media_data)

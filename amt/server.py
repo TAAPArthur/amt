@@ -114,7 +114,7 @@ class GenericServer:
 
     def post_download(self, media_data, chapter_data, dir_path, pages):
         if self.settings.get_merge_ts_files(media_data) and pages[0]["ext"] == "ts":
-            dest = os.path.join(dir_path, chapter_data["id"]) + ".mp4"
+            dest = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext="mp4"))
             with open(dest, 'wb') as dest_file:
                 for page in pages:
                     with open(page["path"], 'rb') as f:
@@ -209,10 +209,6 @@ class Server(GenericServer):
         logging.warning("Could not load credentials")
         return False
 
-    @staticmethod
-    def get_page_name_from_index(page_index):
-        return '%04d' % page_index
-
     def can_stream_url(self, url):
         return self.stream_url_regex and self.stream_url_regex.search(url)
 
@@ -283,7 +279,7 @@ class Server(GenericServer):
         for i, page_data in enumerate(list_of_pages[:page_limit]):
             page_data["media_data"] = media_data
             page_data["index"] = i
-            page_data["path"] = self._get_page_path(dir_path, page_data)
+            page_data["path"] = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=page_data["ext"], page_number=i))
 
         # download pages
         job = Job(self.settings.get_threads(media_data), raiseException=True)
@@ -293,9 +289,9 @@ class Server(GenericServer):
 
         if self.media_type == MediaType.MANGA and len(list_of_pages[:page_limit]) % 2 and self.settings.get_field("force_odd_pages", media_data=media_data):
             from PIL import Image
-            full_path = os.path.join(dir_path, Server.get_page_name_from_index(len(list_of_pages[:page_limit])) + ".jpeg")
-            image = Image.new('RGB', (100, 100))
-            image.save(full_path, "jpeg")
+            full_path = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=".jpg", page_number=len(list_of_pages[:page_limit])))
+            image = Image.new("RGB", (1, 1))
+            image.save(full_path)
 
         self.post_download(media_data, chapter_data, dir_path, list_of_pages[:page_limit])
         self.settings.post_process(media_data, dir_path)

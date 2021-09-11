@@ -4,7 +4,7 @@ import re
 
 from bs4 import BeautifulSoup
 
-from ..server import Server
+from ..server import Server, get_extension
 from ..util.media_type import MediaType
 
 
@@ -151,8 +151,9 @@ class Funimation(Server):
                     for track in exp["sources"][0]["textTracks"]:
                         if self.settings.is_allowed_text_lang(track["language"], media_data):
                             subtitle_src = track["src"]
-                            _, ext = os.path.splitext(subtitle_src)
-                            path = os.path.join(dir_path, f"{chapter_data['id']}{ext}")
+                            ext = get_extension(subtitle_src)
+                            basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
+                            path = os.path.join(dir_path, basename)
                             if not os.path.exists(path):
                                 r = self.session_get(subtitle_src)
                                 with open(path, "wb") as fp:
