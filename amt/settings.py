@@ -68,7 +68,8 @@ class Settings:
     chapter_page_format = "{page_number:04d}.{ext}"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
-    force_odd_pages = True
+    force_page_parity = 0  # When downloading MANGA, if not equal to the number of pages % 2, add a dummy page
+    force_page_parity_end = True  # Add dummy page to after (default) or before real pages
     merge_ts_files = True
     post_process_cmd = None
     text_languages = ("en", "en-US", "English")

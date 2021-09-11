@@ -159,11 +159,13 @@ class BaseUnitTestClass(unittest.TestCase):
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         files = list(filter(lambda x: x[0] != ".", os.listdir(dir_path)))
         self.assertTrue(files)
+        media_type = MediaType(media_data["media_type"])
+        if media_type == MediaType.MANGA and self.settings.get_force_page_parity(media_data) is not None:
+            self.assertEqual(self.settings.get_force_page_parity(media_data), len(files) % 2)
 
         for file_name in files:
             self.assertEqual(2, len(file_name.split(".")), f"Problem with extension of {file_name}")
             path = os.path.join(dir_path, file_name)
-            media_type = MediaType(media_data["media_type"])
             if isinstance(server, TestServer) or server.external:
                 continue
             if media_type == MediaType.MANGA:
@@ -435,6 +437,16 @@ class SettingsTest(BaseUnitTestClass):
     def test_post_process_fail(self):
         self.settings.post_process_cmd = "exit 1"
         self.assertRaises(CalledProcessError, self.settings.post_process, None, None)
+
+    def test_force_page_parity(self):
+        media_data = self.add_test_media(media_type=MediaType.MANGA, limit=1)[0]
+        chapter_data = media_data.get_sorted_chapters()[0]
+        for parity in (0, 1, None):
+            for page_limit in (1, 2):
+                self.settings.force_page_parity = parity
+                self.media_reader.get_server(media_data["server_id"]).download_chapter(media_data, chapter_data, page_limit=page_limit)
+                self.verify_download(media_data, chapter_data)
+                shutil.rmtree(self.settings.get_chapter_dir(media_data, chapter_data), ignore_errors=True)
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
@@ -952,8 +964,8 @@ class ArgsTest(MinimalUnitTestClass):
             self.assertEqual(self.settings.get_field(key_values[i][0]), key_values[i][-1])
 
     def test_set_settings_server_specific(self):
-        self.settings.set_field("force_odd_pages", False)
-        key, value = "force_odd_pages", 1
+        self.settings.set_field("force_page_parity", False)
+        key, value = "force_page_parity", 1
         parse_args(media_reader=self.media_reader, args=["setting", "--target", TestServer.id, key, str(value)])
         self.settings.load()
         self.assertEqual(self.settings.get_field(key, TestServer.id), value)

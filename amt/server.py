@@ -274,22 +274,24 @@ class Server(GenericServer):
         self.pre_download(media_data, chapter_data)
         list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
         assert list_of_pages
+        list_of_pages = list_of_pages[:page_limit]
         logging.info("Downloading %d pages", len(list_of_pages))
 
-        for i, page_data in enumerate(list_of_pages[:page_limit]):
+        for i, page_data in enumerate(list_of_pages):
             page_data["media_data"] = media_data
             page_data["index"] = i
             page_data["path"] = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=page_data["ext"], page_number=i))
 
         # download pages
         job = Job(self.settings.get_threads(media_data), raiseException=True)
-        for page_data in list_of_pages[:page_limit]:
+        for page_data in list_of_pages:
             job.add(lambda page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), page_data["path"]))
         job.run()
 
-        if self.media_type == MediaType.MANGA and len(list_of_pages[:page_limit]) % 2 and self.settings.get_field("force_odd_pages", media_data=media_data):
+        if self.media_type == MediaType.MANGA and len(list_of_pages) % 2 != self.settings.get_force_page_parity(media_data):
             from PIL import Image
-            full_path = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=".jpg", page_number=len(list_of_pages[:page_limit])))
+            page_number = len(list_of_pages) if self.settings.get_force_page_parity_end(media_data) else -1
+            full_path = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=".jpg", page_number=page_number))
             image = Image.new("RGB", (1, 1))
             image.save(full_path)
 
