@@ -125,19 +125,13 @@ class GenericServer:
     def download_subtitles(self, media_data, chapter_data, dir_path):
         pass
 
-    def get_chapter_dir(self, media_data, chapter_data, skip_create=False):
-        return self.settings.get_chapter_dir(media_data, chapter_data, skip_create=skip_create)
-
-    def _get_page_path(self, dir_path, page_data):
-        return os.path.join(dir_path, Server.get_page_name_from_index(page_data["index"]) + "." + page_data["ext"])
-
     def is_fully_downloaded(self, media_data, chapter_data):
-        dir_path = self.get_chapter_dir(media_data, chapter_data)
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         full_path = os.path.join(dir_path, self.get_download_marker())
         return os.path.exists(full_path)
 
     def get_children(self, media_data, chapter_data):
-        return "{}/*".format(self.get_chapter_dir(media_data, chapter_data))
+        return "{}/*".format(self.settings.get_chapter_dir(media_data, chapter_data))
 
     def needs_authentication(self):
         """
@@ -245,7 +239,7 @@ class Server(GenericServer):
         except HTTPError:
             return True
 
-    def pre_download(self, media_data, chapter_data, dir_path):
+    def pre_download(self, media_data, chapter_data):
         if chapter_data["inaccessible"]:
             logging.info("Chapter is not accessible")
             raise ValueError("Cannot access chapter")
@@ -261,7 +255,7 @@ class Server(GenericServer):
                 raise ValueError("Cannot access premium chapter")
 
         if self.media_type == MediaType.ANIME:
-            sub_dir = os.path.join(dir_path, self.settings.subtitles_dir)
+            sub_dir = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), self.settings.subtitles_dir)
             os.makedirs(sub_dir, exist_ok=True)
             self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
 
@@ -279,9 +273,9 @@ class Server(GenericServer):
 
     def _download_chapter(self, media_data, chapter_data, page_limit=None):
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
-        dir_path = self.get_chapter_dir(media_data, chapter_data)
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
-        self.pre_download(media_data, chapter_data, dir_path)
+        self.pre_download(media_data, chapter_data)
         list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
         assert list_of_pages
         logging.info("Downloading %d pages", len(list_of_pages))

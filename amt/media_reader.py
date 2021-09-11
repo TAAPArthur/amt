@@ -375,15 +375,14 @@ class MediaReader:
                 if not chapter:
                     media_data = server.get_media_data_from_url(url)
                     chapter = media_data["chapters"][chapter_id]
-                dir_path = server.get_chapter_dir(media_data, chapter)
                 if download:
                     server.download_chapter(media_data, chapter)
                 else:
                     if not server.is_fully_downloaded(media_data, chapter):
-                        server.pre_download(media_data, chapter, dir_path=dir_path)
+                        server.pre_download(media_data, chapter)
                     streamable_url = server.get_stream_url(media_data, chapter, quality=quality)
                     logging.info("Streaming %s", streamable_url)
-                    if self.settings.open_viewer(streamable_url, media_data=media_data, chapter_data=chapter, wd=dir_path):
+                    if self.settings.open_viewer(streamable_url, media_data=media_data, chapter_data=chapter):
                         chapter["read"] = True
                         if cont:
                             return 1 + self.play(name=media_data)
@@ -408,15 +407,14 @@ class MediaReader:
     def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, quality=0, any_unread=False, force_abs=False):
         num = 0
         for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread)):
-            dir_path = server.get_chapter_dir(media_data, chapter)
             if media_data["media_type"] == MediaType.ANIME:
                 if not server.is_fully_downloaded(media_data, chapter):
-                    server.pre_download(media_data, chapter, dir_path=dir_path)
+                    server.pre_download(media_data, chapter)
             else:
                 server.download_chapter(media_data, chapter)
             success = self.settings.open_viewer(
                 server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter, quality=quality),
-                media_data=media_data, chapter_data=chapter, wd=dir_path)
+                media_data=media_data, chapter_data=chapter)
             if success:
                 num += 1
                 chapter["read"] = True
@@ -594,7 +592,7 @@ class MediaReader:
                         elif remove_read:
                             media_data = media_dirs[media_path]
                             for chapter_data in media_data.get_sorted_chapters():
-                                chapter_path = server.get_chapter_dir(media_data, chapter_data, skip_create=True)
+                                chapter_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
                                 if chapter_data["read"] and os.path.exists(chapter_path):
                                     logging.info("Removing %s because it has been read", chapter_path)
                                     shutil.rmtree(chapter_path)

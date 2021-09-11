@@ -302,9 +302,11 @@ class Settings:
         if cmd:
             self.run_cmd(cmd, wd=dir_path)
 
-    def open_viewer(self, files, media_data, chapter_data, wd):
+    def open_viewer(self, files, media_data, chapter_data, wd=None):
         viewer = self.get_field("viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
+        if wd is None:
+            wd = self.get_chapter_dir(media_data, chapter_data)
         return self._open_viewer(viewer, files, title=title, wd=wd)
 
     def open_bundle_viewer(self, bundle_path, media_data=None):

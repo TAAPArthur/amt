@@ -158,7 +158,7 @@ class BaseUnitTestClass(unittest.TestCase):
         server = self.media_reader.get_server(media_data["server_id"])
         self.assertTrue(server.is_fully_downloaded(media_data, chapter_data))
 
-        dir_path = server.get_chapter_dir(media_data, chapter_data)
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         files = list(filter(lambda x: x[0] != ".", os.listdir(dir_path)))
         self.assertTrue(files)
 
