@@ -113,7 +113,7 @@ class GenericServer:
     ################ OPTIONAL #####################
 
     def post_download(self, media_data, chapter_data, dir_path, pages):
-        if self.settings.should_merge_ts_files(media_data) and pages[0]["ext"] == "ts":
+        if self.settings.get_merge_ts_files(media_data) and pages[0]["ext"] == "ts":
             dest = os.path.join(dir_path, chapter_data["id"]) + ".mp4"
             with open(dest, 'wb') as dest_file:
                 for page in pages:
@@ -169,7 +169,7 @@ class Server(GenericServer):
     def _request(self, get, url, **kwargs):
         logging.info("Making request to %s", url)
         logging.debug("Request args: %s ", kwargs)
-        kwargs["verify"] = not self.settings.skip_ssl_verification(self.id)
+        kwargs["verify"] = not self.settings.get_disable_ssl_verification(self.id)
         r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
         if r.status_code != 200:
             logging.warning("HTTP Error: %d", r.status_code)
@@ -286,7 +286,7 @@ class Server(GenericServer):
             page_data["path"] = self._get_page_path(dir_path, page_data)
 
         # download pages
-        job = Job(self.settings.get_num_threads(media_data), raiseException=True)
+        job = Job(self.settings.get_threads(media_data), raiseException=True)
         for page_data in list_of_pages[:page_limit]:
             job.add(lambda page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), page_data["path"]))
         job.run()

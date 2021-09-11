@@ -139,17 +139,13 @@ class Settings:
                 text = re.sub(src, target, text)
         return text
 
-    def should_merge_ts_files(self, media_data):
-        return self.get_field("merge_ts_files", media_data)
+    def __getattr__(self, key):
+        if key.startswith("get_"):
+            key = key[len("get_"):]
+            return lambda x: self.get_field(key, x)
 
     def is_allowed_text_lang(self, lang, media_data):
         return lang in self.get_field("text_languages", media_data)
-
-    def get_num_threads(self, media_data=None):
-        return self.get_field("threads", media_data)
-
-    def skip_ssl_verification(self, server_id=None):
-        return self.get_field("disable_ssl_verification", server_id)
 
     def get_cookie_files(self):
         yield self.get_cookie_file()

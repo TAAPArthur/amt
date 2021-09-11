@@ -112,8 +112,6 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader.settings.bundle_viewer = "[ -f {media} ]"
         self.media_reader.settings.bundle_cmds[self.media_reader.settings.bundle_format] = "ls {files}; touch {name}"
 
-        self.assertFalse(self.media_reader.settings.skip_ssl_verification())
-
     def setUp(self):
         # Clear all env variables
         for k in set(os.environ.keys()):
