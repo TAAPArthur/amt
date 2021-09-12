@@ -21,7 +21,7 @@ def get_extension(url):
 
 class GenericServer:
     """
-    This class is intended to seperate the overridable methods of Server from
+    This class is intended to separate the overridable methods of Server from
     the internal business logic.
 
     Servers need not override most of the methods of this. Some have default
@@ -86,6 +86,10 @@ class GenericServer:
         raise last_err
 
     def save_chapter_page(self, page_data, path):
+        """ Save the page designated by page_data to path
+        By default it blindly writes the specified url to disk and optionally
+        decrypts it.
+        """
         r = self.session_get(page_data["url"], stream=True)
         content = r.content
         key = page_data["encryption_key"]
@@ -103,36 +107,24 @@ class GenericServer:
     def get_chapter_id_for_url(self, url):  # pragma: no cover
         raise NotImplementedError
 
+    def can_stream_url(self, url):
+        return self.stream_url_regex and self.stream_url_regex.search(url)
+
     ################ ANIME ONLY #####################
     def get_stream_url(self, media_data, chapter_data, quality=0):
         return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[quality]
 
     def get_stream_urls(self, media_data=None, chapter_data=None):  # pragma: no cover
-        return []
-
-    ################ OPTIONAL #####################
-
-    def post_download(self, media_data, chapter_data, dir_path, pages):
-        if self.settings.get_merge_ts_files(media_data) and pages[0]["ext"] == "ts":
-            dest = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext="mp4"))
-            with open(dest, 'wb') as dest_file:
-                for page in pages:
-                    with open(page["path"], 'rb') as f:
-                        shutil.copyfileobj(f, dest_file)
-            for page in pages:
-                os.remove(page["path"])
+        raise NotImplementedError
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
+        """ Only for ANIME, Download subtitles to dir_path
+        By default does nothing. Subtitles should generally have the same name
+        as the final media
+        """
         pass
 
-    def is_fully_downloaded(self, media_data, chapter_data):
-        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
-        full_path = os.path.join(dir_path, self.get_download_marker())
-        return os.path.exists(full_path)
-
-    def get_children(self, media_data, chapter_data):
-        return "{}/*".format(self.settings.get_chapter_dir(media_data, chapter_data))
-
+    ################ Needed for servers requiring logins #####################
     def needs_authentication(self):
         """
         Checks if the user is logged in
@@ -143,11 +135,33 @@ class GenericServer:
         return self.has_login and not self.is_logged_in
 
     def login(self, username, password):  # pragma: no cover
-        assert False
-        return False
+        raise NotImplementedError
+
+    ################ OPTIONAL #####################
+
+    def post_download(self, media_data, chapter_data, dir_path, pages):
+        """ Runs after all pages have been downloaded
+        The default implementation combines ts files into a single mp4
+        """
+        if self.settings.get_merge_ts_files(media_data) and pages[0]["ext"] == "ts":
+            dest = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext="mp4"))
+            with open(dest, 'wb') as dest_file:
+                for page in pages:
+                    with open(page["path"], 'rb') as f:
+                        shutil.copyfileobj(f, dest_file)
+            for page in pages:
+                os.remove(page["path"])
+
+    def is_fully_downloaded(self, media_data, chapter_data):
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
+        full_path = os.path.join(dir_path, self.get_download_marker())
+        return os.path.exists(full_path)
 
 
 class Server(GenericServer):
+    """
+    The methods contained in this class should rarely be overridden
+    """
 
     session = None
     settings = None
@@ -209,9 +223,6 @@ class Server(GenericServer):
         logging.warning("Could not load credentials")
         return False
 
-    def can_stream_url(self, url):
-        return self.stream_url_regex and self.stream_url_regex.search(url)
-
     @staticmethod
     def get_download_marker():
         return ".downloaded"
@@ -228,6 +239,9 @@ class Server(GenericServer):
             temp_path = os.path.join(os.path.dirname(full_path), ".tmp-" + os.path.basename(full_path))
             func(temp_path)
             os.rename(temp_path, full_path)
+
+    def get_children(self, media_data, chapter_data):
+        return "{}/*".format(self.settings.get_chapter_dir(media_data, chapter_data))
 
     def needs_to_login(self):
         try:
