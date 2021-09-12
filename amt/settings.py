@@ -65,6 +65,7 @@ class Settings:
     auto_replace = True
     bundle_format = "cbz"
     bundle_viewer = "zathura {media}"
+    chapter_dir_name_format = "{chapter_number:06.1f}"
     chapter_page_format = "{page_number:04d}.{ext}"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
@@ -234,10 +235,14 @@ class Settings:
         return os.path.join(self.get_server_dir(media_data["server_id"]), media_data["dir_name"])
 
     def get_chapter_dir(self, media_data, chapter_data, skip_create=False):
-        dir = os.path.join(self.get_media_dir(media_data), "%06.1f" % chapter_data["number"])
+        chapter_dir_name = self.get_chapter_dir_name_format(media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
+        chapter_path = os.path.join(self.get_media_dir(media_data), chapter_dir_name)
         if not skip_create:
-            os.makedirs(dir, exist_ok=True)
-        return dir
+            os.makedirs(chapter_path, exist_ok=True)
+        return chapter_path
+
+    def get_page_file_name(self, media_data, chapter_data, ext, page_number=0):
+        return self.get_chapter_page_format(media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"], page_number=page_number, ext=ext)
 
     def _ask_for_credentials(self, server_id: str) -> (str, str):
         if self.password_load_cmd:
@@ -299,9 +304,6 @@ class Settings:
         cmd = self.get_field("post_process_cmd", media_data)
         if cmd:
             self.run_cmd(cmd, wd=dir_path)
-
-    def get_page_file_name(self, media_data, chapter_data, ext, page_number=0):
-        return self.get_chapter_page_format(media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"], page_number=page_number, ext=ext)
 
     def open_viewer(self, files, media_data, chapter_data, wd=None):
         viewer = self.get_field("viewer", media_data)
