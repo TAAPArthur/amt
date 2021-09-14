@@ -21,24 +21,25 @@ class Mangadex(Server):
     def _get_media_list(self, data):
         results = []
         for result in data:
-            results.append(self.create_media_data(id=result["data"]["id"], name=list(result["data"]["attributes"]["title"].values())[0]))
+            results.append(self.create_media_data(id=result["id"], name=list(result["attributes"]["title"].values())[0]))
         return results
 
     def get_media_list(self, limit=100):
         r = self.session_get(self.list_url.format(limit if limit else 0))
-        return self._get_media_list(r.json()["results"])
+        return self._get_media_list(r.json()["data"])
 
     def search(self, term, limit=100):
         r = self.session_get(self.search_url.format(term, limit if limit else 0))
-        return self._get_media_list(r.json()["results"])
+        return self._get_media_list(r.json()["data"])
 
     def get_media_data_from_url(self, url):
         chapter_id = self.stream_url_regex.search(url).group(1)
 
-        relationships = self.session_get(self.chapter_url.format(chapter_id)).json()["relationships"]
+        relationships = self.session_get(self.chapter_url.format(chapter_id)).json()["data"]["relationships"]
         for metadata in relationships:
             if metadata["type"] == "manga":
-                return self._get_media_list([self.session_get(self.manga_url.format(metadata["id"])).json()])[0]
+                data = self.session_get(self.manga_url.format(metadata["id"])).json()
+                return self.create_media_data(id=data["data"]["id"], name=list(data["data"]["attributes"]["title"].values())[0])
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)
@@ -51,8 +52,7 @@ class Mangadex(Server):
             r = self.session_get(self.manga_chapters_url.format(media_data["id"], offset))
             data = r.json()
 
-            for chapter in sorted(data["results"], key=lambda x: x["data"]["attributes"]["publishAt"], reverse=True):
-                chapter_data = chapter["data"]
+            for chapter_data in sorted(data["data"], key=lambda x: x["attributes"]["publishAt"], reverse=True):
                 attr = chapter_data["attributes"]
                 if self.settings.is_allowed_text_lang(attr["translatedLanguage"], media_data):
                     if attr["chapter"] not in visited_chapter_numbers and attr["data"]:
