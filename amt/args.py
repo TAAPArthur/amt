@@ -156,7 +156,9 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     list_parser.add_argument("--media-type", default=None, choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     list_parser.add_argument("--out-of-date-only", default=False, action="store_const", const=True)
     list_parser.add_argument("--tag", const="", nargs="?")
+    list_parser.add_argument("--csv", action="store_const", const=True, default=False, help="List in a script friendly format")
     list_parser.add_argument("name", nargs="?", default=None, choices=media_reader.get_servers_ids())
+    list_parser.set_defaults(func=media_reader.list_media)
 
     chapter_parsers = sub_parsers.add_parser("list-chapters")
     chapter_parsers.add_argument("name", choices=media_reader.get_all_names())

@@ -813,8 +813,10 @@ class MediaReaderTest(BaseUnitTestClass):
 class ApplicationTest(BaseUnitTestClass):
 
     def test_list(self):
+        self.media_reader.list_media()
         self.add_test_media()
-        self.media_reader.list()
+        self.media_reader.list_media()
+        self.media_reader.list_media(csv=True)
 
     def test_list_chapters(self):
         self.add_test_media()
