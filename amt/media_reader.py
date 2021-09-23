@@ -547,8 +547,6 @@ class MediaReader:
                 media_data["progress"] = progress
         if unknown_media:
             logging.info("Could not find any of %s", unknown_media)
-
-        self.list()
         return new_count
     # MISC
 

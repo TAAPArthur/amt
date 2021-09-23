@@ -3,7 +3,7 @@ from enum import IntFlag
 
 class MediaType(IntFlag):
     def __str__(self):
-        return self.name
+        return self.name if self.name else "_".join(map(str, filter(lambda x: x & self, MediaType)))
 
     @classmethod
     def get(clazz, x, default=None):

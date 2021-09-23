@@ -1350,8 +1350,18 @@ class ArgsTest(MinimalUnitTestClass):
         bundle_data = list(self.media_reader.bundles.values())[0]
         self.assertEqual(len(bundle_data), 2)
 
-    def test_play(self):
+    def test_consume(self):
         self.add_test_media()
+        parse_args(media_reader=self.media_reader, args=["consume"])
+        self.verify_all_chapters_read()
+
+    def test_view(self):
+        self.add_test_media(media_type=MediaType.MANGA | MediaType.NOVEL)
+        parse_args(media_reader=self.media_reader, args=["view"])
+        self.verify_all_chapters_read()
+
+    def test_play(self):
+        self.add_test_media(media_type=MediaType.ANIME)
         parse_args(media_reader=self.media_reader, args=["play"])
         self.verify_all_chapters_read()
 
