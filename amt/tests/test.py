@@ -792,6 +792,23 @@ class MediaReaderTest(BaseUnitTestClass):
         self.assertEqual(1, sum(map(lambda x: x[1], read_dist)))
         self.assertTrue(read_dist[0][1])
 
+    def test_get_media_tag(self):
+        media_list = self.add_test_media()
+        media_data = media_list[0]
+        tag_name, tag_name2 = "test", "test2"
+        self.assertFalse(list(self.media_reader.get_media(tag=tag_name)))
+        self.media_reader.tag(name=media_data, tag_name=tag_name)
+        self.assertEqual(1, len(list(self.media_reader.get_media(tag=tag_name))))
+        self.assertEqual(1, len(list(self.media_reader.get_media(tag=""))))
+        self.media_reader.tag(None, tag_name=tag_name2)
+        self.assertEqual(1, len(list(self.media_reader.get_media(tag=tag_name))))
+        self.assertEqual(len(media_list), len(list(self.media_reader.get_media(tag=tag_name2))))
+        self.assertEqual(len(media_list), len(list(self.media_reader.get_media(tag=""))))
+        self.media_reader.untag(None, tag_name=tag_name)
+        self.assertEqual(len(media_list), len(list(self.media_reader.get_media(tag=""))))
+        self.media_reader.untag(None, tag_name=tag_name2)
+        self.assertEqual(0, len(list(self.media_reader.get_media(tag=""))))
+
 
 class ApplicationTest(BaseUnitTestClass):
 
@@ -1011,14 +1028,12 @@ class ArgsTest(MinimalUnitTestClass):
     def test_tag(self):
         self.add_test_media()
         tag_name = "test"
-        for i in range(2):
-            parse_args(media_reader=self.media_reader, args=["untag", tag_name])
-            self.assertFalse(any(map(lambda x: x["tags"], self.media_reader.get_media())))
-            parse_args(media_reader=self.media_reader, args=["list", "--tag", tag_name])
-
-            parse_args(media_reader=self.media_reader, args=["tag", tag_name])
-            self.assertTrue(all(map(lambda x: [tag_name] == x["tags"], self.media_reader.get_media())))
-            parse_args(media_reader=self.media_reader, args=["list", "--tag", tag_name])
+        parse_args(media_reader=self.media_reader, args=["untag", tag_name])
+        parse_args(media_reader=self.media_reader, args=["tag", tag_name])
+        self.assertTrue(all(map(lambda x: [tag_name] == x["tags"], self.media_reader.get_media())))
+        parse_args(media_reader=self.media_reader, args=["list", "--tag", tag_name])
+        parse_args(media_reader=self.media_reader, args=["untag", tag_name])
+        parse_args(media_reader=self.media_reader, args=["list", "--tag"])
 
     def test_print_media_reader_state(self):
         self.add_test_media()

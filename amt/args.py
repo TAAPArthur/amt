@@ -155,7 +155,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     list_parser = sub_parsers.add_parser("list")
     list_parser.add_argument("--media-type", default=None, choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     list_parser.add_argument("--out-of-date-only", default=False, action="store_const", const=True)
-    list_parser.add_argument("--tag", default=None, nargs="?")
+    list_parser.add_argument("--tag", const="", nargs="?")
     list_parser.add_argument("name", nargs="?", default=None, choices=media_reader.get_servers_ids())
 
     chapter_parsers = sub_parsers.add_parser("list-chapters")
@@ -163,11 +163,11 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_parsers.add_parser("list-servers")
 
     tag_parser = sub_parsers.add_parser("tag")
-    tag_parser.add_argument("value")
+    tag_parser.add_argument("tag_name")
     tag_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?")
 
     untag_parser = sub_parsers.add_parser("untag")
-    untag_parser.add_argument("value")
+    untag_parser.add_argument("tag_name")
     untag_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?")
 
     # credentials

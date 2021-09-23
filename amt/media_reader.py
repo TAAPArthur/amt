@@ -114,7 +114,7 @@ class MediaReader:
                 continue
             if media_type and media_data["media_type"] & media_type == 0:
                 continue
-            if tag and tag not in media_data["tags"]:
+            if tag and tag not in media_data["tags"] or tag == "" and not media_data["tags"]:
                 continue
             yield media_data
 
@@ -559,14 +559,14 @@ class MediaReader:
                 chapter["number"] -= diff_offset
             media_data["offset"] = offset
 
-    def tag(self, name, value):
+    def tag(self, name, tag_name):
         for media_data in self.get_media(name=name):
-            media_data["tags"].append(value)
+            media_data["tags"].append(tag_name)
 
-    def untag(self, name, value):
+    def untag(self, name, tag_name):
         for media_data in self.get_media(name=name):
-            if value in media_data["tags"]:
-                media_data["tags"].remove(value)
+            if tag_name in media_data["tags"]:
+                media_data["tags"].remove(tag_name)
 
     def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, remove_not_on_disk=False, bundles=False):
         if remove_not_on_disk:
