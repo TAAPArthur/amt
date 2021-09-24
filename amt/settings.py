@@ -77,6 +77,7 @@ class Settings:
     post_process_cmd = None
     text_languages = ("en", "en-US", "English")
     threads = 8  # per server thread count
+    viewer = None
 
     def __init__(self, home=Path.home(), no_save_session=False, no_load=False, skip_env_override=False):
         self.home = home
@@ -213,9 +214,13 @@ class Settings:
                 self.password_load_cmd = None
 
             for attr in Settings.get_members():
-                env_var = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
-                if env_var is not None:
-                    self.set_field(attr, env_var)
+                env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
+                if env_value is not None or self.get_field(attr) is None:
+                    self.set_field(attr, env_value)
+                    for media_type in MediaType:
+                        env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}_{media_type}")
+                        if env_value:
+                            self.set_field(attr, env_value, media_type.name)
         os.environ["USER_AGENT"] = self.user_agent
 
     def get_settings_file(self):

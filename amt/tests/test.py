@@ -349,6 +349,16 @@ class SettingsTest(BaseUnitTestClass):
         self.assertEqual(self.settings.password_load_cmd, "1")
         del os.environ["AMT_PASSWORD_LOAD_CMD"]
 
+    def test_set_settings_server_specific_with_env_overload(self):
+        self.settings.allow_env_override = True
+        self.settings.viewer = Settings.viewer
+        target_value_manga, target_value_anime = "target_manga", "target_anime"
+        os.environ["AMT_VIEWER_" + str(MediaType.MANGA)] = target_value_manga
+        os.environ["AMT_VIEWER_" + str(MediaType.ANIME)] = target_value_anime
+        self.settings.load()
+        self.assertEqual(target_value_manga, self.settings.get_field("viewer", MediaType.MANGA.name))
+        self.assertEqual(target_value_anime, self.settings.get_field("viewer", MediaType.ANIME.name))
+
     @patch("builtins.input", return_value="0")
     @patch("getpass.getpass", return_value="1")
     def test_settings_env_override_ask_credentials(self, _username, _password):
