@@ -63,7 +63,8 @@ class Settings:
         }
     }
     auto_replace = True
-    bundle_format = "cbz"
+    bundle_ext = "cbz"
+    bundle_format = "{date}_{name}.{ext}"
     bundle_viewer = "zathura {media}"
     chapter_dir_name_format = "{chapter_number:06.1f}"
     chapter_page_format = "{page_number:04d}.{ext}"
@@ -284,6 +285,7 @@ class Settings:
         self.store_credentials(server_id, secret, "token")
 
     def run_cmd(self, cmd, wd=None):
+        logging.info("Running cmd %s: shell = %s, wd=%s", cmd, self.shell, wd)
         subprocess.check_call(cmd, stdout=DEVNULL if self.suppress_cmd_output else None, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
 
     @staticmethod
@@ -295,7 +297,6 @@ class Settings:
             assert isinstance(name, str)
             name = Settings._smart_quote(name)
             cmd = viewer.format(media=name, title=quote(title)) if title else viewer.format(name)
-            logging.info("Running cmd %s: %s shell = %s, wd=%s", viewer, cmd, self.shell, wd)
             self.run_cmd(cmd, wd=wd)
             return True
         except (CalledProcessError, KeyboardInterrupt):
@@ -318,11 +319,17 @@ class Settings:
         title = os.path.basename(bundle_path)
         return self._open_viewer(viewer, bundle_path, title=title)
 
-    def bundle(self, img_dirs, media_data=None):
+    def bundle(self, img_dirs, name=None, media_data=None):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
-        bundle_format = self.get_field("bundle_format", media_data)
-        name = os.path.join(self.bundle_dir, "{}_{}.{}".format(datetime.now().strftime("%Y-%m-%d_%H:%M:%S"), str(hash(arg))[1:8], bundle_format))
-        cmd = self.bundle_cmds[bundle_format].format(files=arg, name=name)
-        logging.info("Running cmd %s shell = %s", cmd, self.shell)
-        self.run_cmd(cmd)
-        return name
+        bundle_ext = self.get_bundle_ext(media_data)
+        count = 0
+        name = name if name else "ALL"
+        while True:
+            bundle_name = self.get_bundle_format(media_data).format(date=datetime.now().strftime("%Y-%m-%d"), name=name + str(count) if count else name, ext=bundle_ext)
+            bundle_path = os.path.join(self.bundle_dir, bundle_name)
+            if os.path.exists(bundle_path):
+                count += 1
+                continue
+            cmd = self.bundle_cmds[bundle_ext].format(files=arg, name=bundle_path)
+            self.run_cmd(cmd)
+            return bundle_path

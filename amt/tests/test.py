@@ -116,7 +116,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader.settings.viewer = "echo {media} {title}"
         self.media_reader.settings.specific_settings = {}
         self.media_reader.settings.bundle_viewer = "[ -f {media} ]"
-        self.media_reader.settings.bundle_cmds[self.media_reader.settings.bundle_format] = "ls {files}; touch {name}"
+        self.media_reader.settings.bundle_cmds[self.media_reader.settings.bundle_ext] = "ls {files}; touch {name}"
         self.media_reader.settings.force_page_parity = None
 
     def setUp(self):
@@ -404,11 +404,11 @@ class SettingsTest(BaseUnitTestClass):
 
     def test_bundle(self):
         name = self.settings.bundle("")
-        assert name.endswith("." + self.settings.bundle_format)
+        self.assertTrue(name.endswith("." + self.settings.bundle_ext), name)
         self.assertTrue(os.path.exists(name))
-        assert self.settings.open_bundle_viewer(name)
+        self.assertTrue(self.settings.open_bundle_viewer(name))
         self.settings.bundle_viewer = "exit 1"
-        assert not self.settings.open_bundle_viewer(name)
+        self.assertFalse(self.settings.open_bundle_viewer(name))
 
     def test_get_chapter_dir_degenerate_name(self):
         server = TestServer(None, self.settings)
@@ -717,9 +717,9 @@ class MediaReaderTest(BaseUnitTestClass):
         self._prepare_for_bundle()
         names = set()
         for i in range(10):
-            names.add(self.media_reader.bundle_unread_chapters(shuffle=True))
-        assert names
-        assert all(names)
+            name = self.media_reader.bundle_unread_chapters(shuffle=True)
+            self.assertFalse(name in names)
+            names.add(name)
 
     def test_bundle_no_unreads(self):
         assert not self.media_reader.bundle_unread_chapters()
@@ -727,7 +727,7 @@ class MediaReaderTest(BaseUnitTestClass):
     def test_bundle_fail(self):
         self._prepare_for_bundle()
         self.settings.bundle_viewer = "exit 1"
-        assert not self.media_reader.read_bundle("none.{}".format(self.settings.bundle_format))
+        assert not self.media_reader.read_bundle("none.{}".format(self.settings.bundle_ext))
         assert not any([x["read"] for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()])
 
     def test_bundle_anime(self):
@@ -971,7 +971,7 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["setting", "password_manager_enabled"])
 
     def test_set_settings(self):
-        key_values = [("bundle_format", "jpg"), ("bundle_format", "true"),
+        key_values = [("bundle_ext", "jpg"), ("bundle_ext", "true"),
                       ("max_retries", "1", 1),
                       ("max_retries", "2", 2),
                       ("password_manager_enabled", "true", True),

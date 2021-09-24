@@ -309,7 +309,7 @@ class MediaReader:
             return None
 
         logging.info("Bundling %s", paths)
-        name = self.settings.bundle(paths, media_data=self.state.get_lead_media_data(bundle_data))
+        name = self.settings.bundle(paths, name=name, media_data=self.state.get_lead_media_data(bundle_data))
         self.state.bundles[name] = bundle_data
         return name
 
