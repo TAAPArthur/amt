@@ -77,8 +77,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # update and download
     update_parser = sub_parsers.add_parser("update", description="Update all media")
-    update_parser.add_argument("--download", "-d", action="store_const", const=True, default=False, help="Update and download")
-    update_parser.add_argument("--replace", "-r", action="store_const", const=True, default=False, help="Replace existing metadata instead of media_readerending")
     update_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     update_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?", help="Update only specified media")
 

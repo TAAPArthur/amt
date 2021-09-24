@@ -201,5 +201,16 @@ class MediaData(dict):
 
 
 class ChapterData(dict):
+    update_state = False
+
     def __init__(self, backing_map):
         super().__init__(backing_map)
+
+    def update(self, key_pars):
+        super().update(key_pars)
+        self.update_state = True
+
+    def check_if_updated_and_clear(self):
+        updated = self.update_state
+        self.update_state = False
+        return updated

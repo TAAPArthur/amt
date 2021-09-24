@@ -7,7 +7,6 @@ RE_ENCRYPTION_KEY = re.compile(".{1,2}")
 
 class Mangaplus(Server):
     id = "mangaplus"
-    sync_removed = True
 
     base_url = "https://mediaplus.shueisha.co.jp"
     api_url = "https://jumpg-webapi.tokyo-cdn.com/api"

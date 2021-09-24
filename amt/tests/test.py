@@ -17,7 +17,7 @@ from ..media_reader import SERVERS, TRACKERS, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
 from ..servers.local import LocalServer, get_local_server_id
 from ..settings import Settings
-from ..state import MediaData, State
+from ..state import ChapterData, MediaData, State
 from ..util.media_type import MediaType
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
                           TestServerLogin)
@@ -660,41 +660,20 @@ class MediaReaderTest(BaseUnitTestClass):
         num_new_chapters2 = self.media_reader.update_media(media_data)
         self.assertEqual(num_new_chapters, num_new_chapters2)
 
-    def test_update_replace_error(self):
-        self.add_test_media(server=self.test_server, limit=1)
+    def test_update_keep_removed(self):
+        fake_chapter_id = "fakeId"
+        media_list = self.add_test_media()
+        original_len = len(media_list[0]["chapters"])
+        media_list[0]["chapters"][fake_chapter_id] = ChapterData(list(media_list[0]["chapters"].values())[0])
         self.media_reader.mark_read()
-        self.test_server.inject_error()
-        self.media_reader.update(replace=True, ignore_errors=True)
+        self.settings.keep_unavailable = True
+        self.media_reader.update()
+        self.assertTrue(fake_chapter_id in media_list[0]["chapters"])
+        self.settings.keep_unavailable = False
+        self.media_reader.update()
+        self.assertFalse(fake_chapter_id in media_list[0]["chapters"])
+        self.assertEqual(original_len, len(media_list[0]["chapters"]))
         self.verify_all_chapters_read()
-
-    def test_update_hidden_media(self):
-        media_list = self.add_test_media(server=self.test_server)
-        self.test_server.hide = True
-        numMedia = len(media_list)
-        initialChapters = len(self.getChapters())
-        assert not self.media_reader.update()
-        self.assertEquals(numMedia, len(self.media_reader.get_media_ids()))
-        self.assertEquals(initialChapters, len(self.getChapters()))
-        self.test_server.sync_removed = True
-        assert not self.media_reader.update()
-        self.assertEquals(0, len(self.getChapters()))
-
-    def test_update_download(self):
-        for server in self.media_reader.get_servers():
-            with self.subTest(server=server.id):
-                media_list = server.get_media_list()
-                for media_data in media_list:
-                    self.media_reader.add_media(media_data, no_update=True)
-                    chapter_list = self.media_reader.update_media(media_data, download=True, media_type_to_download=None, limit=1, page_limit=3)
-                    if chapter_list:
-                        chapter_data = chapter_list[0]
-                        break
-                min_chapter = min(media_data["chapters"].values(), key=lambda x: x["number"])
-                assert min_chapter == chapter_data
-
-                # error if we try to save a page we have already downloaded
-                server.save_chapter_page = None
-                assert not server.download_chapter(media_data, chapter_data, page_limit=3)
 
     def test_preserve_read_status_on_update(self):
         media_list = self.add_test_media()
@@ -1174,17 +1153,6 @@ class ArgsTest(MinimalUnitTestClass):
         self.assertEqual(len(media_list[0]["chapters"]), 0)
         parse_args(media_reader=self.media_reader, args=["update"])
         self.assertTrue(media_list[0]["chapters"])
-
-    def test_update_replace(self):
-        fake_chapter_id = "fakeId"
-        media_list = self.add_test_media()
-        original_len = len(media_list[0]["chapters"])
-        media_list[0]["chapters"][fake_chapter_id] = dict(list(media_list[0]["chapters"].values())[0])
-        self.media_reader.mark_read()
-        parse_args(media_reader=self.media_reader, args=["update", "--replace"])
-        assert fake_chapter_id not in media_list[0]["chapters"]
-        assert original_len == len(media_list[0]["chapters"])
-        self.verify_all_chapters_read()
 
     def test_offset(self):
         media_list = self.add_test_media()

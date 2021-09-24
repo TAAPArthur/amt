@@ -8,7 +8,7 @@ from threading import Lock
 from requests.exceptions import HTTPError
 
 from .job import Job
-from .state import MediaData
+from .state import ChapterData, MediaData
 from .util.media_type import MediaType
 
 
@@ -35,7 +35,6 @@ class GenericServer:
     stream_url_regex = None
     is_premium = False
     # If set, updating will cause chapters that are now longer available on the server to be removed
-    sync_removed = False
     official = True
     syncrhonize_chapter_downloads = False
     has_free_chapters = True
@@ -341,7 +340,7 @@ class Server(GenericServer):
         if id in media_data["chapters"]:
             media_data["chapters"][id].update(new_values)
         else:
-            media_data["chapters"][id] = new_values
+            media_data["chapters"][id] = ChapterData(new_values)
             media_data["chapters"][id]["read"] = False
         return True
 

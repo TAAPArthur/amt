@@ -258,47 +258,24 @@ class MediaReader:
 
     # Updating media
 
-    def update(self, name=None, media_type=None, download=False, media_type_to_download=MediaType.MANGA, replace=False, ignore_errors=False):
-        logging.info("Updating: download %s", download)
-        def func(x): return self.update_media(x, download, media_type_to_download=media_type_to_download, replace=replace)
-        return self.for_each(func, self.get_media(media_type=media_type, name=name), raiseException=not ignore_errors)
+    def update(self, name=None, media_type=None, ignore_errors=False):
+        return self.for_each(self.update_media, self.get_media(name=name, media_type=media_type), raiseException=not ignore_errors)
 
-    def update_media(self, media_data, download=False, media_type_to_download=MediaType.MANGA, limit=None, page_limit=None, replace=False):
+    def update_media(self, media_data, limit=None, page_limit=None):
         """
         Return set of updated chapters or a False-like value
         """
         server = self.get_server(media_data["server_id"])
-        if server.sync_removed:
-            replace = True
+        chapter_ids = set(media_data["chapters"].keys())
+        server.update_media_data(media_data)
 
-        def get_chapter_ids(chapters):
-            return {x for x in chapters if not chapters[x]["premium"]} if self.settings.free_only else set(chapters.keys())
-        chapter_ids = get_chapter_ids(media_data["chapters"])
-        if replace:
-            chapters = dict(media_data["chapters"])
-            media_data["chapters"].clear()
+        if not self.settings.get_keep_unavailable(media_data):
+            for chapter_id in chapter_ids:
+                if chapter_id in media_data["chapters"] and not media_data["chapters"][chapter_id].check_if_updated_and_clear():
+                    if not server.is_fully_downloaded(media_data, media_data["chapters"][chapter_id]):
+                        del media_data["chapters"][chapter_id]
 
-        try:
-            server.update_media_data(media_data)
-        except:
-            if replace:
-                media_data["chapters"] = chapters
-            raise
-
-        current_chapter_ids = get_chapter_ids(media_data["chapters"])
-        new_chapter_ids = current_chapter_ids - chapter_ids
-
-        if replace:
-            for chapter in chapters:
-                if chapter in media_data["chapters"]:
-                    media_data["chapters"][chapter]["read"] = chapters[chapter]["read"]
-
-        new_chapters = sorted([media_data["chapters"][x] for x in new_chapter_ids], key=lambda x: x["number"])
-        assert len(new_chapter_ids) == len(new_chapters)
-        if download and (media_type_to_download is None or media_type_to_download & media_data["media_type"]):
-            for chapter_data in new_chapters[:limit]:
-                server.download_chapter(media_data, chapter_data, page_limit)
-        return new_chapters
+        return list(media_data["chapters"].keys() - chapter_ids)
 
     # Downloading
 

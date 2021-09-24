@@ -16,7 +16,6 @@ def get_local_server_id(media_type):
 
 class LocalServer(Server):
     external = True
-    sync_removed = True
 
     id_formatter_regex = re.compile(r"\W+")
     number_regex = re.compile(r"(\d+\.?\d*)[ \.]")
@@ -52,7 +51,7 @@ class LocalServer(Server):
                     self.update_chapter_data(media_data, id=number, title=title, number=number)
 
     def is_fully_downloaded(self, media_data, chapter_data):
-        return True
+        return os.path.exists(self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True))
 
     def download_chapter(self, media_data, chapter_data, page_limit=None):
         return False
