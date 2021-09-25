@@ -573,10 +573,10 @@ class MediaReader:
                                     logging.info("Removing %s because it has been read", chapter_path)
                                     shutil.rmtree(chapter_path)
 
-                        chapter_dirs = {os.path.basename(self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)): chapter_data for chapter_data in media_data.get_sorted_chapters()}
+                        chapter_dirs = {self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True): chapter_data for chapter_data in media_data.get_sorted_chapters()}
                         for chapter_dir in os.listdir(media_path):
                             chapter_path = os.path.join(media_path, chapter_dir)
-                            if os.path.isdir(chapter_path) and chapter_path not in chapter_dirs:
+                            if chapter_path not in chapter_dirs and os.path.isdir(chapter_path):
                                 logging.info("Removing %s because chapter info has been removed", chapter_path)
                                 shutil.rmtree(chapter_path)
 

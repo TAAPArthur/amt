@@ -1250,6 +1250,13 @@ class ArgsTest(MinimalUnitTestClass):
         for dir in os.listdir(self.settings.media_dir):
             self.assertEqual(0, len(os.listdir(os.path.join(self.settings.media_dir, dir))))
 
+    def test_clean_noop(self):
+        a = self.add_test_media(self.test_server, limit=1)
+        self.media_reader.download_unread_chapters()
+        parse_args(media_reader=self.media_reader, args=["clean"])
+        print(a)
+        self.verify_all_chapters_downloaded()
+
     def test_clean_read(self):
         self.add_test_media(self.test_server)
         self.media_reader.download_unread_chapters()
