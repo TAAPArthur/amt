@@ -78,6 +78,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     # update and download
     update_parser = sub_parsers.add_parser("update", description="Update all media")
     update_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
+    update_parser.add_argument("--no-shuffle", default=False, action="store_const", const=True)
     update_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?", help="Update only specified media")
 
     download_parser = sub_parsers.add_parser("download-unread", help="Downloads all chapters that have not been read")

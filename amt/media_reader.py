@@ -258,12 +258,12 @@ class MediaReader:
 
     # Updating media
 
-    def update(self, name=None, media_type=None, ignore_errors=False):
-        return self.for_each(self.update_media, self.get_media(name=name, media_type=media_type), raiseException=not ignore_errors)
+    def update(self, name=None, media_type=None, no_shuffle=False, ignore_errors=False):
+        return sum(self.for_each(self.update_media, self.get_media(name=name, media_type=media_type, shuffle=not no_shuffle), raiseException=not ignore_errors))
 
     def update_media(self, media_data, limit=None, page_limit=None):
         """
-        Return set of updated chapters or a False-like value
+        Return number of updated chapters
         """
         server = self.get_server(media_data["server_id"])
         chapter_ids = set(media_data["chapters"].keys())
@@ -275,7 +275,7 @@ class MediaReader:
                     if not server.is_fully_downloaded(media_data, media_data["chapters"][chapter_id]):
                         del media_data["chapters"][chapter_id]
 
-        return list(media_data["chapters"].keys() - chapter_ids)
+        return len(media_data["chapters"].keys() - chapter_ids)
 
     # Downloading
 
