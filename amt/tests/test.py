@@ -13,7 +13,7 @@ from unittest.mock import patch
 from .. import servers, tests
 from ..args import parse_args
 from ..job import Job, RetryException
-from ..media_reader import SERVERS, TRACKERS, import_sub_classes
+from ..media_reader import SERVERS, TRACKERS, MediaReader, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
 from ..servers.local import LocalServer, get_local_server_id
 from ..settings import Settings
@@ -52,39 +52,10 @@ PREMIUM_TEST = os.getenv("PREMIUM_TEST")
 QUICK_TEST = os.getenv("QUICK")
 
 
-class TestApplication(MediaReaderCLI):
-    def __init__(self, real=False, local=False):
-        settings = Settings(home=TEST_HOME)
-        if os.path.exists(settings.get_cookie_file()):
-            os.remove(settings.get_cookie_file())
-
-        _servers = list(TEST_SERVERS)
-        _trackers = list(TEST_TRACKERS)
-        if real:
-            if ENABLE_ONLY_SERVERS:
-                enabled_servers = set(ENABLE_ONLY_SERVERS.split(","))
-                _servers = [x for x in SERVERS if x.id in enabled_servers]
-                assert _servers
-            else:
-                _servers = [s for s in SERVERS if not s.external]
-            _trackers += TRACKERS
-        elif local:
-            _servers += LOCAL_SERVERS
-
-        _servers.sort(key=lambda x: x.id)
-        super().__init__(_servers, _trackers, settings)
-        if not settings.allow_only_official_servers:
-            assert len(self.get_servers()) == len(_servers)
-        assert len(self.get_trackers()) == len(_trackers)
-        assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
-
-    def save(self):
-        self.state.save()
-
-
 class BaseUnitTestClass(unittest.TestCase):
     real = False
     local = False
+    cli = False
 
     def __init__(self, methodName="runTest"):
         super().__init__(methodName=methodName)
@@ -94,7 +65,31 @@ class BaseUnitTestClass(unittest.TestCase):
         pass
 
     def reload(self):
-        self.media_reader = TestApplication(self.real, self.local)
+        cls = MediaReaderCLI if self.cli else MediaReader
+
+        settings = Settings(home=TEST_HOME)
+        if os.path.exists(settings.get_cookie_file()):
+            os.remove(settings.get_cookie_file())
+
+        _servers = list(TEST_SERVERS)
+        _trackers = list(TEST_TRACKERS)
+        if self.real:
+            if ENABLE_ONLY_SERVERS:
+                enabled_servers = set(ENABLE_ONLY_SERVERS.split(","))
+                _servers = [x for x in SERVERS if x.id in enabled_servers]
+                assert _servers
+            else:
+                _servers = [s for s in SERVERS if not s.external]
+            _trackers += TRACKERS
+        elif self.local:
+            _servers += LOCAL_SERVERS
+
+        _servers.sort(key=lambda x: x.id)
+        self.media_reader = cls(settings=settings, server_list=_servers, tracker_list=_trackers)
+        if not settings.allow_only_official_servers:
+            assert len(self.media_reader.get_servers()) == len(_servers)
+        assert len(self.get_trackers()) == len(_trackers)
+        assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
 
     def for_each(self, func, media_list, raiseException=True):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
@@ -128,6 +123,8 @@ class BaseUnitTestClass(unittest.TestCase):
         logger.handlers = []
         logger.addHandler(self.stream_handler)
         shutil.rmtree(TEST_HOME, ignore_errors=True)
+        os.makedirs(TEST_HOME)
+        os.chdir(TEST_HOME)
         self.reload()
         self.setup_settings()
         self.settings = self.media_reader.settings
@@ -148,7 +145,7 @@ class BaseUnitTestClass(unittest.TestCase):
         for media_data in media_list[:limit]:
             self.media_reader.add_media(media_data, no_update=no_update)
         assert media_list
-        return media_list
+        return media_list[:limit]
 
     def getChapters(self, media_type=MediaType.ANIME | MediaType.MANGA):
         return [x for media_data in self.media_reader.get_media(media_type=media_type) for x in media_data["chapters"].values()]
@@ -202,12 +199,19 @@ class BaseUnitTestClass(unittest.TestCase):
         return set_of_numbers
 
     def verify_no_media(self):
-        assert not self.media_reader.get_media_ids()
+        self.verify_media_len(0)
+
+    def verify_media_len(self, target_len):
+        self.assertEqual(target_len, len(self.media_reader.get_media_ids()))
 
     def verfiy_media_list(self, media_list=None, server=None):
         if media_list:
             assert isinstance(media_list, list)
-            assert all([isinstance(x, MediaData) for x in media_list])
+            for media_data in media_list:
+                self.assertTrue(isinstance(media_data, MediaData), type(media_data))
+                for chapter_data in media_data["chapters"].values():
+                    self.assertTrue(isinstance(chapter_data, ChapterData), type(chapter_data))
+
             if not server:
                 server = self.media_reader.get_server(media_list[0]["server_id"])
             assert all([x["server_id"] == server.id for x in media_list])
@@ -560,12 +564,20 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
 
 class MediaReaderTest(BaseUnitTestClass):
+    def test_add_remove(self):
+        media_data = self.add_test_media(limit=1)[0]
+        self.verify_media_len(1)
+        self.assertRaises(ValueError, self.media_reader.add_media, media_data)
+        self.verify_media_len(1)
+        self.media_reader.remove_media(media_data)
+        self.assertRaises(KeyError, self.media_reader.remove_media, media_data)
+
     def test_disable_unofficial_servers(self):
         self.add_test_media()
 
         for i in range(2):
             self.assertFalse(all(map(lambda x: self.media_reader.get_server(x["server_id"]).official, self.media_reader.get_media())))
-            self.media_reader.save()
+            self.media_reader.state.save()
             self.media_reader.settings.allow_only_official_servers = True
             self.media_reader.settings.save(save_all=True)
             self.reload()
@@ -608,7 +620,7 @@ class MediaReaderTest(BaseUnitTestClass):
         assert not os.path.exists(self.settings.get_metadata())
         self.add_test_media(server=self.test_server)
         old_hash = State.get_hash(self.media_reader.media)
-        self.media_reader.save()
+        self.media_reader.state.save()
         assert os.path.exists(self.settings.get_metadata())
         self.reload()
         self.assertEqual(old_hash, State.get_hash(self.media_reader.media))
@@ -622,17 +634,17 @@ class MediaReaderTest(BaseUnitTestClass):
         for key in original_keys:
             self.media_reader.media["old_" + key] = self.media_reader.media[key]
             del self.media_reader.media[key]
-        self.media_reader.save()
+        self.media_reader.state.save()
         self.reload()
         self.assertEqual(original_keys, set(self.media_reader.media.keys()))
 
     def test_save_load_disabled(self):
         self.add_test_media()
         old_hash = State.get_hash(self.media_reader.media)
-        self.media_reader.save()
+        self.media_reader.state.save()
         self.media_reader.state.configure_media({})
         assert not self.media_reader.media
-        self.media_reader.save()
+        self.media_reader.state.save()
         self.media_reader.state.configure_media(self.media_reader.get_servers_ids())
         assert self.media_reader.media
         self.assertEqual(old_hash, State.get_hash(self.media_reader.media))
@@ -923,13 +935,13 @@ class LocalTest(MinimalUnitTestClass):
     def test_custom_save_update(self):
         all_chapters = self.getChapters()
         self.assertTrue(all_chapters)
-        funcs = [self.media_reader.save, self.reload, self.media_reader.update]
+        funcs = [self.media_reader.state.save, self.reload, self.media_reader.update]
         for func in funcs:
             func()
             self.assertEqual(len(all_chapters), len(self.getChapters()), func)
 
     def test_custom_clean(self):
-        self.media_reader.save()
+        self.media_reader.state.save()
         all_chapters = self.getChapters()
         self.assertTrue(all_chapters)
         self.media_reader.mark_read()
@@ -944,6 +956,9 @@ class LocalTest(MinimalUnitTestClass):
 
 
 class ArgsTest(MinimalUnitTestClass):
+    def init(self):
+        self.cli = True
+
     @patch("builtins.input", return_value="0")
     def test_arg(self, input):
         self.settings.password_manager_enabled = False
@@ -1268,9 +1283,9 @@ class ArgsTest(MinimalUnitTestClass):
         media_data = self.add_test_media(self.test_server, limit=1)[0]
         self.media_reader.download_unread_chapters()
         self.media_reader.mark_read()
-        self.media_reader.save()
+        self.media_reader.state.save()
         media_data["chapters"].clear()
-        self.media_reader.save()
+        self.media_reader.state.save()
         parse_args(media_reader=self.media_reader, args=["clean"])
         self.assertEqual(1, len(os.listdir(self.settings.get_media_dir(media_data))))
 
@@ -1493,7 +1508,7 @@ class ArgsTest(MinimalUnitTestClass):
             assert media_data.chapters
             media_data["chapters"] = media_data.chapters
             media_data.chapters = {}
-        self.media_reader.save()
+        self.media_reader.state.save()
         self.reload()
         for media_data in self.media_reader.get_media():
             assert media_data.chapters
@@ -1592,9 +1607,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
                         if season_id:
                             self.assertEqual(season_id, str(media_data["season_id"]))
                         if chapter_id:
-                            self.assertTrue(chapter_id in media_data["chapters"])
                             self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
-                            self.assertEqual(str(server.get_chapter_id_for_url(url)), str(chapter_id))
                             self.assertTrue(chapter_id in media_data["chapters"])
                         assert self.media_reader.add_from_url(url)
         self.for_each(func, self.streamable_urls)
@@ -1731,11 +1744,8 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         def func(media):
             with self.subTest(media_name=media):
                 media_data = self.media_reader.search_for_media(media, media_type=MediaType.ANIME, limit=2, raiseException=True)
-                self.assertTrueOrSkipTest(media)
-                for data in media_data:
-                    self.media_reader.add_media(data, no_update=True)
+                self.assertTrueOrSkipTest(media_data)
         self.for_each(func, interesting_media)
-        self.media_reader.update()
         for media_data in self.media_reader.get_media():
             self.verify_unique_numbers(media_data["chapters"])
 

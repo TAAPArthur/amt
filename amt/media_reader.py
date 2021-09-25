@@ -81,7 +81,7 @@ class MediaReader:
 
     # Helper methods
     def select_media(self, term, results, prompt, no_print=False):  # pragma: no cover
-        raise NotImplementedError
+        return results[0] if results else None
 
     def for_each(self, func, media_list, raiseException=False):
         return Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
