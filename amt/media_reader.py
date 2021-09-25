@@ -42,16 +42,13 @@ import_sub_classes(trackers, Tracker, TRACKERS)
 
 class MediaReader:
 
-    _servers = {}
-    _trackers = []
-    primary_tracker = None
-
-    def __init__(self, server_list=SERVERS, tracker_list=TRACKERS, settings=None):
+    def __init__(self, settings=None, server_list=SERVERS, tracker_list=TRACKERS):
         self.settings = settings if settings else Settings()
         self.session = requests.Session()
         self.state = State(self.settings, self.session)
         self._servers = {}
-        self._trackers = []
+        self._trackers = {}
+        self.tracker = None
 
         if self.settings.max_retries:
             for prefix in ("http://", "https://"):
@@ -63,17 +60,15 @@ class MediaReader:
             "User-Agent": self.settings.user_agent
         })
 
-        for cls in server_list:
-            if cls.id:
-                instance = cls(self.session, self.settings)
-                if not self.settings.allow_only_official_servers or instance.official:
-                    assert instance.id not in self._servers, "Duplicate server id"
-                    self._servers[instance.id] = instance
-        for cls in tracker_list:
-            if cls.id:
-                instance = cls(self.session, self.settings)
-                self._trackers.append(instance)
-        self.set_primary_tracker(self.get_trackers()[0])
+        for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers)):
+            for cls in cls_list:
+                if cls.id:
+                    instance = cls(self.session, self.settings)
+                    if not isinstance(instance, Server) or not self.settings.allow_only_official_servers or instance.official:
+                        assert instance.id not in instance_map, "Duplicate server id"
+                        instance_map[instance.id] = instance
+
+        self.set_tracker(self._trackers.get(self.settings.tracker_id, list(self._trackers.values())[0]))
         self.state.load()
         self.state.configure_media(self._servers)
         self.media = self.state.media
@@ -403,17 +398,14 @@ class MediaReader:
 
     # Tacker related functions
 
+    def get_tracker(self):
+        return self.tracker
+
     def get_trackers(self):
-        return self._trackers
+        return self._trackers.values()
 
-    def get_primary_tracker(self):
-        return self.primary_tracker
-
-    def set_primary_tracker(self, tracker):
-        self.primary_tracker = tracker
-
-    def get_secondary_trackers(self):
-        return [x for x in self.get_trackers() if x != self.get_primary_tracker()]
+    def set_tracker(self, tracker_id):
+        self.tracker = self._trackers[tracker_id] if not isinstance(tracker_id, Tracker) else tracker_id
 
     def get_tracked_media(self, tracker_id, tracking_id):
         media_data_list = []
@@ -428,7 +420,7 @@ class MediaReader:
 
     def get_tracker_info(self, media_data, tracker_id=None):
         if not tracker_id:
-            tracker_id = self.get_primary_tracker().id
+            tracker_id = self.get_tracker().id
         return media_data["trackers"].get(tracker_id, None)
 
     def track(self, media_data, tracker_id, tracking_id, tracker_title=None):
@@ -436,7 +428,7 @@ class MediaReader:
 
     def remove_tracker(self, name, media_type=None, tracker_id=None):
         if not tracker_id:
-            tracker_id = self.get_primary_tracker().id
+            tracker_id = self.get_tracker().id
         for media_data in self.get_media(name=name, media_type=media_type):
             del media_data["trackers"][tracker_id]
 
@@ -445,14 +437,14 @@ class MediaReader:
         dst_media_data = self.get_single_media(name=dst)
         if self.has_tracker_info(src_media_data):
             tracking_id, tracker_title = self.get_tracker_info(src_media_data)
-            self.track(dst_media_data, self.get_primary_tracker().id, tracking_id, tracker_title)
+            self.track(dst_media_data, self.get_tracker().id, tracking_id, tracker_title)
 
     def sync_progress(self, force=False, media_type=None, dry_run=False):
         data = []
-        tracker = self.get_primary_tracker()
+        tracker = self.get_tracker()
         for media_data in self.get_media():
             if not media_type or media_data["media_type"] == media_type:
-                tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_primary_tracker().id)
+                tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_tracker().id)
                 if tracker_info and (force or media_data["progress"] < int(media_data.get_last_read())):
                     data.append((tracker_info[0], media_data.get_last_read(), media_data["progressVolumes"]))
                     last_read = media_data.get_last_read()
@@ -495,7 +487,7 @@ class MediaReader:
         return media_data
 
     def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, update_progress_only=False, force=False):
-        tracker = self.get_primary_tracker()
+        tracker = self.get_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         new_count = 0
 

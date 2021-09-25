@@ -45,6 +45,9 @@ class Settings:
     # Cookies
     cookie_files = ["/tmp/cookies.txt"]
 
+    # Tracker
+    tracker_id = None
+
     # MISC
     allow_only_official_servers = False
     free_only = False

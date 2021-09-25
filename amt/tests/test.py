@@ -88,8 +88,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader = cls(settings=settings, server_list=_servers, tracker_list=_trackers)
         if not settings.allow_only_official_servers:
             assert len(self.media_reader.get_servers()) == len(_servers)
-        assert len(self.get_trackers()) == len(_trackers)
-        assert len(self.get_trackers()) == 1 + len(self.get_secondary_trackers())
+        self.assertTrue(self.media_reader.get_trackers())
 
     def for_each(self, func, media_list, raiseException=True):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
@@ -226,6 +225,12 @@ class BaseUnitTestClass(unittest.TestCase):
 
 class MinimalUnitTestClass(BaseUnitTestClass):
     def init(self):
+        self.local = True
+
+
+class CliUnitTestClass(BaseUnitTestClass):
+    def init(self):
+        self.cli = True
         self.local = True
 
 
@@ -812,7 +817,7 @@ class MediaReaderTest(BaseUnitTestClass):
         self.assertEqual(0, len(list(self.media_reader.get_media(tag=""))))
 
 
-class ApplicationTest(BaseUnitTestClass):
+class ApplicationTest(CliUnitTestClass):
 
     def test_list(self):
         self.media_reader.list_media()
@@ -853,7 +858,7 @@ class ApplicationTest(BaseUnitTestClass):
                 self.assertTrue(self.media_reader.select_chapter(mediaName))
 
 
-class ApplicationTestWithErrors(BaseUnitTestClass):
+class ApplicationTestWithErrors(CliUnitTestClass):
     def setUp(self):
         super().setUp()
         self.media_reader.auto_select = True
@@ -958,9 +963,7 @@ class LocalTest(MinimalUnitTestClass):
             self.assertTrue(os.listdir(self.settings.get_media_dir(media_data)))
 
 
-class ArgsTest(MinimalUnitTestClass):
-    def init(self):
-        self.cli = True
+class ArgsTest(CliUnitTestClass):
 
     @patch("builtins.input", return_value="0")
     def test_arg(self, input):
@@ -1070,7 +1073,7 @@ class ArgsTest(MinimalUnitTestClass):
         assert len(self.media_reader.get_media_ids()) == 1
         media_data = next(iter(self.media_reader.get_media()))
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
-        assert self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id)
+        assert self.media_reader.get_tracker_info(media_data)
         self.assertEqual(media_data["progress"], media_data.get_last_read())
 
     def test_load_filter_by_type(self):
@@ -1085,19 +1088,19 @@ class ArgsTest(MinimalUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "test_user"])
         assert len(self.media_reader.get_media_ids()) > 1
         for media_data in self.media_reader.get_media():
-            assert self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id)
+            assert self.media_reader.get_tracker_info(media_data)
             if media_data["progress"]:
                 self.assertEqual(media_data["progress"], media_data.get_last_read())
 
     def test_untrack(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "load"])
-        assert all([self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id) for media_data in self.media_reader.get_media()])
+        assert all([self.media_reader.get_tracker_info(media_data) for media_data in self.media_reader.get_media()])
         parse_args(media_reader=self.media_reader, args=["untrack"])
-        assert not any([self.media_reader.get_tracker_info(media_data, self.media_reader.get_primary_tracker().id) for media_data in self.media_reader.get_media()])
+        assert not any([self.media_reader.get_tracker_info(media_data) for media_data in self.media_reader.get_media()])
 
     def test_copy_tracker(self):
         media_list = self.add_test_media()
-        self.media_reader.get_primary_tracker().set_custom_anime_list([media_list[0]["name"]], media_list[0]["media_type"])
+        self.media_reader.get_tracker().set_custom_anime_list([media_list[0]["name"]], media_list[0]["media_type"])
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "test_user"])
         assert self.media_reader.get_tracker_info(media_list[0])
         assert not self.media_reader.get_tracker_info(media_list[1])
@@ -1631,47 +1634,42 @@ class ServerStreamTest(RealBaseUnitTestClass):
 
 class TrackerTest(RealBaseUnitTestClass):
 
-    def test_num_trackers(self):
-        assert self.media_reader.get_primary_tracker()
-        assert self.media_reader.get_secondary_trackers()
-
-    def test_get_list(self):
-        for tracker in self.media_reader.get_trackers():
-            with self.subTest(tracker=tracker.id):
-                data = list(tracker.get_tracker_list(id=1))
-                assert data
-                assert isinstance(data[0], dict)
-
-    def test_no_auth(self):
-        self.settings.password_manager_enabled = False
-        for tracker in self.media_reader.get_trackers():
-            if tracker.id != TestTracker.id:
-                with self.subTest(tracker=tracker.id):
-                    self.assertRaises(ValueError, tracker.update, [])
+    def test_get_tracker_list(self):
+        tracker = self.media_reader.get_tracker()
+        data = list(tracker.get_tracker_list(id=1))
+        assert data
+        assert isinstance(data[0], dict)
 
     @patch("builtins.input", return_value="0")
-    def test_arg(self, input):
+    def test_no_auth(self, auto_input):
         self.settings.password_manager_enabled = False
         for tracker in self.media_reader.get_trackers():
-            self.media_reader.set_primary_tracker(tracker)
-            parse_args(media_reader=self.media_reader, args=["auth"])
+            self.media_reader.set_tracker(tracker.id)
+            with self.subTest(tracker=tracker.id):
+                self.assertRaises(ValueError, tracker.update, [])
+                tracker.auth()
 
     @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_load_stats(self):
+        self.assertTrue(TRACKERS)
         for tracker in self.media_reader.get_trackers():
-            if tracker.id != TestTracker.id:
-                self.media_reader.set_primary_tracker(tracker)
-                parse_args(media_reader=self.media_reader, args=["--auto", "load", "--user-id=1"])
-                self.assertTrue(self.media_reader.get_media_ids())
-                parse_args(media_reader=self.media_reader, args=["stats", "--user-id=1"])
+            self.media_reader.set_tracker(tracker.id)
+            with self.subTest(tracker=tracker.id):
+                self.assertTrue(tracker.get_full_list_data(id="1"))
+                self.assertTrue(tracker.get_tracker_list(id="1"))
 
 
 class RealArgsTest(RealBaseUnitTestClass):
+    def init(self):
+        self.real = True
+        self.cli = True
 
     @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_load_from_tracker(self):
         anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
-        self.media_reader.get_primary_tracker().set_custom_anime_list(anime)
+        tracker = TestTracker(None, None)
+        tracker.set_custom_anime_list(anime)
+        self.media_reader.set_tracker(tracker)
         parse_args(media_reader=self.media_reader, args=["--auto", "load", f"--media-type={MediaType.ANIME.name}"])
         self.assertEqual(len(anime), len(self.media_reader.get_media_ids()))
 

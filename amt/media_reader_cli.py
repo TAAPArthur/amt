@@ -88,7 +88,7 @@ class MediaReaderCLI(MediaReader):
             data = saved_data.get(username if username else "", None)
         if not data:
             logging.info("Loading stats")
-            data = list(self.get_primary_tracker().get_full_list_data(id=user_id, user_name=username))
+            data = list(self.get_tracker().get_full_list_data(id=user_id, user_name=username))
             saved_data.update({username if username else "": data})
             self.state.save_to_file(statsFile, saved_data)
         assert data
@@ -101,7 +101,7 @@ class MediaReaderCLI(MediaReader):
             print(f"{i+1:3} {stats.get_entry_str(entry, details)}")
 
     def auth(self):
-        tracker = self.get_primary_tracker()
+        tracker = self.get_tracker()
         secret = tracker.auth()
         self.settings.store_secret(tracker.id, secret)
 
