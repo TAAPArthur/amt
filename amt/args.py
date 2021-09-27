@@ -171,7 +171,9 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     list_parser.set_defaults(func=media_reader.list_media)
 
     chapter_parsers = sub_parsers.add_parser("list-chapters")
+    chapter_parsers.add_argument("--show-ids", action="store_const", const=True, default=False)
     chapter_parsers.add_argument("name", choices=media_reader.get_all_names())
+
     sub_parsers.add_parser("list-servers")
 
     tag_parser = sub_parsers.add_parser("tag")

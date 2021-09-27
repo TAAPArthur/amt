@@ -51,10 +51,10 @@ class MediaReaderCLI(MediaReader):
                 else:
                     print("{}\t{} {}\t{}/{} {}".format(media_data.global_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, ",".join(media_data["tags"])))
 
-    def list_chapters(self, name):
+    def list_chapters(self, name, show_ids=False):
         media_data = self.get_single_media(name=name)
         for chapter in media_data.get_sorted_chapters():
-            print("{:4}:{}".format(chapter["number"], chapter["title"]))
+            print("{:4}:{}{}".format(chapter["number"], chapter["title"], ":" + chapter["id"] if show_ids else ""))
 
     def get_all_names(self, media_type=None, disallow_servers=False):
         names = []
