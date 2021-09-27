@@ -380,10 +380,10 @@ class MediaReader:
         logging.error("Could not find any matching server")
         return False
 
-    def get_stream_url(self, name=None, shuffle=False):
-        for server, media_data, chapter in self.get_unreads(name=name, media_type=MediaType.ANIME, shuffle=shuffle):
+    def get_stream_url(self, name=None, num_list=None, shuffle=False, limit=None, force_abs=False):
+        for server, media_data, chapter in (self.get_chapters(name=name, media_type=MediaType.ANIME, num_list=num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=MediaType.ANIME, limit=limit, shuffle=shuffle)):
             for url in server.get_stream_urls(media_data, chapter):
-                print(url)
+                print(chapter["number"], url)
 
     def get_chapters(self, media_type, name, num_list, force_abs=False):
         media_data = self.get_single_media(media_type=media_type, name=name)

@@ -136,8 +136,10 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     steam_parser.add_argument("url")
 
     stream_url_parser = sub_parsers.add_parser("get-stream-url", help="Gets the steaming url for the media")
-    stream_url_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
+    stream_url_parser.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
+    stream_url_parser.add_argument("--limit", "-l", default=0, type=int)
     stream_url_parser.add_argument("name", choices=media_reader.get_all_names(MediaType.ANIME), default=None, nargs="?")
+    stream_url_parser.add_argument("num_list", default=None, nargs="*", type=float)
 
     # clean
     clean_parser = sub_parsers.add_parser("clean", help="Removes unused media")
