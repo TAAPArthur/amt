@@ -111,6 +111,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_consume_parsers.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--limit", "-l", default=0, type=int)
     sub_consume_parsers.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
+    sub_consume_parsers.add_argument("--quality", "-q", default=0, type=int)
 
     view_parser = sub_parsers.add_parser("view", parents=[sub_consume_parsers], help="View pages of chapters")
     view_parser.add_argument("name", choices=media_reader.get_all_names(MediaType.MANGA | MediaType.NOVEL), default=None, nargs="?")
