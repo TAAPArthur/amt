@@ -474,19 +474,14 @@ class MediaReader:
         return True if data else False
 
     def search_for_media(self, name, media_type, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
-        def name_matches_media(name, media_data):
-            return (name.lower().startswith(media_data["name"].lower()) or
-                    name.lower().startswith(media_data["season_title"].lower()) or
-                    name.lower() in (media_data["name"].lower(), media_data["season_title"].lower()))
-
         alt_names = dict.fromkeys([name, name.split(" Season")[0], re.sub(r"\W*$", "", name), re.sub(r"\s*[^\w\d\s]+.*$", "", name), re.sub(r"\W.*$", "", name)]) if not exact else [name]
         media_data = known_matching_media = None
 
         if not skip_local_search:
             for name in alt_names:
-                known_matching_media = list(filter(lambda x: not self.get_tracker_info(x) and
-                                                   (not media_type or media_type & x["media_type"]) and
-                                                   (name_matches_media(name, x)), self.get_media()))
+                known_matching_media = list(filter(lambda media_data: not self.get_tracker_info(media_data) and
+                                                   (not media_type or media_type & media_data["media_type"]) and
+                                                   (name.lower() in (media_data["name"].lower(), media_data["season_title"].lower())), self.get_media()))
                 if known_matching_media:
                     break
 
