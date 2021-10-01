@@ -863,10 +863,12 @@ class ApplicationTestWithErrors(BaseUnitTestClass):
         assert self.test_server.was_error_thrown()
 
     def test_update_with_error(self):
-        self.add_test_media(no_update=True)
+        media_list = self.add_test_media(no_update=True)
         self.test_server.inject_error()
-        self.assertRaises(Exception, self.media_reader.update)
+        self.assertRaises(Exception, parse_args, media_reader=self.media_reader, args=["update"])
         assert self.test_server.was_error_thrown()
+        self.reload()
+        self.assertEqual(len(media_list), len(self.media_reader.get_media_ids()))
 
     def test_download_with_error(self):
         self.add_test_media()

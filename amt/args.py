@@ -277,7 +277,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     action = namespace.type
     kwargs = {k: v for k, v in vars(namespace).items() if k not in SPECIAL_PARAM_NAMES}
     func = namespace.func if "func" in namespace else getattr(media_reader, action.replace("-", "_"))
-    func(**kwargs)
-
-    if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):
-        media_reader.state.save()
+    try:
+        func(**kwargs)
+    finally:
+        if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):
+            media_reader.state.save()
