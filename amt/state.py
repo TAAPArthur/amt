@@ -182,6 +182,14 @@ class MediaData(dict):
     def global_id(self):
         return "{}:{}{}{}".format(self["server_id"], self["id"], (self["season_id"] if self["season_id"] else ""), self.get("lang", "")[:3])
 
+    @property
+    def global_id_alt(self):
+        return "{}:{}{}{}".format(self["server_id"], self["alt_id"], (self["season_id"] if self["season_id"] else ""), self.get("lang", "")[:3]) if self.get("alt_id", False) else None
+
+    @property
+    def friendly_id(self):
+        return self.global_id if len(self.global_id) < 32 or not self.global_id_alt else self.global_id_alt
+
     def copy_fields_to(self, dest):
         for key in ("offset", "progress", "progressVolumes", "tags", "trackers"):
             assert key in dest

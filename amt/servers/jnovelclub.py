@@ -44,7 +44,7 @@ class GenericJNovelClub(Server):
         return True
 
     def _create_media_data_helper(self, data):
-        return [self.create_media_data(item["slug"], item["title"], progressVolumes=self.progressVolumes) for item in data if MediaType[item["type"]] == self.media_type]
+        return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"], progressVolumes=self.progressVolumes) for item in data if MediaType[item["type"]] == self.media_type]
 
     def get_media_list(self, limit=None):
         r = self.session_get(self.series_url)
@@ -54,7 +54,7 @@ class GenericJNovelClub(Server):
     def search(self, term, limit=None):
         r = self.session_post(self.search_url, json={"query": term.replace(" (Manga)", ""), "type": 1 if self.media_type == MediaType.NOVEL else 2})
         data = r.json()["series"][:limit]
-        return [self.create_media_data(media_data["slug"], media_data["title"]) for media_data in data]
+        return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"], progressVolumes=self.progressVolumes) for item in data]
 
 
 class JNovelClub(GenericJNovelClub):

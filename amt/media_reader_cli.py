@@ -47,9 +47,9 @@ class MediaReaderCLI(MediaReader):
             last_read = media_data.get_last_read()
             if not out_of_date_only or last_chapter_num != last_read:
                 if csv:
-                    print("\t".join([media_data.global_id, media_data["name"], media_data["season_title"], str(last_read), str(last_chapter_num), ",".join(media_data["tags"])]))
+                    print("\t".join([media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read), str(last_chapter_num), ",".join(media_data["tags"])]))
                 else:
-                    print("{}\t{} {}\t{}/{} {}".format(media_data.global_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, ",".join(media_data["tags"])))
+                    print("{}\t{} {}\t{}/{} {}".format(media_data.friendly_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, ",".join(media_data["tags"])))
 
     def list_chapters(self, name, show_ids=False):
         media_data = self.get_single_media(name=name)
@@ -65,6 +65,8 @@ class MediaReaderCLI(MediaReader):
         for media_id, media in self.media.items():
             if not media_type or media["media_type"] & media_type:
                 names.append(media_id)
+                if media.global_id_alt:
+                    names.append(media.global_id_alt)
                 names.append(media["name"])
         return names
 
