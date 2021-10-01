@@ -19,7 +19,76 @@ def get_extension(url):
     return ext
 
 
-class GenericServer:
+class RequestServer:
+
+    session = None
+    settings = None
+
+    def __init__(self, session, settings=None):
+        self.settings = settings
+        self.session = session
+        self._lock = Lock()
+
+    def _request(self, get, url, **kwargs):
+        logging.info("Making request to %s", url)
+        logging.debug("Request args: %s ", kwargs)
+        kwargs["verify"] = not self.settings.get_disable_ssl_verification(self.id)
+        r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
+        if r.status_code != 200:
+            logging.warning("HTTP Error: %d", r.status_code)
+        r.raise_for_status()
+        return r
+
+    def add_cookie(self, name, value, domain=None, path="/"):
+        self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
+
+    @cache
+    def session_get_mem_cache(self, url, **kwargs):
+        return self.session_get(url, **kwargs)
+
+    def session_get(self, url, **kwargs):
+        return self._request(True, url, **kwargs)
+
+    def session_post(self, url, **kwargs):
+        return self._request(False, url, **kwargs)
+
+    def soupify(self, BeautifulSoup, r):
+        return BeautifulSoup(r.text, self.settings.bs4_parser)
+
+    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progressVolumes=False, **kwargs):
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progressVolumes=progressVolumes, tags=[], **kwargs))
+
+    def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False):
+        if number is None or number == "" or isinstance(number, str) and number.isalpha():
+            return
+        id = str(id)
+        if isinstance(number, str):
+            try:
+                number = int(number)
+            except ValueError:
+                special = True
+                number = float(number.replace("-", "."))
+        if media_data["offset"]:
+            number = round(number - media_data["offset"], 4)
+        if number % 1 == 0:
+            number = int(number)
+
+        new_values = dict(id=id, title=title, number=number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, inaccessible=inaccessible)
+        if id in media_data["chapters"]:
+            media_data["chapters"][id].update(new_values)
+        else:
+            media_data["chapters"][id] = ChapterData(new_values)
+            media_data["chapters"][id]["read"] = False
+        return True
+
+    def create_page_data(self, url, id=None, encryption_key=None, ext=None):
+        if not ext:
+            ext = get_extension(url)
+        assert ext, url
+        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext)
+
+
+class GenericServer(RequestServer):
     """
     This class is intended to separate the overridable methods of Server from
     the internal business logic.
@@ -162,14 +231,7 @@ class Server(GenericServer):
     The methods contained in this class should rarely be overridden
     """
 
-    session = None
-    settings = None
     _is_logged_in = False
-
-    def __init__(self, session, settings=None):
-        self.settings = settings
-        self.session = session
-        self._lock = Lock()
 
     @property
     def is_logged_in(self):
@@ -178,32 +240,6 @@ class Server(GenericServer):
     @property
     def has_login(self):
         return self.login.__func__ is not GenericServer.login
-
-    def _request(self, get, url, **kwargs):
-        logging.info("Making request to %s", url)
-        logging.debug("Request args: %s ", kwargs)
-        kwargs["verify"] = not self.settings.get_disable_ssl_verification(self.id)
-        r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
-        if r.status_code != 200:
-            logging.warning("HTTP Error: %d", r.status_code)
-        r.raise_for_status()
-        return r
-
-    def add_cookie(self, name, value, domain=None, path="/"):
-        self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
-
-    @cache
-    def session_get_mem_cache(self, url, **kwargs):
-        return self.session_get(url, **kwargs)
-
-    def session_get(self, url, **kwargs):
-        return self._request(True, url, **kwargs)
-
-    def session_post(self, url, **kwargs):
-        return self._request(False, url, **kwargs)
-
-    def soupify(self, BeautifulSoup, r):
-        return BeautifulSoup(r.text, self.settings.bs4_parser)
 
     def relogin(self):
         credential = self.settings.get_credentials(self.id if not self.alias else self.alias)
@@ -318,43 +354,10 @@ class Server(GenericServer):
 
         return True
 
-    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progressVolumes=False, **kwargs):
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, chapters={}, alt_id=alt_id, trackers={}, progressVolumes=progressVolumes, tags=[], **kwargs))
 
-    def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False):
-        if number is None or number == "" or isinstance(number, str) and number.isalpha():
-            return
-        id = str(id)
-        if isinstance(number, str):
-            try:
-                number = int(number)
-            except ValueError:
-                special = True
-                number = float(number.replace("-", "."))
-        if media_data["offset"]:
-            number = round(number - media_data["offset"], 4)
-        if number % 1 == 0:
-            number = int(number)
-
-        new_values = dict(id=id, title=title, number=number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, inaccessible=inaccessible)
-        if id in media_data["chapters"]:
-            media_data["chapters"][id].update(new_values)
-        else:
-            media_data["chapters"][id] = ChapterData(new_values)
-            media_data["chapters"][id]["read"] = False
-        return True
-
-    def create_page_data(self, url, id=None, encryption_key=None, ext=None):
-        if not ext:
-            ext = get_extension(url)
-        assert ext, url
-        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext)
-
-
-class TorrentHelper(GenericServer):
-
-    def create_media_data(self, id, name):
-        return MediaData(dict(server_id=self.id, id=id))
+class TorrentHelper(RequestServer):
+    id = None
+    media_type = MediaType.ANIME
 
     def download_torrent_file(self, media_data):
         """
