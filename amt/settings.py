@@ -279,8 +279,8 @@ class Settings:
             password = getpass.getpass()
         if self.password_manager_enabled and self.password_save_cmd:
             logging.debug("Storing credentials for %s", server_id)
-            process = subprocess.Popen(self.password_save_cmd.format(server_id), shell=self.shell, stdin=subprocess.PIPE)
-            process.communicate(input=bytes(f"{username}{self.credential_separator}{password}", "utf8"))
+            cmd = self.password_save_cmd.format(server_id)
+            subprocess.check_output(cmd, shell=self.shell, input=bytes(f"{username}{self.credential_separator}{password}", "utf8"))
 
     def get_secret(self, server_id: str) -> (str, str):
         result = self.get_credentials(server_id)

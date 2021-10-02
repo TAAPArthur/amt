@@ -101,6 +101,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader.settings.no_load_session = True
         self.media_reader.settings.password_manager_enabled = True
         self.media_reader.settings.password_load_cmd = r"echo -e a\\tb"
+        self.media_reader.settings.password_save_cmd = r"cat - >/dev/null"
         self.media_reader.settings.shell = True
         if not self.real or SINGLE_THREADED:
             self.media_reader.settings.threads = 0
