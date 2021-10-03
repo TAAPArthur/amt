@@ -310,32 +310,31 @@ class Server(GenericServer):
             os.makedirs(sub_dir, exist_ok=True)
             self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
 
-    def download_chapter(self, media_data, chapter_data, page_limit=None):
+    def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0):
         if self.is_fully_downloaded(media_data, chapter_data):
             logging.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
         try:
             if self.syncrhonize_chapter_downloads:
                 self._lock.acquire()
-            return self._download_chapter(media_data, chapter_data, page_limit)
+            return self._download_chapter(media_data, chapter_data, page_limit, offset)
         finally:
             if self.syncrhonize_chapter_downloads:
                 self._lock.release()
 
-    def _download_chapter(self, media_data, chapter_data, page_limit=None):
+    def _download_chapter(self, media_data, chapter_data, page_limit=None, offset=0):
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
         self.pre_download(media_data, chapter_data)
         list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
         assert list_of_pages
-        list_of_pages = list_of_pages[:page_limit]
+        list_of_pages = list_of_pages[offset:page_limit]
         logging.info("Downloading %d pages", len(list_of_pages))
 
         for i, page_data in enumerate(list_of_pages):
             page_data["media_data"] = media_data
-            page_data["index"] = i
-            page_data["path"] = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=page_data["ext"], page_number=i))
+            page_data["path"] = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=page_data["ext"], page_number=i + offset))
 
         # download pages
         job = Job(self.settings.get_threads(media_data), raiseException=True)
