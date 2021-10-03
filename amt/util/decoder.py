@@ -143,6 +143,10 @@ class GenericDecoder:
     _cache = {}
     _pending_cache = {}
 
+    # How many times we have to detect a solution before it is cached
+    # 0 disables, 1 always adds a solution to cache
+    PENDING_CACHE_NUM = 3
+
     @staticmethod
     def load_cells(pixels, num_rows, num_cols, W, H):
         cells = []
@@ -188,7 +192,7 @@ class GenericDecoder:
                         grid = GenericDecoder.cells_to_int_matrix(sorted_cells)
 
                         GenericDecoder._pending_cache[super_key, grid] = GenericDecoder._pending_cache.get((super_key, grid), 0) + 1
-                        if GenericDecoder._pending_cache[super_key, grid] == 3:
+                        if GenericDecoder._pending_cache[super_key, grid] == GenericDecoder.PENDING_CACHE_NUM:
                             GenericDecoder._cache[super_key] = grid, w, h
                     return solution
         return None
@@ -203,6 +207,7 @@ class GenericDecoder:
         pixels = img.load()
 
         cells = GenericDecoder.load_cells(pixels, num_rows, num_cols, W, H)
+        assert cells
         sorted_cells = []
         if grid:
             sorted_cells = []

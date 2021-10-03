@@ -30,7 +30,7 @@ class RequestServer:
         self._lock = Lock()
 
     def _request(self, get, url, **kwargs):
-        logging.info("Making request to %s", url)
+        logging.info("Making %s request to %s ", "GET" if get else "POST", url)
         logging.debug("Request args: %s ", kwargs)
         kwargs["verify"] = not self.settings.get_disable_ssl_verification(self.id)
         r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)

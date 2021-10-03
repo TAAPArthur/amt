@@ -53,7 +53,7 @@ class LocalServer(Server):
     def is_fully_downloaded(self, media_data, chapter_data):
         return os.path.exists(self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True))
 
-    def download_chapter(self, media_data, chapter_data, page_limit=None):
+    def download_chapter(self, media_data, chapter_data, **kwargs):
         return False
 
 
