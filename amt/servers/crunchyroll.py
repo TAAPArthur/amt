@@ -9,25 +9,40 @@ class GenericCrunchyrollServer(Server):
     alias = "crunchyroll"
 
     api_auth_url = "https://api-manga.crunchyroll.com/cr_authenticate?session_id={}&version=0&format=json"
-    start_session_url = "https://api.crunchyroll.com/start_session.0.json"
-    login_url = "https://api.crunchyroll.com/login.0.json"
+    base_url = "https://api.crunchyroll.com"
+    start_session_url = base_url + "/start_session.0.json"
+    login_url = base_url + "/login.0.json"
 
     _access_token = "WveH9VkPLrXvuNm"
     _access_type = "com.crunchyroll.crunchyroid"
 
-    def get_session_id(self):
-        if Crunchyroll._api_session_id:
-            return Crunchyroll._api_session_id
-        data = self.session_post(
-            self.start_session_url,
-            data={
-                "device_id": "1234567",
-                "device_type": self._access_type,
-                "access_token": self._access_token,
-            }
-        ).json()["data"]
-        Crunchyroll._api_session_id = data["session_id"]
-        return Crunchyroll._api_session_id
+    def get_session_id(self, force=False):
+        session_id = self.session_get_cookie("session_id", domain=self.base_url)
+        if not force and session_id:
+            return session_id
+        with self._lock:
+            if session_id != self.session_get_cookie("session_id", domain=self.base_url):
+                return self.session_get_cookie("session_id", domain=self.base_url)
+            data = self.session_post(
+                self.start_session_url,
+                data={
+                    "device_id": "1234567",
+                    "device_type": self._access_type,
+                    "access_token": self._access_token,
+                }
+            ).json()["data"]
+
+            assert self.session_get_cookie("session_id", domain=self.base_url) == data["session_id"]
+            return data["session_id"]
+
+    def session_get_json(self, url):
+        data = self.session_get(url).json()
+        if data is not None and data.get("error", False) and data["code"] == "bad_session":
+            expired_session_id = self.get_session_id()
+            new_session_id = self.get_session_id(force=True)
+            new_url = url.replace(expired_session_id, new_session_id)
+            data = self.session_get(new_url).json()
+        return data
 
     def _store_login_data(self, data):
         Crunchyroll._api_auth_token = data["data"]["auth"]
@@ -36,8 +51,7 @@ class GenericCrunchyrollServer(Server):
     def needs_authentication(self):
         if Crunchyroll._api_auth_token:
             return False
-        r = self.session_get(self.api_auth_url.format(self.get_session_id()))
-        data = r.json()
+        data = self.session_get_json(self.api_auth_url.format(self.get_session_id()))
         if data and "data" in data:
             self._store_login_data(data)
             return False
@@ -151,7 +165,6 @@ class Crunchyroll(GenericCrunchyrollServer):
     api_chapters_url = api_base_url + "/chapters?series_id={}"
 
     _api_auth_token = None
-    _api_session_id = None
     possible_page_url_keys = ["encrypted_mobile_image_url", "encrypted_composed_image_url"]
     page_url_key = possible_page_url_keys[0]
 
@@ -183,9 +196,8 @@ class Crunchyroll(GenericCrunchyrollServer):
         return list(filter(lambda x: term in regex.sub("", x["name"].lower()), self.get_media_list()))[:limit]
 
     def update_media_data(self, media_data: dict):
-        r = self.session_get(self.api_chapters_url.format(media_data["id"]))
+        json_data = self.session_get_json(self.api_chapters_url.format(media_data["id"]))
 
-        json_data = r.json()
         # resp_data = json_data["series"]
         chapters = json_data["chapters"]
 
@@ -199,8 +211,8 @@ class Crunchyroll(GenericCrunchyrollServer):
             self.update_chapter_data(media_data, id=chapter["chapter_id"], number=chapter["number"], title=chapter["locale"][media_data["locale"]]["name"], premium=not chapter["viewable"], date=date)
 
     def get_media_chapter_data(self, media_data, chapter_data):
-        r = self.session_get(self.api_chapter_url.format(self.get_session_id(), chapter_data["id"], Crunchyroll._api_auth_token))
-        raw_pages = r.json()["pages"]
+        data = self.session_get_json(self.api_chapter_url.format(self.get_session_id(), chapter_data["id"], Crunchyroll._api_auth_token))
+        raw_pages = data["pages"]
         raw_pages.sort(key=lambda x: int(x["number"]))
         pages = [self.create_page_data(url=page["locale"][media_data["locale"]][self.page_url_key], ext="jpg") for page in raw_pages if page["locale"]]
 
@@ -228,8 +240,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/.*-(\d+)$")
 
     def _create_media_data(self, series_id, item_alt_id, season_id=None, limit=None):
-        r = self.session_get(self.series_url.format(self.get_session_id(), series_id))
-        season_data = r.json()["data"]
+        season_data = self.session_get_json(self.series_url.format(self.get_session_id(), series_id))["data"]
         for season in season_data[:limit]:
             if not season_id or season["collection_id"] == season_id:
                 yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], dir_name=item_alt_id)
@@ -238,18 +249,18 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         return self.search("", limit=limit)
 
     def search(self, term, limit=None):
-        r = self.session_get(self.search_series.format(self.get_session_id(), term.replace(" ", "%20"), limit if limit else 0) if term else self.list_all_series.format(self.get_session_id()))
-        data = r.json()["data"]
+        data = self.session_get_json(self.search_series.format(self.get_session_id(), term.replace(" ", "%20"), limit if limit else 0) if term else self.list_all_series.format(self.get_session_id()))
         media_data = []
-        for item in data:
+        for item in data["data"]:
             item_alt_id = item["url"].split("/")[-1]
             media_data += list([media for media in self._create_media_data(item["series_id"], item_alt_id, limit=limit)])
+            if len(media_data) == limit:
+                break
 
         return media_data
 
     def update_media_data(self, media_data: dict):
-        r = self.session_get(self.list_media.format(self.get_session_id(), media_data["id"]))
-        data = r.json()["data"]
+        data = self.session_get_json(self.list_media.format(self.get_session_id(), media_data["id"]))["data"]
         for chapter in data:
             if chapter["collection_id"] == media_data["season_id"] and not chapter["clip"]:
                 special = False
@@ -265,8 +276,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         media_name_hint = match.group(1)
         # media_name_prefix_hint = media_name_hint.split("-")[0]
         chapter_id = match.group(2)
-        r = self.session_get(self.episode_url.format(self.get_session_id(), chapter_id))
-        data = r.json()["data"]
+        data = self.session_get_json(self.episode_url.format(self.get_session_id(), chapter_id))["data"]
         media_data = next(self._create_media_data(data["series_id"], media_name_hint, season_id=data["collection_id"]))
         self.update_media_data(media_data)
         assert chapter_id in media_data["chapters"]
@@ -279,6 +289,6 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_stream_urls(self, media_data=None, chapter_data=None):
         chapter_id = chapter_data["id"]
 
-        r = self.session_get(self.stream_url.format(self.get_session_id(), chapter_id))
-        streams = r.json()["data"]["stream_data"]["streams"]
+        data = self.session_get_json(self.stream_url.format(self.get_session_id(), chapter_id))
+        streams = data["data"]["stream_data"]["streams"]
         return [stream["url"] for stream in streams]

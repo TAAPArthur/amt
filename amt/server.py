@@ -42,6 +42,12 @@ class RequestServer:
     def add_cookie(self, name, value, domain=None, path="/"):
         self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
 
+    def session_get_cookie(self, name, domain=None):
+        for cookie in self.session.cookies:
+            if cookie.name == name and cookie.domain in domain:
+                return cookie.value
+        return None
+
     @cache
     def session_get_mem_cache(self, url, **kwargs):
         return self.session_get(url, **kwargs)

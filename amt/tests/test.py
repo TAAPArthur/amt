@@ -1711,16 +1711,26 @@ class ServerSpecificTest(RealBaseUnitTestClass):
             self.verify_unique_numbers(media_data["chapters"])
 
     def test_crunchyroll_session(self):
-        from ..servers.crunchyroll import Crunchyroll
-        server = self.media_reader.get_server(Crunchyroll.id)
+        from ..servers.crunchyroll import CrunchyrollAnime
+        self.settings.no_save_session = False
+        self.media_reader.settings.no_load_session = False
+        server = self.media_reader.get_server(CrunchyrollAnime.id)
         self.assertTrueOrSkipTest(server)
-        server = self.media_reader.get_server(Crunchyroll.id)
-        bad_session = "bad_session"
-        server.session.cookies["session_id"] = bad_session
+
         session = server.get_session_id()
-        assert bad_session != session
-        assert session == server.get_session_id()
-        assert server.needs_authentication()
+        self.assertEqual(session, server.get_session_id())
+        self.media_reader.state.save()
+        self.reload()
+
+        self.assertEqual(session, self.media_reader.get_server(server.id).get_session_id())
+
+        with open(self.settings.get_cookie_file(), "r") as f:
+            cookie_data = map(lambda x: x.replace(session, "some_bad_session"), f.readlines())
+        with open(self.settings.get_cookie_file(), "w") as f:
+            f.writelines(cookie_data)
+        self.reload()
+        self.assertNotEqual(session, self.media_reader.get_server(server.id).get_session_id())
+        self.assertTrue(self.media_reader.get_server(server.id).get_media_list(limit=1))
 
     def test_missing_m3u8(self):
         from ..servers.crunchyroll import CrunchyrollAnime
