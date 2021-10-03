@@ -73,6 +73,7 @@ class Settings:
     chapter_page_format = "{page_number:04d}.{ext}"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
+    download_torrent_cmd = "btcli add -T {media_id} {torrent_file}"
     force_page_parity = 0  # When downloading MANGA, if not equal to the number of pages % 2, add a dummy page
     force_page_parity_end = False  # Add dummy page before (default) or after real pages
     keep_unavailable = False
@@ -89,6 +90,8 @@ class Settings:
         self.data_dir = os.getenv("XDG_DATA_HOME", os.path.join(home, ".local/share", APP_NAME))
         self.bundle_dir = os.path.join(self.data_dir, "Bundles")
         self.media_dir = os.path.join(self.data_dir, "Media")
+        self.external_downloads_dir = os.path.join(self.data_dir, "Torrents")
+
         self.no_save_session = no_save_session
         self._dirty_list = set()
         if not no_load:
@@ -99,6 +102,20 @@ class Settings:
         os.makedirs(self.bundle_dir, exist_ok=True)
         os.makedirs(self.media_dir, exist_ok=True)
         self._replacements = None
+
+    def get_external_downloads_dir(self, mediaType, skip_auto_create=False):
+        path = os.path.join(self.external_downloads_dir, mediaType.name)
+        if not skip_auto_create:
+            os.makedirs(path, exist_ok=True)
+        return path
+
+    def get_external_downloads_path(self, media_data):
+        return os.path.join(self.get_external_downloads_dir(MediaType(media_data["media_type"])), media_data["id"] + ".torrent")
+
+    def start_torrent_download(self, media_data):
+        cmd = self.get_field("download_torrent_cmd", media_data)
+        file = self.get_external_downloads_path(media_data)
+        self.run_cmd(cmd.format(media_id=media_data["id"], torrent_file=file), wd=os.path.dirname(file))
 
     def get_cookie_file(self):
         return os.path.join(self.cache_dir, "cookies.txt")

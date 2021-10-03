@@ -13,7 +13,7 @@ from urllib3 import Retry
 
 from . import servers, trackers
 from .job import Job
-from .server import Server
+from .server import Server, TorrentHelper
 from .servers.local import get_local_server_id
 from .settings import Settings
 from .state import State
@@ -22,6 +22,7 @@ from .util.media_type import MediaType
 
 SERVERS = set()
 TRACKERS = set()
+TORRENT_HELPERS = set()
 
 
 def import_sub_classes(m, base_class, results):
@@ -38,15 +39,17 @@ def import_sub_classes(m, base_class, results):
 
 import_sub_classes(servers, Server, SERVERS)
 import_sub_classes(trackers, Tracker, TRACKERS)
+import_sub_classes(servers, TorrentHelper, TORRENT_HELPERS)
 
 
 class MediaReader:
 
-    def __init__(self, settings=None, server_list=SERVERS, tracker_list=TRACKERS):
+    def __init__(self, settings=None, server_list=SERVERS, tracker_list=TRACKERS, torrent_helpers_list=TORRENT_HELPERS):
         self.settings = settings if settings else Settings()
         self.session = requests.Session()
         self.state = State(self.settings, self.session)
         self._servers = {}
+        self._torrent_helpers = {}
         self._trackers = {}
         self.tracker = None
 
@@ -60,7 +63,7 @@ class MediaReader:
             "User-Agent": self.settings.user_agent
         })
 
-        for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers)):
+        for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers), (torrent_helpers_list, self._torrent_helpers)):
             for cls in cls_list:
                 if cls.id:
                     instance = cls(self.session, self.settings)
@@ -92,6 +95,9 @@ class MediaReader:
 
     def get_server(self, id):
         return self._servers.get(id, None)
+
+    def get_torrent_helpers(self):
+        return self._torrent_helpers.values()
 
     def get_media_ids(self):
         return self.media.keys()
@@ -143,18 +149,14 @@ class MediaReader:
         os.makedirs(self.settings.get_media_dir(media_data), exist_ok=True)
         return [] if no_update else self.update_media(media_data)
 
-    def search_for_media(self, term, server_id=None, media_type=None, exact=False, servers_to_exclude=[], limit=None, raiseException=False):
+    def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], server_list=None, no_add=False, media_id=None, sort_func=None, raiseException=False):
         def func(x): return x.search(term, limit=limit)
         if server_id:
             results = func(self.get_server(server_id))
         else:
-            results = self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), self.get_servers()), raiseException=raiseException)
+            results = self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), server_list if server_list is not None else self.get_servers()), raiseException=raiseException)
         if exact:
             results = list(filter(lambda x: x["name"] == term, results))
-        return results
-
-    def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], no_add=False, media_id=None, sort_func=None):
-        results = self.search_for_media(term, server_id=server_id, media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude, limit=limit)
         results = list(filter(lambda x: not media_id or str(x["id"]) == str(media_id) or x.global_id == media_id, results))
         if sort_func:
             results.sort(key=sort_func)
@@ -179,18 +181,34 @@ class MediaReader:
             media_data = self.get_single_media(name=id)
         del self.media[media_data.global_id]
 
-    def import_media(self, files, media_type, link=False, name=None, no_update=False):
+    def auto_import_media(self, files=None, **kwargs):
+        for media_type in MediaType:
+            path = self.settings.get_external_downloads_dir(media_type, skip_auto_create=True)
+            print(media_type, os.path.exists(path), path)
+            if os.path.exists(path):
+                for f in os.listdir(path):
+                    torrent_dir = os.path.join(path, f)
+                    if os.path.isdir(torrent_dir) and (not files or f in files):
+                        self.import_media([torrent_dir], media_type=media_type, **kwargs)
+
+    def import_media(self, files, media_type, link=False, name=None, skip_add=False):
         server = self.get_server(get_local_server_id(media_type))
         names = set()
         volume_regex = r"(_|\s)?vol[ume-]*[\w\s]*(\d+)"
+
+        media_dir_regex = r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)"
+        media_file_regex = media_dir_regex + "(.*\.\w+)$"
         for file in files:
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
+            assert file != "/"
             media_name = name
             if not name:
                 if os.path.isdir(file):
-                    self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=os.path.basename(file), link=link, no_update=True)
+                    match = re.search(media_dir_regex, os.path.basename(file))
+                    media_name = match.group(2) if match else os.path.basename(file)
+                    self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=media_name, link=link, skip_add=skip_add)
                     continue
-                match = re.search(r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)(.*\.\w+)$", re.sub(volume_regex, "", os.path.basename(file)))
+                match = re.search(media_file_regex, re.sub(volume_regex, "", os.path.basename(file)))
                 media_name = match.group(2)
                 logging.info("Detected name %s", media_name)
 
@@ -203,11 +221,11 @@ class MediaReader:
                 shutil.move(file, dest)
             names.add(media_name)
 
-        for media_name in names:
-            if not any([x["name"] == media_name for x in self.get_media(name=server.id)]):
-                self.search_add(media_name, server_id=server.id, exact=True)
+        if not skip_add:
+            for media_name in names:
+                if not any([x["name"] == media_name for x in self.get_media(name=server.id)]):
+                    self.search_add(media_name, server_id=server.id, exact=True)
 
-        if not no_update:
             for media_data in self.get_media(name=server.id):
                 self.update_media(media_data)
 
@@ -221,9 +239,9 @@ class MediaReader:
             self.remove_media(media_data)
             if move_self:
                 def func(x): return -sum([media_data.get(key, None) == x[key] for key in x])
-                new_media_data = self._search_for_tracked_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if not raw_id else media_data["id"] if force_same_id else None, sort_func=func)
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if not raw_id else media_data["id"] if force_same_id else None, sort_func=func)
             else:
-                new_media_data = self._search_for_tracked_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]])
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]])
             if new_media_data:
                 media_data.copy_fields_to(new_media_data)
                 media_list.append(new_media_data)
@@ -455,7 +473,7 @@ class MediaReader:
             tracker.update(data)
         return True if data else False
 
-    def _search_for_tracked_media(self, name, media_type, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
+    def search_for_media(self, name, media_type, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
         def name_matches_media(name, media_data):
             return (name.lower().startswith(media_data["name"].lower()) or
                     name.lower().startswith(media_data["season_title"].lower()) or
@@ -481,6 +499,16 @@ class MediaReader:
                 media_data = self.search_add(name, media_type=media_type, exact=exact, **kwargs)
                 if media_data:
                     break
+            if not media_data and self.settings.get_download_torrent_cmd(media_type):
+                logging.info("Checking to see if %s can be found with helpers", name)
+                for name in alt_names:
+                    media_data = self.search_add(name, media_type=media_type, exact=exact, server_list=self.get_torrent_helpers(), no_add=True, **kwargs)
+                    if media_data:
+                        logging.info("Found match; Downloading torrent file")
+                        self._torrent_helpers[media_data["server_id"]].download_torrent_file(media_data)
+                        logging.info("Starting torrent download")
+                        self.settings.start_torrent_download(media_data)
+                        return False
         if not media_data:
             logging.info("Could not find media %s", name)
             return False
@@ -500,7 +528,7 @@ class MediaReader:
             if not media_data_list:
                 if update_progress_only:
                     continue
-                media_data = self._search_for_tracked_media(entry["name"], entry["media_type"], exact=exact, skip_remote_search=local_only)
+                media_data = self.search_for_media(entry["name"], entry["media_type"], exact=exact, skip_remote_search=local_only)
                 if media_data:
                     self.track(media_data, tracker.id, entry["id"], entry["name"])
                     assert self.get_tracked_media(tracker.id, entry["id"])

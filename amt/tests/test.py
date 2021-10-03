@@ -13,14 +13,14 @@ from unittest.mock import patch
 from .. import servers, tests
 from ..args import parse_args
 from ..job import Job, RetryException
-from ..media_reader import SERVERS, TRACKERS, MediaReader, import_sub_classes
+from ..media_reader import SERVERS, MediaReader, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
 from ..servers.local import LocalServer, get_local_server_id
 from ..settings import Settings
 from ..state import ChapterData, MediaData, State
 from ..util.media_type import MediaType
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
-                          TestServerLogin)
+                          TestServerLogin, TestTorrentHelper)
 from .test_tracker import TestTracker
 
 HAS_PIL = True
@@ -39,10 +39,12 @@ logging.basicConfig(format="[%(filename)s:%(lineno)s]%(levelname)s:%(message)s",
 
 TEST_SERVERS = set()
 TEST_TRACKERS = set()
+TEST_TORRENT_HELPERS = set()
 LOCAL_SERVERS = set()
 
 import_sub_classes(tests, TestServer, TEST_SERVERS)
 import_sub_classes(tests, TestTracker, TEST_TRACKERS)
+import_sub_classes(tests, TestTorrentHelper, TEST_TORRENT_HELPERS)
 import_sub_classes(servers, LocalServer, LOCAL_SERVERS)
 
 ENABLE_ONLY_SERVERS = os.getenv("ENABLE_ONLY_SERVERS")
@@ -72,7 +74,6 @@ class BaseUnitTestClass(unittest.TestCase):
             os.remove(settings.get_cookie_file())
 
         _servers = list(TEST_SERVERS)
-        _trackers = list(TEST_TRACKERS)
         if self.real:
             if ENABLE_ONLY_SERVERS:
                 enabled_servers = set(ENABLE_ONLY_SERVERS.split(","))
@@ -80,12 +81,11 @@ class BaseUnitTestClass(unittest.TestCase):
                 assert _servers
             else:
                 _servers = [s for s in SERVERS if not s.external]
-            _trackers += TRACKERS
         elif self.local:
             _servers += LOCAL_SERVERS
 
         _servers.sort(key=lambda x: x.id)
-        self.media_reader = cls(settings=settings, server_list=_servers, tracker_list=_trackers)
+        self.media_reader = cls(settings=settings, server_list=_servers) if self.real else cls(settings=settings, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
         if not settings.allow_only_official_servers:
             assert len(self.media_reader.get_servers()) == len(_servers)
         self.assertTrue(self.media_reader.get_trackers())
@@ -107,6 +107,7 @@ class BaseUnitTestClass(unittest.TestCase):
         else:
             self.media_reader.settings.threads = max(8, len(self.media_reader.get_servers()))
 
+        self.media_reader.settings.download_torrent_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.media_reader.settings.suppress_cmd_output = True
         self.media_reader.settings.viewer = "echo {media} {title}"
         self.media_reader.settings.specific_settings = {}
@@ -1207,7 +1208,18 @@ class ArgsTest(CliUnitTestClass):
 
     def test_search(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "manga"])
-        self.assertRaises(ValueError, parse_args, media_reader=self.media_reader, args=["--auto", "search", "manga"])
+        media_data = self.media_reader.get_single_media()
+        self.assertTrue(media_data)
+        # shouldn't throw error nor add duplicate media.
+        # An Exception can still be raised if the name wasn't an exact match
+        parse_args(media_reader=self.media_reader, args=["--auto", "search", media_data["name"]])
+        self.assertEqual(1, len(self.media_reader.get_media_ids()))
+
+    def test_search_fallback_and_autoimport(self):
+        parse_args(media_reader=self.media_reader, args=["--auto", "search", "--exact", TestTorrentHelper.avaliable_torrent_file])
+        parse_args(media_reader=self.media_reader, args=["--auto", "auto-import"])
+        self.assertTrue(self.media_reader.get_single_media(TestTorrentHelper.avaliable_torrent_file))
+        self.verify_all_chapters_downloaded()
 
     def test_search_fail(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "__UnknownMedia__"])
@@ -1467,7 +1479,7 @@ class ArgsTest(CliUnitTestClass):
     def test_import_directory(self):
         media_name = "test_dir"
         chapter_title = "Anime1 - E10.jpg"
-        path = os.path.join(TEST_HOME, media_name)
+        path = os.path.join(TEST_HOME, "[author] " + media_name)
         os.mkdir(path)
         path_file = os.path.join(path, chapter_title)
         with open(path_file, "w") as f:
@@ -1524,18 +1536,28 @@ class ServerTest(RealBaseUnitTestClass):
     def setUp(self):
         super().setUp()
 
+    def _test_list_and_search(self, server):
+        media_list = None
+        with self.subTest(server=server.id, list=True):
+            media_list = server.get_media_list()
+            assert media_list or server.has_login and not server.has_free_chapters
+            self.verfiy_media_list(media_list, server=server)
+
+        with self.subTest(server=server.id, list=False):
+            search_media_list = server.search(media_list[0]["name"] if media_list else "One", limit=1)
+            assert search_media_list or server.has_login and not server.has_free_chapters
+            self.verfiy_media_list(media_list, server=server)
+        return media_list
+
+    def test_torrent_helpers(self):
+        self.assertTrue(self.media_reader.get_torrent_helpers())
+        for server in self.media_reader.get_torrent_helpers():
+            media_data = self._test_list_and_search(server)[0]
+            server.download_torrent_file(media_data)
+
     def test_workflow(self):
         def func(server):
-            media_list = None
-            with self.subTest(server=server.id, list=True):
-                media_list = server.get_media_list()
-                assert media_list or not server.has_free_chapters
-                self.verfiy_media_list(media_list)
-
-            with self.subTest(server=server.id, list=False):
-                search_media_list = server.search(media_list[0]["name"] if media_list else "One", limit=1)
-                assert search_media_list or not server.has_free_chapters
-                self.verfiy_media_list(search_media_list)
+            media_list = self._test_list_and_search(server)
 
             for media_data in media_list:
                 self.media_reader.add_media(media_data)

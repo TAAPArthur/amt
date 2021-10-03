@@ -3,7 +3,7 @@ import re
 
 from requests.exceptions import HTTPError
 
-from ..server import Server
+from ..server import Server, TorrentHelper
 from ..util.media_type import MediaType
 
 TEST_BASE = "/tmp/amt/"
@@ -146,3 +146,16 @@ class TestAnimeServer(TestServer):
 class TestNovel(TestServer):
     id = "test_server_novel"
     media_type = MediaType.NOVEL
+
+
+class TestTorrentHelper(TorrentHelper):
+    id = "test_torrent_helper"
+
+    avaliable_torrent_file = "TorrentableMedia"
+
+    def search(self, term, limit=None):
+        return [self.create_media_data(id=term, name=term)] if term == self.avaliable_torrent_file else []
+
+    def save_torrent_file(self, media_data, path):
+        assert not os.path.exists(path)
+        open(path, "w").close()

@@ -50,8 +50,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     search_parsers.add_argument("--limit", type=int, default=None, help="How many chapters will be downloaded per series")
     search_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
     search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
-    search_parsers.add_argument("term", help="The string to search by")
-    search_parsers.set_defaults(func=media_reader.search_add)
+    search_parsers.add_argument("name", help="The string to search by")
+    search_parsers.set_defaults(func=media_reader.search_for_media)
 
     select_chapter_parsers = sub_parsers.add_parser("select", description="Search for and add media")
     select_chapter_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
@@ -147,9 +147,15 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     clean_parser.add_argument("--remove-not-on-disk", default=False, action="store_const", const=True, help="Removes references where the backing directory is emtpy")
 
     # external
+
+    auto_import_parser = sub_parsers.add_parser("auto-import")
+    auto_import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
+    auto_import_parser.set_defaults(func=media_reader.auto_import_media)
+
     import_parser = sub_parsers.add_parser("import")
     import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
     import_parser.add_argument("--media-type", default="ANIME", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
+    import_parser.add_argument("--skip-add", action="store_const", const=True, default=False, help="Don't auto add media")
     import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
     import_parser.add_argument("files", nargs="+")
     import_parser.set_defaults(func=media_reader.import_media)

@@ -58,6 +58,9 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 ### Trackers
 * [Anilist](https://anilist.co/home)
 
+### Helpers
+* [Nyaa](https://nyaa.si/) (unofficial)
+
 ## Why another downloader/tracker
 There didn't seem to be adequate alternatives that had the following features
 * Supports a wide portion of legal sites

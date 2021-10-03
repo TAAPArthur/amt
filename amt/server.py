@@ -349,3 +349,18 @@ class Server(GenericServer):
             ext = get_extension(url)
         assert ext, url
         return dict(url=url, id=id, encryption_key=encryption_key, ext=ext)
+
+
+class TorrentHelper(GenericServer):
+
+    def create_media_data(self, id, name):
+        return MediaData(dict(server_id=self.id, id=id))
+
+    def download_torrent_file(self, media_data):
+        """
+        Downloads the raw torrent file
+        """
+        self.save_torrent_file(media_data, self.settings.get_external_downloads_path(media_data))
+
+    def save_torrent_file(self, media_data, path):  # pragma: no cover
+        raise NotImplementedError
