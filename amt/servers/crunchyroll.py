@@ -245,7 +245,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
             if not season_id or season["collection_id"] == season_id:
                 yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], dir_name=item_alt_id)
 
-    def get_media_list(self, limit=None):
+    def get_media_list(self, limit=7):
         return self.search("", limit=limit)
 
     def search(self, term, limit=None):
@@ -254,7 +254,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         for item in data["data"]:
             item_alt_id = item["url"].split("/")[-1]
             media_data += list([media for media in self._create_media_data(item["series_id"], item_alt_id, limit=limit)])
-            if len(media_data) == limit:
+            if limit and len(media_data) > limit:
                 break
 
         return media_data
