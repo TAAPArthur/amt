@@ -192,25 +192,26 @@ class MediaReader:
                     if os.path.isdir(torrent_dir) and (not files or f in files):
                         self.import_media([torrent_dir], media_type=media_type, **kwargs)
 
-    def import_media(self, files, media_type, link=False, name=None, skip_add=False):
+    def import_media(self, files, media_type, link=False, name=None, skip_add=False, fallback_name=None):
         server = self.get_server(get_local_server_id(media_type))
         names = set()
         volume_regex = r"(_|\s)?vol[ume-]*[\w\s]*(\d+)"
 
-        media_dir_regex = r"(\[[\w ]*\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)"
+        media_dir_regex = r"([\[(][\w ]*[\])]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)"
         media_file_regex = media_dir_regex + "(.*\.\w+)$"
         for file in files:
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             assert file != "/"
             media_name = name
+
+            if os.path.isdir(file):
+                match = re.search(media_dir_regex, os.path.basename(file))
+                media_name = match.group(2) if match else fallback_name if fallback_name else os.path.basename(file)
+                self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=media_name, fallback_name=name, link=link, skip_add=skip_add)
+                continue
             if not name:
-                if os.path.isdir(file):
-                    match = re.search(media_dir_regex, os.path.basename(file))
-                    media_name = match.group(2) if match else os.path.basename(file)
-                    self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=media_name, link=link, skip_add=skip_add)
-                    continue
-                match = re.search(media_file_regex, re.sub(volume_regex, "", os.path.basename(file)))
-                media_name = match.group(2)
+                match = re.search(media_file_regex, re.sub(volume_regex, "", os.path.basename(file).replace("_", " ")))
+                media_name = match.group(2) if match else fallback_name
                 logging.info("Detected name %s", media_name)
 
             assert not os.path.isdir(file)

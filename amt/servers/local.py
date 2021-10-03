@@ -21,7 +21,7 @@ class LocalServer(Server):
     number_regex = re.compile(r"(\d+\.?\d*)[ \.]")
 
     def get_number_from_file_name(self, file_name):
-        matches = self.number_regex.findall(file_name)
+        matches = self.number_regex.findall(file_name.replace("_", " "))
         return float(max(matches, key=len)) if matches else 0
 
     def _create_media_data(self, file_name):
@@ -30,7 +30,7 @@ class LocalServer(Server):
 
     def get_import_media_dest(self, media_name, file_name):
         media_data = self._create_media_data(media_name)
-        self.update_chapter_data(media_data, id=file_name, title=file_name, number=self.get_number_from_file_name(file_name))
+        self.update_chapter_data(media_data, id=file_name, title=file_name, number=self.get_number_from_file_name(file_name.replace(media_name, "")))
         chapter_data = media_data["chapters"][file_name]
         return os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), file_name)
 

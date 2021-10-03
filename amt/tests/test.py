@@ -857,6 +857,7 @@ class LocalTest(MinimalUnitTestClass):
                     server.update_chapter_data(media_data, id=chapter_id, title=chapter_name, number=number)
                     chapter_dir = self.settings.get_chapter_dir(media_data, media_data["chapters"][chapter_id])
                     open(os.path.join(chapter_dir, "text.xhtml"), "w").close()
+                self.assertTrue(len(media_data["chapters"]) > 1, media_data["chapters"].keys())
 
             self.verfiy_media_list(self.add_test_media(server=server))
 
@@ -1424,6 +1425,7 @@ class ArgsTest(CliUnitTestClass):
             (MediaType.NOVEL, "i-refuse-to-be-your-enemy", 5, "i-refuse-to-be-your-enemy-volume-5.epub"),
             (MediaType.ANIME, "Minami-ke", 2, "Minami-ke - S01E02.mkv"),
             (MediaType.ANIME, "Minami-ke", 3, "Minami-ke - S01E03.mkv"),
+            (MediaType.ANIME, "Hidamari Sketch", 3, "(Hi10)_Hidamari_Sketch_-_03_(BD_720p)_(HT).mkv"),
         ]
 
         for media_type, name, number, file_name in samples:
@@ -1435,6 +1437,7 @@ class ArgsTest(CliUnitTestClass):
                 assert not os.path.exists(file_name)
                 media_data = self.media_reader.get_single_media(name=name)
 
+                self.assertTrue(str(number) in media_data["chapters"], media_data["chapters"].keys())
                 self.assertEqual(media_data["chapters"][str(number)]["number"], number)
                 assert re.search(r"^\w+$", media_data["id"])
                 self.assertEqual(media_data["media_type"], media_type)
@@ -1449,6 +1452,20 @@ class ArgsTest(CliUnitTestClass):
             f.write("dummy_data")
         parse_args(media_reader=self.media_reader, args=["import", "--link", path])
         assert os.path.exists(path_file)
+        media_data = self.media_reader.get_single_media(name=media_name)
+        chapter_data = list(media_data.get_sorted_chapters())[0]
+        self.assertEqual(chapter_data["title"], chapter_title)
+
+    def test_import_nexted_directory(self):
+        parent_dir = "dir1"
+        media_name = "MediaName"
+        chapter_title = "Anime1 - E10.jpg"
+        path = os.path.join(TEST_HOME, parent_dir, "[author] " + media_name)
+        os.makedirs(path)
+        path_file = os.path.join(path, chapter_title)
+        with open(path_file, "w") as f:
+            f.write("dummy_data")
+        parse_args(media_reader=self.media_reader, args=["import", parent_dir])
         media_data = self.media_reader.get_single_media(name=media_name)
         chapter_data = list(media_data.get_sorted_chapters())[0]
         self.assertEqual(chapter_data["title"], chapter_title)
