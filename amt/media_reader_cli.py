@@ -12,7 +12,7 @@ class MediaReaderCLI(MediaReader):
 
     def print_results(self, results):
         for i, media_data in enumerate(results):
-            print("{:4}| {}\t{} {} ({})".format(i, media_data.global_id, media_data["name"], media_data["season_title"], MediaType(media_data["media_type"]).name))
+            print("{:4}| {}\t{} {} ({})".format(i, media_data.global_id, media_data["name"], media_data.get("label", media_data["season_title"]), MediaType(media_data["media_type"]).name))
 
     def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):
         index = 0

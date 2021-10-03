@@ -17,11 +17,12 @@ class Nyaa(TorrentHelper):
         soup = self.soupify(BeautifulSoup, r)
         table = soup.find("table", {"class": "torrent-list"})
         results = []
-        for link in (link for row in table.findAll("tr") for link in row.findAll("a")):
+        for row, link in ((row, link) for row in table.findAll("tr") for link in row.findAll("a")):
             if link["href"].startswith("/view/") and not link["href"].endswith("#comments"):
                 slug = link["href"].split("/")[-1]
                 title = link["title"]
-                results.append(self.create_media_data(id=slug, name=title))
+                label = " ".join(filter(lambda x: x, map(lambda x: x.getText().strip(), row.findAll("td", {"class": "text-center"}))))
+                results.append(self.create_media_data(id=slug, name=title, label=label))
                 if len(results) == limit:
                     break
         return results
