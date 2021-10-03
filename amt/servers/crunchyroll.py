@@ -278,8 +278,6 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         chapter_id = match.group(2)
         data = self.session_get_json(self.episode_url.format(self.get_session_id(), chapter_id))["data"]
         media_data = next(self._create_media_data(data["series_id"], media_name_hint, season_id=data["collection_id"]))
-        self.update_media_data(media_data)
-        assert chapter_id in media_data["chapters"]
         return media_data
 
     def get_chapter_id_for_url(self, url):

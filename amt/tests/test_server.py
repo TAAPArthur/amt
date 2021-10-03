@@ -134,7 +134,6 @@ class TestAnimeServer(TestServer):
     def get_media_data_from_url(self, url):
         assert self.can_stream_url(url)
         media_data = self.get_media_list()[1]
-        self.update_media_data(media_data)
         return media_data
 
     def get_stream_urls(self, media_data=None, chapter_data=None):

@@ -139,7 +139,7 @@ class MediaReader:
 
     # Method related to adding/removing media and searching for media
 
-    def add_media(self, media_data, no_update=False):
+    def add_media(self, media_data, no_update=None):
         global_id = media_data.global_id
         if global_id in self.media:
             raise ValueError("{} {} is already known".format(global_id, media_data["name"]))
@@ -147,7 +147,8 @@ class MediaReader:
         logging.debug("Adding %s", global_id)
         self.media[global_id] = media_data
         os.makedirs(self.settings.get_media_dir(media_data), exist_ok=True)
-        return [] if no_update else self.update_media(media_data)
+        if no_update is False or no_update is None and not media_data["chapters"]:
+            self.update_media(media_data)
 
     def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], server_list=None, no_add=False, media_id=None, sort_func=None, raiseException=False):
         def func(x): return x.search(term, limit=limit)
@@ -364,6 +365,9 @@ class MediaReader:
                 media_data, chapter = self.get_media_by_chapter_id(server.id, chapter_id)
                 if not chapter:
                     media_data = server.get_media_data_from_url(url)
+                    if not media_data["chapters"]:
+                        server.update_media_data(media_data)
+
                     chapter = media_data["chapters"][chapter_id]
                 if download:
                     server.download_chapter(media_data, chapter)

@@ -29,7 +29,6 @@ class WLN_Updates(Server):
     def get_media_data_from_url(self, url):
         sid = self.stream_url_regex.search(url).group(1)
         media_data = self.create_media_data(sid, "")
-        self.update_media_data(media_data)
         return media_data
 
     def session_post(self, url, **kwargs):

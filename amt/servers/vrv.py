@@ -159,7 +159,6 @@ class Vrv(Server):
             r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=episode_id))
             data = r.json()
             media_data = self.create_media_data(data["series_id"], data["series_title"], season_id=data["season_id"], season_title=data["season_title"])
-            self.update_media_data(media_data, r)
             return media_data
 
     def get_chapter_id_for_url(self, url):

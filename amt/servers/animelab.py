@@ -73,7 +73,6 @@ class Animelab(Server):  # pragma: no cover
             if episode["videoEntry"] == chapter_slug:
                 season = episode["season"]
                 media_data = self.create_media_data(id=season["showId"], name=season["showTitle"], season_id=season["id"], season_title=season["name"])
-                self.update_media_data(media_data)
                 return media_data
 
     def get_stream_urls(self, media_data=None, chapter_data=None):

@@ -1427,6 +1427,7 @@ class ArgsTest(CliUnitTestClass):
         self.verify_no_media()
         server = self.media_reader.get_server(TestAnimeServer.id)
         media_data = server.get_media_data_from_url(TestAnimeServer.stream_url)
+        server.update_media_data(media_data)
         chapter_data = media_data["chapters"][server.get_chapter_id_for_url(TestAnimeServer.stream_url)]
         self.verify_download(media_data, chapter_data)
 
@@ -1626,18 +1627,19 @@ class ServerStreamTest(RealBaseUnitTestClass):
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
                 self.assertTrueOrSkipTest(servers)
-                for server in servers:
-                    with self.subTest(url=url, server=server.id):
-                        media_data = server.get_media_data_from_url(url)
-                        assert media_data
-                        server.update_media_data(media_data)
-                        self.assertEqual(media_id, str(media_data["id"]))
-                        if season_id:
-                            self.assertEqual(season_id, str(media_data["season_id"]))
-                        if chapter_id:
-                            self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
-                            self.assertTrue(chapter_id in media_data["chapters"])
-                        assert self.media_reader.add_from_url(url)
+                self.assertEqual(len(servers), 1)
+                server = servers[0]
+                media_data = server.get_media_data_from_url(url)
+                assert media_data
+                if not media_data["chapters"]:
+                    server.update_media_data(media_data)
+                self.assertEqual(media_id, str(media_data["id"]))
+                if season_id:
+                    self.assertEqual(season_id, str(media_data["season_id"]))
+                if chapter_id:
+                    self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
+                    self.assertTrue(chapter_id in media_data["chapters"])
+                assert self.media_reader.add_from_url(url)
         self.for_each(func, self.streamable_urls)
 
     def test_media_steam(self):
@@ -1648,9 +1650,9 @@ class ServerStreamTest(RealBaseUnitTestClass):
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
                 self.assertTrueOrSkipTest(servers)
-                for server in servers:
-                    if server.media_type == MediaType.ANIME:
-                        assert self.media_reader.stream(url)
+                server = servers[0]
+                if server.media_type == MediaType.ANIME:
+                    self.assertTrue(self.media_reader.stream(url))
         self.for_each(func, url_list)
 
 
