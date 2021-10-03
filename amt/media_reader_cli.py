@@ -14,11 +14,11 @@ class MediaReaderCLI(MediaReader):
         for i, media_data in enumerate(results):
             print("{:4}| {}\t{} {} ({})".format(i, media_data.global_id, media_data["name"], media_data["season_title"], MediaType(media_data["media_type"]).name))
 
-    def select_media(self, term, results, prompt, no_print=False):
+    def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):
         index = 0
 
         print("Looking for", term)
-        if not self.auto_select and len(results) > 1:
+        if not self.auto_select and not (len(results) == 1 and auto_select_if_single):
             if not no_print:
                 self.print_results(results)
             index = input(prompt)

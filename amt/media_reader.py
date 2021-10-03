@@ -78,7 +78,7 @@ class MediaReader:
         self.bundles = self.state.bundles
 
     # Helper methods
-    def select_media(self, term, results, prompt, no_print=False):  # pragma: no cover
+    def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):  # pragma: no cover
         return results[0] if results else None
 
     def for_each(self, func, media_list, raiseException=False):
@@ -163,7 +163,7 @@ class MediaReader:
             results.sort(key=sort_func)
         if len(results) == 0:
             return None
-        media_data = self.select_media(term, results, "Select media: ")
+        media_data = self.select_media(term, results, "Select media: ", auto_select_if_single=exact or media_id)
         if not no_add and media_data:
             self.add_media(media_data)
         return media_data
