@@ -72,7 +72,7 @@ class WLN_Updates(Server):
                     visted_chapters.add(number)
                     self.update_chapter_data(media_data, id=f"{number}-{source}", number=number, alt_id=chapter["srcurl"], title=title)
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         return [self.create_page_data(url=chapter_data["alt_id"], ext="xhtml")]
 
     def save_chapter_page(self, page_data, path):

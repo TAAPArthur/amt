@@ -83,7 +83,7 @@ class JNovelClub(GenericJNovelClub):
         for volume in r.json()["volumes"]:
             self.update_chapter_data(media_data, id=volume["legacyId"], number=volume["number"], title=volume["title"], premium=False, inaccessible=not volume["owned"])
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         r = self.session_get(self.pages_url.format(chapter_data["id"]))
         return [self.create_page_data(url=r.json()["downloads"][0]["link"])]
 
@@ -135,7 +135,7 @@ class GenericJNovelClubParts(GenericJNovelClub):
             for part in parts:
                 self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=part["number"], title=part["title"], premium=not part["preview"])
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         return [self.create_page_data(self.pages_url.format(chapter_data["alt_id"]))]
 
     def get_media_data_from_url(self, url):
@@ -195,7 +195,7 @@ class JNovelClubMangaParts(GenericJNovelClubParts):
 
     encrypted_url = "https://m11.j-novel.club/nebel/wp/{}"
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         for i in range(self.settings.max_retries):
             self.session_get("https://j-novel.club/read/{}".format(chapter_data["id"]))
             r = self.session_get(self.pages_url.format(chapter_data["alt_id"]))

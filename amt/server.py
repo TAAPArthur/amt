@@ -136,13 +136,17 @@ class GenericServer(RequestServer):
         """
         raise NotImplementedError
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         """
         Returns a list of page/episode data. For anime (specifically for video files) this may be a list of size 1
         The default implementation is for anime servers and will contain the preferred stream url
         """
         last_err = None
-        for url in self.get_stream_urls(media_data=media_data, chapter_data=chapter_data):
+        urls = self.get_stream_urls(media_data=media_data, chapter_data=chapter_data)
+        if stream_index != 0:
+            urls = urls[stream_index:] + urls[:stream_index]
+
+        for url in urls:
             ext = get_extension(url)
             try:
                 if ext == "m3u8":
@@ -185,8 +189,8 @@ class GenericServer(RequestServer):
         return self.stream_url_regex and self.stream_url_regex.search(url)
 
     ################ ANIME ONLY #####################
-    def get_stream_url(self, media_data, chapter_data, quality=0):
-        return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[quality]
+    def get_stream_url(self, media_data, chapter_data, stream_index=0):
+        return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[stream_index]
 
     def get_stream_urls(self, media_data=None, chapter_data=None):  # pragma: no cover
         raise NotImplementedError
@@ -310,24 +314,24 @@ class Server(GenericServer):
             os.makedirs(sub_dir, exist_ok=True)
             self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
 
-    def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0):
+    def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0):
         if self.is_fully_downloaded(media_data, chapter_data):
             logging.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
         try:
             if self.syncrhonize_chapter_downloads:
                 self._lock.acquire()
-            return self._download_chapter(media_data, chapter_data, page_limit, offset)
+            return self._download_chapter(media_data, chapter_data, page_limit, offset, stream_index)
         finally:
             if self.syncrhonize_chapter_downloads:
                 self._lock.release()
 
-    def _download_chapter(self, media_data, chapter_data, page_limit=None, offset=0):
+    def _download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0):
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
         self.pre_download(media_data, chapter_data)
-        list_of_pages = self.get_media_chapter_data(media_data, chapter_data)
+        list_of_pages = self.get_media_chapter_data(media_data, chapter_data, stream_index=stream_index)
         assert list_of_pages
         list_of_pages = list_of_pages[offset:page_limit]
         logging.info("Downloading %d pages", len(list_of_pages))

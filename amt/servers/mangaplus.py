@@ -48,7 +48,7 @@ class Mangaplus(Server):
                 number = 0
             self.update_chapter_data(media_data, id=chapter["chapterId"], title=chapter["subTitle"], number=number)
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         r = self.session_get(self.api_chapter_url.format(chapter_data["id"]))
         return [self.create_page_data(url=page["mangaPage"]["imageUrl"], encryption_key=page["mangaPage"]["encryptionKey"]) for page in r.json()["success"]["mangaViewer"]["pages"] if "mangaPage" in page]
 

@@ -62,7 +62,7 @@ class Mangadex(Server):
             if offset > data["total"]:
                 break
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         r = self.session_get(self.server_url.format(chapter_data["id"]))
         base_url = r.json()["baseUrl"]
         attr = self.session_get(self.chapter_url.format(chapter_data["id"])).json()["data"]["attributes"]

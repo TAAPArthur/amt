@@ -37,7 +37,7 @@ class Dbmultiverse(Server):
         for id, chapter in chapter_map.items():
             self.update_chapter_data(media_data, id=id, number=int(id), title=chapter.find("h4").getText())
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         r = self.session_get(self.chapter_url.format(media_data["lang"], chapter_data["id"]))
 
         soup = self.soupify(BeautifulSoup, r)

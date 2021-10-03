@@ -79,7 +79,7 @@ class TestServer(Server):
         else:
             self.update_chapter_data(media_data, id=29, title="Chapter1", number=1)
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         self.maybe_inject_error()
         if self.media_type == MediaType.ANIME:
             return super().get_media_chapter_data(media_data, chapter_data)

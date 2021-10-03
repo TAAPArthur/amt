@@ -28,14 +28,14 @@ class MediaReaderCLI(MediaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def select_chapter(self, term, quality=0, **kwargs):
+    def select_chapter(self, term, stream_index=0, **kwargs):
         media_data = self.search_add(term, **kwargs, no_add=True)
         if media_data:
             self.update_media(media_data)
             self.list_chapters(media_data)
             chapter = self.select_media(term, media_data.get_sorted_chapters(), "Select episode", no_print=True)
             if chapter:
-                return self.play(name=media_data, num_list=[chapter["number"]], force_abs=True, quality=quality)
+                return self.play(name=media_data, num_list=[chapter["number"]], force_abs=True, stream_index=stream_index)
 
     def list_servers(self):
         for id in sorted(self.get_servers_ids()):

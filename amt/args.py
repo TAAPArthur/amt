@@ -58,7 +58,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     select_chapter_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
     select_chapter_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
-    select_chapter_parsers.add_argument("--quality", "-q", default=0, type=int)
+    select_chapter_parsers.add_argument("--stream-index", "-q", default=0, type=int)
     select_chapter_parsers.add_argument("term", help="The string to search by")
     select_chapter_parsers.set_defaults(func=media_reader.select_chapter)
 
@@ -111,7 +111,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_consume_parsers.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--limit", "-l", default=0, type=int)
     sub_consume_parsers.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
-    sub_consume_parsers.add_argument("--quality", "-q", default=0, type=int)
+    sub_consume_parsers.add_argument("--stream-index", "-q", default=0, type=int)
 
     view_parser = sub_parsers.add_parser("view", parents=[sub_consume_parsers], help="View pages of chapters")
     view_parser.add_argument("name", choices=media_reader.get_all_names(MediaType.MANGA | MediaType.NOVEL), default=None, nargs="?")
@@ -132,7 +132,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     steam_parser = sub_parsers.add_parser("stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
     steam_parser.add_argument("--cont", default=False, action="store_const", const=True)
     steam_parser.add_argument("--download", default=False, action="store_const", const=True)
-    steam_parser.add_argument("--quality", "-q", default=0, type=int)
+    steam_parser.add_argument("--stream-index", "-q", default=0, type=int)
     steam_parser.add_argument("url")
 
     stream_url_parser = sub_parsers.add_parser("get-stream-url", help="Gets the steaming url for the media")

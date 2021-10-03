@@ -58,7 +58,7 @@ class Mangasee(Server):
             number = float(id[1:-1] + "." + id[-1])
             self.update_chapter_data(media_data, id, str(number), number)
 
-    def get_media_chapter_data(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         r = self.session_get(self.chapter_url.format(media_data["id"], chapter_data["number"]))
         match = self.page_regex.search(r.text)
         assert match, "See the commit introducing this line for a possible solution"
