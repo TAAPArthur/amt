@@ -264,11 +264,14 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         for chapter in data:
             if chapter["collection_id"] == media_data["season_id"] and not chapter["clip"]:
                 special = False
+                number = chapter["episode_number"]
                 if chapter["episode_number"] and chapter["episode_number"][-1].isalpha():
                     special = True
-                    chapter["episode_number"] = chapter["episode_number"][:-1]
+                    number = chapter["episode_number"][:-1]
+                elif not chapter["episode_number"]:
+                    number = 1 if len(data) == 1 else 0
 
-                self.update_chapter_data(media_data, id=chapter["media_id"], number=chapter["episode_number"], title=chapter["name"], premium=not chapter["free_available"], special=special)
+                self.update_chapter_data(media_data, id=chapter["media_id"], number=number, title=chapter["name"], premium=not chapter["free_available"], special=special)
 
     def get_media_data_from_url(self, url):
 
