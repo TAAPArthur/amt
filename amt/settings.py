@@ -1,5 +1,4 @@
 import getpass
-import json
 import logging
 import os
 import re
@@ -46,7 +45,7 @@ class Settings:
     cookie_files = ["/tmp/cookies.txt"]
 
     # Tracker
-    tracker_id = None
+    tracker_id = ""
 
     # MISC
     allow_only_official_servers = False
@@ -58,7 +57,7 @@ class Settings:
     suppress_cmd_output = False
 
     # Server or media specific settings
-    specific_settings = {
+    _specific_settings = {
         "viewer": {
             MediaType.NOVEL.name: "zathura {media}",
             MediaType.ANIME.name: "mpv --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
@@ -78,10 +77,10 @@ class Settings:
     force_page_parity_end = False  # Add dummy page before (default) or after real pages
     keep_unavailable = False
     merge_ts_files = True
-    post_process_cmd = None
-    text_languages = ("en", "en-US", "English")
+    post_process_cmd = ""
+    text_languages = ["en", "en-US", "English"]
     threads = 8  # per server thread count
-    viewer = None
+    viewer = ""
 
     def __init__(self, home=Path.home(), no_save_session=False, no_load=False, skip_env_override=False):
         self.home = home
@@ -93,7 +92,6 @@ class Settings:
         self.external_downloads_dir = os.path.join(self.data_dir, "Torrents")
 
         self.no_save_session = no_save_session
-        self._dirty_list = set()
         if not no_load:
             self.load(skip_env_override=skip_env_override)
         os.makedirs(self.config_dir, exist_ok=True)
@@ -182,37 +180,41 @@ class Settings:
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("_")]
 
     def set_field(self, name, value, server_or_media_id=None):
+        assert value is not None
         current_field = self.get_field(name, server_or_media_id)
-        if isinstance(current_field, bool) and not isinstance(value, bool):
+        if isinstance(current_field, bool) and isinstance(value, str):
             value = value.lower() not in ["false", 0, ""]
+        if isinstance(current_field, list) and isinstance(value, str):
+            value = value.split(",")
+            if current_field:
+                value = list(map(lambda x: type(current_field[0])(x.strip()), value))
 
-        if isinstance(value, str) and (isinstance(current_field, int) or isinstance(value, float)):
+        if value and isinstance(value, str) and ((isinstance(current_field, int) or isinstance(value, float))):
             value = type(current_field)(value)
         if server_or_media_id:
-            if not name in self.specific_settings:
-                self.specific_settings[name] = {}
-            self.specific_settings[name][server_or_media_id] = value
-            self._dirty_list.add("specific_settings")
+            if not name in self._specific_settings:
+                self._specific_settings[name] = {}
+            self._specific_settings[name][server_or_media_id] = value
         else:
             setattr(self, name, value)
-            self._dirty_list.add(name)
         return value
 
     def get_field(self, name, media_data=None):
         for key in media_data.get_labels() if isinstance(media_data, dict) else [media_data]:
-            if name in self.specific_settings and key in self.specific_settings[name]:
-                return self.specific_settings[name][key]
+            if name in self._specific_settings and key in self._specific_settings[name]:
+                return self._specific_settings[name][key]
         return getattr(self, name)
 
-    def save(self, save_all=False):
+    def get_field_as_string(self, name, media_data=None):
+        f = self.get_field(name, media_data)
+        return f if not isinstance(f, list) else ",".join(map(str, f))
+
+    def save(self):
         with open(self.get_settings_file(), "w") as f:
-            settings_to_save = {}
-            members = Settings.get_members()
-            for attr in members:
-                if save_all or attr in self._dirty_list:
-                    settings_to_save[attr] = self.get_field(attr)
-            json.dump(settings_to_save, f, indent=4)
-        self._dirty_list.clear()
+            for name in sorted(Settings.get_members()):
+                f.write(f"{name}={self.get_field_as_string(name)}\n")
+                for slug in self._specific_settings.get(name, {}):
+                    f.write(f"{name}.{slug}={self.get_field_as_string(name, slug)}\n")
 
     def reset(self):
         for attr in Settings.get_members():
@@ -221,10 +223,10 @@ class Settings:
     def load(self, skip_env_override=False):
         try:
             with open(self.get_settings_file(), "r") as f:
-                saved_settings = json.load(f)
-                for attr in Settings.get_members():
-                    if attr in saved_settings:
-                        self.set_field(attr, saved_settings[attr])
+                for line in filter(lambda x: x.strip() and x.strip()[0] != "#", f):
+                    name, value = (line if not line.endswith("\n") else line[:-1]).split("=", 1)
+                    attr, slug = name.split(".", 2) if "." in name else (name, None)
+                    self.set_field(attr, value, slug)
         except FileNotFoundError:
             pass
         if not skip_env_override and self.allow_env_override:
@@ -235,16 +237,17 @@ class Settings:
 
             for attr in Settings.get_members():
                 env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
-                if env_value is not None or self.get_field(attr) is None:
+                if env_value is not None:
                     self.set_field(attr, env_value)
+                if env_value is not None or self.get_field(attr) == "":
                     for media_type in MediaType:
                         env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}_{media_type}")
-                        if env_value:
+                        if env_value is not None:
                             self.set_field(attr, env_value, media_type.name)
         os.environ["USER_AGENT"] = self.user_agent
 
     def get_settings_file(self):
-        return os.path.join(self.config_dir, "settings.json")
+        return os.path.join(self.config_dir, "amt.conf")
 
     def get_metadata(self):
         return os.path.join(self.data_dir, "metadata.json")

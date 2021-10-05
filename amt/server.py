@@ -346,7 +346,7 @@ class Server(GenericServer):
             job.add(lambda page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), page_data["path"]))
         job.run()
 
-        if self.media_type == MediaType.MANGA and len(list_of_pages) % 2 != self.settings.get_force_page_parity(media_data):
+        if self.media_type == MediaType.MANGA and (1 + len(list_of_pages)) % 2 == self.settings.get_force_page_parity(media_data):
             try:
                 from PIL import Image
                 page_number = len(list_of_pages) if self.settings.get_force_page_parity_end(media_data) else -1

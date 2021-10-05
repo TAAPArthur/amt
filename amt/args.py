@@ -4,7 +4,6 @@ import os
 
 from .media_reader_cli import MediaReaderCLI
 from .server import MediaType
-from .settings import Settings
 from .stats import Details, SortIndex, StatGroup
 
 
@@ -15,14 +14,6 @@ def gen_auto_complete(parser):
         argcomplete.autocomplete(parser)
     except ImportError:
         pass
-
-
-def get_set_setting(media_reader_settings, field_name, save_env=False, value=None, target=None, save_all=False):
-    settings = Settings(home=media_reader_settings.home, skip_env_override=not save_env)
-    if value:
-        settings.set_field(field_name, value, server_or_media_id=target)
-        settings.save(save_all=save_all)
-    print("{} = {}".format(field_name, settings.get_field(field_name, target)))
 
 
 def parse_args(args=None, media_reader=None, already_upgraded=False):
@@ -249,15 +240,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     offset_parser = sub_parsers.add_parser("offset")
     offset_parser.add_argument("name", default=None, choices=media_reader.get_all_names())
     offset_parser.add_argument("offset", type=int, default=0, nargs="?", help="Decrease the chapter number reported by the server by N")
-
-    # settings
-    settings_parsers = sub_parsers.add_parser("setting")
-    settings_parsers.add_argument("--target", default=None, choices=media_reader.get_all_names(), nargs="?", help="Get/set for specific settings")
-    settings_parsers.add_argument("field_name", choices=Settings.get_members())
-    settings_parsers.add_argument("value", default=None, nargs="?")
-    settings_parsers.add_argument("--save-env", action="store_const", const=True, default=False)
-    settings_parsers.add_argument("--save-all", action="store_const", const=True, default=False)
-    settings_parsers.set_defaults(func=get_set_setting, media_reader_settings=media_reader.settings)
 
     get_file_parsers = sub_parsers.add_parser("get-file")
     get_file_parsers.add_argument("file", default=None, choices=["settings_file", "metadata", "cookie_file"])

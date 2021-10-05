@@ -104,7 +104,6 @@ class BaseUnitTestClass(unittest.TestCase):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
     def setup_settings(self):
-        self.media_reader.settings.password_override_prefix = None
         self.media_reader.settings.free_only = True
         self.media_reader.settings.no_save_session = True
         self.media_reader.settings.no_load_session = True
@@ -120,10 +119,10 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader.settings.download_torrent_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.media_reader.settings.suppress_cmd_output = True
         self.media_reader.settings.viewer = "echo {media} {title}"
-        self.media_reader.settings.specific_settings = {}
+        self.media_reader.settings._specific_settings = {}
         self.media_reader.settings.bundle_viewer = "[ -f {media} ]"
         self.media_reader.settings.bundle_cmds[self.media_reader.settings.bundle_ext] = "ls {files}; touch {name}"
-        self.media_reader.settings.force_page_parity = None
+        self.media_reader.settings.force_page_parity = ""
 
     def setUp(self):
         self.startTime = time.time()
@@ -179,7 +178,7 @@ class BaseUnitTestClass(unittest.TestCase):
         files = list(filter(lambda x: x[0] != ".", os.listdir(dir_path)))
         self.assertTrue(files)
         media_type = MediaType(media_data["media_type"])
-        if media_type == MediaType.MANGA and self.settings.get_force_page_parity(media_data) is not None:
+        if media_type == MediaType.MANGA and isinstance(self.settings.get_force_page_parity(media_data), int):
             self.assertEqual(self.settings.get_force_page_parity(media_data), len(files) % 2)
 
         for file_name in files:
@@ -360,10 +359,17 @@ class SettingsTest(BaseUnitTestClass):
     separators = ("\t", "\n", "\r", "some_string")
 
     def test_settings_save_load(self):
-        self.settings.password_save_cmd = "dummy_cmd"
-        self.settings.save(save_all=True)
+        self.reload()
+        for i in range(2):
+            self.settings.save()
+            self.settings.load()
+            for field in Settings.get_members():
+                self.assertEqual(self.settings.get_field(field), getattr(Settings, field))
 
-        assert Settings(home=TEST_HOME).password_save_cmd == "dummy_cmd"
+    def test_settings_save_load_new_value(self):
+        self.settings.password_save_cmd = "dummy_cmd"
+        self.settings.save()
+        self.assertEquals(Settings(home=TEST_HOME).password_save_cmd, "dummy_cmd")
 
     def test_settings_env_override(self):
         os.environ["AMT_PASSWORD_LOAD_CMD"] = "1"
@@ -479,7 +485,7 @@ class SettingsTest(BaseUnitTestClass):
     def test_force_page_parity(self):
         media_data = self.add_test_media(media_type=MediaType.MANGA, limit=1)[0]
         chapter_data = media_data.get_sorted_chapters()[0]
-        for parity in (0, 1, None):
+        for parity in (0, 1, ""):
             for page_limit in (1, 2):
                 self.settings.force_page_parity = parity
                 self.media_reader.get_server(media_data["server_id"]).download_chapter(media_data, chapter_data, page_limit=page_limit)
@@ -501,7 +507,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         with patch.dict(sys.modules, {"PIL": None}):
             # Shouldn't crash
             self.media_reader.download_unread_chapters(page_limit=1)
-            self.settings.force_page_parity = None
+            self.settings.force_page_parity = ""
             self.verify_all_chapters_downloaded()
 
     def test_media_reader_add_remove_media(self):
@@ -579,7 +585,7 @@ class MediaReaderTest(BaseUnitTestClass):
             self.assertFalse(all(map(lambda x: self.media_reader.get_server(x["server_id"]).official, self.media_reader.get_media())))
             self.media_reader.state.save()
             self.media_reader.settings.allow_only_official_servers = True
-            self.media_reader.settings.save(save_all=True)
+            self.media_reader.settings.save()
             self.reload()
             self.assertTrue(self.media_reader.settings.allow_only_official_servers)
             self.assertTrue(self.media_reader.get_media_ids())
@@ -952,37 +958,6 @@ class ArgsTest(CliUnitTestClass):
         self.assertEqual(self.media_reader.session.cookies.get(key), value)
         parse_args(media_reader=self.media_reader, args=["--clear-cookies", "list"])
         self.assertNotEqual(self.media_reader.session.cookies.get(key), value)
-
-    def test_get_settings(self):
-        parse_args(media_reader=self.media_reader, args=["setting", "password_manager_enabled"])
-
-    def test_set_settings(self):
-        key_values = [("bundle_ext", "jpg"), ("bundle_ext", "true"),
-                      ("max_retries", "1", 1),
-                      ("max_retries", "2", 2),
-                      ("password_manager_enabled", "true", True),
-                      ("password_manager_enabled", "false", False)]
-
-        self.settings.password_load_cmd = "tmp_value"
-        os.environ["AMT_PASSWORD_LOAD_CMD"] = "tmp_env_value"
-        for key_value in key_values:
-            parse_args(media_reader=self.media_reader, args=["setting", key_value[0], key_value[1]])
-            self.media_reader.settings.load()
-            self.assertEqual(self.settings.get_field(key_value[0]), key_value[-1])
-        del os.environ["AMT_PASSWORD_LOAD_CMD"]
-        self.media_reader.settings.reset()
-        self.media_reader.settings.load()
-        self.assertEqual(Settings.password_load_cmd, self.settings.password_load_cmd)
-        for i in range(1, len(key_values), 2):
-            self.assertEqual(self.settings.get_field(key_values[i][0]), key_values[i][-1])
-
-    def test_set_settings_server_specific(self):
-        self.settings.set_field("force_page_parity", False)
-        key, value = "force_page_parity", 1
-        parse_args(media_reader=self.media_reader, args=["setting", "--target", TestServer.id, key, str(value)])
-        self.settings.load()
-        self.assertEqual(self.settings.get_field(key, TestServer.id), value)
-        self.assertEqual(self.settings.get_field(key), False)
 
     @patch("getpass.getpass", return_value="0")
     def test_set_password(self, input):
