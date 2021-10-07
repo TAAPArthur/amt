@@ -155,7 +155,7 @@ class GenericJNovelClubParts(GenericJNovelClub):
         return text
 
     def save_chapter_page(self, page_data, path):
-        resources_path = os.path.join(os.path.dirname(path), ".resourses")
+        resources_path = os.path.join(os.path.dirname(path), ".resources")
         os.makedirs(resources_path, exist_ok=True)
         r = self.session_get(page_data["url"])
         text = r.text
