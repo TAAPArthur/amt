@@ -1,8 +1,7 @@
-#Anime Manga Tracker (beta)
-CLI tool to download/stream anime/manga from (mainly) official sources
+# Anime Manga Tracker (beta)
+CLI tool to download/stream anime/manga (and now light novels) from (mainly) official sources
 
 The goal is to provide an simple and unobtrusive way to consume manga/anime using custom players.
-
 
 ## Dependencies
 See [requirements.txt](requirements.txt) and [requirements-optional.txt](requirements-optional.txt)
@@ -61,6 +60,9 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 ### Helpers
 * [Nyaa](https://nyaa.si/) (unofficial)
 
+### Media already owned
+* Media already on the local machine and media on a personal media server can be both be used.
+
 ## Why another downloader/tracker
 There didn't seem to be adequate alternatives that had the following features
 * Supports a wide portion of legal sites
@@ -70,8 +72,16 @@ There didn't seem to be adequate alternatives that had the following features
 * Supports external password managers, image and media players
 * No GUI
 
+
+## TODO (priority order)
+* Crunchyroll Beta
+* Funimation movies
+* HumbleBundle (Anime/Manga)
+* AinmeLab
+* Webtoon
+* HiDive
+
 ## Caveats
-* Images with vastly different resolution don't show up ideally in zathura.
 * Crunchyoll's (and possible others') "seasons" don't aren't in sync with the actual seasons. For Non-consecutive cours may or may not be reported as 1 season. Long running series like One Piece and Gintama are broken into seasons arbitrary. This would only affect tracking and can be mitigated with the "offset" command
 
 ## Similar Projects
