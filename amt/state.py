@@ -40,7 +40,7 @@ class State:
                 json_dict = json.load(jsonFile, object_hook=object_hook)
                 self.hashes[file_name] = State.get_hash(json_dict)[0]
                 return json_dict
-        except FileNotFoundError:
+        except (json.decoder.JSONDecodeError, FileNotFoundError):
             return {}
 
     def save_to_file(self, file_name, json_dict):

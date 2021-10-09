@@ -655,6 +655,13 @@ class MediaReaderTest(BaseUnitTestClass):
         assert self.media_reader.media
         self.assertEqual(old_hash, State.get_hash(self.media_reader.media))
 
+    def test_empty_chapter_metadata(self):
+        media_data = self.add_test_media(self.test_server, limit=1)[0]
+        self.media_reader.state.save()
+        media_data["chapters"].clear()
+        self.media_reader.state.save()
+        self.reload()
+
     def test_mark_chapters_until_n_as_read(self):
         media_data = self.add_test_media(server=self.test_server, limit=1)[0]
         assert len(media_data["chapters"]) > 2
