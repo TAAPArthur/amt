@@ -19,7 +19,7 @@ class Mangasee(Server):
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
     page_regex = re.compile(r"vm.CurChapter = (.*);")
     domain_regex = re.compile(r"vm.CurPathName\w* = \"(.*)\";")
-    stream_url_regex = re.compile(r"mangasee123.com/read-online/(.*)-chapter-(\d*\.?\d?)-page")
+    stream_url_regex = re.compile(r"mangasee123.com/read-online/(.*)-chapter-(\d*\.?\d?)(-index-\d+)?-page")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
