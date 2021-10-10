@@ -15,10 +15,12 @@ from . import servers, trackers
 from .job import Job
 from .server import Server, TorrentHelper
 from .servers.local import get_local_server_id
+from .servers.remote import RemoteServer
 from .settings import Settings
 from .state import State
 from .tracker import Tracker
 from .util.media_type import MediaType
+from .util.name_parser import get_media_name_from_file
 
 SERVERS = set()
 TRACKERS = set()
@@ -70,12 +72,32 @@ class MediaReader:
                     if not isinstance(instance, Server) or not self.settings.allow_only_official_servers or instance.official:
                         assert instance.id not in instance_map, "Duplicate server id: " + str(instance.id)
                         instance_map[instance.id] = instance
+        for server in self.get_remote_servers():
+            self._servers[server.id] = server
 
         self.set_tracker(self._trackers.get(self.settings.tracker_id, list(self._trackers.values())[0]))
         self.state.load()
         self.state.configure_media(self._servers)
         self.media = self.state.media
         self.bundles = self.state.bundles
+
+    def get_remote_servers(self):
+        servers = []
+        try:
+            with open(self.settings.get_remote_servers_config(), "r") as f:
+                for line in f:
+                    if line.startswith("#") or not line.strip():
+                        continue
+                    key, value = line.strip().split("=", 2)
+                    if key == "id":
+                        servers.append(RemoteServer(self.session, self.settings))
+                    if key == "media_type":
+                        value = MediaType.get(value.upper())
+                        assert value, line
+                    setattr(servers[-1], key, value)
+        except FileNotFoundError:
+            pass
+        return servers
 
     # Helper methods
     def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):  # pragma: no cover
@@ -195,23 +217,17 @@ class MediaReader:
     def import_media(self, files, media_type, link=False, name=None, skip_add=False, fallback_name=None):
         server = self.get_server(get_local_server_id(media_type))
         names = set()
-        volume_regex = r"(_|\s)?vol[ume-]*[\w\s]*(\d+)"
-
-        media_dir_regex = r"([\[(][\w ]*[\])]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*)"
-        media_file_regex = media_dir_regex + "(.*\.\w+)$"
         for file in files:
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             assert file != "/"
             media_name = name
 
             if os.path.isdir(file):
-                match = re.search(media_dir_regex, os.path.basename(file))
-                media_name = match.group(2) if match else fallback_name if fallback_name else os.path.basename(file)
+                media_name = get_media_name_from_file(file, fallback_name, is_dir=True)
                 self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=media_name, fallback_name=name, link=link, skip_add=skip_add)
                 continue
             if not name:
-                match = re.search(media_file_regex, re.sub(volume_regex, "", os.path.basename(file).replace("_", " ")))
-                media_name = match.group(2) if match else fallback_name
+                media_name = get_media_name_from_file(file, fallback_name, is_dir=False)
                 logging.info("Detected name %s", media_name)
 
             assert not os.path.isdir(file)

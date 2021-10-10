@@ -3,6 +3,9 @@ import re
 
 from ..server import Server
 from ..util.media_type import MediaType
+from ..util.name_parser import (get_media_id_from_name,
+                                get_media_name_from_file,
+                                get_number_from_file_name)
 
 
 def get_local_server_id(media_type):
@@ -18,19 +21,15 @@ class LocalServer(Server):
     external = True
 
     id_formatter_regex = re.compile(r"\W+")
-    number_regex = re.compile(r"(\d+\.?\d*)[ \.]")
-
-    def get_number_from_file_name(self, file_name):
-        matches = self.number_regex.findall(file_name.replace("_", " "))
-        return float(max(matches, key=len)) if matches else 0
 
     def _create_media_data(self, file_name):
         assert "/" not in file_name
-        return self.create_media_data(id=self.id_formatter_regex.sub("_", file_name), name=file_name, dir_name=file_name)
+        media_name = get_media_name_from_file(file_name)
+        return self.create_media_data(id=get_media_id_from_name(media_name), name=media_name, dir_name=file_name)
 
     def get_import_media_dest(self, media_name, file_name):
         media_data = self._create_media_data(media_name)
-        self.update_chapter_data(media_data, id=file_name, title=file_name, number=self.get_number_from_file_name(file_name.replace(media_name, "")))
+        self.update_chapter_data(media_data, id=file_name, title=file_name, number=get_number_from_file_name(file_name, media_name=media_name))
         chapter_data = media_data["chapters"][file_name]
         return os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), file_name)
 

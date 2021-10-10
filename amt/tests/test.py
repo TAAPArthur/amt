@@ -34,6 +34,7 @@ except:
 
 
 TEST_HOME = TEST_BASE + "test_home/"
+TEST_TEMP = TEST_BASE + "tmp/"
 
 
 logging.basicConfig(format="[%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
@@ -184,7 +185,7 @@ class BaseUnitTestClass(unittest.TestCase):
         for file_name in files:
             self.assertEqual(2, len(file_name.split(".")), f"Problem with extension of {file_name}")
             path = os.path.join(dir_path, file_name)
-            if isinstance(server, TestServer) or server.external:
+            if isinstance(server, TestServer) or server.external or type(server).id is None:
                 continue
             if media_type == MediaType.MANGA:
                 with open(path, "rb") as img_file:
@@ -841,7 +842,7 @@ class GenericServerTest():
     def server_workflow_test_helper(self, server):
         for media_data in self._test_list_and_search(server):
             self.media_reader.add_media(media_data)
-            for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
+            for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
                 if not SKIP_DOWNLOAD:
                     self.assertNotEqual(server.external, server.download_chapter(media_data, chapter_data, page_limit=2, stream_index=-1))
                     self.verify_download(media_data, chapter_data)
@@ -925,6 +926,102 @@ class LocalServerTest(GenericServerTest, BaseUnitTestClass):
         self.assertFalse(self.getChapters())
         for media_data in self.media_reader.get_media():
             self.assertTrue(os.listdir(self.settings.get_media_dir(media_data)))
+
+
+class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
+    port = 8888
+    resources_dir_name = ".resources"
+
+    def init(self):
+        self.default_server_list = []
+
+    @classmethod
+    def setUpClass(cls):
+        os.makedirs(TEST_TEMP)
+        os.chdir(TEST_TEMP)
+        cls.web_server = subprocess.Popen(["python", "-m", "http.server", str(cls.port)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.web_server.kill()
+        shutil.rmtree(TEST_TEMP)
+
+    def setUp(self):
+        super().setUp()
+        path = "Media"
+        for media_type in list(MediaType):
+            for p in (f"Test{media_type.name}2/1/file.test", f"Test{media_type.name}/file2.test", f"{media_type.name} file.test"):
+                relative_path = os.path.join(TEST_TEMP, path, media_type.name, p)
+                os.makedirs(os.path.dirname(relative_path), exist_ok=True)
+                if "/" in p:
+                    resource_path = os.path.join(os.path.dirname(relative_path), self.resources_dir_name, "nested")
+                    os.makedirs(resource_path, exist_ok=True)
+                    open(os.path.join(resource_path, "some_resource"), "w").close()
+                open(relative_path, "w").close()
+            with open(self.settings.get_remote_servers_config(), "a") as f:
+                f.write(f"""
+id=remote_test_{media_type.name}
+domain_list=http://localhost:-1{self.port};__bad_domain__;http://localhost:{self.port}
+path={path}/{media_type.name}/
+media_type={media_type.name}
+""")
+        self.reload(True)
+        self.assertEqual(len(self.media_reader.get_servers()), len(list(MediaType)))
+        time.sleep(.1)
+
+    def test_no_valid_domains(self):
+        with open(self.settings.get_remote_servers_config(), "w") as f:
+            f.write("""
+id=remote_test_bad
+domain_list=__bad_domain__;
+path=/
+media_type=ANIME
+""")
+        self.reload(True)
+        self.assertRaises(Exception, self.add_test_media)
+
+    def test_media_num(self):
+        self.add_test_media()
+        self.assertEqual(3 * len(MediaType), len(self.media_reader.get_media_ids()))
+
+    def test_validate_media(self):
+        media_list = self.add_test_media()
+        for media_data in media_list:
+            self.assertTrue(media_data["name"], media_data["id"])
+            self.assertFalse(media_data["name"].endswith(".test"), media_data["name"])
+            self.assertFalse(media_data["name"].endswith("/"), media_data["name"])
+            self.assertTrue(media_data["chapters"])
+
+    def test_play(self):
+        self.add_test_media()
+        self.assertTrue(self.media_reader.play())
+
+    def test_stream(self):
+        for media_data in self.add_test_media(media_type=MediaType.ANIME):
+            with self.subTest(media_name=media_data["name"]):
+                assert media_data["name"]
+                server = self.media_reader.get_server(media_data["server_id"])
+                assert media_data.get_sorted_chapters()
+                url = server.get_stream_urls(media_data, media_data.get_sorted_chapters()[0])[0]
+                self.assertTrue(self.media_reader.stream(url))
+                self.media_reader.remove_media(media_data)
+                self.assertTrue(self.media_reader.stream(url))
+
+    def test_download_all(self):
+        self.add_test_media()
+        self.media_reader.download_unread_chapters()
+        self.verify_all_chapters_downloaded()
+
+    def test_download_resources(self):
+        media_list = self.add_test_media()
+        self.media_reader.download_unread_chapters()
+        num_files = 0
+        for media_data in media_list:
+            for chapter_data in media_data.get_sorted_chapters():
+                dir_path = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), self.resources_dir_name)
+                if os.path.exists(dir_path):
+                    num_files += 1
+        self.assertEqual(len(MediaType), num_files)
 
 
 class ArgsTest(CliUnitTestClass):
@@ -1434,7 +1531,7 @@ class ArgsTest(CliUnitTestClass):
                 self.assertEqual(media_data["media_type"], media_type)
 
     def test_import_directory(self):
-        media_name = "test_dir"
+        media_name = "test dir"
         chapter_title = "Anime1 - E10.jpg"
         path = os.path.join(TEST_HOME, "[author] " + media_name)
         os.mkdir(path)
