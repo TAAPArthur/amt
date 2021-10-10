@@ -360,9 +360,11 @@ class SettingsTest(BaseUnitTestClass):
                 self.assertEqual(self.settings.get_field(field), getattr(Settings, field))
 
     def test_settings_save_load_new_value(self):
-        self.settings.password_save_cmd = "dummy_cmd"
+        self.settings.set_field("password_save_cmd", "dummy_cmd")
+        self.settings.set_field("password_save_cmd", "dummy_cmd2", TestServer.id)
         self.settings.save()
-        self.assertEquals(Settings(home=TEST_HOME).password_save_cmd, "dummy_cmd")
+        self.assertEquals(Settings(home=TEST_HOME).get_field("password_save_cmd"), "dummy_cmd")
+        self.assertEquals(Settings(home=TEST_HOME).get_field("password_save_cmd", TestServer.id), "dummy_cmd2")
 
     def test_settings_env_override(self):
         os.environ["AMT_PASSWORD_LOAD_CMD"] = "1"
@@ -927,7 +929,6 @@ class ArgsTest(CliUnitTestClass):
 
     @patch("builtins.input", return_value="0")
     def test_auth(self, input):
-        print(self.media_reader.settings)
         parse_args(media_reader=self.media_reader, args=["auth"])
 
     @patch("builtins.input", return_value="a")
@@ -1238,10 +1239,9 @@ class ArgsTest(CliUnitTestClass):
             self.assertEqual(0, len(os.listdir(os.path.join(self.settings.media_dir, dir))))
 
     def test_clean_noop(self):
-        a = self.add_test_media(self.test_server, limit=1)
+        self.add_test_media(self.test_server, limit=1)
         self.media_reader.download_unread_chapters()
         parse_args(media_reader=self.media_reader, args=["clean"])
-        print(a)
         self.verify_all_chapters_downloaded()
 
     def test_clean_read(self):

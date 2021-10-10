@@ -192,7 +192,7 @@ class GenericServer(RequestServer):
     def get_stream_url(self, media_data, chapter_data, stream_index=0):
         return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[stream_index]
 
-    def get_stream_urls(self, media_data=None, chapter_data=None):  # pragma: no cover
+    def get_stream_urls(self, media_data, chapter_data):  # pragma: no cover
         raise NotImplementedError
 
     def download_subtitles(self, media_data, chapter_data, dir_path):

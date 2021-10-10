@@ -171,10 +171,6 @@ class Settings:
                 for slug in self._specific_settings.get(name, {}):
                     f.write(f"{name}.{slug}={self.get_field_as_string(name, slug)}\n")
 
-    def reset(self):
-        for attr in Settings.get_members():
-            self.set_field(attr, getattr(Settings, attr))
-
     def load(self, skip_env_override=False):
         try:
             with open(self.get_settings_file(), "r") as f:
