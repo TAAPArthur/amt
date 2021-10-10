@@ -1,7 +1,6 @@
 import getpass
 import logging
 import os
-import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -64,7 +63,6 @@ class Settings:
             MediaType.MANGA.name: "sxiv {media}"
         }
     }
-    auto_replace = True
     bundle_ext = "cbz"
     bundle_format = "{date}_{name}.{ext}"
     bundle_viewer = "zathura {media}"
@@ -99,7 +97,6 @@ class Settings:
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.bundle_dir, exist_ok=True)
         os.makedirs(self.media_dir, exist_ok=True)
-        self._replacements = None
 
     def get_external_downloads_dir(self, mediaType, skip_auto_create=False):
         path = os.path.join(self.external_downloads_dir, mediaType.name)
@@ -120,48 +117,6 @@ class Settings:
 
     def get_stats_file(self):
         return os.path.join(self.cache_dir, "stats.json")
-
-    def get_replacement_file(self):
-        return os.path.join(self.config_dir, "replacements.txt")
-
-    def get_replacement_dir(self):
-        return os.path.join(self.config_dir, "replacements.d")
-
-    def get_replacements(self, media_data=None):
-        def parse_file(f, replacements):
-            try:
-                with open(f, 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and line[0] != "#":
-                            if line.count("/") == 1:
-                                src, target = line.split("/")
-                            else:
-                                _, src, target, _ = line.split("/")
-                            replacements.append((src, target))
-            except FileNotFoundError:
-                pass
-        with self._lock:
-            if self._replacements is None:
-                self._replacements = {"": []}
-                parse_file(self.get_replacement_file(), self._replacements[""])
-                if os.path.exists(self.get_replacement_dir()):
-                    for specific_replacement_file in os.listdir(self.get_replacement_dir()):
-                        self._replacements[specific_replacement_file] = []
-                        parse_file(os.path.join(self.get_replacement_dir(), specific_replacement_file), self._replacements[specific_replacement_file])
-
-        yield from self._replacements[""]
-
-        if media_data:
-            for key in media_data.get_labels(reverse=True):
-                if key and key in self._replacements:
-                    yield from self._replacements[key]
-
-    def auto_replace_if_enabled(self, text, media_data=None):
-        if self.get_field("auto_replace", media_data=media_data):
-            for src, target in self.get_replacements(media_data=media_data):
-                text = re.sub(src, target, text)
-        return text
 
     def __getattr__(self, key):
         if key.startswith("get_"):
@@ -330,10 +285,10 @@ class Settings:
         except (CalledProcessError, KeyboardInterrupt):
             return False
 
-    def post_process(self, media_data, dir_path):
+    def post_process(self, media_data, file_paths, dir_path):
         cmd = self.get_field("post_process_cmd", media_data)
         if cmd:
-            self.run_cmd(cmd, wd=dir_path)
+            self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths)), wd=dir_path))
 
     def open_viewer(self, files, media_data, chapter_data, wd=None):
         viewer = self.get_field("viewer", media_data)

@@ -448,38 +448,9 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.bundle_viewer = "exit 1"
         self.assertFalse(self.settings.open_bundle_viewer(name))
 
-    def test_auto_replace(self):
-        self.settings.auto_replace = True
-        with open(self.settings.get_replacement_file(), 'w') as f:
-            f.write("s/Big Sister/Onee-san/g\n")
-            f.write("Big Brother ([A-Z]\w*)/\\1 onii-san\n")
-
-        text = "Big Sister where is Big Brother X"
-        target = "Onee-san where is X onii-san"
-        self.assertEqual(self.settings.auto_replace_if_enabled(text), target)
-
-    def test_auto_replace_file_does_not_exist(self):
-        self.settings.auto_replace = True
-        text = "Big Sister where is Big Brother X"
-        self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
-
-    def test_auto_replace_dir(self):
-        media_data = self.add_test_media(media_type=MediaType.NOVEL, limit=1)[0]
-        self.settings.auto_replace = True
-        os.mkdir(self.settings.get_replacement_dir())
-        path = os.path.join(self.settings.get_replacement_dir(), media_data["server_id"])
-        with open(path, 'w') as f:
-            f.write("s/A/B/g\n")
-        with open(self.settings.get_replacement_file(), 'w') as f:
-            f.write("s/B/C/g\n")
-        text = "A A"
-        target = "B B"
-        self.assertEqual(self.settings.auto_replace_if_enabled(text), text)
-        self.assertEqual(self.settings.auto_replace_if_enabled(text, media_data), target)
-
     def test_post_process_fail(self):
         self.settings.post_process_cmd = "exit 1"
-        self.assertRaises(CalledProcessError, self.settings.post_process, None, None)
+        self.assertRaises(CalledProcessError, self.settings.post_process, None, [], None)
 
     @unittest.skipIf(not HAS_PIL, "PIL is needed to test")
     def test_force_page_parity(self):

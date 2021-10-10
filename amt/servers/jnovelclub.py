@@ -89,21 +89,6 @@ class JNovelClub(GenericJNovelClub):
 
     def save_chapter_page(self, page_data, path):
         r = self.session_get(page_data["url"], stream=True)
-        if self.media_type == MediaType.NOVEL:
-            try:
-                from io import BytesIO
-                from zipfile import ZipFile
-                with ZipFile(BytesIO(r.content)) as epub, ZipFile(path, "w") as dest:
-                    for zipinfo in epub.infolist():
-                        if zipinfo.filename.endswith("xhtml"):
-                            text = epub.read(zipinfo.filename).decode()
-                            text = self.settings.auto_replace_if_enabled(text, media_data=page_data["media_data"])
-                            dest.writestr(zipinfo, text)
-                        else:
-                            dest.writestr(zipinfo, epub.read(zipinfo.filename))
-                return
-            except ImportError:
-                pass
         with open(path, 'wb') as fp:
             fp.write(r.content)
 
@@ -168,7 +153,6 @@ class GenericJNovelClubParts(GenericJNovelClub):
         except ImportError:
             pass
 
-        text = self.settings.auto_replace_if_enabled(text, media_data=page_data["media_data"])
         with open(path, 'w') as fp:
             fp.write(text)
 

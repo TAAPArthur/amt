@@ -356,8 +356,8 @@ class Server(GenericServer):
             except ImportError:
                 logging.warning("Need PIL to use force_page_parity")
 
-        self.post_download(media_data, chapter_data, dir_path, list_of_pages[:page_limit])
-        self.settings.post_process(media_data, dir_path)
+        self.post_download(media_data, chapter_data, dir_path, list_of_pages)
+        self.settings.post_process(media_data, (page_data["path"] for page_data in list_of_pages), dir_path)
         self.mark_download_complete(dir_path)
         logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
 
