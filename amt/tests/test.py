@@ -57,10 +57,10 @@ QUICK_TEST = os.getenv("QUICK")
 
 class BaseUnitTestClass(unittest.TestCase):
     real = False
-    local = False
     cli = False
     media_reader = None
     TIME_LIMIT = None
+    default_server_list = list(TEST_SERVERS)
 
     def __init__(self, methodName="runTest"):
         super().__init__(methodName=methodName)
@@ -83,7 +83,7 @@ class BaseUnitTestClass(unittest.TestCase):
 
         settings = Settings(home=TEST_HOME)
 
-        _servers = list(TEST_SERVERS)
+        _servers = list(self.default_server_list)
         if self.real:
             if ENABLE_ONLY_SERVERS:
                 enabled_servers = set(ENABLE_ONLY_SERVERS.split(","))
@@ -91,12 +91,10 @@ class BaseUnitTestClass(unittest.TestCase):
                 assert _servers
             else:
                 _servers = [s for s in SERVERS if not s.external]
-        elif self.local:
-            _servers += LOCAL_SERVERS
 
         _servers.sort(key=lambda x: x.id)
         self.media_reader = cls(settings=settings, server_list=_servers) if self.real else cls(settings=settings, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
-        if not settings.allow_only_official_servers:
+        if not settings.allow_only_official_servers and self.default_server_list:
             assert len(self.media_reader.get_servers()) == len(_servers)
         self.assertTrue(self.media_reader.get_trackers())
 
@@ -238,15 +236,10 @@ class BaseUnitTestClass(unittest.TestCase):
         assert obj
 
 
-class MinimalUnitTestClass(BaseUnitTestClass):
-    def init(self):
-        self.local = True
-
-
 class CliUnitTestClass(BaseUnitTestClass):
     def init(self):
         self.cli = True
-        self.local = True
+        self.default_server_list = list(TEST_SERVERS) + list(LOCAL_SERVERS)
 
 
 @unittest.skipIf(QUICK_TEST, "Real servers are disabled")
@@ -827,7 +820,54 @@ class ApplicationTestWithErrors(CliUnitTestClass):
         self.verify_all_chapters_downloaded()
 
 
-class LocalTest(MinimalUnitTestClass):
+class GenericServerTest():
+    def _test_list_and_search(self, server):
+        media_list = None
+        with self.subTest(server=server.id, list=True):
+            media_list = server.get_media_list()
+            assert media_list or server.has_login and not server.has_free_chapters
+            self.verfiy_media_list(media_list, server=server)
+
+        with self.subTest(server=server.id, list=False):
+            search_media_list = server.search(media_list[0]["name"] if media_list else "One", limit=1)
+            assert search_media_list or server.has_login and not server.has_free_chapters
+            self.verfiy_media_list(media_list, server=server)
+        return media_list
+
+    def server_workflow_test_helper(self, server):
+        for media_data in self._test_list_and_search(server):
+            self.media_reader.add_media(media_data)
+            for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
+                if not SKIP_DOWNLOAD:
+                    self.assertNotEqual(server.external, server.download_chapter(media_data, chapter_data, page_limit=2, stream_index=-1))
+                    self.verify_download(media_data, chapter_data)
+                    assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+                return True
+
+    def test_workflow(self):
+        if self.real:
+            self.TIME_LIMIT = 45
+        self.for_each(self.server_workflow_test_helper, self.media_reader.get_servers())
+
+    def test_login_fail(self):
+        self.media_reader.settings.password_manager_enabled = True
+        self.media_reader.settings.password_load_cmd = r"echo -e A\\tB"
+
+        def func(server_id):
+            server = self.media_reader.get_server(server_id)
+            try:
+                with self.subTest(server=server.id, method="relogin"):
+                    assert not server.relogin()
+            finally:
+                assert server.needs_to_login()
+
+        self.for_each(func, self.media_reader.get_servers_ids_with_logins())
+
+
+class LocalServerTest(GenericServerTest, BaseUnitTestClass):
+    def init(self):
+        self.default_server_list = list(LOCAL_SERVERS)
+
     def setUp(self):
         super().setUp()
         self.setup_customer_server_data()
@@ -844,14 +884,6 @@ class LocalTest(MinimalUnitTestClass):
                     open(os.path.join(chapter_dir, "text.xhtml"), "w").close()
                 self.assertTrue(len(media_data["chapters"]) > 1, media_data["chapters"].keys())
 
-            self.verfiy_media_list(self.add_test_media(server=server))
-
-    def test_custom_bundle(self):
-        self.assertTrue(self.media_reader.bundle_unread_chapters())
-
-    def test_play(self):
-        self.assertTrue(self.media_reader.play())
-
     def test_detect_chapters(self):
         for media_type in list(MediaType):
             self.media_reader.media.clear()
@@ -862,10 +894,12 @@ class LocalTest(MinimalUnitTestClass):
                     self.assertTrue(media_data["chapters"], media_data["name"])
 
     def test_custom_update(self):
+        self.add_test_media()
         for media_data in self.media_reader.get_media():
             assert not self.media_reader.update_media(media_data)
 
     def test_custom_save_update(self):
+        self.add_test_media()
         all_chapters = self.getChapters()
         self.assertTrue(all_chapters)
         funcs = [self.media_reader.state.save, self.reload, self.media_reader.update]
@@ -874,6 +908,7 @@ class LocalTest(MinimalUnitTestClass):
             self.assertEqual(len(all_chapters), len(self.getChapters()), func)
 
     def test_custom_clean(self):
+        self.add_test_media()
         self.media_reader.state.save()
         all_chapters = self.getChapters()
         self.assertTrue(all_chapters)
@@ -1466,56 +1501,12 @@ class ArgsTest(CliUnitTestClass):
             assert media_data.chapters
 
 
-class ServerTest(RealBaseUnitTestClass):
-    def setUp(self):
-        super().setUp()
-
-    def _test_list_and_search(self, server):
-        media_list = None
-        with self.subTest(server=server.id, list=True):
-            media_list = server.get_media_list()
-            assert media_list or server.has_login and not server.has_free_chapters
-            self.verfiy_media_list(media_list, server=server)
-
-        with self.subTest(server=server.id, list=False):
-            search_media_list = server.search(media_list[0]["name"] if media_list else "One", limit=1)
-            assert search_media_list or server.has_login and not server.has_free_chapters
-            self.verfiy_media_list(media_list, server=server)
-        return media_list
-
+class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
     def test_torrent_helpers(self):
         self.assertTrue(self.media_reader.get_torrent_helpers())
         for server in self.media_reader.get_torrent_helpers():
             media_data = self._test_list_and_search(server)[0]
             server.download_torrent_file(media_data)
-
-    def test_workflow(self):
-        self.TIME_LIMIT = 45
-
-        def func(server):
-            for media_data in self._test_list_and_search(server):
-                self.media_reader.add_media(media_data)
-                for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()):
-                    if not SKIP_DOWNLOAD:
-                        self.assertNotEqual(server.external, server.download_chapter(media_data, chapter_data, page_limit=2, stream_index=-1))
-                        self.verify_download(media_data, chapter_data)
-                        assert not server.download_chapter(media_data, chapter_data, page_limit=1)
-                    return True
-        self.for_each(func, self.media_reader.get_servers())
-
-    def test_login_fail(self):
-        self.media_reader.settings.password_manager_enabled = True
-        self.media_reader.settings.password_load_cmd = r"echo -e A\\tB"
-
-        def func(server_id):
-            server = self.media_reader.get_server(server_id)
-            try:
-                with self.subTest(server=server.id, method="relogin"):
-                    assert not server.relogin()
-            finally:
-                assert server.needs_to_login()
-
-        self.for_each(func, self.media_reader.get_servers_ids_with_logins())
 
 
 class ServerStreamTest(RealBaseUnitTestClass):
