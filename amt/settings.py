@@ -194,11 +194,12 @@ class Settings:
                 env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
                 if env_value is not None:
                     self.set_field(attr, env_value)
-                if env_value is not None or self.get_field(attr) == "":
-                    for media_type in MediaType:
-                        env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}_{media_type}")
+                if attr in self._specific_settings:
+                    for key in self._specific_settings.get(attr):
+                        env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}_{key}")
                         if env_value is not None:
-                            self.set_field(attr, env_value, media_type.name)
+                            self.set_field(attr, env_value, key)
+
         os.environ["USER_AGENT"] = self.user_agent
 
     def get_settings_file(self):

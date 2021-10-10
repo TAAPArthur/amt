@@ -380,6 +380,7 @@ class SettingsTest(BaseUnitTestClass):
     def test_set_settings_server_specific_with_env_overload(self):
         self.settings.allow_env_override = True
         self.settings.viewer = Settings.viewer
+        self.settings._specific_settings = Settings._specific_settings
         target_value_manga, target_value_anime = "target_manga", "target_anime"
         os.environ["AMT_VIEWER_" + str(MediaType.MANGA)] = target_value_manga
         os.environ["AMT_VIEWER_" + str(MediaType.ANIME)] = target_value_anime
