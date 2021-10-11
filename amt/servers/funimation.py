@@ -20,6 +20,8 @@ class Funimation(Server):
     sources_api_url = api_base + "/showexperience/{}/?pinst_id=23571113"
     episode_url = "https://prod-api-funimationnow.dadcdigital.com/api/funimation/episodes/?limit=99999&title_id={}"
 
+    new_api_episdoe_url = "https://title-api.prd.funimationsvc.com/v1/shows/{}/episodes/{}/?region=US&deviceType=web&locale=en"
+
     season_regex = re.compile(r"var titleData\s*=\s*(.*)")
     player_regex = re.compile(r"/player/(\d*)")
 
@@ -28,8 +30,7 @@ class Funimation(Server):
     # list_url = "https://prod-api-funimationnow.dadcdigital.com/api/funimation/shows/"
 
     media_type = MediaType.ANIME
-    stream_url_regex = re.compile(r"funimation(.com|now.uk)")
-    showID_regex = re.compile(r"KANE_customdimensions.showID = '(\d*)'")
+    stream_url_regex = re.compile("funimation.com/v/([^/]*)/([^/]*)")
 
     def _get_csrf(self):
         r = self.session_get(self.login_url)
@@ -87,15 +88,9 @@ class Funimation(Server):
         return self._get_media_list(self.search_url.format(term.replace(" ", "%20")), limit=limit)
 
     def _get_episode_id(self, url):
-        r = self.session_get(url)
-
-        match = self.showID_regex.search(r.text)
-        showID = match.group(1)
-
-        soup = self.soupify(BeautifulSoup, r)
-        src = soup.find("iframe", {"name": "player"})["src"]
-        match = self.player_regex.search(src)
-        return match.group(1), showID
+        match = self.stream_url_regex.search(url)
+        r = self.session_get(self.new_api_episdoe_url.format(match.group(1), match.group(2)))
+        return str(r.json()["videoList"][0]["id"])
 
     def update_media_data(self, media_data: dict, r=None):
         if not r:
@@ -113,7 +108,7 @@ class Funimation(Server):
                         self.update_chapter_data(media_data, id=alt_exp["experienceId"], number=chapter["episodeId"], title=chapter["episodeTitle"], premium=premium, special=special, alt_id=exp["experienceId"])
 
     def get_media_data_from_url(self, url):
-        chapter_id, _ = self._get_episode_id(url)
+        chapter_id = self._get_episode_id(url)
         r = self.session_get(self.show_api_url.format(chapter_id))
         data = r.json()
         for season in data["seasons"]:
@@ -130,7 +125,7 @@ class Funimation(Server):
                             return media_data
 
     def get_chapter_id_for_url(self, url):
-        chapter_id, media_id = self._get_episode_id(url)
+        chapter_id = self._get_episode_id(url)
         return chapter_id
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
