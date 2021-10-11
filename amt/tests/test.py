@@ -75,13 +75,15 @@ class BaseUnitTestClass(unittest.TestCase):
             if server.session != self.media_reader.session:
                 server.session.close()
 
-    def reload(self):
+    def reload(self, set_settings=False):
         if self.media_reader:
             self.close_sessions()
 
         cls = MediaReaderCLI if self.cli else MediaReader
 
-        settings = Settings(home=TEST_HOME)
+        self.settings = Settings(home=TEST_HOME)
+        if set_settings:
+            self.setup_settings()
 
         _servers = list(self.default_server_list)
         if self.real:
@@ -93,8 +95,8 @@ class BaseUnitTestClass(unittest.TestCase):
                 _servers = [s for s in SERVERS if not s.external]
 
         _servers.sort(key=lambda x: x.id)
-        self.media_reader = cls(settings=settings, server_list=_servers) if self.real else cls(settings=settings, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
-        if not settings.allow_only_official_servers and self.default_server_list:
+        self.media_reader = cls(settings=self.settings, server_list=_servers) if self.real else cls(settings=self.settings, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
+        if not self.settings.allow_only_official_servers and self.default_server_list:
             assert len(self.media_reader.get_servers()) == len(_servers)
         self.assertTrue(self.media_reader.get_trackers())
 
@@ -102,25 +104,27 @@ class BaseUnitTestClass(unittest.TestCase):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
     def setup_settings(self):
-        self.media_reader.settings.free_only = True
-        self.media_reader.settings.no_save_session = True
-        self.media_reader.settings.no_load_session = True
-        self.media_reader.settings.password_manager_enabled = True
-        self.media_reader.settings.password_load_cmd = r"echo -e a\\tb"
-        self.media_reader.settings.password_save_cmd = r"cat - >/dev/null"
-        self.media_reader.settings.shell = True
+        self.settings.free_only = True
+        self.settings.no_save_session = True
+        self.settings.no_load_session = True
+        self.settings.password_manager_enabled = True
+        self.settings.password_load_cmd = r"echo -e a\\tb"
+        self.settings.password_save_cmd = r"cat - >/dev/null"
+        self.settings.shell = True
         if not self.real or SINGLE_THREADED:
-            self.media_reader.settings.threads = 0
+            self.settings.threads = 0
+            self.max_retries = 1
         else:
-            self.media_reader.settings.threads = max(8, len(self.media_reader.get_servers()))
+            self.settings.threads = max(8, len(self.media_reader.get_servers()))
 
-        self.media_reader.settings.download_torrent_cmd = "mkdir {media_id}; touch {media_id}/file.test"
-        self.media_reader.settings.suppress_cmd_output = True
-        self.media_reader.settings.viewer = "echo {media} {title}"
-        self.media_reader.settings._specific_settings = {}
-        self.media_reader.settings.bundle_viewer = "[ -f {media} ]"
-        self.media_reader.settings.bundle_cmds[self.media_reader.settings.bundle_ext] = "ls {files}; touch {name}"
-        self.media_reader.settings.force_page_parity = ""
+        self.settings.download_torrent_cmd = "mkdir {media_id}; touch {media_id}/file.test"
+        self.settings.suppress_cmd_output = True
+        self.settings.viewer = "echo {media} {title}"
+        self.settings._specific_settings = {}
+        self.settings.bundle_viewer = "[ -f {media} ]"
+        self.settings.bundle_cmds[self.settings.bundle_ext] = "ls {files}; touch {name}"
+        self.settings.post_process_cmd = ""
+        self.settings.force_page_parity = ""
 
     def setUp(self):
         self.startTime = time.time()
@@ -134,9 +138,7 @@ class BaseUnitTestClass(unittest.TestCase):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         os.makedirs(TEST_HOME)
         os.chdir(TEST_HOME)
-        self.reload()
-        self.setup_settings()
-        self.settings = self.media_reader.settings
+        self.reload(set_settings=True)
         self.test_server = self.media_reader.get_server(TestServer.id)
         self.test_anime_server = self.media_reader.get_server(TestAnimeServer.id)
         assert not self.media_reader.get_media_ids()
