@@ -494,7 +494,7 @@ class MediaReader:
         return True if data else False
 
     def search_for_media(self, name, media_type, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
-        alt_names = dict.fromkeys([name, name.split(" Season")[0], re.sub(r"\W*$", "", name), re.sub(r"\s*[^\w\d\s]+.*$", "", name), re.sub(r"\W.*$", "", name)]) if not exact else [name]
+        alt_names = list(filter(lambda x: x, dict.fromkeys([name, name.split(" Season")[0], re.sub(r"\W*$", "", name), re.sub(r"\s*[^\w\d\s]+.*$", "", name), re.sub(r"\W.*$", "", name), get_media_name_from_file(name, is_dir=True)]))) if not exact else [name]
         media_data = known_matching_media = None
 
         if not skip_local_search:
