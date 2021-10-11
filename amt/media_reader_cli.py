@@ -56,6 +56,9 @@ class MediaReaderCLI(MediaReader):
         for chapter in media_data.get_sorted_chapters():
             print("{:4}:{}{}".format(chapter["number"], chapter["title"], ":" + chapter["id"] if show_ids else ""))
 
+    def list_some_media_from_server(self, server_id, limit=None):
+        self.print_results(self.get_server(server_id).get_media_list()[:limit])
+
     def get_all_names(self, media_type=None, disallow_servers=False):
         names = []
         if not disallow_servers:

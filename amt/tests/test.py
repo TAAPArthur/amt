@@ -1097,6 +1097,9 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["list"])
         parse_args(media_reader=self.media_reader, args=["list", "--csv"])
 
+    def test_list_from_servers(self):
+        parse_args(media_reader=self.media_reader, args=["list-from-servers", TestServer.id])
+
     def test_list_chapters(self):
         media_data = self.add_test_media(limit=1)[0]
         parse_args(media_reader=self.media_reader, args=["list-chapters", media_data["name"]])

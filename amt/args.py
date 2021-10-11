@@ -169,6 +169,11 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     sub_parsers.add_parser("list-servers")
 
+    list_from_servers = sub_parsers.add_parser("list-from-servers")
+    list_from_servers.add_argument("server_id", choices=media_reader.get_servers_ids())
+    list_from_servers.add_argument("--limit", type=int, default=None)
+    list_from_servers.set_defaults(func=media_reader.list_some_media_from_server)
+
     tag_parser = sub_parsers.add_parser("tag")
     tag_parser.add_argument("tag_name")
     tag_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?")

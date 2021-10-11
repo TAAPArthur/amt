@@ -207,7 +207,6 @@ class MediaReader:
     def auto_import_media(self, files=None, **kwargs):
         for media_type in MediaType:
             path = self.settings.get_external_downloads_dir(media_type, skip_auto_create=True)
-            print(media_type, os.path.exists(path), path)
             if os.path.exists(path):
                 for f in os.listdir(path):
                     torrent_dir = os.path.join(path, f)
