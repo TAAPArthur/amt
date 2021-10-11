@@ -1285,7 +1285,7 @@ class ArgsTest(CliUnitTestClass):
     def test_migrate_offset(self):
         media_data = self.add_test_media(self.test_server)[0]
         parse_args(media_reader=self.media_reader, args=["offset", media_data.global_id, "1"])
-        parse_args(media_reader=self.media_reader, args=["migrate", "--self", media_data["name"]])
+        parse_args(media_reader=self.media_reader, args=["--auto", "migrate", "--self", media_data["name"]])
         for i in range(2):
             media_data = self.media_reader.get_single_media(name=media_data.global_id)
             self.assertEqual(media_data["offset"], 1)

@@ -256,7 +256,7 @@ class MediaReader:
             self.remove_media(media_data)
             if move_self:
                 def func(x): return -sum([media_data.get(key, None) == x[key] for key in x])
-                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if not raw_id else media_data["id"] if force_same_id else None, sort_func=func)
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if raw_id else media_data["id"] if force_same_id else None, sort_func=func)
             else:
                 new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]])
             if new_media_data:
