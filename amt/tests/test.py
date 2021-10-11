@@ -1510,22 +1510,27 @@ class ArgsTest(CliUnitTestClass):
             (MediaType.ANIME, "Kaguya-sama", 1, "Kaguya-sama - 01.mkv"),
             (MediaType.ANIME, "ViVid Strike!", 1, "[First Name] ViVid Strike! - 01 [BD 1080p][247EFC8F].mkv"),
             (MediaType.ANIME, "Specials", 5.5, "[First Name] Specials - 05.5 [BD 1080p][247EFC8F].mkv"),
-            (MediaType.ANIME, "Ending", 0, "[First Name] Ending - ED [BD 1080p][247EFC8F].mkv"),
+            (MediaType.ANIME, "Ending - ED", 0, "[First Name] Ending - ED [BD 1080p][247EFC8F].mkv"),
             (MediaType.ANIME, "Attack No. 1", 2, "Attack No. 1 - 02.mkv"),
-            (MediaType.ANIME, "Alien 9", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
+            (MediaType.ANIME, "Alien 9 - OVA", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
             (MediaType.MANGA, "shamanking0", 1, "shamanking0_vol1.pdf"),
             (MediaType.NOVEL, "i-refuse-to-be-your-enemy", 5, "i-refuse-to-be-your-enemy-volume-5.epub"),
-            (MediaType.ANIME, "Minami-ke", 2, "Minami-ke - S01E02.mkv"),
-            (MediaType.ANIME, "Minami-ke", 3, "Minami-ke - S01E03.mkv"),
+            (MediaType.ANIME, "Minami-ke - S01", 2, "Minami-ke - S01E02.mkv"),
+            (MediaType.ANIME, "Minami-ke - S01", 3, "Minami-ke - S01E03.mkv"),
             (MediaType.ANIME, "Hidamari Sketch", 3, "(Hi10)_Hidamari_Sketch_-_03_(BD_720p)_(HT).mkv"),
+            (MediaType.ANIME, "Love Hina - S1", 2, "[author] Love Hina - S1/Love Hina S1 - 02.mkv"),
+            (MediaType.ANIME, "Love Hina - Specials", 3, "[author] Love Hina - Specials/Love Hina 03.mkv"),
+
         ]
 
         for media_type, name, number, file_name in samples:
             with self.subTest(file_name=file_name):
+                if os.path.dirname(file_name):
+                    os.makedirs(os.path.dirname(file_name), exist_ok=True)
                 with open(file_name, "w") as f:
                     f.write("dummy_data")
                 assert os.path.exists(file_name)
-                parse_args(media_reader=self.media_reader, args=["import", "--media-type", media_type.name, file_name])
+                parse_args(media_reader=self.media_reader, args=["import", "--media-type", media_type.name, file_name.split("/")[0]])
                 assert not os.path.exists(file_name)
                 media_data = self.media_reader.get_single_media(name=name)
 
