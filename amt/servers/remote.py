@@ -14,6 +14,8 @@ class RemoteServer(Server):
     domain_list = None
     domain = None
     path = None
+    auth = False
+    username, password = None, None
 
     def get_base_url(self):
         if not self.domain:
@@ -30,6 +32,25 @@ class RemoteServer(Server):
                     else:
                         raise saved_err
         return self.domain + self.path
+
+    @property
+    def has_login(self):
+        return self.auth
+
+    def login(self, username, password):
+        self.session_get(self.get_base_url(), auth=(username, password))
+        self.username, self.password = username, password
+
+    def get_credentials(self):
+        return super.get_credentials() if self.username is None else self.username, self.password
+
+    def session_get(self, url, **kwargs):
+        if self.username is None and self.has_login:
+            self.relogin()
+        if self.has_login:
+            kwargs["auth"] = self.get_credentials()
+
+        return super().session_get(url, **kwargs)
 
     def list_files(self, base_path="", path="", depth=0, is_hidden=False):
         r = self.session_get(self.get_base_url() + base_path + path)
@@ -57,7 +78,7 @@ class RemoteServer(Server):
             return
 
         for _, link in self.list_files(media_data["alt_id"]):
-            self.update_chapter_data(media_data, link, title=link, number=get_number_from_file_name(link, media_name=media_data["name"], default_num=1))
+            self.update_chapter_data(media_data, link, title=link, number=get_number_from_file_name(link, media_name=media_data["name"], default_num=1), premium=self.has_login)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         if media_data["alt_id"][-1] != "/":

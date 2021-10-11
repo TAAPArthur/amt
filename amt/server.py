@@ -251,8 +251,11 @@ class Server(GenericServer):
     def has_login(self):
         return self.login.__func__ is not GenericServer.login
 
+    def get_credentials(self):
+        return self.settings.get_credentials(self.id if not self.alias else self.alias)
+
     def relogin(self):
-        credential = self.settings.get_credentials(self.id if not self.alias else self.alias)
+        credential = self.get_credentials()
         if credential:
             try:
                 logged_in = self.login(credential[0], credential[1])

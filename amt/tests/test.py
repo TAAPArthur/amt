@@ -944,6 +944,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
     @classmethod
     def tearDownClass(cls):
         cls.web_server.kill()
+        cls.web_server.wait()
         shutil.rmtree(TEST_TEMP)
 
     def setUp(self):
