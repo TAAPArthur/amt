@@ -116,7 +116,7 @@ class BaseUnitTestClass(unittest.TestCase):
             self.settings.threads = 0
             self.max_retries = 1
         else:
-            self.settings.threads = max(8, len(self.media_reader.get_servers()))
+            self.settings.threads = len(SERVERS)
 
         self.settings.download_torrent_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.settings.suppress_cmd_output = True
@@ -1760,7 +1760,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
 
     def test_jnovel_club_manga_parts_full_download(self):
         from ..servers.jnovelclub import JNovelClubMangaParts
-        self.TIME_LIMIT = 45
+        self.TIME_LIMIT = 60
         # Make the test faster
         GenericDecoder.PENDING_CACHE_NUM = 1
         server = self.media_reader.get_server(JNovelClubMangaParts.id)
@@ -1834,7 +1834,6 @@ class PremiumTest(RealBaseUnitTestClass):
 
 
 def load_tests(loader, tests, pattern):
-
     clazzes = inspect.getmembers(sys.modules[__name__], inspect.isclass)
     test_cases = [c for _, c in clazzes if issubclass(c, BaseUnitTestClass)]
     test_cases.sort(key=lambda f: findsource(f)[1])
