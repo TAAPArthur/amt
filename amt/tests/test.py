@@ -123,7 +123,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.viewer = "echo {media} {title}"
         self.settings._specific_settings = {}
         self.settings.bundle_viewer = "[ -f {media} ]"
-        self.settings.bundle_cmds[self.settings.bundle_ext] = "ls {files}; touch {name}"
+        self.settings.bundle_cmd = "ls {files}; touch {name}"
         self.settings.post_process_cmd = ""
         self.settings.force_page_parity = ""
 
@@ -441,7 +441,6 @@ class SettingsTest(BaseUnitTestClass):
 
     def test_bundle(self):
         name = self.settings.bundle("")
-        self.assertTrue(name.endswith("." + self.settings.bundle_ext), name)
         self.assertTrue(os.path.exists(name))
         self.assertTrue(self.settings.open_bundle_viewer(name))
         self.settings.bundle_viewer = "exit 1"
@@ -722,7 +721,7 @@ class MediaReaderTest(BaseUnitTestClass):
     def test_bundle_fail(self):
         self.add_test_media(media_type=MediaType.MANGA, limit=1)
         self.settings.bundle_viewer = "exit 1"
-        assert not self.media_reader.read_bundle("none.{}".format(self.settings.bundle_ext))
+        assert not self.media_reader.read_bundle("none")
         assert not any([x["read"] for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()])
 
     def test_stream_anime_bad_url(self):

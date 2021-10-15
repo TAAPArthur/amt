@@ -28,12 +28,6 @@ class Settings:
 
     _lock = Lock()
 
-    # External commands and formats
-    bundle_cmds = {
-        "cbz": "zip {name} {files}",
-        "pdf": "convert -density 100 -units PixelsPerInch {name} {files}"
-    }
-
     # HTTP related; Generally used as args to requests
     bs4_parser = "html.parser"
     max_retries = 3
@@ -63,8 +57,9 @@ class Settings:
             MediaType.MANGA.name: "sxiv {media}"
         }
     }
-    bundle_ext = "cbz"
-    bundle_format = "{date}_{name}.{ext}"
+
+    bundle_cmd = "zip {name} {files}"
+    bundle_format = "{date}_{name}.cbz"
     bundle_viewer = "zathura {media}"
     chapter_dir_name_format = "{chapter_number:06.1f}"
     chapter_page_format = "{page_number:04d}.{ext}"
@@ -304,15 +299,14 @@ class Settings:
 
     def bundle(self, img_dirs, name=None, media_data=None):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
-        bundle_ext = self.get_bundle_ext(media_data)
         count = 0
         name = name if name else "ALL"
         while True:
-            bundle_name = self.get_bundle_format(media_data).format(date=datetime.now().strftime("%Y-%m-%d"), name=name + str(count) if count else name, ext=bundle_ext)
+            bundle_name = self.get_bundle_format(media_data).format(date=datetime.now().strftime("%Y-%m-%d"), name=name + str(count) if count else name)
             bundle_path = os.path.join(self.bundle_dir, bundle_name)
             if os.path.exists(bundle_path):
                 count += 1
                 continue
-            cmd = self.bundle_cmds[bundle_ext].format(files=arg, name=bundle_path)
+            cmd = self.bundle_cmd.format(files=arg, name=bundle_path)
             self.run_cmd(cmd)
             return bundle_path
