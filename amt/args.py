@@ -202,8 +202,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     stats_parser.add_argument("username", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
 
     # trackers and progress
-    sub_parsers.add_parser("auth")
-
     load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
     load_parser.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     load_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
@@ -259,6 +257,10 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     password_parser.add_argument("server_id", choices=media_reader.get_servers_ids_with_logins())
     password_parser.add_argument("username")
     password_parser.set_defaults(func=media_reader.settings.store_credentials)
+
+    auth_parser = sub_parsers.add_parser("auth")
+    auth_parser.add_argument("--just-print", action="store_const", const=True, default=False, help="Just print the auth url")
+    auth_parser.add_argument("tracker_id", choices=media_reader.get_servers_ids_with_logins(), nargs="?")
 
     gen_auto_complete(parser)
 

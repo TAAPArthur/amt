@@ -395,8 +395,8 @@ class Tracker(RequestServer):
                 "score": score, "timeSpent": timeSpent, "year": year, "season": season, "genres": genres, "tags": tags, "studio": studio
                 }
 
-    def auth(self):
-        pass
+    def get_auth_url(self):  # pragma: no cover
+        raise NotImplementedError
 
     def update(self, list_of_updates):  # pragma: no cover
         raise NotImplementedError

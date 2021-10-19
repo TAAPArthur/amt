@@ -105,10 +105,11 @@ class MediaReaderCLI(MediaReader):
         for i, entry in enumerate(sorted_data):
             print(f"{i+1:3} {stats.get_entry_str(entry, details)}")
 
-    def auth(self):
-        tracker = self.get_tracker()
-        secret = tracker.auth()
-        self.settings.store_secret(tracker.id, secret)
+    def auth(self, tracker_id, just_print=False):
+        tracker = self.get_tracker_by_id(tracker_id)
+        print("Get token form", tracker.get_auth_url())
+        if not just_print:
+            self.settings.store_secret(tracker.id, input("Enter token:"))
 
     def add_cookie(self, id, name, value, path):
         server = self.get_server(id)

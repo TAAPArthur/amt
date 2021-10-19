@@ -100,7 +100,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.media_reader = cls(settings=self.settings, server_list=_servers) if self.real else cls(settings=self.settings, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
         if not self.settings.allow_only_official_servers and self.default_server_list:
             assert len(self.media_reader.get_servers()) == len(_servers)
-        self.assertTrue(self.media_reader.get_trackers())
+        self.assertTrue(self.media_reader.get_tracker_ids())
 
     def for_each(self, func, media_list, raiseException=True):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
@@ -1696,19 +1696,16 @@ class TrackerTest(RealBaseUnitTestClass):
     @patch("builtins.input", return_value="0")
     def test_no_auth(self, auto_input):
         self.settings.password_manager_enabled = False
-        for tracker in self.media_reader.get_trackers():
-            self.media_reader.set_tracker(tracker.id)
-            with self.subTest(tracker=tracker.id):
-                self.assertRaises(ValueError, tracker.update, [])
-                tracker.auth()
+        for tracker_id in self.media_reader.get_tracker_ids():
+            with self.subTest(tracker=tracker_id):
+                self.media_reader.auth(tracker_id)
 
     @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_load_stats(self):
-        for tracker in self.media_reader.get_trackers():
-            self.media_reader.set_tracker(tracker.id)
-            with self.subTest(tracker=tracker.id):
-                self.assertTrue(tracker.get_full_list_data(id="1"))
-                self.assertTrue(tracker.get_tracker_list(id="1"))
+        for tracker_id in self.media_reader.get_tracker_ids():
+            with self.subTest(tracker=tracker_id):
+                self.assertTrue(self.media_reader.get_tracker(tracker_id).get_full_list_data(id="1"))
+                self.assertTrue(self.media_reader.get_tracker(tracker_id).get_tracker_list(id="1"))
 
 
 class RealArgsTest(RealBaseUnitTestClass):
@@ -1820,9 +1817,9 @@ class PremiumTest(RealBaseUnitTestClass):
                     assert download_passed
 
     def test_get_list(self):
-        for tracker in self.media_reader.get_trackers():
-            with self.subTest(tracker=tracker.id):
-                data = tracker.get_tracker_list(id=1)
+        for tracker_id in self.media_reader.get_tracker_ids():
+            with self.subTest(tracker=tracker_id):
+                data = self.media_reader.get_tracker(tracker_id).get_tracker_list(id=1)
                 assert data
                 assert isinstance(data, list)
                 assert isinstance(data[0], dict)

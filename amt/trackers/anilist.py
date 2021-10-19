@@ -151,6 +151,5 @@ class Anilist(Tracker):
             response = self.session_post(self.url, json={"query": query, "variables": variables}, headers=self.get_auth_header())
             logging.debug(response.text)
 
-    def auth(self):
-        print("Get token from:", self.auth_url.format(self.client_id))
-        return input("Enter token:")
+    def get_auth_url(self):
+        return self.auth_url.format(self.client_id)

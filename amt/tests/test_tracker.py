@@ -17,6 +17,9 @@ class TestTracker(Tracker):
                 [media_type, f"{media_type.name}2", 0, 9]
             ])
 
+    def get_auth_url(self):  # pragma: no cover
+        return "TrackerUrl.com"
+
     def update(self, list_of_updates):
         for id, progress, _ in list_of_updates:
             self.media_list[id][2] = progress

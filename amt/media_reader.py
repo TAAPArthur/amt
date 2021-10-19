@@ -417,8 +417,11 @@ class MediaReader:
     def get_tracker(self):
         return self.tracker
 
-    def get_trackers(self):
-        return self._trackers.values()
+    def get_tracker_by_id(self, tracker_id):
+        return self._trackers[tracker_id] if tracker_id else self.get_tracker()
+
+    def get_tracker_ids(self):
+        return self._trackers.keys()
 
     def set_tracker(self, tracker_id):
         self.tracker = self._trackers[tracker_id] if not isinstance(tracker_id, Tracker) else tracker_id
