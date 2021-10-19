@@ -17,6 +17,7 @@ from ..job import Job, RetryException
 from ..media_reader import SERVERS, MediaReader, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
 from ..servers.local import LocalServer, get_local_server_id
+from ..servers.remote import RemoteServer
 from ..settings import Settings
 from ..state import ChapterData, MediaData, State
 from ..util.media_type import MediaType
@@ -932,7 +933,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
     resources_dir_name = ".resources"
 
     def init(self):
-        self.default_server_list = []
+        self.default_server_list = [RemoteServer]
 
     @classmethod
     def setUpClass(cls):
@@ -966,6 +967,8 @@ path={path}/{media_type.name}/
 media_type={media_type.name}
 """)
         self.reload(True)
+        if ENABLED_SERVERS and not self.media_reader.get_servers():
+            self.skipTest("Server not enabled")
         self.assertEqual(len(self.media_reader.get_servers()), len(list(MediaType)))
         time.sleep(.1)
 

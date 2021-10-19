@@ -15,7 +15,6 @@ from . import servers, trackers
 from .job import Job
 from .server import Server, TorrentHelper, Tracker
 from .servers.local import get_local_server_id
-from .servers.remote import RemoteServer
 from .settings import Settings
 from .state import State
 from .util.media_type import MediaType
@@ -67,36 +66,16 @@ class MediaReader:
         for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers), (torrent_helpers_list, self._torrent_helpers)):
             for cls in cls_list:
                 if cls.id:
-                    instance = cls(self.session, self.settings)
-                    if not isinstance(instance, Server) or not self.settings.allow_only_official_servers or instance.official:
-                        assert instance.id not in instance_map, "Duplicate server id: " + str(instance.id)
-                        instance_map[instance.id] = instance
-        for server in self.get_remote_servers():
-            self._servers[server.id] = server
+                    for instance in cls.get_instances(self.session, self.settings):
+                        if not isinstance(instance, Server) or not self.settings.allow_only_official_servers or instance.official:
+                            assert instance.id not in instance_map, "Duplicate server id: " + str(instance.id)
+                            instance_map[instance.id] = instance
 
         self.set_tracker(self._trackers.get(self.settings.tracker_id, list(self._trackers.values())[0]))
         self.state.load()
         self.state.configure_media(self._servers)
         self.media = self.state.media
         self.bundles = self.state.bundles
-
-    def get_remote_servers(self):
-        servers = []
-        try:
-            with open(self.settings.get_remote_servers_config(), "r") as f:
-                for line in f:
-                    if line.startswith("#") or not line.strip():
-                        continue
-                    key, value = line.strip().split("=", 2)
-                    if key == "id":
-                        servers.append(RemoteServer(self.session, self.settings))
-                    if key == "media_type":
-                        value = MediaType.get(value.upper())
-                        assert value, line
-                    setattr(servers[-1], key, value)
-        except FileNotFoundError:
-            pass
-        return servers
 
     # Helper methods
     def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):  # pragma: no cover

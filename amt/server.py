@@ -29,6 +29,10 @@ class RequestServer:
         self.session = session
         self._lock = Lock()
 
+    @classmethod
+    def get_instances(clazz, session, settings=None):
+        return [clazz(session, settings)]
+
     def _request(self, get, url, **kwargs):
         logging.info("Making %s request to %s ", "GET" if get else "POST", url)
         logging.debug("Request args: %s ", kwargs)

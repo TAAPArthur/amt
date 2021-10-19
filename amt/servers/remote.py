@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from ..server import Server
+from ..util.media_type import MediaType
 from ..util.name_parser import (get_media_id_from_name,
                                 get_media_name_from_file,
                                 get_number_from_file_name)
@@ -16,6 +17,25 @@ class RemoteServer(Server):
     path = None
     auth = False
     username, password = None, None
+
+    @classmethod
+    def get_instances(clazz, session, settings=None):
+        servers = []
+        try:
+            with open(settings.get_remote_servers_config(), "r") as f:
+                for line in f:
+                    if line.startswith("#") or not line.strip():
+                        continue
+                    key, value = line.strip().split("=", 2)
+                    if key == "id":
+                        servers.append(clazz(session, settings))
+                    if key == "media_type":
+                        value = MediaType.get(value.upper())
+                        assert value, line
+                    setattr(servers[-1], key, value)
+        except (ImportError, FileNotFoundError):
+            pass
+        return servers
 
     def get_base_url(self):
         if not self.domain:
