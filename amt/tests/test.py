@@ -1052,7 +1052,7 @@ class ArgsTest(CliUnitTestClass):
         server = self.media_reader.get_server(TestServerLogin.id)
         self.assertTrue(server.needs_to_login())
 
-        parse_args(media_reader=self.media_reader, args=["login", "--server", server.id])
+        parse_args(media_reader=self.media_reader, args=["login", server.id])
         self.assertFalse(server.needs_to_login())
         server.reset()
         self.assertTrue(server.needs_to_login())
@@ -1062,7 +1062,7 @@ class ArgsTest(CliUnitTestClass):
     def test_test_login_fail(self):
         server = self.media_reader.get_server(TestServerLogin.id)
         server.error_login = True
-        parse_args(media_reader=self.media_reader, args=["login", "--server", server.id])
+        parse_args(media_reader=self.media_reader, args=["login", server.id])
         assert server.needs_to_login()
 
     def test_autocomplete_not_found(self):

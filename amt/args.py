@@ -185,7 +185,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     # credentials
     login_parser = sub_parsers.add_parser("login", description="Relogin to all servers")
     login_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force re-login")
-    login_parser.add_argument("--servers", default=None, choices=media_reader.get_servers_ids_with_logins(), nargs="*", dest="server_ids")
+    login_parser.add_argument("server_ids", default=None, choices=media_reader.get_servers_ids_with_logins(), nargs="?")
     login_parser.set_defaults(func=media_reader.test_login)
 
     # stats
