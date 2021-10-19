@@ -1,4 +1,4 @@
-from ..tracker import Tracker
+from ..server import Tracker
 from ..util.media_type import MediaType
 
 

@@ -1,6 +1,6 @@
 import logging
 
-from ..tracker import Tracker
+from ..server import Tracker
 from ..util.media_type import MediaType
 
 
@@ -91,7 +91,7 @@ class Anilist(Tracker):
         return {"Authorization": "Bearer " + self._get_access_token()}
 
     def get_user_info(self):
-        response = self.session.post(self.url, json={"query": self.viewer_query}, headers=self.get_auth_header())
+        response = self.session_post(self.url, json={"query": self.viewer_query}, headers=self.get_auth_header())
         logging.debug("UserInfo %s", response.text)
         return response.json()["data"]["Viewer"]
 
@@ -118,7 +118,7 @@ class Anilist(Tracker):
         while True:
             logging.info(f"Loading page {pageIndex}")
             variables["pageIndex"] = pageIndex
-            response = self.session.post(self.url, json={"query": self.get_list_query, "variables": variables})
+            response = self.session_post(self.url, json={"query": self.get_list_query, "variables": variables})
             data = response.json()
             yield from [self.get_media_dict(
                 id=x["id"],
@@ -148,7 +148,7 @@ class Anilist(Tracker):
             variables = {"id": id, "progress": int(progress)}
             logging.debug("Updating %d to %d, Volume: %d", id, int(progress), progressVolumes)
             query = self.update_list_query_volumes if progressVolumes else self.update_list_query
-            response = self.session.post(self.url, json={"query": query, "variables": variables}, headers=self.get_auth_header())
+            response = self.session_post(self.url, json={"query": query, "variables": variables}, headers=self.get_auth_header())
             logging.debug(response.text)
 
     def auth(self):

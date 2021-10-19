@@ -61,6 +61,8 @@ class RequestServer:
     def soupify(self, BeautifulSoup, r):
         return BeautifulSoup(r.text, self.settings.bs4_parser)
 
+
+class MediaServer(RequestServer):
     def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progressVolumes=False, **kwargs):
         return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progressVolumes=progressVolumes, tags=[], **kwargs))
 
@@ -94,7 +96,7 @@ class RequestServer:
         return dict(url=url, id=id, encryption_key=encryption_key, ext=ext)
 
 
-class GenericServer(RequestServer):
+class GenericServer(MediaServer):
     """
     This class is intended to separate the overridable methods of Server from
     the internal business logic.
@@ -367,7 +369,7 @@ class Server(GenericServer):
         return True
 
 
-class TorrentHelper(RequestServer):
+class TorrentHelper(MediaServer):
     id = None
     media_type = MediaType.ANIME
 
@@ -378,4 +380,25 @@ class TorrentHelper(RequestServer):
         self.save_torrent_file(media_data, self.settings.get_external_downloads_path(media_data))
 
     def save_torrent_file(self, media_data, path):  # pragma: no cover
+        raise NotImplementedError
+
+
+class Tracker(RequestServer):
+    id = None
+
+    def get_media_dict(self, id, media_type, name, progress, progressVolumes=None, score=0, timeSpent=0, year=0, season=None, genres=[], tags=[], studio=[]):
+        return {"id": id, "media_type": media_type, "name": name, "progress": progress, "progressVolumes": progressVolumes,
+                "score": score, "timeSpent": timeSpent, "year": year, "season": season, "genres": genres, "tags": tags, "studio": studio
+                }
+
+    def auth(self):
+        pass
+
+    def update(self, list_of_updates):  # pragma: no cover
+        raise NotImplementedError
+
+    def get_full_list_data(self, user_name=None, id=None):
+        return self.get_tracker_list(user_name, id, status=None)
+
+    def get_tracker_list(self, user_name=None, id=None, status="CURRENT"):  # pragma: no cover
         raise NotImplementedError
