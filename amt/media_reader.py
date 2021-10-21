@@ -67,7 +67,7 @@ class MediaReader:
             for cls in cls_list:
                 for instance in cls.get_instances(self.session, self.settings):
                     if self.settings.is_server_enabled(instance.id, instance.official):
-                        assert instance.id not in instance_map, "Duplicate server id: " + str(instance.id)
+                        assert instance.id not in instance_map, f"Duplicate server id: {instance.id}"
                         instance_map[instance.id] = instance
 
         if self._trackers:

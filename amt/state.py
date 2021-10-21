@@ -60,7 +60,7 @@ class State:
     def save(self):
         self.save_session_cookies()
         self.save_to_file(self.settings.get_bundle_metadata_file(), self.bundles)
-        self.save_to_file(self.settings.get_metadata(), self.all_media)
+        self.save_to_file(self.settings.get_metadata_file(), self.all_media)
         for media_data in self.media.values():
             self.save_to_file(self.settings.get_chapter_metadata_file(media_data), media_data.chapters)
 
@@ -73,7 +73,7 @@ class State:
         self.bundles = self.read_file_as_dict(self.settings.get_bundle_metadata_file())
 
     def load_media(self):
-        self.all_media = self.read_file_as_dict(self.settings.get_metadata())
+        self.all_media = self.read_file_as_dict(self.settings.get_metadata_file())
         if not self.all_media:
             self.all_media = dict(media={}, disabled_media={})
         self.media = self.all_media["media"]

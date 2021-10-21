@@ -974,7 +974,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
                     os.makedirs(resource_path, exist_ok=True)
                     open(os.path.join(resource_path, "some_resource"), "w").close()
                 open(relative_path, "w").close()
-            with open(self.settings.get_remote_servers_config(), "a") as f:
+            with open(self.settings.get_remote_servers_config_file(), "a") as f:
                 f.write(f"""
 id=remote_test_{media_type.name}
 domain_list=http://localhost:-1{self.port};__bad_domain__;http://localhost:{self.port}
@@ -988,7 +988,7 @@ media_type={media_type.name}
         time.sleep(.1)
 
     def test_no_valid_domains(self):
-        with open(self.settings.get_remote_servers_config(), "w") as f:
+        with open(self.settings.get_remote_servers_config_file(), "w") as f:
             f.write("""
 id=remote_test_bad
 domain_list=__bad_domain__;

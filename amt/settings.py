@@ -15,6 +15,8 @@ APP_NAME = "amt"
 
 class Settings:
 
+    _lock = Lock()
+
     # env
     allow_env_override = True
     env_override_prefix = "AMT_"
@@ -26,8 +28,6 @@ class Settings:
     credential_separator = "\t"
     password_override_prefix = "PASSWORD_OVERRIDE_"
 
-    _lock = Lock()
-
     # HTTP related; Generally used as args to requests
     bs4_parser = "html.parser"
     max_retries = 3
@@ -35,7 +35,7 @@ class Settings:
     user_agent = "Mozilla/5.0"
 
     # Cookies
-    cookie_files = ["/tmp/cookies.txt"]
+    cookie_files = ["/tmp/cookies.txt"]  # Additional cookies files to read from (Read only)
 
     # Servers/Tracker
     enabled_servers = []  # empty means all servers all enabled
@@ -52,11 +52,12 @@ class Settings:
     suppress_cmd_output = False
 
     # Server or media specific settings
+    # Any keys defined in this dict should be declared in the class
     _specific_settings = {
         "viewer": {
-            MediaType.NOVEL.name: "zathura {media}",
             MediaType.ANIME.name: "mpv --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
-            MediaType.MANGA.name: "sxiv {media}"
+            MediaType.MANGA.name: "sxiv {media}",
+            MediaType.NOVEL.name: "zathura {media}"
         }
     }
 
@@ -92,49 +93,37 @@ class Settings:
         os.makedirs(self.config_dir, exist_ok=True)
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
-        os.makedirs(self.bundle_dir, exist_ok=True)
-        os.makedirs(self.media_dir, exist_ok=True)
 
-    def get_external_downloads_dir(self, mediaType, skip_auto_create=False):
-        path = os.path.join(self.external_downloads_dir, mediaType.name)
-        if not skip_auto_create:
-            os.makedirs(path, exist_ok=True)
-        return path
-
-    def get_external_downloads_path(self, media_data):
-        return os.path.join(self.get_external_downloads_dir(MediaType(media_data["media_type"])), media_data["id"] + ".torrent")
-
-    def start_torrent_download(self, media_data):
-        cmd = self.get_field("download_torrent_cmd", media_data)
-        file = self.get_external_downloads_path(media_data)
-        self.run_cmd(cmd.format(media_id=media_data["id"], torrent_file=file), wd=os.path.dirname(file))
+    def get_bundle_metadata_file(self):
+        return os.path.join(self.data_dir, "bundles.json")
 
     def get_cookie_file(self):
         return os.path.join(self.cache_dir, "cookies.txt")
-
-    def get_stats_file(self):
-        return os.path.join(self.cache_dir, "stats.json")
-
-    def __getattr__(self, key):
-        if key.startswith("get_"):
-            key = key[len("get_"):]
-            return lambda x: self.get_field(key, x)
-
-    def is_allowed_text_lang(self, lang, media_data):
-        return lang in self.get_field("text_languages", media_data)
 
     def get_cookie_files(self):
         yield self.get_cookie_file()
         yield from map(os.path.expanduser, self.cookie_files)
 
-    def is_server_enabled(self, server_id, is_offical=True):
-        if self.allow_only_official_servers and not is_offical:
-            return False
-        return server_id in self.enabled_servers + [self.tracker_id] if self.enabled_servers else server_id not in self.disabled_servers and server_id
+    def get_metadata_file(self):
+        return os.path.join(self.data_dir, "metadata.json")
+
+    def get_remote_servers_config_file(self):
+        return os.path.join(self.config_dir, "remote_servers.conf")
+
+    def get_settings_file(self):
+        return os.path.join(self.config_dir, "amt.conf")
+
+    def get_stats_file(self):
+        return os.path.join(self.cache_dir, "stats.json")
 
     @classmethod
     def get_members(clazz):
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("_")]
+
+    def __getattr__(self, key):
+        if key.startswith("get_"):
+            key = key[len("get_"):]
+            return lambda x: self.get_field(key, x)
 
     def set_field(self, name, value, server_or_media_id=None):
         assert value is not None
@@ -200,20 +189,17 @@ class Settings:
 
         os.environ["USER_AGENT"] = self.user_agent
 
-    def get_settings_file(self):
-        return os.path.join(self.config_dir, "amt.conf")
+    def get_external_downloads_dir(self, mediaType, skip_auto_create=False):
+        path = os.path.join(self.external_downloads_dir, mediaType.name)
+        if not skip_auto_create:
+            os.makedirs(path, exist_ok=True)
+        return path
 
-    def get_remote_servers_config(self):
-        return os.path.join(self.config_dir, "remote_servers.conf")
-
-    def get_metadata(self):
-        return os.path.join(self.data_dir, "metadata.json")
+    def get_external_downloads_path(self, media_data):
+        return os.path.join(self.get_external_downloads_dir(MediaType(media_data["media_type"])), media_data["id"] + ".torrent")
 
     def get_chapter_metadata_file(self, media_data):
         return os.path.join(self.get_media_dir(media_data), "chapter_metadata.json")
-
-    def get_bundle_metadata_file(self):
-        return os.path.join(self.data_dir, "bundles.json")
 
     def get_server_dir(self, server_id):
         return os.path.join(self.media_dir, server_id)
@@ -230,6 +216,14 @@ class Settings:
 
     def get_page_file_name(self, media_data, chapter_data, ext, page_number=0):
         return self.get_chapter_page_format(media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"], page_number=page_number, ext=ext)
+
+    def is_server_enabled(self, server_id, is_offical=True):
+        if self.allow_only_official_servers and not is_offical:
+            return False
+        return server_id in self.enabled_servers + [self.tracker_id] if self.enabled_servers else server_id not in self.disabled_servers and server_id
+
+    def is_allowed_text_lang(self, lang, media_data):
+        return lang in self.get_field("text_languages", media_data)
 
     def _ask_for_credentials(self, server_id: str) -> (str, str):
         if self.password_load_cmd:
@@ -287,11 +281,6 @@ class Settings:
         except (CalledProcessError, KeyboardInterrupt):
             return False
 
-    def post_process(self, media_data, file_paths, dir_path):
-        cmd = self.get_field("post_process_cmd", media_data)
-        if cmd:
-            self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths)), wd=dir_path))
-
     def open_viewer(self, files, media_data, chapter_data, wd=None):
         viewer = self.get_field("viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
@@ -304,6 +293,7 @@ class Settings:
         return self._open_viewer(viewer, os.path.join(self.bundle_dir, bundle_name), title=bundle_name)
 
     def bundle(self, img_dirs, name=None, media_data=None):
+        os.makedirs(self.bundle_dir, exist_ok=True)
         arg = " ".join(map(Settings._smart_quote, img_dirs))
         count = 0
         name = name if name else "ALL"
@@ -316,3 +306,13 @@ class Settings:
             cmd = self.bundle_cmd.format(files=arg, name=bundle_path)
             self.run_cmd(cmd)
             return bundle_name
+
+    def post_process(self, media_data, file_paths, dir_path):
+        cmd = self.get_field("post_process_cmd", media_data)
+        if cmd:
+            self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths)), wd=dir_path))
+
+    def start_torrent_download(self, media_data):
+        cmd = self.get_field("download_torrent_cmd", media_data)
+        file = self.get_external_downloads_path(media_data)
+        self.run_cmd(cmd.format(media_id=media_data["id"], torrent_file=file), wd=os.path.dirname(file))

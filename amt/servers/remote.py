@@ -22,7 +22,7 @@ class RemoteServer(Server):
     def get_instances(clazz, session, settings=None):
         servers = []
         try:
-            with open(settings.get_remote_servers_config(), "r") as f:
+            with open(settings.get_remote_servers_config_file(), "r") as f:
                 for line in f:
                     if line.startswith("#") or not line.strip():
                         continue
