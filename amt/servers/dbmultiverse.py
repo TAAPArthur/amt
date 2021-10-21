@@ -1,5 +1,4 @@
-import urllib.parse as urlparse
-from urllib.parse import parse_qs
+import urllib.parse
 
 from bs4 import BeautifulSoup
 
@@ -8,7 +7,6 @@ from ..server import Server
 
 class Dbmultiverse(Server):
     id = "dbmultiverse"
-    name = "Dragon Ball Multiverse"
 
     base_url = "https://www.dragonball-multiverse.com"
     media_url = base_url + "/{}/chapters.html?comic=page"
@@ -24,14 +22,13 @@ class Dbmultiverse(Server):
         return media_list
 
     def update_media_data(self, media_data):
-
         r = self.session_get(self.media_url.format(media_data["lang"]))
-
         soup = self.soupify(BeautifulSoup, r)
 
         chapters = soup.findAll("div", {"class": "cadrelect chapters"})
         chapter_map = {int(x["ch"].replace("page", "")): x for x in chapters}
         lastest_chapter = max(chapter_map.keys())
+        # Latest chapter may gain pages later so don't include it
         del chapter_map[lastest_chapter]
 
         for id, chapter in chapter_map.items():
@@ -43,14 +40,10 @@ class Dbmultiverse(Server):
         soup = self.soupify(BeautifulSoup, r)
         page_info = soup.find("div", {"class": "pageslist"}).findAll("img")
 
-        pages = []
         for page in page_info:
             r = self.session_get(self.page_url.format(media_data["lang"], page["title"]))
             soup = self.soupify(BeautifulSoup, r)
             img = soup.find("img", {"id": "balloonsimg"})
-            url = img["src"] if img else soup.find("div", id="balloonsimg").get("style").split(";")[0].split(":")[1][4:-1]
-            parsed = urlparse.urlparse(url)
-            ext = parse_qs(parsed.query)["ext"][0]
-            pages.append(self.create_page_data(url=self.base_url + url, ext=ext))
-
-        return pages
+            url = img["src"]
+            ext = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["ext"][0]
+            yield self.create_page_data(url=self.base_url + url, ext=ext)
