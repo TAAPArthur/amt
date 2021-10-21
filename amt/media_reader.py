@@ -58,7 +58,6 @@ class MediaReader:
                 self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retries, status_forcelist=self.settings.status_to_retry)))
 
         self.session.headers.update({
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=1.0,image/webp,image/apng,*/*;q=1.0",
             "Connection": "keep-alive",
             "User-Agent": self.settings.user_agent
         })
@@ -120,8 +119,6 @@ class MediaReader:
             yield media_data
 
     def get_single_media(self, name=None, media_type=None):
-        if isinstance(name, dict):
-            return name
         return next(self.get_media(media_type=media_type, name=name))
 
     def get_unreads(self, name=None, media_type=None, shuffle=False, limit=None, any_unread=False):

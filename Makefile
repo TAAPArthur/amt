@@ -11,7 +11,7 @@ inspect:
 
 quick_test_coverage: export QUICK=1
 quick_test_coverage: test
-	coverage report --omit "*test*,*server*,*tracker*,amt/util/decoder.py" --fail-under=100 --skip-empty -m
+	coverage report --omit "*test*,amt/server*,amt/trackers*,amt/util/decoder.py" --fail-under=100 --skip-empty -m
 
 full_test_coverage: test
 	coverage report --omit "*test*,amt/trackers/*,$$(grep login -l amt/servers/*.py | sed -z 's/\n/,/g')" --fail-under=100 --skip-empty -m

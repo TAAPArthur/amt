@@ -158,14 +158,14 @@ class BaseUnitTestClass(unittest.TestCase):
         assert media_list
         return media_list[:limit]
 
-    def getChapters(self, media_type=MediaType.ANIME | MediaType.MANGA):
-        return [x for media_data in self.media_reader.get_media(media_type=media_type) for x in media_data["chapters"].values()]
+    def getChapters(self, name=None, media_type=MediaType.ANIME | MediaType.MANGA):
+        return [x for media_data in self.media_reader.get_media(name=name, media_type=media_type) for x in media_data["chapters"].values()]
 
-    def verify_all_chapters_read(self, media_type=None):
-        assert all(map(lambda x: x["read"], self.getChapters(media_type)))
+    def verify_all_chapters_read(self, name=None, media_type=None):
+        assert all(map(lambda x: x["read"], self.getChapters(name=name, media_type=media_type)))
 
     def get_num_chapters_read(self, media_type=None):
-        return sum(map(lambda x: x["read"], self.getChapters(media_type)))
+        return sum(map(lambda x: x["read"], self.getChapters(media_type=media_type)))
 
     def verify_download(self, media_data, chapter_data):
         server = self.media_reader.get_server(media_data["server_id"])
@@ -496,9 +496,9 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             for media_data in server.get_media_list():
                 with self.subTest(server=server.id, media_data=media_data["name"]):
                     server.update_media_data(media_data)
-                    chapter_data = list(media_data["chapters"].values())[0]
-                    self.assertEqual(True, server.download_chapter(media_data, chapter_data, page_limit=2))
-                    self.verify_download(media_data, chapter_data)
+                    for stream_index, chapter_data in zip((0, -1), media_data.get_sorted_chapters()[0:2]):
+                        self.assertEqual(True, server.download_chapter(media_data, chapter_data, page_limit=2, stream_index=stream_index))
+                        self.verify_download(media_data, chapter_data)
 
     def test_server_download_errors(self):
         media_data = self.add_test_media(server=self.test_server, limit=1)[0]
@@ -528,9 +528,24 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         self.media_reader.get_server(TestServerLogin.id).error_login = True
         self.login_test_helper()
 
+    def test_relogin_fail_to_load_credentials(self):
+        self.settings.password_load_cmd = "exit 1"
+        self.login_test_helper()
+
     def test_server_download_inaccessiable(self):
         self.media_reader.get_server(TestServerLogin.id).inaccessible = True
         self.login_test_helper()
+
+    def test_missing_m3u8(self):
+        server = self.media_reader.get_server(TestAnimeServer.id)
+        self.add_test_media(server, media_type=MediaType.ANIME, limit=1)
+        with patch.dict(sys.modules, {"m3u8": None}):
+            server.stream_urls = ["dummy.m3u8"]
+            self.assertRaises(ImportError, self.media_reader.download_unread_chapters)
+            self.verify_no_chapters_downloaded()
+            server.stream_urls = ["dummy.m3u8", "dummy.mp4"]
+            self.media_reader.download_unread_chapters()
+            self.verify_all_chapters_downloaded()
 
 
 class MediaReaderTest(BaseUnitTestClass):
@@ -840,13 +855,15 @@ class GenericServerTest():
         media_list = None
         with self.subTest(server=server.id, list=True):
             media_list = server.get_media_list()
-            assert media_list or server.has_login() and not server.has_free_chapters
+            assert media_list or not server.has_free_chapters
             self.verfiy_media_list(media_list, server=server)
 
-        with self.subTest(server=server.id, list=False):
-            search_media_list = server.search(media_list[0]["name"] if media_list else "One", limit=1)
-            assert search_media_list or server.has_login() and not server.has_free_chapters
-            self.verfiy_media_list(media_list, server=server)
+        if media_list:
+            with self.subTest(server=server.id, list=False):
+                search_media_list = server.search(media_list[0]["name"], limit=1) or server.search(media_list[0]["name"].split()[0], limit=1)
+                assert search_media_list
+                self.verfiy_media_list(media_list, server=server)
+        assert media_list is not None
         return media_list
 
     def server_workflow_test_helper(self, server):
@@ -854,7 +871,7 @@ class GenericServerTest():
             self.media_reader.add_media(media_data)
             for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
                 if not SKIP_DOWNLOAD:
-                    self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2, stream_index=-1))
+                    self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2))
                     self.verify_download(media_data, chapter_data)
                     assert not server.download_chapter(media_data, chapter_data, page_limit=1)
                 return True
@@ -1277,9 +1294,9 @@ class ArgsTest(CliUnitTestClass):
         self.assertEqual(1, len(self.media_reader.get_media_ids()))
 
     def test_search_fallback_and_autoimport(self):
-        parse_args(media_reader=self.media_reader, args=["--auto", "search", "--exact", TestTorrentHelper.avaliable_torrent_file])
+        parse_args(media_reader=self.media_reader, args=["--auto", "search", "--exact", TestTorrentHelper.available_torrent_file])
         parse_args(media_reader=self.media_reader, args=["--auto", "auto-import"])
-        self.assertTrue(self.media_reader.get_single_media(TestTorrentHelper.avaliable_torrent_file))
+        self.assertTrue(self.media_reader.get_single_media(TestTorrentHelper.available_torrent_file))
         self.verify_all_chapters_downloaded()
 
     def test_search_fail(self):
@@ -1369,10 +1386,10 @@ class ArgsTest(CliUnitTestClass):
 
     def test_clean_servers(self):
         self.add_test_media(self.test_server)
-        self.media_reader.download_unread_chapters()
+        parse_args(media_reader=self.media_reader, args=["download-unread", "--limit=1"])
         self.media_reader._servers.clear()
         parse_args(media_reader=self.media_reader, args=["clean", "--remove-disabled-servers"])
-        self.assertEqual(0, len(os.listdir(self.settings.media_dir)))
+        self.assertFalse(os.listdir(self.settings.media_dir))
 
     def test_clean_unused(self):
         self.add_test_media(self.test_server)
@@ -1388,13 +1405,13 @@ class ArgsTest(CliUnitTestClass):
         name, bundle_data = list(self.media_reader.bundles.items())[0]
         self.assertEqual(len(bundle_data), sum([len(x["chapters"]) for x in media_list]))
         parse_args(media_reader=self.media_reader, args=["read", os.path.basename(name)])
-        self.verify_all_chapters_read(MediaType.MANGA)
+        self.verify_all_chapters_read()
 
     def test_bundle_read_simple(self):
         self.add_test_media(self.test_server)
         parse_args(media_reader=self.media_reader, args=["bundle"])
         parse_args(media_reader=self.media_reader, args=["read"])
-        self.verify_all_chapters_read(MediaType.MANGA)
+        self.verify_all_chapters_read()
 
     def test_bundle_download_error(self):
         server = self.media_reader.get_server(TestServerLogin.id)
@@ -1496,7 +1513,7 @@ class ArgsTest(CliUnitTestClass):
     def test_add_from_url_stream_cont(self):
         parse_args(media_reader=self.media_reader, args=["add-from-url", TestAnimeServer.stream_url])
         parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.stream_url])
-        self.verify_all_chapters_read(MediaType.ANIME)
+        self.verify_all_chapters_read(media_type=MediaType.ANIME)
 
     def test_add_from_url_bad(self):
         self.assertRaises(ValueError, parse_args, media_reader=self.media_reader, args=["add-from-url", "bad-url"])
@@ -1686,40 +1703,13 @@ class ServerStreamTest(RealBaseUnitTestClass):
 
 class TrackerTest(RealBaseUnitTestClass):
 
-    def test_get_tracker_list(self):
-        tracker = self.media_reader.get_tracker()
-        data = list(tracker.get_tracker_list(id=1))
-        assert data
-        assert isinstance(data[0], dict)
-
-    @patch("builtins.input", return_value="0")
-    def test_no_auth(self, auto_input):
-        self.settings.password_manager_enabled = False
+    def test_validate_tracker_info(self):
         for tracker_id in self.media_reader.get_tracker_ids():
-            with self.subTest(tracker=tracker_id):
-                self.media_reader.auth(tracker_id)
-
-    def test_load_stats(self):
-        self.skip_if_all_servers_are_not_enabled()
-        for tracker_id in self.media_reader.get_tracker_ids():
-            with self.subTest(tracker=tracker_id):
-                self.assertTrue(self.media_reader.get_tracker(tracker_id).get_full_list_data(id="1"))
-                self.assertTrue(self.media_reader.get_tracker(tracker_id).get_tracker_list(id="1"))
-
-
-class RealArgsTest(RealBaseUnitTestClass):
-    def init(self):
-        self.real = True
-        self.cli = True
-
-    def test_load_from_tracker(self):
-        self.skip_if_all_servers_are_not_enabled()
-        anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
-        tracker = TestTracker(None, None)
-        tracker.set_custom_anime_list(anime)
-        self.media_reader.set_tracker(tracker)
-        parse_args(media_reader=self.media_reader, args=["--auto", "load", f"--media-type={MediaType.ANIME.name}"])
-        self.assertEqual(len(anime), len(self.media_reader.get_media_ids()))
+            tracker = self.media_reader.get_tracker_by_id(tracker_id)
+            self.assertTrue(tracker.get_auth_url())
+            for data in (tracker.get_tracker_list(id=1), tracker.get_full_list_data(id=1)):
+                assert data
+                assert isinstance(list(data)[0], dict)
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):
@@ -1745,16 +1735,6 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         self.reload()
         self.assertNotEqual(session, self.media_reader.get_server(server.id).get_session_id())
         self.assertTrue(self.media_reader.get_server(server.id).get_media_list(limit=1))
-
-    def test_missing_m3u8(self):
-        from ..servers.crunchyroll import CrunchyrollAnime
-        server = self.media_reader.get_server(CrunchyrollAnime.id)
-        self.assert_server_enabled_or_skip_test(server)
-        with patch.dict(sys.modules, {"m3u8": None}):
-            media_data = server.get_media_list(limit=1)[0]
-            self.media_reader.add_media(media_data)
-            chapter_data = next(filter(lambda x: not x["premium"] and not x["inaccessible"], media_data["chapters"].values()))
-            self.assertRaises(ImportError, server.download_chapter, media_data, chapter_data, 2)
 
     def test_jnovel_club_manga_parts_full_download(self):
         from ..servers.jnovelclub import JNovelClubMangaParts

@@ -151,6 +151,8 @@ class GenericServer(MediaServer):
         """
         last_err = None
         urls = self.get_stream_urls(media_data=media_data, chapter_data=chapter_data)
+
+        logging.debug("Stream urls %s", urls)
         if stream_index != 0:
             urls = urls[stream_index:] + urls[:stream_index]
 

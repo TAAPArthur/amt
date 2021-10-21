@@ -123,6 +123,7 @@ class Settings:
 
     def set_field(self, name, value, server_or_media_id=None):
         assert value is not None
+        assert name in Settings.get_members()
         current_field = self.get_field(name, server_or_media_id)
         if isinstance(current_field, bool) and isinstance(value, str):
             value = value.lower() not in ["false", 0, ""]

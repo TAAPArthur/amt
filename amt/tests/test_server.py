@@ -83,7 +83,7 @@ class TestServer(Server):
         self.maybe_inject_error()
         if self.media_type == MediaType.ANIME:
             return super().get_media_chapter_data(media_data, chapter_data, stream_index)
-        return [self.create_page_data(url=f"https://some_url.com/{chapter_data['id']}", ext="test") for k in range(3)]
+        return [self.create_page_data(url=f"https://some_url.com/{chapter_data['id']}.text") for k in range(3)]
 
     def save_chapter_page(self, page_data, path):
         self.maybe_inject_error()
@@ -96,6 +96,7 @@ class TestServerLogin(TestServer):
     counter = 0
     premium_account = True
     error_login = False
+    synchronize_chapter_downloads = True
 
     def needs_authentication(self):
         if self.error_login:
@@ -125,6 +126,7 @@ class TestAnimeServer(TestServer):
     _prefix = "Anime"
     stream_url = "https://www.test/url/4"
     stream_url_regex = re.compile(r".*/([0-9])")
+    stream_urls = False
 
     def get_chapter_id_for_url(self, url):
         assert self.can_stream_url(url)
@@ -139,7 +141,7 @@ class TestAnimeServer(TestServer):
     def get_stream_urls(self, media_data=None, chapter_data=None):
         assert isinstance(media_data, dict) if media_data else True
         assert isinstance(chapter_data, dict) if chapter_data else True
-        return [f"https://{self.domain}/url.mp4?key=1&false"]
+        return self.stream_urls or [f"https://{self.domain}/url.mp4?key=1&false", f"https://{self.domain}/url.ts?key=1&false"]
 
 
 class TestNovel(TestServer):
@@ -150,10 +152,10 @@ class TestNovel(TestServer):
 class TestTorrentHelper(TorrentHelper):
     id = "test_torrent_helper"
 
-    avaliable_torrent_file = "TorrentableMedia"
+    available_torrent_file = "TorrentableMedia"
 
     def search(self, term, limit=None):
-        return [self.create_media_data(id=term, name=term)] if term == self.avaliable_torrent_file else []
+        return [self.create_media_data(id=term, name=term)] if term == self.available_torrent_file else []
 
     def save_torrent_file(self, media_data, path):
         assert not os.path.exists(path)

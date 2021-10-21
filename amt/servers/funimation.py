@@ -131,8 +131,6 @@ class Funimation(Server):
     def get_stream_urls(self, media_data=None, chapter_data=None):
         chapter_id = chapter_data["alt_id"]
         r = self.session_get(self.sources_api_url.format(chapter_id))
-        # r.json()["items"] returns a list of mp4 and m38 streams
-        logging.info("Sources: %s", [item["src"] for item in r.json()["items"]])
         return [item["src"] for item in r.json()["items"]]
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
