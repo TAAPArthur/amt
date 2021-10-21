@@ -44,7 +44,7 @@ class GenericJNovelClub(Server):
         return True
 
     def _create_media_data_helper(self, data):
-        return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"], progressVolumes=self.progressVolumes) for item in data if MediaType[item["type"]] == self.media_type]
+        return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"]) for item in data if MediaType[item["type"]] == self.media_type]
 
     def get_media_list(self, limit=None):
         r = self.session_get(self.series_url)
@@ -54,13 +54,13 @@ class GenericJNovelClub(Server):
     def search(self, term, limit=None):
         r = self.session_post(self.search_url, json={"query": term.replace(" (Manga)", ""), "type": 1 if self.media_type == MediaType.NOVEL else 2})
         data = r.json()["series"][:limit]
-        return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"], progressVolumes=self.progressVolumes) for item in data]
+        return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"]) for item in data]
 
 
 class JNovelClub(GenericJNovelClub):
     id = "j_novel_club"
     media_type = MediaType.NOVEL
-    progressVolumes = True
+    progress_volumes = True
     owned_url = "https://api.j-novel.club/api/users/me?filter={'include':[{'ownedBooks':'serie'}]}"
     has_free_chapters = False
 
@@ -100,7 +100,7 @@ class JNovelClubManga(JNovelClub):
 
 
 class GenericJNovelClubParts(GenericJNovelClub):
-    progressVolumes = False
+    progress_volumes = False
 
     part_to_series_url = JNovelClub.api_base_url + "/parts/{}/serie?format=json"
     parts_url = JNovelClub.api_base_url + "/volumes/{}/parts?format=json"

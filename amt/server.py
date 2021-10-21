@@ -67,8 +67,8 @@ class RequestServer:
 
 
 class MediaServer(RequestServer):
-    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progressVolumes=False, **kwargs):
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progressVolumes=progressVolumes, tags=[], **kwargs))
+    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_volumes=None, **kwargs):
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progressVolumes=progress_volumes if progress_volumes is not None else self.progress_volumes, tags=[], **kwargs))
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():
@@ -115,6 +115,8 @@ class GenericServer(MediaServer):
     media_type = MediaType.MANGA
     stream_url_regex = None
     is_premium = False
+    # Measures progress in volumes instead of chapter/episodes
+    progress_volumes = False
     # If set, updating will cause chapters that are now longer available on the server to be removed
     official = True
     syncrhonize_chapter_downloads = False
@@ -375,6 +377,7 @@ class TorrentHelper(MediaServer):
     id = None
     media_type = MediaType.ANIME
     official = False
+    progress_volumes = True
 
     def download_torrent_file(self, media_data):
         """
