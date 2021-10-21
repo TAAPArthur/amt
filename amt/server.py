@@ -285,13 +285,13 @@ class Server(GenericServer):
         full_path = os.path.join(dir_path, Server.get_download_marker())
         open(full_path, 'w').close()
 
-    def download_if_missing(self, func, full_path):
+    def download_if_missing(self, page_data, full_path):
         if os.path.exists(full_path):
             logging.debug("Page %s already download", full_path)
         else:
             logging.info("downloading %s", full_path)
             temp_path = os.path.join(os.path.dirname(full_path), ".tmp-" + os.path.basename(full_path))
-            func(temp_path)
+            self.save_chapter_page(page_data, temp_path)
             os.rename(temp_path, full_path)
 
     def get_children(self, media_data, chapter_data):
@@ -340,21 +340,19 @@ class Server(GenericServer):
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
         self.pre_download(media_data, chapter_data)
-        list_of_pages = self.get_media_chapter_data(media_data, chapter_data, stream_index=stream_index)
-        assert list_of_pages
-        list_of_pages = list_of_pages[offset:page_limit]
-        logging.info("Downloading %d pages", len(list_of_pages))
-
-        for i, page_data in enumerate(list_of_pages):
-            page_data["media_data"] = media_data
-            page_data["path"] = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=page_data["ext"], page_number=i + offset))
+        list_of_pages = []
 
         # download pages
         job = Job(self.settings.get_threads(media_data), raiseException=True)
-        for page_data in list_of_pages:
-            job.add(lambda page_data=page_data: self.download_if_missing(lambda x: self.save_chapter_page(page_data, x), page_data["path"]))
+        for i, page_data in enumerate(self.get_media_chapter_data(media_data, chapter_data, stream_index=stream_index)):
+            if page_limit is not None and i == page_limit:
+                break
+            if i >= offset:
+                list_of_pages.append(page_data)
+                page_data["path"] = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext=page_data["ext"], page_number=i))
+                job.add(lambda page_data=page_data: self.download_if_missing(page_data, page_data["path"]))
         job.run()
-
+        assert list_of_pages
         if self.media_type == MediaType.MANGA and (1 + len(list_of_pages)) % 2 == self.settings.get_force_page_parity(media_data):
             try:
                 from PIL import Image
@@ -368,7 +366,7 @@ class Server(GenericServer):
         self.post_download(media_data, chapter_data, dir_path, list_of_pages)
         self.settings.post_process(media_data, (page_data["path"] for page_data in list_of_pages), dir_path)
         self.mark_download_complete(dir_path)
-        logging.info("%s %d %s is downloaded", media_data["name"], chapter_data["number"], chapter_data["title"])
+        logging.info("%s %d %s is downloaded; Total pages %d", media_data["name"], chapter_data["number"], chapter_data["title"], len(list_of_pages))
 
         return True
 
