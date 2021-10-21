@@ -41,6 +41,7 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 * [J Novel club](https://j-novel.club/)
 * [MangaPlus](https://mangaplus.shueisha.co.jp)
 * [Viz](http://viz.com)
+* [Viz Library](http://viz.com)
 * [MangaSee](mangasee123.com/) (unofficial)
 * [MangaDex](mangadex.org/) (unofficial)
 
