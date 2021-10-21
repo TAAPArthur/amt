@@ -43,15 +43,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     search_parsers.add_argument("name", help="The string to search by")
     search_parsers.set_defaults(func=media_reader.search_for_media)
 
-    select_chapter_parsers = sub_parsers.add_parser("select", description="Search for and add media")
-    select_chapter_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
-
-    select_chapter_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
-    select_chapter_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
-    select_chapter_parsers.add_argument("--stream-index", "-q", default=0, type=int)
-    select_chapter_parsers.add_argument("term", help="The string to search by")
-    select_chapter_parsers.set_defaults(func=media_reader.select_chapter)
-
     migrate_parsers = sub_parsers.add_parser("migrate", description="Move media to another server")
     migrate_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     migrate_parsers.add_argument("--force-same-id", action="store_const", const=True, default=False, help="Forces the media id to be the same")
