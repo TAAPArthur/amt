@@ -50,11 +50,11 @@ import_sub_classes(tests, TestTracker, TEST_TRACKERS)
 import_sub_classes(tests, TestTorrentHelper, TEST_TORRENT_HELPERS)
 import_sub_classes(servers, LocalServer, LOCAL_SERVERS)
 
-ENABLE_ONLY_SERVERS = os.getenv("ENABLE_ONLY_SERVERS")
 SKIP_DOWNLOAD = os.getenv("SKIP_DOWNLOAD")
 SINGLE_THREADED = os.getenv("DEBUG")
 PREMIUM_TEST = os.getenv("PREMIUM_TEST")
 QUICK_TEST = os.getenv("QUICK")
+ENABLED_SERVERS = os.getenv("AMT_ENABLED_SERVERS")
 
 
 class BaseUnitTestClass(unittest.TestCase):
@@ -77,11 +77,13 @@ class BaseUnitTestClass(unittest.TestCase):
             if server.session != self.media_reader.session:
                 server.session.close()
 
-    def reload(self, set_settings=False):
+    def reload(self, set_settings=False, save_settings=False):
         if self.media_reader:
             self.close_sessions()
 
         cls = MediaReaderCLI if self.cli else MediaReader
+        if save_settings:
+            self.settings.save()
 
         self.settings = Settings(home=TEST_HOME)
         if set_settings:
@@ -89,18 +91,12 @@ class BaseUnitTestClass(unittest.TestCase):
 
         _servers = list(self.default_server_list)
         if self.real:
-            if ENABLE_ONLY_SERVERS:
-                enabled_servers = set(ENABLE_ONLY_SERVERS.split(","))
-                _servers = [x for x in SERVERS if x.id in enabled_servers]
-                assert _servers
-            else:
-                _servers = [s for s in SERVERS if not s.external]
+            _servers = [s for s in SERVERS if not s.external]
+            if ENABLED_SERVERS:
+                self.settings.set_field("enabled_servers", ENABLED_SERVERS)
 
         _servers.sort(key=lambda x: x.id)
         self.media_reader = cls(settings=self.settings, server_list=_servers) if self.real else cls(settings=self.settings, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
-        if not self.settings.allow_only_official_servers and self.default_server_list:
-            assert len(self.media_reader.get_servers()) == len(_servers)
-        self.assertTrue(self.media_reader.get_tracker_ids())
 
     def for_each(self, func, media_list, raiseException=True):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
@@ -234,8 +230,12 @@ class BaseUnitTestClass(unittest.TestCase):
             assert all([x["server_id"] == server.id for x in media_list])
             assert all([x["media_type"] == server.media_type for x in media_list])
 
-    def assertTrueOrSkipTest(self, obj):
-        if ENABLE_ONLY_SERVERS and not obj:
+    def skip_if_all_servers_are_not_enabled(self):
+        if self.settings.enabled_servers or self.settings.disabled_servers:
+            self.skipTest("Server not enabled")
+
+    def assert_server_enabled_or_skip_test(self, obj):
+        if (self.settings.enabled_servers or self.settings.disabled_servers) and not obj:
             self.skipTest("Server not enabled")
         assert obj
 
@@ -361,7 +361,7 @@ class SettingsTest(BaseUnitTestClass):
             self.settings.save()
             self.settings.load()
             for field in Settings.get_members():
-                self.assertEqual(self.settings.get_field(field), getattr(Settings, field))
+                self.assertEqual(self.settings.get_field(field), getattr(Settings, field), field)
 
     def test_settings_save_load_new_value(self):
         self.settings.set_field("password_save_cmd", "dummy_cmd")
@@ -547,6 +547,22 @@ class MediaReaderTest(BaseUnitTestClass):
         self.verify_media_len(1)
         self.media_reader.remove_media(media_data)
         self.assertRaises(KeyError, self.media_reader.remove_media, media_data)
+
+    def test_load_servers(self):
+        self.assertEqual(len(TEST_SERVERS), len(self.media_reader.get_servers_ids()))
+        self.assertEqual(len(TEST_TRACKERS), len(self.media_reader.get_tracker_ids()))
+
+    def test_select_servers(self):
+        server_ids = list(self.media_reader.get_servers_ids())
+        self.settings.disabled_servers = server_ids
+        self.reload(save_settings=True)
+        self.assertFalse(self.media_reader.get_servers_ids())
+        self.settings.disabled_servers = server_ids[1:]
+        self.reload(save_settings=True)
+        self.assertEqual(server_ids[:1], list(self.media_reader.get_servers_ids()))
+        self.settings.enabled_servers = server_ids[-1:]
+        self.reload(save_settings=True)
+        self.assertEqual(server_ids[-1:], list(self.media_reader.get_servers_ids()))
 
     def test_disable_unofficial_servers(self):
         self.add_test_media()
@@ -1643,11 +1659,11 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b", "1079937", "1174339", "1174543"),
     ]
 
-    @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_verify_valid_stream_urls(self):
         for url, media_id, season_id, chapter_id in self.streamable_urls:
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
+                self.assert_server_enabled_or_skip_test(servers)
                 self.assertEqual(len(servers), 1)
 
     def test_media_add_from_url(self):
@@ -1655,7 +1671,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
             url, media_id, season_id, chapter_id = url_data
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                self.assertTrueOrSkipTest(servers)
+                self.assert_server_enabled_or_skip_test(servers)
                 self.assertEqual(len(servers), 1)
                 server = servers[0]
                 media_data = server.get_media_data_from_url(url)
@@ -1678,7 +1694,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
             url, media_id, season_id, chapter_id = url_data
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                self.assertTrueOrSkipTest(servers)
+                self.assert_server_enabled_or_skip_test(servers)
                 server = servers[0]
                 if server.media_type == MediaType.ANIME:
                     self.assertTrue(self.media_reader.stream(url))
@@ -1700,8 +1716,8 @@ class TrackerTest(RealBaseUnitTestClass):
             with self.subTest(tracker=tracker_id):
                 self.media_reader.auth(tracker_id)
 
-    @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_load_stats(self):
+        self.skip_if_all_servers_are_not_enabled()
         for tracker_id in self.media_reader.get_tracker_ids():
             with self.subTest(tracker=tracker_id):
                 self.assertTrue(self.media_reader.get_tracker(tracker_id).get_full_list_data(id="1"))
@@ -1713,8 +1729,8 @@ class RealArgsTest(RealBaseUnitTestClass):
         self.real = True
         self.cli = True
 
-    @unittest.skipIf(ENABLE_ONLY_SERVERS, "Not all servers are enabled")
     def test_load_from_tracker(self):
+        self.skip_if_all_servers_are_not_enabled()
         anime = ["HAIKYU!! To the Top", "Kaij: Ultimate Survivor", "Re:Zero", "Steins;Gate"]
         tracker = TestTracker(None, None)
         tracker.set_custom_anime_list(anime)
@@ -1730,7 +1746,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         self.settings.no_save_session = False
         self.media_reader.settings.no_load_session = False
         server = self.media_reader.get_server(CrunchyrollAnime.id)
-        self.assertTrueOrSkipTest(server)
+        self.assert_server_enabled_or_skip_test(server)
 
         session = server.get_session_id()
         self.assertEqual(session, server.get_session_id())
@@ -1750,7 +1766,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
     def test_missing_m3u8(self):
         from ..servers.crunchyroll import CrunchyrollAnime
         server = self.media_reader.get_server(CrunchyrollAnime.id)
-        self.assertTrueOrSkipTest(server)
+        self.assert_server_enabled_or_skip_test(server)
         with patch.dict(sys.modules, {"m3u8": None}):
             media_data = server.get_media_list(limit=1)[0]
             self.media_reader.add_media(media_data)
@@ -1763,7 +1779,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         # Make the test faster
         GenericDecoder.PENDING_CACHE_NUM = 1
         server = self.media_reader.get_server(JNovelClubMangaParts.id)
-        self.assertTrueOrSkipTest(server)
+        self.assert_server_enabled_or_skip_test(server)
         media_data = server.get_media_list()[0]
         self.media_reader.add_media(media_data)
         chapter_data = media_data.get_sorted_chapters()[0]
@@ -1773,7 +1789,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
     def test_jnovel_club_parts_autodelete(self):
         from ..servers.jnovelclub import JNovelClubParts
         server = self.media_reader.get_server(JNovelClubParts.id)
-        self.assertTrueOrSkipTest(server)
+        self.assert_server_enabled_or_skip_test(server)
         server.time_to_live_sec = 0
         media_data = server.get_media_list()[0]
         self.media_reader.add_media(media_data)

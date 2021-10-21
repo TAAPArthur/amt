@@ -376,6 +376,7 @@ class Server(GenericServer):
 class TorrentHelper(MediaServer):
     id = None
     media_type = MediaType.ANIME
+    official = False
 
     def download_torrent_file(self, media_data):
         """
@@ -389,6 +390,7 @@ class TorrentHelper(MediaServer):
 
 class Tracker(RequestServer):
     id = None
+    official = True
 
     def get_media_dict(self, id, media_type, name, progress, progressVolumes=None, score=0, timeSpent=0, year=0, season=None, genres=[], tags=[], studio=[]):
         return {"id": id, "media_type": media_type, "name": name, "progress": progress, "progressVolumes": progressVolumes,

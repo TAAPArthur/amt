@@ -37,7 +37,9 @@ class Settings:
     # Cookies
     cookie_files = ["/tmp/cookies.txt"]
 
-    # Tracker
+    # Servers/Tracker
+    enabled_servers = []  # empty means all servers all enabled
+    disabled_servers = []  # empty means all servers all enabled
     tracker_id = ""
 
     # MISC
@@ -125,6 +127,11 @@ class Settings:
         yield self.get_cookie_file()
         yield from map(os.path.expanduser, self.cookie_files)
 
+    def is_server_enabled(self, server_id, is_offical=True):
+        if self.allow_only_official_servers and not is_offical:
+            return False
+        return server_id in self.enabled_servers + [self.tracker_id] if self.enabled_servers else server_id not in self.disabled_servers and server_id
+
     @classmethod
     def get_members(clazz):
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("_")]
@@ -135,7 +142,7 @@ class Settings:
         if isinstance(current_field, bool) and isinstance(value, str):
             value = value.lower() not in ["false", 0, ""]
         if isinstance(current_field, list) and isinstance(value, str):
-            value = value.split(",")
+            value = value.split(",") if value else []
             if current_field:
                 value = list(map(lambda x: type(current_field[0])(x.strip()), value))
 
