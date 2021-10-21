@@ -299,10 +299,9 @@ class Settings:
             wd = self.get_chapter_dir(media_data, chapter_data)
         return self._open_viewer(viewer, files, title=title, wd=wd)
 
-    def open_bundle_viewer(self, bundle_path, media_data=None):
+    def open_bundle_viewer(self, bundle_name, media_data=None):
         viewer = self.get_field("bundle_viewer", media_data)
-        title = os.path.basename(bundle_path)
-        return self._open_viewer(viewer, bundle_path, title=title)
+        return self._open_viewer(viewer, os.path.join(self.bundle_dir, bundle_name), title=bundle_name)
 
     def bundle(self, img_dirs, name=None, media_data=None):
         arg = " ".join(map(Settings._smart_quote, img_dirs))
@@ -316,4 +315,4 @@ class Settings:
                 continue
             cmd = self.bundle_cmd.format(files=arg, name=bundle_path)
             self.run_cmd(cmd)
-            return bundle_path
+            return bundle_name

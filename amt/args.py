@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 
 from .media_reader_cli import MediaReaderCLI
 from .server import MediaType
@@ -94,7 +93,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     bundle_parser.set_defaults(func=media_reader.bundle_unread_chapters)
 
     read_parser = sub_parsers.add_parser("read", help="Open a saved bundle for reading. If the command exits with status 0, then the container chapters will be marked read")
-    read_parser.add_argument("name", default=None, nargs="?", choices=os.listdir(media_reader.settings.bundle_dir), help="Name of the bundle")
+    read_parser.add_argument("name", default=None, nargs="?", choices=media_reader.bundles.keys(), help="Name of the bundle")
     read_parser.set_defaults(func=media_reader.read_bundle)
 
     sub_consume_parsers = argparse.ArgumentParser(add_help=False)

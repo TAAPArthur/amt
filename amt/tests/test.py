@@ -441,8 +441,7 @@ class SettingsTest(BaseUnitTestClass):
         assert self.settings.is_allowed_text_lang("en", TestServer.id)
 
     def test_bundle(self):
-        name = self.settings.bundle("")
-        self.assertTrue(os.path.exists(name))
+        name = self.settings.bundle([])
         self.assertTrue(self.settings.open_bundle_viewer(name))
         self.settings.bundle_viewer = "exit 1"
         self.assertFalse(self.settings.open_bundle_viewer(name))
@@ -609,11 +608,11 @@ class MediaReaderTest(BaseUnitTestClass):
         assert not self.media_reader.state.save_session_cookies()
 
     def test_save_load(self):
-        assert not os.path.exists(self.settings.get_metadata())
+        assert not os.path.exists(self.settings.get_metadata_file())
         self.add_test_media(server=self.test_server)
         old_hash = State.get_hash(self.media_reader.media)
         self.media_reader.state.save()
-        assert os.path.exists(self.settings.get_metadata())
+        assert os.path.exists(self.settings.get_metadata_file())
         self.reload()
         self.assertEqual(old_hash, State.get_hash(self.media_reader.media))
         for media_data in self.media_reader.get_media():
@@ -1397,8 +1396,6 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["bundle"])
         assert len(self.media_reader.bundles)
         name, bundle_data = list(self.media_reader.bundles.items())[0]
-        self.assertTrue(os.path.isabs(name))
-        self.assertTrue(os.path.exists(name))
         self.assertEqual(len(bundle_data), sum([len(x["chapters"]) for x in media_list]))
         parse_args(media_reader=self.media_reader, args=["read", os.path.basename(name)])
         self.verify_all_chapters_read(MediaType.MANGA)
