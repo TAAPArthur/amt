@@ -1131,10 +1131,6 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["list"])
         parse_args(media_reader=self.media_reader, args=["list-servers"])
 
-    def test_print_settings_file(self):
-        for f in ["settings_file", "metadata", "cookie_file"]:
-            parse_args(media_reader=self.media_reader, args=["get-file", f])
-
     def test_search_save(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "manga"])
         assert len(self.media_reader.get_media_ids())

@@ -244,10 +244,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     offset_parser.add_argument("name", default=None, choices=media_reader.get_all_names())
     offset_parser.add_argument("offset", type=int, default=0, nargs="?", help="Decrease the chapter number reported by the server by N")
 
-    get_file_parsers = sub_parsers.add_parser("get-file")
-    get_file_parsers.add_argument("file", default=None, choices=["settings_file", "metadata", "cookie_file"])
-    get_file_parsers.set_defaults(func=lambda file: print(getattr(media_reader.settings, f"get_{namespace.file}")()))
-
     # upgrade state
     upgrade_parser = sub_parsers.add_parser("upgrade", description="Upgrade old state to newer format")
     upgrade_parser.set_defaults(func=media_reader.upgrade_state)
