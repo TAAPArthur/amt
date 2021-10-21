@@ -108,22 +108,29 @@ class GenericServer(MediaServer):
     Servers need not override most of the methods of this. Some have default
     values that are sane in some common situations
     """
+    # Unique id of the server
     id = None
+    # If set this value will be used for credential lookup instead of id
     alias = None
     domain = None
     media_type = MediaType.MANGA
+    # Pattern to match to determine if this server can stream a given url.
+    # It is also used to determine if server can add the media based on its chapter url
     stream_url_regex = None
-    is_premium = False
     # Measures progress in volumes instead of chapter/episodes
     progress_volumes = False
-    # If set, updating will cause chapters that are now longer available on the server to be removed
+    # True if the server only provides properly licensed media
     official = True
+    # Download a single page from this server at a time
     synchronize_chapter_downloads = False
+    # If the server has some free media (used for testing)
     has_free_chapters = True
+    # Used to determine if the account can access premium content
+    is_premium = False
 
     def get_media_list(self, limit=None):  # pragma: no cover
         """
-        Returns an arbitrary selection of media
+        Returns an arbitrary selection of media.
         """
         raise NotImplementedError
 
@@ -138,8 +145,6 @@ class GenericServer(MediaServer):
     def update_media_data(self, media_data):  # pragma: no cover
         """
         Returns media data from API
-
-        Initial data should contain at least media's slug (provided by search)
         """
         raise NotImplementedError
 
@@ -172,8 +177,8 @@ class GenericServer(MediaServer):
 
     def save_chapter_page(self, page_data, path):
         """ Save the page designated by page_data to path
-        By default it blindly writes the specified url to disk and optionally
-        decrypts it.
+        By default it blindly writes the specified url to disk, decrypting it
+        if needed.
         """
         r = self.session_get(page_data["url"], stream=True)
         content = r.content
@@ -187,9 +192,19 @@ class GenericServer(MediaServer):
             fp.write(content)
 
     def get_media_data_from_url(self, url):  # pragma: no cover
+        """ Return the media data related to this url
+
+        url should be the page needed to view the episode/chapter.
+        The protocol, query parameters or presence of "www" should be ignored.
+        The media does not need to have its chapter's list populated but it is
+        allowed to.
+        """
         raise NotImplementedError
 
     def get_chapter_id_for_url(self, url):  # pragma: no cover
+        """ Return the chapter id related to this url
+        Like get_media_data_from_url but returns just the chapter id
+        """
         raise NotImplementedError
 
     def can_stream_url(self, url):
@@ -197,6 +212,9 @@ class GenericServer(MediaServer):
 
     ################ ANIME ONLY #####################
     def get_stream_url(self, media_data, chapter_data, stream_index=0):
+        """ Returns a url to stream from
+        Override get_stream_urls instead
+        """
         return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[stream_index]
 
     def get_stream_urls(self, media_data, chapter_data):  # pragma: no cover
@@ -220,6 +238,12 @@ class GenericServer(MediaServer):
         return self.has_login and not self.is_logged_in
 
     def login(self, username, password):  # pragma: no cover
+        """ Used the specified username/passowrd to authenticate
+
+        This method should return True iff login succeeded even if the account isn't premium
+        Set `is_premium` if the account is premium.
+        If it is perfectly fine to throw an HTTPError on failed authentication.
+        """
         raise NotImplementedError
 
     ################ OPTIONAL #####################
@@ -237,11 +261,6 @@ class GenericServer(MediaServer):
             for page in pages:
                 os.remove(page["path"])
 
-    def is_fully_downloaded(self, media_data, chapter_data):
-        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
-        full_path = os.path.join(dir_path, self.get_download_marker())
-        return os.path.exists(full_path)
-
 
 class Server(GenericServer):
     """
@@ -249,6 +268,7 @@ class Server(GenericServer):
     """
 
     _is_logged_in = False
+    DOWNLOAD_MARKER = ".downloaded"
 
     @property
     def is_logged_in(self):
@@ -281,13 +301,12 @@ class Server(GenericServer):
         logging.warning("Could not load credentials")
         return False
 
-    @staticmethod
-    def get_download_marker():
-        return ".downloaded"
+    def is_fully_downloaded(self, media_data, chapter_data):
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
+        return os.path.exists(os.path.join(dir_path, self.DOWNLOAD_MARKER))
 
     def mark_download_complete(self, dir_path):
-        full_path = os.path.join(dir_path, Server.get_download_marker())
-        open(full_path, 'w').close()
+        open(os.path.join(dir_path, self.DOWNLOAD_MARKER), 'w').close()
 
     def download_if_missing(self, page_data, full_path):
         if os.path.exists(full_path):
@@ -388,6 +407,7 @@ class TorrentHelper(MediaServer):
         self.save_torrent_file(media_data, self.settings.get_external_downloads_path(media_data))
 
     def save_torrent_file(self, media_data, path):  # pragma: no cover
+        """Save the torrent file to disk"""
         raise NotImplementedError
 
 
@@ -401,13 +421,22 @@ class Tracker(RequestServer):
                 }
 
     def get_auth_url(self):  # pragma: no cover
+        """ Return the url the user can goto to get the auth token"""
         raise NotImplementedError
 
     def update(self, list_of_updates):  # pragma: no cover
+        """ Updates progress to remote tracker
+        list_of_updates is a list of tuples -- tracker_id, progress, progress_volumes
+        where progress is the numerical value to update to and progress_volumes is
+        whether to treat this a chapter/episode progress or volume progress
+        """
         raise NotImplementedError
 
     def get_full_list_data(self, user_name=None, id=None):
         return self.get_tracker_list(user_name, id, status=None)
 
     def get_tracker_list(self, user_name=None, id=None, status="CURRENT"):  # pragma: no cover
+        """ Returns a list of media dicts
+        See get_media_dict
+        """
         raise NotImplementedError
