@@ -170,11 +170,6 @@ class Settings:
         except FileNotFoundError:
             pass
         if not skip_env_override and self.allow_env_override:
-            if os.getenv(f"{self.env_override_prefix}QUICK_TRY"):
-                self.password_manager_enabled = True
-                self.password_save_cmd = None
-                self.password_load_cmd = None
-
             for attr in Settings.get_members():
                 env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
                 if env_value is not None:

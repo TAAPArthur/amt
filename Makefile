@@ -23,8 +23,3 @@ coverage_html:
 
 install:
 	python setup.py install "--root=$(DESTDIR)/"
-	install -D -m 0755 main.py "$(DESTDIR)/usr/bin/$(APP_NAME)"
-
-uninstall:
-	rm -rdf "$(DESTDIR)"/usr/lib/python*/site-packages/"$(APP_NAME)"
-	rm -f "$(DESTDIR)/usr/bin/$(APP_NAME)"
