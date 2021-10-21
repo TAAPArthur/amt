@@ -224,6 +224,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
     sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
     sync_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
+    sync_parser.add_argument("name", choices=media_reader.get_all_names(), nargs="?", help="Media to sync")
     sync_parser.set_defaults(func=media_reader.sync_progress)
 
     mark_unread_parsers = sub_parsers.add_parser("mark-unread", description="Mark all known chapters as unread")

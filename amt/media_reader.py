@@ -458,21 +458,21 @@ class MediaReader:
             tracking_id, tracker_title = self.get_tracker_info(src_media_data)
             self.track(dst_media_data, self.get_tracker().id, tracking_id, tracker_title)
 
-    def sync_progress(self, force=False, media_type=None, dry_run=False):
+    def sync_progress(self, name=None, media_type=None, force=False, dry_run=False):
         data = []
-        tracker = self.get_tracker()
-        for media_data in self.get_media():
-            if not media_type or media_data["media_type"] == media_type:
-                tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_tracker().id)
-                if tracker_info and (force or media_data["progress"] < int(media_data.get_last_read())):
-                    data.append((tracker_info[0], media_data.get_last_read(), media_data["progress_volumes"]))
-                    last_read = media_data.get_last_read()
-                    logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], last_read)
-                    media_data["progress"] = last_read
+        media_to_sync = []
+        for media_data in self.get_media(name=name, media_type=media_type):
+            tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_tracker().id)
+            if tracker_info and (force or media_data["progress"] < int(media_data.get_last_read())):
+                data.append((tracker_info[0], media_data.get_last_read(), media_data["progress_volumes"]))
+                media_to_sync.append(media_data)
+                logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], media_data.get_last_read())
 
         if data and not dry_run:
-            tracker.update(data)
-        return True if data else False
+            self.get_tracker().update(data)
+            for media_data in media_to_sync:
+                media_data["progress"] = media_data.get_last_read()
+        return bool(data)
 
     def search_for_media(self, name, media_type, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
         alt_names = list(filter(lambda x: x, dict.fromkeys([name, name.split(" Season")[0], re.sub(r"\W*$", "", name), re.sub(r"\s*[^\w\d\s]+.*$", "", name), re.sub(r"\W.*$", "", name), get_media_name_from_file(name, is_dir=True)]))) if not exact else [name]
