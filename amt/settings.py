@@ -44,7 +44,6 @@ class Settings:
 
     # MISC
     allow_only_official_servers = False
-    free_only = False
     no_load_session = False
     no_save_session = False
     shell = True

@@ -102,7 +102,6 @@ class BaseUnitTestClass(unittest.TestCase):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
     def setup_settings(self):
-        self.settings.free_only = True
         self.settings.no_save_session = True
         self.settings.no_load_session = True
         self.settings.password_manager_enabled = True
@@ -671,7 +670,6 @@ class MediaReaderTest(BaseUnitTestClass):
         assert not self.media_reader.update()
 
     def test_update(self):
-        self.media_reader.settings.free_only = False
         media_data = self.add_test_media(server=self.test_server, limit=1, no_update=True)[0]
         num_new_chapters = self.media_reader.update_media(media_data)
         self.assertTrue(num_new_chapters)
