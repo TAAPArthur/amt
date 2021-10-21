@@ -5,7 +5,7 @@ from ..util.media_type import MediaType
 
 
 class Anilist(Tracker):
-    id = "Anilist"
+    id = "anilist"
     url = "https://graphql.anilist.co"
 
     get_list_query = """
