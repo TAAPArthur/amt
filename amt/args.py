@@ -183,7 +183,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # credentials
     login_parser = sub_parsers.add_parser("login", description="Relogin to all servers")
-    login_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force re-login")
+    login_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force re-login")
     login_parser.add_argument("server_ids", default=None, choices=media_reader.get_servers_ids_with_logins(), nargs="?")
     login_parser.set_defaults(func=media_reader.test_login)
 
@@ -203,7 +203,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     # trackers and progress
     load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
     load_parser.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
-    load_parser.add_argument("--force", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
+    load_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
     load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
     load_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media", dest="update_progress_only")
@@ -221,7 +221,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     copy_tracker_parser.add_argument("dst", choices=media_reader.get_all_single_names(), help="Dst media")
 
     sync_parser = sub_parsers.add_parser("sync", description="Attempts to update tracker with current progress")
-    sync_parser.add_argument("--force", action="store_const", const=True, default=False, help="Allow progress to decrease")
+    sync_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow progress to decrease")
     sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
     sync_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     sync_parser.add_argument("name", choices=media_reader.get_all_names(), nargs="?", help="Media to sync")
