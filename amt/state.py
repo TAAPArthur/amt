@@ -14,7 +14,7 @@ def json_decoder(obj):
 
 
 class State:
-    version = 1.1
+    version = 1.2
 
     def __init__(self, settings, session):
         self.settings = settings
@@ -191,7 +191,7 @@ class MediaData(dict):
         return self.global_id if len(self.global_id) < 32 or not self.global_id_alt else self.global_id_alt
 
     def copy_fields_to(self, dest):
-        for key in ("offset", "progress", "progressVolumes", "tags", "trackers"):
+        for key in ("offset", "progress", "progress_volumes", "tags", "trackers"):
             assert key in dest
             dest[key] = self.get(key)
 

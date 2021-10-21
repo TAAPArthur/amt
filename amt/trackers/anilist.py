@@ -26,7 +26,6 @@ class Anilist(Tracker):
             progress
             progressVolumes
             repeat
-            progressVolumes
             media {
                 seasonYear
                 seasonInt
@@ -124,10 +123,10 @@ class Anilist(Tracker):
                 id=x["id"],
                 media_type=MediaType.ANIME if x["media"]["type"] == "ANIME" else MediaType.get(x["media"]["format"], MediaType.MANGA),
                 progress=x["progress"],
-                progressVolumes=x["progressVolumes"],
+                progress_volumes=x["progressVolumes"],
                 name=x["media"]["title"]["english"] or x["media"]["title"]["romaji"],
                 score=x["score"],
-                timeSpent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"] or x["progressVolumes"] or 0,
+                time_spent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"] or x["progressVolumes"] or 0,
                 year=x["media"]["startDate"]["year"],
                 season="{} {}".format(x["media"]["season"], x["media"]["seasonYear"]) if x["media"]["season"] else str(x["media"]["startDate"]["year"]),
                 genres=x["media"]["genres"],
@@ -144,10 +143,10 @@ class Anilist(Tracker):
             logging.error("Access token is not set")
             raise ValueError
 
-        for id, progress, progressVolumes in list_of_updates:
+        for id, progress, progress_volumes in list_of_updates:
             variables = {"id": id, "progress": int(progress)}
-            logging.debug("Updating %d to %d, Volume: %d", id, int(progress), progressVolumes)
-            query = self.update_list_query_volumes if progressVolumes else self.update_list_query
+            logging.debug("Updating %d to %d, Volume: %d", id, int(progress), progress_volumes)
+            query = self.update_list_query_volumes if progress_volumes else self.update_list_query
             response = self.session_post(self.url, json={"query": query, "variables": variables}, headers=self.get_auth_header())
             logging.debug(response.text)
 

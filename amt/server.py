@@ -68,7 +68,7 @@ class RequestServer:
 
 class MediaServer(RequestServer):
     def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_volumes=None, **kwargs):
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progressVolumes=progress_volumes if progress_volumes is not None else self.progress_volumes, tags=[], **kwargs))
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_volumes=progress_volumes if progress_volumes is not None else self.progress_volumes, tags=[], **kwargs))
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False, **kwargs):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():
@@ -393,9 +393,9 @@ class Tracker(RequestServer):
     id = None
     official = True
 
-    def get_media_dict(self, id, media_type, name, progress, progressVolumes=None, score=0, timeSpent=0, year=0, season=None, genres=[], tags=[], studio=[]):
-        return {"id": id, "media_type": media_type, "name": name, "progress": progress, "progressVolumes": progressVolumes,
-                "score": score, "timeSpent": timeSpent, "year": year, "season": season, "genres": genres, "tags": tags, "studio": studio
+    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, time_spent=0, year=0, season=None, genres=[], tags=[], studio=[]):
+        return {"id": id, "media_type": media_type, "name": name, "progress": progress, "progress_volumes": progress_volumes,
+                "score": score, "time_spent": time_spent, "year": year, "season": season, "genres": genres, "tags": tags, "studio": studio
                 }
 
     def get_auth_url(self):  # pragma: no cover

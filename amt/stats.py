@@ -47,7 +47,7 @@ def group_entries(media_list, min_score=1):
     decadeData = defaultdict(list)
     allData = defaultdict(list)
     for media in media_list:
-        if media["score"] >= min_score and (media["progress"] or media["progressVolumes"]):
+        if media["score"] >= min_score and (media["progress"] or media["progress_volumes"]):
             [tagData[x].append(media) for x in media["tags"]]
             [genereData[x].append(media) for x in media["genres"]]
             yearData[str(media["year"])].append(media)
@@ -65,8 +65,8 @@ def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details=False
         count = len(media_list)
         if count >= min_count:
             avgScore = sum([media["score"] for media in media_list]) / count
-            totalTime = sum([media["timeSpent"] for media in media_list])
-            weightedScore = sum([media["score"] * media["timeSpent"] / totalTime for media in media_list]) if totalTime else 0
+            totalTime = sum([media["time_spent"] for media in media_list])
+            weightedScore = sum([media["score"] * media["time_spent"] / totalTime for media in media_list]) if totalTime else 0
             media_names = ", ".join(map(lambda x: str(x[details_type.name.lower()]), sorted(media_list, key=lambda x: x["score"], reverse=not reverse))) if details else None
             stats.append((key, count, avgScore, totalTime / 60, weightedScore, media_names))
     stats.sort(key=lambda x: x[sortIndex], reverse=not reverse)
