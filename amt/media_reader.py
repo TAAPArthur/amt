@@ -559,7 +559,7 @@ class MediaReader:
             if tag_name in media_data["tags"]:
                 media_data["tags"].remove(tag_name)
 
-    def clean(self, remove_disabled_servers=False, include_external=False, remove_read=False, remove_not_on_disk=False, bundles=False):
+    def clean(self, remove_disabled_servers=False, include_local_servers=False, remove_read=False, remove_not_on_disk=False, bundles=False):
         if remove_not_on_disk:
             for media_data in [x for x in self.get_media() if not os.path.exists(self.settings.get_chapter_metadata_file(x))]:
                 logging.info("Removing metadata for %s because it doesn't exist on disk", media_data["name"])
@@ -574,7 +574,7 @@ class MediaReader:
             server = self.get_server(server_dir)
             server_path = os.path.join(self.settings.media_dir, server_dir)
             if server:
-                if include_external or not server.external:
+                if include_local_servers or not server.is_local_server():
                     for media_dir in os.listdir(server_path):
                         media_path = os.path.join(server_path, media_dir)
                         if media_path not in media_dirs:

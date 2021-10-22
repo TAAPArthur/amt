@@ -18,8 +18,6 @@ def get_local_server_id(media_type):
 
 
 class LocalServer(Server):
-    external = True
-
     id_formatter_regex = re.compile(r"\W+")
 
     def _create_media_data(self, file_name):

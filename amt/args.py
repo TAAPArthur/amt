@@ -126,7 +126,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     clean_parser = sub_parsers.add_parser("clean", help="Removes unused media")
     clean_parser.add_argument("-b", "--bundles", default=False, action="store_const", const=True, help="Removes bundle info")
     clean_parser.add_argument("--remove-disabled-servers", default=False, action="store_const", const=True, help="Removes all servers not belonging to the active list")
-    clean_parser.add_argument("--include-external", default=False, action="store_const", const=True, help="Doesn't skip local servers")
+    clean_parser.add_argument("--include-local-servers", default=False, action="store_const", const=True, help="Doesn't skip local servers")
     clean_parser.add_argument("--remove-read", default=False, action="store_const", const=True, help="Removes all read chapters")
     clean_parser.add_argument("--remove-not-on-disk", default=False, action="store_const", const=True, help="Removes references where the backing directory is emtpy")
 

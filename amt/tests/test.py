@@ -91,7 +91,7 @@ class BaseUnitTestClass(unittest.TestCase):
 
         _servers = list(self.default_server_list)
         if self.real:
-            _servers = [s for s in SERVERS if not s.external]
+            _servers = [s for s in SERVERS if s not in LOCAL_SERVERS]
             if ENABLED_SERVERS:
                 self.settings.set_field("enabled_servers", ENABLED_SERVERS)
 
@@ -181,7 +181,7 @@ class BaseUnitTestClass(unittest.TestCase):
         for file_name in files:
             self.assertEqual(2, len(file_name.split(".")), f"Problem with extension of {file_name}")
             path = os.path.join(dir_path, file_name)
-            if isinstance(server, TestServer) or server.external or type(server).id is None:
+            if isinstance(server, TestServer) or server.is_local_server() or type(server).id is None:
                 continue
             if media_type == MediaType.MANGA:
                 with open(path, "rb") as img_file:
@@ -857,7 +857,7 @@ class GenericServerTest():
             self.media_reader.add_media(media_data)
             for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
                 if not SKIP_DOWNLOAD:
-                    self.assertNotEqual(server.external, server.download_chapter(media_data, chapter_data, page_limit=2, stream_index=-1))
+                    self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2, stream_index=-1))
                     self.verify_download(media_data, chapter_data)
                     assert not server.download_chapter(media_data, chapter_data, page_limit=1)
                 return True
@@ -934,7 +934,7 @@ class LocalServerTest(GenericServerTest, BaseUnitTestClass):
         self.media_reader.clean(remove_read=True)
         self.media_reader.update()
         self.assertEqual(len(all_chapters), len(self.getChapters()))
-        self.media_reader.clean(include_external=True, remove_read=True)
+        self.media_reader.clean(include_local_servers=True, remove_read=True)
         self.media_reader.update()
         self.assertFalse(self.getChapters())
         for media_data in self.media_reader.get_media():

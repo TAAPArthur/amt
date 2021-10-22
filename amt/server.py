@@ -111,7 +111,6 @@ class GenericServer(MediaServer):
     id = None
     alias = None
     domain = None
-    external = False
     media_type = MediaType.MANGA
     stream_url_regex = None
     is_premium = False
@@ -258,6 +257,9 @@ class Server(GenericServer):
     @property
     def has_login(self):
         return self.login.__func__ is not GenericServer.login
+
+    def is_local_server(self):
+        return self.download_chapter.__func__ is not Server.download_chapter
 
     def get_credentials(self):
         return self.settings.get_credentials(self.id if not self.alias else self.alias)
