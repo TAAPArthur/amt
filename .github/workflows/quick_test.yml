@@ -17,6 +17,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install coverage
+        pip install beautifulsoup4 # test dependency
         pip install -r requirements.txt
     - name: Quick Test and Code coverage
       run: |
