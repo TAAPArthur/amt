@@ -524,10 +524,6 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         self.media_reader.get_server(TestServerLogin.id).premium_account = False
         self.login_test_helper()
 
-    def test_login_no_credentials(self):
-        self.settings.password_manager_enabled = False
-        self.login_test_helper()
-
     def test_error_on_login(self):
         self.media_reader.get_server(TestServerLogin.id).error_login = True
         self.login_test_helper()

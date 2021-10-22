@@ -223,7 +223,7 @@ class Settings:
         return lang in self.get_field("text_languages", media_data)
 
     def _ask_for_credentials(self, server_id: str) -> (str, str):
-        if self.password_load_cmd:
+        if self.password_manager_enabled and self.password_load_cmd:
             try:
                 logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
                 output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
@@ -240,9 +240,8 @@ class Settings:
             var = os.getenv(self.password_override_prefix + server_id) or os.getenv(self.password_override_prefix + server_id.upper())
             if var:
                 return var.split(self.credential_separator)
-        if self.password_manager_enabled:
-            with self._lock:
-                return self._ask_for_credentials(server_id)
+        with self._lock:
+            return self._ask_for_credentials(server_id)
 
     def store_credentials(self, server_id, username, password=None):
         """Stores the username, password for the given server_id"""
