@@ -58,10 +58,12 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     download_parser = sub_parsers.add_parser("download-unread", help="Downloads all chapters that have not been read")
     download_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     download_parser.add_argument("--limit", type=int, default=0, help="How many chapters will be downloaded per series")
+    download_parser.add_argument("--stream-index", "-q", default=0, type=int)
     download_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?", help="Download only series determined by name")
     download_parser.set_defaults(func=media_reader.download_unread_chapters)
 
     download_specific_parser = sub_parsers.add_parser("download", help="Used to download specific chapters")
+    download_specific_parser.add_argument("--stream-index", "-q", default=0, type=int)
     download_specific_parser.add_argument("name", choices=media_reader.get_all_single_names())
     download_specific_parser.add_argument("start", type=float, default=0, help="Starting chapter (inclusive)")
     download_specific_parser.add_argument("end", type=float, nargs="?", default=0, help="Ending chapter (inclusive)")

@@ -82,7 +82,7 @@ class TestServer(Server):
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         self.maybe_inject_error()
         if self.media_type == MediaType.ANIME:
-            return super().get_media_chapter_data(media_data, chapter_data)
+            return super().get_media_chapter_data(media_data, chapter_data, stream_index)
         return [self.create_page_data(url=f"https://some_url.com/{chapter_data['id']}", ext="test") for k in range(3)]
 
     def save_chapter_page(self, page_data, path):

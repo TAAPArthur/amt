@@ -287,22 +287,22 @@ class MediaReader:
 
     # Downloading
 
-    def download_specific_chapters(self, name=None, media_data=None, start=0, end=0):
+    def download_specific_chapters(self, name=None, media_data=None, start=0, end=0, stream_index=0):
         media_data = self.get_single_media(name=name)
         server = self.get_server(media_data["server_id"])
         if not end:
             end = start
         for chapter in media_data.get_sorted_chapters():
             if start <= chapter["number"] and (end <= 0 or chapter["number"] <= end):
-                server.download_chapter(media_data, chapter)
+                server.download_chapter(media_data, chapter, stream_index=stream_index)
                 if end == start:
                     break
 
-    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False, any_unread=False, page_limit=None):
+    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False, any_unread=False, page_limit=None, stream_index=0):
         """Downloads all chapters that are not read"""
         def download_selected_chapters(x):
             server, media_data, chapter = x
-            return server.download_chapter(media_data, chapter, page_limit=page_limit)
+            return server.download_chapter(media_data, chapter, page_limit=page_limit, stream_index=stream_index)
         return sum(self.for_each(download_selected_chapters, self.get_unreads(name=name, media_type=media_type, any_unread=any_unread, limit=limit), raiseException=not ignore_errors))
 
     def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
