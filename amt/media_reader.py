@@ -91,7 +91,7 @@ class MediaReader:
         return self._servers.keys()
 
     def get_servers_ids_with_logins(self):
-        return [k for k in self._servers.keys() if self.get_server(k).has_login]
+        return [k for k in self._servers.keys() if self.get_server(k).has_login()]
 
     def get_server(self, id):
         return self._servers.get(id, None)

@@ -53,7 +53,6 @@ class RemoteServer(Server):
                         raise saved_err
         return self.domain + self.path
 
-    @property
     def has_login(self):
         return self.auth
 
@@ -65,9 +64,9 @@ class RemoteServer(Server):
         return super.get_credentials() if self.username is None else self.username, self.password
 
     def session_get(self, url, **kwargs):
-        if self.username is None and self.has_login:
+        if self.username is None and self.has_login():
             self.relogin()
-        if self.has_login:
+        if self.has_login():
             kwargs["auth"] = self.get_credentials()
 
         return super().session_get(url, **kwargs)
@@ -98,7 +97,7 @@ class RemoteServer(Server):
             return
 
         for _, link in self.list_files(media_data["alt_id"]):
-            self.update_chapter_data(media_data, link, title=link, number=get_number_from_file_name(link, media_name=media_data["name"], default_num=1), premium=self.has_login)
+            self.update_chapter_data(media_data, link, title=link, number=get_number_from_file_name(link, media_name=media_data["name"], default_num=1), premium=self.has_login())
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         if media_data["alt_id"][-1] != "/":

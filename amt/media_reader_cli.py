@@ -70,7 +70,7 @@ class MediaReaderCLI(MediaReader):
     def test_login(self, server_ids=None, force=False):
         failures = False
         for server in self.get_servers():
-            if server.has_login and (not server_ids or server.id in server_ids):
+            if server.has_login() and (not server_ids or server.id in server_ids):
                 if (force or server.needs_to_login()) and not server.relogin():
                     logging.error("Failed to login into %s", server.id)
                     failures = True

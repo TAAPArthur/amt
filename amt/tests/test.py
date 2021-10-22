@@ -843,12 +843,12 @@ class GenericServerTest():
         media_list = None
         with self.subTest(server=server.id, list=True):
             media_list = server.get_media_list()
-            assert media_list or server.has_login and not server.has_free_chapters
+            assert media_list or server.has_login() and not server.has_free_chapters
             self.verfiy_media_list(media_list, server=server)
 
         with self.subTest(server=server.id, list=False):
             search_media_list = server.search(media_list[0]["name"] if media_list else "One", limit=1)
-            assert search_media_list or server.has_login and not server.has_free_chapters
+            assert search_media_list or server.has_login() and not server.has_free_chapters
             self.verfiy_media_list(media_list, server=server)
         return media_list
 
@@ -1797,7 +1797,7 @@ class PremiumTest(RealBaseUnitTestClass):
     @unittest.skipIf(SKIP_DOWNLOAD, "Download tests is not enabled")
     def test_download_premium(self):
         for server in self.media_reader.get_servers():
-            if server.has_login and not isinstance(server, TestServer):
+            if server.has_login() and not isinstance(server, TestServer):
                 with self.subTest(server=server.id, method="get_media_list"):
                     media_list = server.get_media_list()
                     download_passed = False
@@ -1824,7 +1824,7 @@ class PremiumTest(RealBaseUnitTestClass):
     def test_test_login(self):
         assert self.media_reader.test_login()
         for server in self.media_reader.get_servers():
-            if server.has_login:
+            if server.has_login():
                 with self.subTest(server=server.id):
                     assert not server.needs_authentication()
 

@@ -231,7 +231,7 @@ class GenericServer(MediaServer):
         If the user is not logged in (and needs to login to access all content),
         this method should return true.
         """
-        return self.has_login and not self.is_logged_in
+        return self.has_login() and not self.is_logged_in
 
     def login(self, username, password):  # pragma: no cover
         """ Used the specified username/passowrd to authenticate
@@ -270,7 +270,6 @@ class Server(GenericServer):
     def is_logged_in(self):
         return self._is_logged_in
 
-    @property
     def has_login(self):
         return self.login.__func__ is not GenericServer.login
 

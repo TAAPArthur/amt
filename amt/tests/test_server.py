@@ -53,9 +53,9 @@ class TestServer(Server):
         media_id = media_data["id"]
         assert media_id in map(lambda x: x["id"], self.get_media_list())
         if media_id == 1:
-            self.update_chapter_data(media_data, id=1, title="Chapter1", number=1, date="2020-07-08", premium=self.has_login),
-            self.update_chapter_data(media_data, id=2, title="Chapter2", number=2, date="2020-07-09", premium=self.has_login),
-            self.update_chapter_data(media_data, id=3, title="Chapter3", number=3, date="2020-07-10", premium=self.has_login)
+            self.update_chapter_data(media_data, id=1, title="Chapter1", number=1, date="2020-07-08", premium=self.has_login()),
+            self.update_chapter_data(media_data, id=2, title="Chapter2", number=2, date="2020-07-09", premium=self.has_login()),
+            self.update_chapter_data(media_data, id=3, title="Chapter3", number=3, date="2020-07-10", premium=self.has_login())
         elif media_id == 2:
             self.update_chapter_data(media_data, id=4, title="Chapter1", number=1),
             self.update_chapter_data(media_data, id=5, title="Chapter1-1", number="1-1"),
@@ -65,12 +65,12 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=9, title="Chapter10.5", number="10.5"),
             self.update_chapter_data(media_data, id=10, title="Chapter100", number="100"),
             self.update_chapter_data(media_data, id=11, title="Chapter1000", number="1000"),
-            self.update_chapter_data(media_data, id=12, title="Chapter9999", number="9999", premium=self.has_login),
+            self.update_chapter_data(media_data, id=12, title="Chapter9999", number="9999", premium=self.has_login()),
         elif media_id == 3:
             self.update_chapter_data(media_data, id=21, title="Chapter1", number=1, date="2020-07-08"),
             self.update_chapter_data(media_data, id=22, title="Chapter2", number=1.5, date="2020-07-08"),
-            self.update_chapter_data(media_data, id=23, title="Chapter3", number=2, date="2020-07-08", premium=self.has_login),
-            self.update_chapter_data(media_data, id=24, title="Chapter4", number=3, date="2020-07-08", premium=self.has_login),
+            self.update_chapter_data(media_data, id=23, title="Chapter3", number=2, date="2020-07-08", premium=self.has_login()),
+            self.update_chapter_data(media_data, id=24, title="Chapter4", number=3, date="2020-07-08", premium=self.has_login()),
         elif media_id == 4:
             self.update_chapter_data(media_data, id=25, title="Chapter1", number=2, date="1998-08-10"),
             self.update_chapter_data(media_data, id=26, title="ChapterSpecial", number=None, date="1998-08-10"),
