@@ -14,7 +14,7 @@ class RemoteServer(Server):
     id = None
     domain_list = None
     domain = None
-    path = None
+    path = "/"
     auth = False
     username, password = None, None
 
@@ -39,6 +39,8 @@ class RemoteServer(Server):
 
     def get_base_url(self):
         if not self.domain:
+            if self.has_login():
+                self.get_credentials()
             with self._lock:
                 saved_err = None
                 if not self.domain:
@@ -59,14 +61,19 @@ class RemoteServer(Server):
     def login(self, username, password):
         self.session_get(self.get_base_url(), auth=(username, password))
         self.username, self.password = username, password
+        self.is_premium = True
 
     def get_credentials(self):
-        return super.get_credentials() if self.username is None else self.username, self.password
+        if self.username is None or self.password is None:
+            u, p = super().get_credentials()
+            if self.username is None:
+                self.username = u
+            if self.password is None:
+                self.password = p
+        return (self.username, self.password)
 
     def session_get(self, url, **kwargs):
-        if self.username is None and self.has_login():
-            self.relogin()
-        if self.has_login():
+        if self.has_login() and "auth" not in kwargs:
             kwargs["auth"] = self.get_credentials()
 
         return super().session_get(url, **kwargs)

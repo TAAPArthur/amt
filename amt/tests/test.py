@@ -967,6 +967,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
         os.makedirs(TEST_TEMP)
         os.chdir(TEST_TEMP)
         cls.web_server = subprocess.Popen(["python", "-m", "http.server", str(cls.port)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(.1)
 
     @classmethod
     def tearDownClass(cls):
@@ -993,12 +994,19 @@ id=remote_test_{media_type.name}
 domain_list=http://localhost:-1{self.port};__bad_domain__;http://localhost:{self.port}
 path={path}/{media_type.name}/
 media_type={media_type.name}
+
+id=remote_test_{media_type.name}_auth
+domain_list=http://localhost:-1{self.port};__bad_domain__;http://localhost:{self.port}
+path={path}/{media_type.name}/
+media_type={media_type.name}
+auth=True
+username=admin
+password=root
 """)
         self.reload(True)
         if ENABLED_SERVERS and not self.media_reader.get_servers():
             self.skipTest("Server not enabled")
-        self.assertEqual(len(self.media_reader.get_servers()), len(list(MediaType)))
-        time.sleep(.1)
+        self.assertEqual(len(self.media_reader.get_servers()), len(list(MediaType)) * 2)
 
     def test_no_valid_domains(self):
         with open(self.settings.get_remote_servers_config_file(), "w") as f:
@@ -1011,9 +1019,28 @@ media_type=ANIME
         self.reload(True)
         self.assertRaises(Exception, self.add_test_media)
 
+    def test_load_credentials(self):
+        with open(self.settings.get_remote_servers_config_file(), "w") as f:
+            f.write(f"""
+id=remote_test_load_credentials
+domain_list=http://localhost:{self.port}
+auth=True
+id=remote_test_load_credentials_missing_password
+domain_list=http://localhost:{self.port}
+auth=True
+username=A
+id=remote_test_load_credentials_missing_username
+domain_list=http://localhost:{self.port}
+auth=True
+password=A
+""")
+        self.reload(True)
+        self.assertEqual(3, len(self.media_reader.get_servers_ids()))
+        self.test_workflow()
+
     def test_media_num(self):
         self.add_test_media()
-        self.assertEqual(3 * len(MediaType), len(self.media_reader.get_media_ids()))
+        self.assertEqual(3 * len(self.media_reader.get_servers_ids()), len(self.media_reader.get_media_ids()))
 
     def test_validate_media(self):
         media_list = self.add_test_media()
@@ -1022,10 +1049,6 @@ media_type=ANIME
             self.assertFalse(media_data["name"].endswith(".test"), media_data["name"])
             self.assertFalse(media_data["name"].endswith("/"), media_data["name"])
             self.assertTrue(media_data["chapters"])
-
-    def test_play(self):
-        self.add_test_media()
-        self.assertTrue(self.media_reader.play())
 
     def test_stream(self):
         for media_data in self.add_test_media(media_type=MediaType.ANIME):
@@ -1038,11 +1061,6 @@ media_type=ANIME
                 self.media_reader.remove_media(media_data)
                 self.assertTrue(self.media_reader.stream(url))
 
-    def test_download_all(self):
-        self.add_test_media()
-        self.media_reader.download_unread_chapters()
-        self.verify_all_chapters_downloaded()
-
     def test_download_resources(self):
         media_list = self.add_test_media()
         self.media_reader.download_unread_chapters()
@@ -1052,7 +1070,7 @@ media_type=ANIME
                 dir_path = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), self.resources_dir_name)
                 if os.path.exists(dir_path):
                     num_files += 1
-        self.assertEqual(len(MediaType), num_files)
+        self.assertEqual(len(self.media_reader.get_servers_ids()), num_files)
 
 
 class ArgsTest(CliUnitTestClass):
