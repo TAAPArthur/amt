@@ -583,6 +583,7 @@ class MediaReaderTest(BaseUnitTestClass):
         name, value = "Test", "value"
         name2, value2 = "Test2", "value2"
         self.settings.cookie_files = []
+        os.makedirs(self.settings.cache_dir, exist_ok=True)
         with open(self.settings.get_cookie_file(), "w") as f:
             f.write("\t".join([TestServer.domain, "TRUE", "/", "FALSE", "1640849596", name, value, "None"]))
             f.write("\n#Comment\n")
@@ -963,6 +964,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
     def setUp(self):
         super().setUp()
         path = "Media"
+        os.makedirs(self.settings.config_dir)
         for media_type in list(MediaType):
             for p in (f"Test{media_type.name}2/1/file.test", f"Test{media_type.name}/file2.test", f"{media_type.name} file.test"):
                 relative_path = os.path.join(TEST_TEMP, path, media_type.name, p)
@@ -1041,6 +1043,10 @@ media_type=ANIME
 
 
 class ArgsTest(CliUnitTestClass):
+
+    def test_no_auto_create_dirs(self):
+        parse_args(media_reader=self.media_reader, args=["list"])
+        self.assertFalse(os.listdir(TEST_HOME))
 
     @patch("builtins.input", return_value="0")
     def test_auth(self, input):

@@ -89,9 +89,6 @@ class Settings:
         self.no_save_session = no_save_session
         if not no_load:
             self.load(skip_env_override=skip_env_override)
-        os.makedirs(self.config_dir, exist_ok=True)
-        os.makedirs(self.cache_dir, exist_ok=True)
-        os.makedirs(self.data_dir, exist_ok=True)
 
     def get_bundle_metadata_file(self):
         return os.path.join(self.data_dir, "bundles.json")
@@ -155,6 +152,7 @@ class Settings:
         return f if not isinstance(f, list) else ",".join(map(str, f))
 
     def save(self):
+        os.makedirs(self.config_dir, exist_ok=True)
         with open(self.get_settings_file(), "w") as f:
             for name in sorted(Settings.get_members()):
                 f.write(f"{name}={self.get_field_as_string(name)}\n")

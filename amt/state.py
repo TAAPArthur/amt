@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 
 from .util.media_type import MediaType
 
@@ -26,7 +27,7 @@ class State:
 
     @staticmethod
     def get_hash(json_dict):
-        if not json_dict:
+        if not json_dict or not any(map(lambda x: json_dict[x], json_dict)):
             return 0, ""
         json_str = json.dumps(json_dict, indent=4, sort_keys=True)
         return hash(json_str), json_str
@@ -47,19 +48,17 @@ class State:
         if self.hashes.get(file_name, 0) == h:
             return False
         self.hashes[file_name] = h
-        try:
-            with open(file_name, "w") as jsonFile:
-                jsonFile.write(json_str)
-            logging.info("Persisting state to %s", file_name)
-        except FileNotFoundError:
-            return False
+        os.makedirs(os.path.dirname(file_name), exist_ok=True)
+        with open(file_name, "w") as jsonFile:
+            jsonFile.write(json_str)
+        logging.info("Persisting state to %s", file_name)
 
         return True
 
     def save(self):
         self.save_session_cookies()
-        self.save_to_file(self.settings.get_bundle_metadata_file(), self.bundles)
         self.save_to_file(self.settings.get_metadata_file(), self.all_media)
+        self.save_to_file(self.settings.get_bundle_metadata_file(), self.bundles)
         for media_data in self.media.values():
             self.save_to_file(self.settings.get_chapter_metadata_file(media_data), media_data.chapters)
 
@@ -122,6 +121,7 @@ class State:
         if self.settings.no_save_session or not self._set_session_hash():
             return False
 
+        os.makedirs(self.settings.cache_dir, exist_ok=True)
         with open(self.settings.get_cookie_file(), "w") as f:
             for cookie in self.session.cookies:
                 l = [cookie.domain, str(cookie.domain_specified), cookie.path, str(cookie.secure).upper(), str(cookie.expires) if cookie.expires else "", cookie.name, cookie.value]
