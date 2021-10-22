@@ -119,7 +119,7 @@ class GenericServer(MediaServer):
     progress_volumes = False
     # If set, updating will cause chapters that are now longer available on the server to be removed
     official = True
-    syncrhonize_chapter_downloads = False
+    synchronize_chapter_downloads = False
     has_free_chapters = True
 
     def get_media_list(self, limit=None):  # pragma: no cover
@@ -330,11 +330,11 @@ class Server(GenericServer):
             logging.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
         try:
-            if self.syncrhonize_chapter_downloads:
+            if self.synchronize_chapter_downloads:
                 self._lock.acquire()
             return self._download_chapter(media_data, chapter_data, page_limit, offset, stream_index)
         finally:
-            if self.syncrhonize_chapter_downloads:
+            if self.synchronize_chapter_downloads:
                 self._lock.release()
 
     def _download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0):
