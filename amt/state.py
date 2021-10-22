@@ -1,7 +1,6 @@
 import json
 import logging
 
-from . import cookie_manager
 from .util.media_type import MediaType
 
 
@@ -107,7 +106,13 @@ class State:
         for path in self.settings.get_cookie_files():
             try:
                 with open(path, "r") as f:
-                    cookie_manager.load_cookies(f, self.session)
+                    for line in f:
+                        line = line.rstrip()
+                        if not line or line[0].startswith("#"):
+                            continue
+                        domain, domain_specified, path, secure, expires, name, value, _ = \
+                            (line + "\t").split("\t", 7)
+                        self.session.cookies.set(name, value, path=path, domain=domain, secure=secure == "TRUE", expires=expires if expires else None)
             except FileNotFoundError:
                 pass
         self._set_session_hash()

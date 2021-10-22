@@ -27,13 +27,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     sub_parsers = parser.add_subparsers(dest="type")
 
-    # cookie
-    cookie_parser = sub_parsers.add_parser("add-cookie", description="Add cookie")
-    cookie_parser.add_argument("--path", default="/")
-    cookie_parser.add_argument("id", choices=[server.id for server in media_reader.get_servers() if server.domain])
-    cookie_parser.add_argument("name")
-    cookie_parser.add_argument("value")
-
     # add remove
     search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
     search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")

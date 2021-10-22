@@ -43,9 +43,6 @@ class RequestServer:
         r.raise_for_status()
         return r
 
-    def add_cookie(self, name, value, domain=None, path="/"):
-        self.session.cookies.set(name, value, domain=domain or self.domain, path=path)
-
     def session_get_cookie(self, name, domain=None):
         for cookie in self.session.cookies:
             if cookie.name == name and cookie.domain in domain:
@@ -112,7 +109,6 @@ class GenericServer(MediaServer):
     id = None
     # If set this value will be used for credential lookup instead of id
     alias = None
-    domain = None
     media_type = MediaType.MANGA
     # Pattern to match to determine if this server can stream a given url.
     # It is also used to determine if server can add the media based on its chapter url

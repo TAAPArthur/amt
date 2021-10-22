@@ -101,7 +101,3 @@ class MediaReaderCLI(MediaReader):
         print("Get token form", tracker.get_auth_url())
         if not just_print:
             self.settings.store_secret(tracker.id, input("Enter token:"))
-
-    def add_cookie(self, id, name, value, path):
-        server = self.get_server(id)
-        server.add_cookie(name, value, domain=server.domain, path=path)

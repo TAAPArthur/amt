@@ -597,12 +597,12 @@ class MediaReaderTest(BaseUnitTestClass):
         self.media_reader.settings.no_load_session = False
         self.media_reader.settings.no_save_session = False
         key, value = "Test", "value"
-        self.test_server.add_cookie(key, value)
+        self.media_reader.session.cookies.set(key, value)
         assert self.media_reader.state.save_session_cookies()
-        self.test_server.add_cookie(key, "bad_value")
+        self.media_reader.session.cookies.set(key, "bad_value")
         self.media_reader.state.load_session_cookies()
         self.assertEqual(value, self.media_reader.session.cookies.get(key))
-        self.test_server.add_cookie(key, "bad_value")
+        self.media_reader.session.cookies.set(key, "bad_value")
         self.media_reader.state.load_session_cookies()
         assert not self.media_reader.state.save_session_cookies()
 
@@ -1079,8 +1079,7 @@ class ArgsTest(CliUnitTestClass):
 
     def test_cookies(self):
         key, value = "Key", "value"
-        parse_args(media_reader=self.media_reader, args=["add-cookie", TestServer.id, key, value])
-        self.assertEqual(self.media_reader.session.cookies.get(key), value)
+        self.media_reader.session.cookies.set(key, value)
         parse_args(media_reader=self.media_reader, args=["--clear-cookies", "list"])
         self.assertNotEqual(self.media_reader.session.cookies.get(key), value)
 
