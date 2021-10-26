@@ -54,7 +54,7 @@ class Settings:
     # Any keys defined in this dict should be declared in the class
     _specific_settings = {
         "viewer": {
-            MediaType.ANIME.name: "mpv --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
+            MediaType.ANIME.name: "mpv --merge-files --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
             MediaType.MANGA.name: "sxiv {media}",
             MediaType.NOVEL.name: "zathura {media}"
         }
@@ -71,7 +71,6 @@ class Settings:
     force_page_parity = 0  # When downloading MANGA, if not equal to the number of pages % 2, add a dummy page
     force_page_parity_end = False  # Add dummy page before (default) or after real pages
     keep_unavailable = False
-    merge_ts_files = True
     post_process_cmd = ""
     text_languages = ["en", "en-US", "English"]
     threads = 8  # per server thread count

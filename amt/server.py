@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import shutil
 from functools import cache
 from threading import Lock
 
@@ -248,16 +247,8 @@ class GenericServer(MediaServer):
 
     def post_download(self, media_data, chapter_data, dir_path, pages):
         """ Runs after all pages have been downloaded
-        The default implementation combines ts files into a single mp4
         """
-        if self.settings.get_merge_ts_files(media_data) and pages[0]["ext"] == "ts":
-            dest = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext="mp4"))
-            with open(dest, 'wb') as dest_file:
-                for page in pages:
-                    with open(page["path"], 'rb') as f:
-                        shutil.copyfileobj(f, dest_file)
-            for page in pages:
-                os.remove(page["path"])
+        pass
 
 
 class Server(GenericServer):
