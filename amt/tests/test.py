@@ -726,19 +726,17 @@ class MediaReaderTest(BaseUnitTestClass):
             assert all(map(lambda x: x["read"], chapter_list[:-1]))
             assert not chapter_list[-1]["read"]
 
-    def test_bundle(self):
-        self.add_test_media(media_type=MediaType.MANGA)
-        name = self.media_reader.bundle_unread_chapters()
-        assert self.media_reader.read_bundle(name)
-        self.verify_all_chapters_read()
+    def test_bundle_read(self):
+        media_list = self.add_test_media(media_type=MediaType.MANGA)
+        for media_data in media_list:
+            self.media_reader.bundle_unread_chapters(name=media_data.global_id)
+            assert self.media_reader.read_bundle()
+            self.verify_all_chapters_read(name=media_data)
 
-    def test_bundle_shuffle(self):
+    def test_bundle_unique_name(self):
         self.add_test_media(media_type=MediaType.MANGA, limit=1)
-        names = set()
-        for i in range(10):
-            name = self.media_reader.bundle_unread_chapters(shuffle=True)
-            self.assertFalse(name in names)
-            names.add(name)
+        name = self.media_reader.bundle_unread_chapters()
+        self.assertNotEqual(name, self.media_reader.bundle_unread_chapters())
 
     def test_bundle_empty(self):
         assert not self.media_reader.bundle_unread_chapters()

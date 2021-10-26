@@ -316,10 +316,11 @@ class MediaReader:
         logging.info("Bundling %s", paths)
         bundle_name = self.settings.bundle(paths, name=name, media_data=self.state.get_lead_media_data(bundle_data))
         self.state.bundles[bundle_name] = bundle_data
+        self.state.bundles[""] = bundle_name
         return bundle_name
 
-    def read_bundle(self, name):
-        bundle_name = name if name else max(self.state.bundles.keys())
+    def read_bundle(self, name=None):
+        bundle_name = name if name else self.state.bundles.get("", max(self.state.bundles.keys()))
         if bundle_name in self.bundles and self.settings.open_bundle_viewer(bundle_name, self.state.get_lead_media_data(bundle_name)):
             self.state.mark_bundle_as_read(bundle_name)
             return True
