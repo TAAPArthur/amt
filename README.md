@@ -80,7 +80,7 @@ Optional dependency breakdown
 * requests_oauthlib:   required to enable VRV
 
 ## Want to help
-See [CONTRIBUTING.MD](CONTRIBUTING.MD)
+See [CONTRIBUTING](CONTRIBUTING.md)
 
 ## Why another downloader/tracker
 There didn't seem to be adequate alternatives that had the following features
