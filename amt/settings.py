@@ -77,8 +77,8 @@ class Settings:
     threads = 8  # per server thread count
     viewer = ""
 
-    def __init__(self, home=Path.home(), no_save_session=False, no_load=False, skip_env_override=False):
-        self.home = home
+    def __init__(self, home=None, no_save_session=False, no_load=False, skip_env_override=False):
+        home = home if home else os.getenv("AMT_HOME", Path.home())
         self.config_dir = os.path.join(os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config")), APP_NAME)
         self.cache_dir = os.path.join(os.getenv("XDG_CACHE_HOME", os.path.join(home, ".cache")), APP_NAME)
         self.data_dir = os.path.join(os.getenv("XDG_DATA_HOME", os.path.join(home, ".local/share")), APP_NAME)
