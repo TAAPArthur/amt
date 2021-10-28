@@ -16,7 +16,7 @@ There are also Trackers and TorrentHelpers, but there's only currently one of ea
 
 
 ## Desired missing servers (in order)
-* Crunchyroll Beta (Anime; type 2)
+* ~Crunchyroll Beta (Anime; type 2)~
 * Funimation digital library (Anime; type 3)
 * HumbleBundle (type 3)
 * AnimeLab + AnimeLab movies (Anime; type 2) (only available in AU; WIP)

@@ -14,7 +14,7 @@ class Vrv(Server):
     id = "vrv"
     home = "https://vrv.co/"
     media_type = MediaType.ANIME
-    stream_url_regex = re.compile(r"vrv.co/watch/(\w*)/.+")
+    stream_url_regex = re.compile(r"(?:beta.crunchyroll|vrv).\w+/watch/(\w*)/.+")
     is_premium = True
 
     api_param_regex = re.compile(r"window.__APP_CONFIG__\s*=\s*(.*);")
