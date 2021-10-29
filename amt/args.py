@@ -29,10 +29,10 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # add remove
     search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
-    search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
-    search_parsers.add_argument("--limit", type=int, default=None, help="How many chapters will be downloaded per series")
-    search_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
     search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
+    search_parsers.add_argument("--limit", type=int, default=None, help="How many chapters will be downloaded per series")
+    search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
+    search_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
     search_parsers.add_argument("name", help="The string to search by")
     search_parsers.set_defaults(func=media_reader.search_for_media)
 
@@ -56,8 +56,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     update_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?", help="Update only specified media")
 
     download_parser = sub_parsers.add_parser("download-unread", help="Downloads all chapters that have not been read")
+    download_parser.add_argument("--limit", "-l", type=int, default=0, help="How many chapters will be downloaded per series")
     download_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
-    download_parser.add_argument("--limit", type=int, default=0, help="How many chapters will be downloaded per series")
     download_parser.add_argument("--stream-index", "-q", default=0, type=int)
     download_parser.add_argument("name", choices=media_reader.get_all_names(), default=None, nargs="?", help="Download only series determined by name")
     download_parser.set_defaults(func=media_reader.download_unread_chapters)
@@ -72,9 +72,9 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     # media consumption
 
     bundle_parser = sub_parsers.add_parser("bundle", help="Bundle individual manga pages into a single file")
-    bundle_parser.add_argument("-s", "--shuffle", default=False, action="store_const", const=True)
-    bundle_parser.add_argument("-l", "--limit", default=0, type=int)
-    bundle_parser.add_argument("-i", "--ignore-errors", default=False, action="store_const", const=True)
+    bundle_parser.add_argument("--ignore-errors", "-i", default=False, action="store_const", const=True)
+    bundle_parser.add_argument("--limit", "-l", default=0, type=int)
+    bundle_parser.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
     bundle_parser.add_argument("name", choices=media_reader.get_all_names(MediaType.MANGA), default=None, nargs="?")
     bundle_parser.set_defaults(func=media_reader.bundle_unread_chapters)
 
@@ -106,8 +106,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     consume_parser.set_defaults(func=media_reader.play)
 
     steam_parser = sub_parsers.add_parser("stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
-    steam_parser.add_argument("--cont", default=False, action="store_const", const=True)
-    steam_parser.add_argument("--download", default=False, action="store_const", const=True)
+    steam_parser.add_argument("--cont", "-c", default=False, action="store_const", const=True)
+    steam_parser.add_argument("--download", "-d", default=False, action="store_const", const=True)
     steam_parser.add_argument("--stream-index", "-q", default=0, type=int)
     steam_parser.add_argument("url")
 
@@ -119,11 +119,11 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # clean
     clean_parser = sub_parsers.add_parser("clean", help="Removes unused media")
-    clean_parser.add_argument("-b", "--bundles", default=False, action="store_const", const=True, help="Removes bundle info")
-    clean_parser.add_argument("--remove-disabled-servers", default=False, action="store_const", const=True, help="Removes all servers not belonging to the active list")
+    clean_parser.add_argument("--bundles", "-b", default=False, action="store_const", const=True, help="Removes bundle info")
     clean_parser.add_argument("--include-local-servers", default=False, action="store_const", const=True, help="Doesn't skip local servers")
-    clean_parser.add_argument("--remove-read", default=False, action="store_const", const=True, help="Removes all read chapters")
+    clean_parser.add_argument("--remove-disabled-servers", default=False, action="store_const", const=True, help="Removes all servers not belonging to the active list")
     clean_parser.add_argument("--remove-not-on-disk", default=False, action="store_const", const=True, help="Removes references where the backing directory is emtpy")
+    clean_parser.add_argument("--remove-read", default=False, action="store_const", const=True, help="Removes all read chapters")
 
     # external
 
@@ -134,17 +134,17 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     import_parser = sub_parsers.add_parser("import")
     import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
     import_parser.add_argument("--media-type", default="ANIME", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
-    import_parser.add_argument("--skip-add", action="store_const", const=True, default=False, help="Don't auto add media")
     import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
+    import_parser.add_argument("--skip-add", action="store_const", const=True, default=False, help="Don't auto add media")
     import_parser.add_argument("files", nargs="+")
     import_parser.set_defaults(func=media_reader.import_media)
 
     # info
     list_parser = sub_parsers.add_parser("list")
+    list_parser.add_argument("--csv", action="store_const", const=True, default=False, help="List in a script friendly format")
     list_parser.add_argument("--media-type", default=None, choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     list_parser.add_argument("--out-of-date-only", default=False, action="store_const", const=True)
     list_parser.add_argument("--tag", const="", nargs="?")
-    list_parser.add_argument("--csv", action="store_const", const=True, default=False, help="List in a script friendly format")
     list_parser.add_argument("name", nargs="?", default=None, choices=media_reader.get_servers_ids())
     list_parser.set_defaults(func=media_reader.list_media)
 
@@ -155,8 +155,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_parsers.add_parser("list-servers")
 
     list_from_servers = sub_parsers.add_parser("list-from-servers")
+    list_from_servers.add_argument("--limit", "-l", type=int, default=None)
     list_from_servers.add_argument("server_id", choices=media_reader.get_servers_ids())
-    list_from_servers.add_argument("--limit", type=int, default=None)
     list_from_servers.set_defaults(func=media_reader.list_some_media_from_server)
 
     tag_parser = sub_parsers.add_parser("tag")
@@ -175,14 +175,14 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # stats
     stats_parser = sub_parsers.add_parser("stats", description="Show tracker stats")
-    stats_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
-    stats_parser.add_argument("--refresh", action="store_const", const=True, default=False, help="Don't use cached data")
     stats_parser.add_argument("--details", action="store_const", const=True, default=False, help="Show media")
     stats_parser.add_argument("--details-type", "-d", choices=list(Details), type=Details.__getattr__, default=Details.NAME, help="How details are displayed")
-    stats_parser.add_argument("--stat-group", "-g", choices=list(StatGroup), type=StatGroup.__getattr__, default=StatGroup.NAME, help="Choose stat grouping")
-    stats_parser.add_argument("--sort-index", "-s", choices=list(SortIndex), type=SortIndex.__getattr__, default=SortIndex.SCORE.name, help="Choose sort index")
+    stats_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     stats_parser.add_argument("--min-count", "-m", type=int, default=0, help="Ignore groups with fewer than N elements")
     stats_parser.add_argument("--min-score", type=float, default=1, help="Ignore entries with score less than N")
+    stats_parser.add_argument("--refresh", action="store_const", const=True, default=False, help="Don't use cached data")
+    stats_parser.add_argument("--sort-index", "-s", choices=list(SortIndex), type=SortIndex.__getattr__, default=SortIndex.SCORE.name, help="Choose sort index")
+    stats_parser.add_argument("--stat-group", "-g", choices=list(StatGroup), type=StatGroup.__getattr__, default=StatGroup.NAME, help="Choose stat grouping")
     stats_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
     stats_parser.add_argument("username", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
 
@@ -207,8 +207,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     copy_tracker_parser.add_argument("dst", choices=media_reader.get_all_single_names(), help="Dst media")
 
     sync_parser = sub_parsers.add_parser("sync", description="Attempts to update tracker with current progress")
-    sync_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow progress to decrease")
     sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
+    sync_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow progress to decrease")
     sync_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     sync_parser.add_argument("name", choices=media_reader.get_all_names(), nargs="?", help="Media to sync")
     sync_parser.set_defaults(func=media_reader.sync_progress)
