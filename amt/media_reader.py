@@ -4,7 +4,6 @@ import logging
 import os
 import pkgutil
 import random
-import re
 import shutil
 
 import requests
@@ -18,7 +17,8 @@ from .servers.local import get_local_server_id
 from .settings import Settings
 from .state import State
 from .util.media_type import MediaType
-from .util.name_parser import get_media_name_from_file
+from .util.name_parser import (find_media_with_similar_name_in_list,
+                               get_alt_names, get_media_name_from_file)
 
 SERVERS = set()
 TRACKERS = set()
@@ -472,17 +472,12 @@ class MediaReader:
                 media_data["progress"] = media_data.get_last_read()
         return bool(data)
 
-    def search_for_media(self, name, media_type, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
-        alt_names = list(filter(lambda x: x, dict.fromkeys([name, name.split(" Season")[0], re.sub(r"\W*$", "", name), re.sub(r"\s*[^\w\d\s]+.*$", "", name), re.sub(r"\W.*$", "", name), get_media_name_from_file(name, is_dir=True)]))) if not exact else [name]
+    def search_for_media(self, name, media_type=None, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
+        alt_names = get_alt_names(name) if not exact else [name]
         media_data = known_matching_media = None
 
         if not skip_local_search:
-            for name in alt_names:
-                known_matching_media = list(filter(lambda media_data: not self.get_tracker_info(media_data) and
-                                                   (not media_type or media_type & media_data["media_type"]) and
-                                                   (name.lower() in (media_data["name"].lower(), media_data["season_title"].lower())), self.get_media()))
-                if known_matching_media:
-                    break
+            known_matching_media = list(find_media_with_similar_name_in_list(alt_names, filter(lambda x: not self.get_tracker_info(x), self.get_media(media_type=media_type))))
 
         if known_matching_media:
             logging.debug("Checking among known media")

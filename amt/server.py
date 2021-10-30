@@ -9,6 +9,8 @@ from requests.exceptions import HTTPError
 from .job import Job
 from .state import ChapterData, MediaData
 from .util.media_type import MediaType
+from .util.name_parser import (find_media_with_similar_name_in_list,
+                               get_alt_names)
 
 
 def get_extension(url):
@@ -134,8 +136,7 @@ class GenericServer(MediaServer):
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
-        term_lower = term.lower()
-        return list(filter(lambda x: term_lower in x['name'].lower(), self.get_media_list(limit=limit)))
+        return list(find_media_with_similar_name_in_list(get_alt_names(term), self.get_media_list(limit=limit)))
 
     def update_media_data(self, media_data):  # pragma: no cover
         """

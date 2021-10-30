@@ -25,3 +25,14 @@ def get_media_id_from_name(media_name):
 def get_number_from_file_name(file_name, media_name="", default_num=0):
     matches = number_regex.findall(file_name.replace(media_name, "").replace("_", " "))
     return float(max(matches, key=len)) if matches else default_num
+
+
+def get_alt_names(media_name):
+    return list(filter(lambda x: x, dict.fromkeys([media_name, media_name.split(" Season")[0], re.sub(r"\W*$", "", media_name), re.sub(r"\s*[^\w\d\s]+.*$", "", media_name), re.sub(r"\W.*$", "", media_name), get_media_name_from_file(media_name, is_dir=True)])))
+
+
+def find_media_with_similar_name_in_list(media_names, media_list):
+    media_names = list(map(str.lower, media_names))
+    for media_data in media_list:
+        if any(map(lambda name: name in media_data["name"].lower() or name in media_data["season_title"].lower(), media_names)):
+            yield media_data
