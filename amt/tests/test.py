@@ -1765,6 +1765,10 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         self.assertFalse(chapter_data["premium"])
         server.download_chapter(media_data, chapter_data, page_limit=7, offset=1)
 
+    def test_magnasee_alternative_chapter_url(self):
+        url = "https://mangasee123.com/read-online/Onepunch-Man-chapter-148-index-2-page-1.html"
+        self.media_reader.stream(url, download=True)
+
     def test_jnovel_club_parts_autodelete(self):
         from ..servers.jnovelclub import JNovelClubParts
         server = self.media_reader.get_server(JNovelClubParts.id)
