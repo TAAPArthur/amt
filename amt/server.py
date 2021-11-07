@@ -25,9 +25,23 @@ class RequestServer:
     session = None
     settings = None
 
+    # If true a cloudscraper object should be given instead of a normal session
+    need_cloud_scraper = False
+
     def __init__(self, session, settings=None):
         self.settings = settings
-        self.session = session
+        if self.need_cloud_scraper:
+            import cloudscraper
+            if getattr(RequestServer, "cloudscraper", None) is None:
+                RequestServer.cloudscraper = cloudscraper.create_scraper(browser={
+                    'browser': 'firefox',
+                    'platform': 'linux',
+                    'desktop': True
+                })
+                RequestServer.cloudscraper.cookies = session.cookies
+            self.session = RequestServer.cloudscraper
+        else:
+            self.session = session
         self._lock = Lock()
 
     @classmethod

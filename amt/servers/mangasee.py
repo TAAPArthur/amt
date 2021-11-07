@@ -1,14 +1,13 @@
 import json
 import re
 
-import cloudscraper
-
 from ..server import Server
 
 
 class Mangasee(Server):
     id = "mangasee"
     official = False
+    need_cloud_scraper = True
 
     base_url = "https://mangasee123.com"
     media_list_url = base_url + "/_search.php"
@@ -21,14 +20,6 @@ class Mangasee(Server):
     page_regex = re.compile(r"vm.CurChapter = (.*);")
     domain_regex = re.compile(r"vm.CurPathName\w* = \"(.*)\";")
     stream_url_regex = re.compile(r"mangasee123.com/read-online/(.*)-chapter-(\d*\.?\d?)(-index-\d+)?-page")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.session = cloudscraper.create_scraper(sess=self.session, browser={
-            'browser': 'firefox',
-            'platform': 'linux',
-            'desktop': True
-        })
 
     def get_media_data_from_url(self, url):
         media_id = self.stream_url_regex.search(url).group(1)

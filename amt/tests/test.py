@@ -1640,6 +1640,22 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
             media_data = self._test_list_and_search(server)[0]
             server.download_torrent_file(media_data)
 
+    def test_cookie_saving(self):
+        sessions = []
+        self.settings.no_save_session = False
+        for server in self.media_reader.get_servers():
+            if server.session not in sessions:
+                with self.subTest(server=server.id):
+                    sessions.append(server.session)
+                    self.assertFalse(server.session.cookies)
+                    r = server.session.get("https://www.crunchyroll.com")
+                    self.assertTrue(r.cookies)
+                    self.assertTrue(server.session.cookies is self.media_reader.session.cookies)
+                    self.assertTrue(self.media_reader.state.save_session_cookies())
+                    server.session.cookies.clear()
+                    self.assertTrue(self.media_reader.state.save_session_cookies())
+        self.assertEqual(min(2, len(self.media_reader.get_servers_ids())), len(sessions))
+
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
