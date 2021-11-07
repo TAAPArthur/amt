@@ -352,7 +352,10 @@ class DecoderTest(BaseUnitTestClass):
 
 class SettingsTest(BaseUnitTestClass):
 
-    separators = ("\t", "\n", "\r", "some_string")
+    def setUp(self):
+        super().setUp()
+        self.settings.password_load_cmd = f"cat {TEST_HOME}{{server_id}} 2>/dev/null"
+        self.settings.password_save_cmd = f"( echo {{username}}; cat - ) > {TEST_HOME}{{server_id}}"
 
     def test_settings_save_load(self):
         self.reload()
@@ -394,9 +397,6 @@ class SettingsTest(BaseUnitTestClass):
         self.assertEquals(("0", "1"), self.media_reader.settings.get_credentials(TestServerLogin.id))
 
     def test_credentials(self):
-        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
-        self.settings.password_save_cmd = r"cat - > {}{}".format(TEST_HOME, "{}")
-
         server_id = "test"
         assert not self.settings.get_credentials(server_id)
         username, password = "user", "pass"
@@ -409,23 +409,11 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.store_secret(tracker_id, secret)
         assert secret == self.settings.get_secret(tracker_id)
 
-    def test_credentials_seperator(self):
-        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
-        self.settings.password_save_cmd = r"cat - > {}{}".format(TEST_HOME, "{}")
-        username, password = "user", "pass"
-        for sep in self.separators:
-            self.settings.credential_separator = sep
-            with self.subTest(sep=sep):
-                self.settings.store_credentials(TestServer.id, username, password)
-                self.assertEqual((username, password), self.settings.get_credentials(TestServer.id))
-
     def test_credentials_override(self):
-        self.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
         self.settings.password_override_prefix = "prefix"
         server_id = "test"
         username, password = "user", "pass"
-        for sep in self.separators:
-            self.settings.credential_separator = sep
+        for sep in ("\n", "\t"):
             with self.subTest(sep=sep):
                 os.environ[self.settings.password_override_prefix + server_id] = f"{username}{sep}{password}"
                 try:
@@ -1120,8 +1108,8 @@ class ArgsTest(CliUnitTestClass):
     @patch("getpass.getpass", return_value="0")
     def test_set_password(self, input):
         self.media_reader.settings.password_manager_enabled = True
-        self.media_reader.settings.password_load_cmd = "cat {}{} 2>/dev/null".format(TEST_HOME, "{}")
-        self.media_reader.settings.password_save_cmd = r"cat - > {}{}".format(TEST_HOME, "{}")
+        self.settings.password_load_cmd = f"cat {TEST_HOME}{{server_id}} 2>/dev/null"
+        self.settings.password_save_cmd = f"( echo {{username}}; cat - ) > {TEST_HOME}{{server_id}}"
         parse_args(media_reader=self.media_reader, args=["set-password", TestServerLogin.id, "username"])
         self.assertEquals(("username", "0"), self.media_reader.settings.get_credentials(TestServerLogin.id))
 

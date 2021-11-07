@@ -1,6 +1,7 @@
 import getpass
 import logging
 import os
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -23,9 +24,9 @@ class Settings:
 
     # Password manager related settings
     password_manager_enabled = True
-    password_save_cmd = "tpm insert {}"
-    password_load_cmd = "tpm show {}"
-    credential_separator = "\t"
+    password_save_cmd = "{ echo {username}; cat - } | tpm insert {server_id}"
+    password_load_cmd = "tpm show {server_id}"
+    credential_separator_regex = r"[\t|\n]+"
     password_override_prefix = "PASSWORD_OVERRIDE_"
 
     # HTTP related; Generally used as args to requests
@@ -220,10 +221,11 @@ class Settings:
     def _ask_for_credentials(self, server_id: str) -> (str, str):
         if self.password_manager_enabled and self.password_load_cmd:
             try:
-                logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id))
-                output = subprocess.check_output(self.password_load_cmd.format(server_id), shell=self.shell, stdin=subprocess.DEVNULL).strip().decode("utf-8")
-                login, password = output.split(self.credential_separator)
-                return login, password
+                logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id=server_id))
+                output = subprocess.check_output(self.password_load_cmd.format(server_id=server_id), shell=self.shell, stdin=subprocess.DEVNULL).decode("utf-8")
+                if output:
+                    login, password = re.split(self.credential_separator_regex, output)[:2]
+                    return login, password
             except subprocess.CalledProcessError:
                 logging.info("Unable to load credentials for %s", server_id)
         else:
@@ -234,7 +236,7 @@ class Settings:
         if self.password_override_prefix:
             var = os.getenv(self.password_override_prefix + server_id) or os.getenv(self.password_override_prefix + server_id.upper())
             if var:
-                return var.split(self.credential_separator)
+                return re.split(self.credential_separator_regex, var)
         with self._lock:
             return self._ask_for_credentials(server_id)
 
@@ -243,16 +245,16 @@ class Settings:
         if password is None:
             password = getpass.getpass()
         if self.password_manager_enabled and self.password_save_cmd:
-            logging.debug("Storing credentials for %s", server_id)
-            cmd = self.password_save_cmd.format(server_id)
-            subprocess.check_output(cmd, shell=self.shell, input=bytes(f"{username}{self.credential_separator}{password}", "utf8"))
+            cmd = self.password_save_cmd.format(server_id=server_id, username=username)
+            logging.debug("Storing credentials for %s; cmd %s", server_id, cmd)
+            subprocess.check_output(cmd, shell=self.shell, input=bytes(password, "utf8"))
 
     def get_secret(self, server_id: str) -> (str, str):
         result = self.get_credentials(server_id)
-        return result[0] if result else None
+        return result[0] or result[1] if result else None
 
     def store_secret(self, server_id, secret):
-        self.store_credentials(server_id, secret, "token")
+        self.store_credentials(server_id, "", secret)
 
     def run_cmd(self, cmd, wd=None):
         logging.info("Running cmd %s: shell = %s, wd=%s", cmd, self.shell, wd)
