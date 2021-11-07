@@ -218,6 +218,9 @@ class Settings:
     def is_allowed_text_lang(self, lang, media_data):
         return lang in self.get_field("text_languages", media_data)
 
+    def get_prompt_for_input(self, prompt):
+        return input(prompt)
+
     def _ask_for_credentials(self, server_id: str) -> (str, str):
         if self.password_manager_enabled and self.password_load_cmd:
             try:

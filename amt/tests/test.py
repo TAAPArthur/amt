@@ -537,6 +537,10 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             self.media_reader.download_unread_chapters()
             self.verify_all_chapters_downloaded()
 
+    @patch("builtins.input", return_value="0")
+    def test_get_prompt_for_input(self, input):
+        self.assertEquals("0", self.settings.get_prompt_for_input("prompt"))
+
 
 class MediaReaderTest(BaseUnitTestClass):
     def test_add_remove(self):
