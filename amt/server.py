@@ -46,7 +46,7 @@ class RequestServer:
 
     def session_get_cookie(self, name, domain=None):
         for cookie in self.session.cookies:
-            if cookie.name == name and cookie.domain in domain:
+            if cookie.name == name and (domain in cookie.domain or cookie.domain in domain):
                 return cookie.value
         return None
 
@@ -278,7 +278,7 @@ class Server(GenericServer):
         if credential:
             try:
                 logged_in = self.login(credential[0], credential[1])
-            except:
+            except HTTPError:
                 logged_in = False
             if not logged_in:
                 logging.warning("Could not login with username: %s", credential[0])

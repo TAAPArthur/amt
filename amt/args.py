@@ -235,10 +235,10 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     upgrade_parser.set_defaults(func=media_reader.upgrade_state)
 
     # store password state
-    password_parser = sub_parsers.add_parser("set-password", description="Set password")
-    password_parser.add_argument("server_id", choices=media_reader.get_servers_ids_with_logins())
-    password_parser.add_argument("username")
-    password_parser.set_defaults(func=media_reader.settings.store_credentials)
+    set_password_parser = sub_parsers.add_parser("set-password", description="Set password")
+    set_password_parser.add_argument("server_id", choices=media_reader.get_servers_ids_with_logins())
+    set_password_parser.add_argument("username")
+    set_password_parser.set_defaults(func=media_reader.settings.store_credentials)
 
     auth_parser = sub_parsers.add_parser("auth")
     auth_parser.add_argument("--just-print", action="store_const", const=True, default=False, help="Just print the auth url")

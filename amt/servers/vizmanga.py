@@ -11,7 +11,7 @@ from ..util.decoder import paste
 
 class GenericVizManga(Server):
     domain = "viz.com"
-    base_url = "http://www.viz.com"
+    base_url = "https://www.viz.com"
     login_url = base_url + "/manga/try_manga_login"
     refresh_login_url = base_url + "/account/refresh_login_links"
     login_url = base_url + "/account/try_login"

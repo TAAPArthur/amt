@@ -352,11 +352,6 @@ class DecoderTest(BaseUnitTestClass):
 
 class SettingsTest(BaseUnitTestClass):
 
-    def setUp(self):
-        super().setUp()
-        self.settings.password_load_cmd = f"cat {TEST_HOME}{{server_id}} 2>/dev/null"
-        self.settings.password_save_cmd = f"( echo {{username}}; cat - ) > {TEST_HOME}{{server_id}}"
-
     def test_settings_save_load(self):
         self.reload()
         for i in range(2):
@@ -388,6 +383,38 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.load()
         self.assertEqual(target_value_manga, self.settings.get_field("viewer", MediaType.MANGA.name))
         self.assertEqual(target_value_anime, self.settings.get_field("viewer", MediaType.ANIME.name))
+
+    def test_is_allowed_text_lang(self):
+        assert self.settings.is_allowed_text_lang("en", TestServer.id)
+
+    def test_bundle(self):
+        name = self.settings.bundle([])
+        self.assertTrue(self.settings.open_bundle_viewer(name))
+        self.settings.bundle_viewer = "exit 1"
+        self.assertFalse(self.settings.open_bundle_viewer(name))
+
+    def test_post_process_fail(self):
+        self.settings.post_process_cmd = "exit 1"
+        self.assertRaises(CalledProcessError, self.settings.post_process, None, [], None)
+
+    @unittest.skipIf(not HAS_PIL, "PIL is needed to test")
+    def test_force_page_parity(self):
+        media_data = self.add_test_media(media_type=MediaType.MANGA, limit=1)[0]
+        chapter_data = media_data.get_sorted_chapters()[0]
+        for parity in (0, 1, ""):
+            for page_limit in (1, 2):
+                self.settings.force_page_parity = parity
+                self.media_reader.get_server(media_data["server_id"]).download_chapter(media_data, chapter_data, page_limit=page_limit)
+                self.verify_download(media_data, chapter_data)
+                shutil.rmtree(self.settings.get_chapter_dir(media_data, chapter_data), ignore_errors=True)
+
+
+class SettingsCredentialsTest(BaseUnitTestClass):
+
+    def setUp(self):
+        super().setUp()
+        self.settings.password_load_cmd = f"cat {TEST_HOME}{{server_id}} 2>/dev/null"
+        self.settings.password_save_cmd = f"( echo {{username}}; cat - ) > {TEST_HOME}{{server_id}}"
 
     @patch("builtins.input", return_value="0")
     @patch("getpass.getpass", return_value="1")
@@ -422,30 +449,6 @@ class SettingsTest(BaseUnitTestClass):
                     assert not self.settings.get_credentials("bad_id")
                 finally:
                     del os.environ[self.settings.password_override_prefix + server_id]
-
-    def test_is_allowed_text_lang(self):
-        assert self.settings.is_allowed_text_lang("en", TestServer.id)
-
-    def test_bundle(self):
-        name = self.settings.bundle([])
-        self.assertTrue(self.settings.open_bundle_viewer(name))
-        self.settings.bundle_viewer = "exit 1"
-        self.assertFalse(self.settings.open_bundle_viewer(name))
-
-    def test_post_process_fail(self):
-        self.settings.post_process_cmd = "exit 1"
-        self.assertRaises(CalledProcessError, self.settings.post_process, None, [], None)
-
-    @unittest.skipIf(not HAS_PIL, "PIL is needed to test")
-    def test_force_page_parity(self):
-        media_data = self.add_test_media(media_type=MediaType.MANGA, limit=1)[0]
-        chapter_data = media_data.get_sorted_chapters()[0]
-        for parity in (0, 1, ""):
-            for page_limit in (1, 2):
-                self.settings.force_page_parity = parity
-                self.media_reader.get_server(media_data["server_id"]).download_chapter(media_data, chapter_data, page_limit=page_limit)
-                self.verify_download(media_data, chapter_data)
-                shutil.rmtree(self.settings.get_chapter_dir(media_data, chapter_data), ignore_errors=True)
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
@@ -1632,7 +1635,7 @@ class ArgsTest(CliUnitTestClass):
 
 class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
     def test_torrent_helpers(self):
-        self.assertTrue(self.media_reader.get_torrent_helpers())
+        self.assert_server_enabled_or_skip_test(self.media_reader.get_torrent_helpers())
         for server in self.media_reader.get_torrent_helpers():
             media_data = self._test_list_and_search(server)[0]
             server.download_torrent_file(media_data)
@@ -1670,7 +1673,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 self.assert_server_enabled_or_skip_test(servers)
                 self.assertEqual(len(servers), 1)
 
-    def test_media_add_from_url(self):
+    def test_get_media_data_from_url(self):
         def func(url_data):
             url, media_id, season_id, chapter_id = url_data
             with self.subTest(url=url):
@@ -1688,7 +1691,6 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 if chapter_id:
                     self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
                     self.assertTrue(chapter_id in media_data["chapters"])
-                assert self.media_reader.add_from_url(url)
         self.for_each(func, self.streamable_urls)
 
     def test_media_steam(self):
