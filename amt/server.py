@@ -288,21 +288,16 @@ class Server(GenericServer):
         return self.settings.get_credentials(self.id if not self.alias else self.alias)
 
     def relogin(self):
-        credential = self.get_credentials()
-        if credential:
-            try:
-                logged_in = self.login(credential[0], credential[1])
-            except HTTPError:
-                logged_in = False
-            if not logged_in:
-                logging.warning("Could not login with username: %s", credential[0])
-            else:
-                logging.info("Logged into %s; premium %s", self.id, self.is_premium)
-
-            self._is_logged_in = logged_in
-            return logged_in
-        logging.warning("Could not load credentials")
-        return False
+        username, password = self.get_credentials()
+        try:
+            self._is_logged_in = self.login(username, password)
+        except HTTPError:
+            self._is_logged_in = False
+        if not self._is_logged_in:
+            logging.warning("Could not login with username: %s", username)
+        else:
+            logging.info("Logged into %s; premium %s", self.id, self.is_premium)
+        return self._is_logged_in
 
     def is_fully_downloaded(self, media_data, chapter_data):
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)

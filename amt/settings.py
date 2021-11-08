@@ -226,11 +226,11 @@ class Settings:
             try:
                 logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id=server_id))
                 output = subprocess.check_output(self.password_load_cmd.format(server_id=server_id), shell=self.shell, stdin=subprocess.DEVNULL).decode("utf-8")
-                if output:
-                    login, password = re.split(self.credential_separator_regex, output)[:2]
-                    return login, password
-            except subprocess.CalledProcessError:
-                logging.info("Unable to load credentials for %s", server_id)
+                login, password = re.split(self.credential_separator_regex, output)[:2]
+                return login, password
+            except (CalledProcessError, ValueError):
+                logging.error("Unable to load credentials for %s", server_id)
+                raise
         else:
             return input("Username: "), getpass.getpass()
 

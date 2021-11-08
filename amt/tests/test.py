@@ -425,13 +425,13 @@ class SettingsCredentialsTest(BaseUnitTestClass):
 
     def test_credentials(self):
         server_id = "test"
-        assert not self.settings.get_credentials(server_id)
+        self.assertRaises(CalledProcessError, self.settings.get_credentials, server_id)
         username, password = "user", "pass"
         self.settings.store_credentials(server_id, username, password)
         self.assertEqual((username, password), self.settings.get_credentials(server_id))
         tracker_id = "test-tracker"
-        assert not self.settings.get_credentials(tracker_id)
-        assert not self.settings.get_secret(tracker_id)
+        self.assertRaises(CalledProcessError, self.settings.get_credentials, tracker_id)
+        self.assertRaises(CalledProcessError, self.settings.get_secret, tracker_id)
         secret = "MySecret"
         self.settings.store_secret(tracker_id, secret)
         assert secret == self.settings.get_secret(tracker_id)
@@ -446,7 +446,7 @@ class SettingsCredentialsTest(BaseUnitTestClass):
                 try:
                     self.assertEqual(username, self.settings.get_credentials(server_id)[0])
                     self.assertEqual(password, self.settings.get_credentials(server_id)[1])
-                    assert not self.settings.get_credentials("bad_id")
+                    self.assertRaises(CalledProcessError, self.settings.get_credentials, "bad_id")
                 finally:
                     del os.environ[self.settings.password_override_prefix + server_id]
 
@@ -505,10 +505,10 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 assert media_data == list(server.search(name))[0]
                 assert server.search(name[:3])
 
-    def login_test_helper(self):
+    def login_test_helper(self, expected_exception=ValueError):
         server = self.media_reader.get_server(TestServerLogin.id)
         self.add_test_media(server=server)
-        self.assertRaises(ValueError, self.media_reader.download_unread_chapters)
+        self.assertRaises(expected_exception, self.media_reader.download_unread_chapters)
 
     def test_login_non_premium_account(self):
         self.media_reader.get_server(TestServerLogin.id).premium_account = False
@@ -520,7 +520,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
     def test_relogin_fail_to_load_credentials(self):
         self.settings.password_load_cmd = "exit 1"
-        self.login_test_helper()
+        self.login_test_helper(CalledProcessError)
 
     def test_server_download_inaccessiable(self):
         self.media_reader.get_server(TestServerLogin.id).inaccessible = True
