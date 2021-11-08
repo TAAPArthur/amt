@@ -142,8 +142,8 @@ class BaseUnitTestClass(unittest.TestCase):
 
     def check_time(self):
         t = time.time() - self.startTime
-        time_limit = self.TIME_LIMIT if self.TIME_LIMIT else 16 if self.real else .5
-        self.assertTrue(t < time_limit, f"self.id(): {t:.3f}")
+        time_limit = self.TIME_LIMIT if self.TIME_LIMIT else 32 if self.real else .5
+        self.assertTrue(t < time_limit, f"{self.id()}: {t:.3f}")
 
     def tearDown(self):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
@@ -870,7 +870,7 @@ class GenericServerTest():
 
     def test_workflow(self):
         if self.real:
-            self.TIME_LIMIT = 45
+            self.TIME_LIMIT = 60
         self.for_each(self.server_workflow_test_helper, self.media_reader.get_servers())
 
     def test_login_fail(self):
