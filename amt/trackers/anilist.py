@@ -139,15 +139,12 @@ class Anilist(Tracker):
                 break
 
     def update(self, list_of_updates):
-        if not self._get_access_token():
-            logging.error("Access token is not set")
-            raise ValueError
-
+        headers = self.get_auth_header()
         for id, progress, progress_volumes in list_of_updates:
             variables = {"id": id, "progress": int(progress)}
             logging.debug("Updating %d to %d, Volume: %d", id, int(progress), progress_volumes)
             query = self.update_list_query_volumes if progress_volumes else self.update_list_query
-            response = self.session_post(self.url, json={"query": query, "variables": variables}, headers=self.get_auth_header())
+            response = self.session_post(self.url, json={"query": query, "variables": variables}, headers=headers)
             logging.debug(response.text)
 
     def get_auth_url(self):
