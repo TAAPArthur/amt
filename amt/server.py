@@ -88,10 +88,10 @@ class MediaServer(RequestServer):
         id = str(id)
         if isinstance(number, str):
             try:
-                number = int(number)
+                number = float(number.replace("-", "."))
             except ValueError:
                 special = True
-                number = float(number.replace("-", "."))
+                number = float(re.search("\d+", number).group(0))
         if media_data["offset"]:
             number = round(number - media_data["offset"], 4)
         if number % 1 == 0:

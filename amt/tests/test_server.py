@@ -73,6 +73,7 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=24, title="Chapter4", number=3, date="2020-07-08", premium=self.has_login()),
         elif media_id == 4:
             self.update_chapter_data(media_data, id=25, title="Chapter1", number=2, date="1998-08-10"),
+            self.update_chapter_data(media_data, id=30, title="Chapter1", number="1b", date="1998-08-10"),
             self.update_chapter_data(media_data, id=26, title="ChapterSpecial", number=None, date="1998-08-10"),
             self.update_chapter_data(media_data, id=27, title="Chapter0.5", number=0.5, date="1998-08-10", special=True),
             self.update_chapter_data(media_data, id=28, title="Chapter4", number=4, date="1998-08-10", inaccessible=self.inaccessible),
