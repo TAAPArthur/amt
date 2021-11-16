@@ -223,7 +223,7 @@ class Settings:
         if self.password_manager_enabled and self.password_load_cmd:
             try:
                 logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id=server_id))
-                output = subprocess.check_output(self.password_load_cmd.format(server_id=server_id), shell=self.shell, stdin=subprocess.DEVNULL).decode("utf-8")
+                output = subprocess.check_output(self.password_load_cmd.format(server_id=server_id), shell=self.shell).decode("utf-8")
                 login, password = re.split(self.credential_separator_regex, output)[:2]
                 return login, password
             except (CalledProcessError, ValueError):
