@@ -121,7 +121,6 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.bundle_viewer = "[ -f {media} ]"
         self.settings.bundle_cmd = "ls {files}; touch {name}"
         self.settings.post_process_cmd = ""
-        self.settings.force_page_parity = ""
 
     def setUp(self):
         self.startTime = time.time()
@@ -175,8 +174,6 @@ class BaseUnitTestClass(unittest.TestCase):
         files = list(filter(lambda x: x[0] != ".", os.listdir(dir_path)))
         self.assertTrue(files)
         media_type = MediaType(media_data["media_type"])
-        if media_type == MediaType.MANGA and isinstance(self.settings.get_force_page_parity(media_data), int):
-            self.assertEqual(self.settings.get_force_page_parity(media_data), len(files) % 2)
 
         for file_name in files:
             self.assertEqual(2, len(file_name.split(".")), f"Problem with extension of {file_name}")
@@ -397,17 +394,6 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.post_process_cmd = "exit 1"
         self.assertRaises(CalledProcessError, self.settings.post_process, None, [], None)
 
-    @unittest.skipIf(not HAS_PIL, "PIL is needed to test")
-    def test_force_page_parity(self):
-        media_data = self.add_test_media(media_type=MediaType.MANGA, limit=1)[0]
-        chapter_data = media_data.get_sorted_chapters()[0]
-        for parity in (0, 1, ""):
-            for page_limit in (1, 2):
-                self.settings.force_page_parity = parity
-                self.media_reader.get_server(media_data["server_id"]).download_chapter(media_data, chapter_data, page_limit=page_limit)
-                self.verify_download(media_data, chapter_data)
-                shutil.rmtree(self.settings.get_chapter_dir(media_data, chapter_data), ignore_errors=True)
-
 
 class SettingsCredentialsTest(BaseUnitTestClass):
 
@@ -458,15 +444,6 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             remaining_servers = set()
             import_sub_classes(tests, TestServer, remaining_servers)
             self.assertNotEqual(remaining_servers, TEST_SERVERS)
-
-    def test_force_page_parity_without_pil(self):
-        self.settings.force_page_parity = 0
-        self.add_test_media(media_type=MediaType.MANGA, limit=1)
-        with patch.dict(sys.modules, {"PIL": None}):
-            # Shouldn't crash
-            self.media_reader.download_unread_chapters(page_limit=1)
-            self.settings.force_page_parity = ""
-            self.verify_all_chapters_downloaded()
 
     def test_media_reader_add_remove_media(self):
         for server in self.media_reader.get_servers():

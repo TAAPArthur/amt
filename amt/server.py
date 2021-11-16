@@ -374,15 +374,6 @@ class Server(GenericServer):
                 job.add(lambda page_data=page_data: self.download_if_missing(page_data, page_data["path"]))
         job.run()
         assert list_of_pages
-        if self.media_type == MediaType.MANGA and (1 + len(list_of_pages)) % 2 == self.settings.get_force_page_parity(media_data):
-            try:
-                from PIL import Image
-                page_number = len(list_of_pages) if self.settings.get_force_page_parity_end(media_data) else -1
-                full_path = os.path.join(dir_path, self.settings.get_page_file_name(media_data, chapter_data, ext="jpg", page_number=page_number))
-                image = Image.new("RGB", (1, 1))
-                image.save(full_path)
-            except ImportError:
-                logging.warning("Need PIL to use force_page_parity")
 
         self.post_download(media_data, chapter_data, dir_path, list_of_pages)
         self.settings.post_process(media_data, (page_data["path"] for page_data in list_of_pages), dir_path)

@@ -69,8 +69,6 @@ class Settings:
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
     download_torrent_cmd = "btcli add -T {media_id} {torrent_file}"
-    force_page_parity = 0  # When downloading MANGA, if not equal to the number of pages % 2, add a dummy page
-    force_page_parity_end = False  # Add dummy page before (default) or after real pages
     keep_unavailable = False
     post_process_cmd = ""
     text_languages = ["en", "en-US", "English"]

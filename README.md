@@ -71,7 +71,6 @@ The general flow is to add a series to AMT, `update` if needed, then use `play` 
 
 Optional dependency breakdown
 * PIL:                 required to download manga for Viz and JNovelClub
-* PIL:                 required to use `force_page_parity` setting for image padding
 * beautifulsoup4:      required to download images for JNovelClub (only for light novel parts)
 * beautifulsoup4:      required to enable DB multiverse, Funimation, WLNUpdates, Nyaa and RemoteServer
 * beautifulsoup4:      required for `quick_test_coverage` make target
