@@ -28,7 +28,7 @@ def get_number_from_file_name(file_name, media_name="", default_num=0):
 
 
 def get_alt_names(media_name):
-    return list(filter(lambda x: x, dict.fromkeys([media_name, media_name.split(" Season")[0], re.sub(r"\W*$", "", media_name), re.sub(r"\s*[^\w\d\s]+.*$", "", media_name), re.sub(r"\W.*$", "", media_name), get_media_name_from_file(media_name, is_dir=True)])))
+    return list(filter(lambda x: x, dict.fromkeys([media_name, media_name.split(" Season")[0], re.sub(r"\W*$", "", media_name), re.sub(r"\s*[^\w\d\s]+.*$", "", media_name), re.sub(r"(The |A |That |\W.*$)", "", media_name), get_media_name_from_file(media_name, is_dir=True)])))
 
 
 def find_media_with_similar_name_in_list(media_names, media_list):

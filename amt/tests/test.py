@@ -250,10 +250,16 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
 
 
 class UtilTest(BaseUnitTestClass):
-    def test(self):
+    def test_media_type(self):
         for media_type in list(MediaType):
             self.assertEqual(media_type, MediaType.get(media_type.name))
         self.assertEqual(MediaType.MANGA, MediaType.get("bad_name", MediaType.MANGA))
+
+    def test_get_alt_names(self):
+        from ..util.name_parser import get_alt_names
+        name_base = "Brown Fox"
+        for common_prefix in ("A", "The", "That"):
+            self.assertFalse(common_prefix in get_alt_names(f"{common_prefix} {name_base}"), common_prefix)
 
 
 @unittest.skipIf(not HAS_PIL, "PIL is needed to test")
