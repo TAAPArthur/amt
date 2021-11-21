@@ -55,7 +55,7 @@ class MediaReader:
 
         if self.settings.max_retries:
             for prefix in ("http://", "https://"):
-                self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retries, status_forcelist=self.settings.status_to_retry)))
+                self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retries, status_forcelist=self.settings.status_to_retry, backoff_factor=self.settings.backoff_factor)))
 
         for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers), (torrent_helpers_list, self._torrent_helpers)):
             for cls in cls_list:

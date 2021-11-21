@@ -32,6 +32,7 @@ class Settings:
     # HTTP related; Generally used as args to requests
     bs4_parser = "html.parser"
     max_retries = 3
+    backoff_factor = 1.0
     status_to_retry = [429, 500, 502, 503, 504]
     user_agent = "Mozilla/5.0"
 
@@ -129,7 +130,7 @@ class Settings:
             if current_field:
                 value = list(map(lambda x: type(current_field[0])(x.strip()), value))
 
-        if value and isinstance(value, str) and ((isinstance(current_field, int) or isinstance(value, float))):
+        if value and isinstance(value, str) and ((isinstance(current_field, int) or isinstance(current_field, float))):
             value = type(current_field)(value)
         if server_or_media_id:
             if not name in self._specific_settings:

@@ -110,7 +110,8 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.shell = True
         if not self.real or SINGLE_THREADED:
             self.settings.threads = 0
-            self.max_retries = 1
+            self.settings.max_retries = 10
+            self.settings.backoff_factor = .01
         else:
             self.settings.threads = len(SERVERS)
 
@@ -141,7 +142,7 @@ class BaseUnitTestClass(unittest.TestCase):
 
     def check_time(self):
         t = time.time() - self.startTime
-        time_limit = self.TIME_LIMIT if self.TIME_LIMIT else 32 if self.real else .5
+        time_limit = self.TIME_LIMIT if self.TIME_LIMIT else 32 if self.real else 1
         self.assertTrue(t < time_limit, f"{self.id()}: {t:.3f}")
 
     def tearDown(self):
