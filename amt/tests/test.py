@@ -116,10 +116,10 @@ class BaseUnitTestClass(unittest.TestCase):
 
         self.settings.download_torrent_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.settings.suppress_cmd_output = True
-        self.settings.viewer = "echo {media} {title}"
+        self.settings.viewer = "exit 0"
         self.settings._specific_settings = {}
         self.settings.bundle_viewer = "[ -f {media} ]"
-        self.settings.bundle_cmd = "ls {files}; touch {name}"
+        self.settings.bundle_cmd = "ls {files} >/dev/null; touch {name}"
         self.settings.post_process_cmd = ""
 
     def setUp(self):
