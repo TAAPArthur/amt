@@ -11,7 +11,6 @@ TEST_BASE = "/tmp/amt/"
 
 class TestServer(Server):
     id = "test_server_manga"
-    _prefix = "Manga"
     error_to_inject = None
     time_to_error = 0
     error_count = 0
@@ -19,6 +18,7 @@ class TestServer(Server):
     hide = False
     inaccessible = False
     error_delay = 0
+    test_lang = False
 
     def maybe_inject_error(self):
         if self.error_to_inject:
@@ -43,8 +43,9 @@ class TestServer(Server):
 
     def get_media_list(self, limit=None):
         self.maybe_inject_error()
-        media_type_name = self.media_type.name
-        return [self.create_media_data(id=1, name=f"{media_type_name}1"), self.create_media_data(id=2, name=f"{media_type_name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(]/[:;_-="), self.create_media_data(id=5, name=f"{self.id} Unique Manga", alt_id="alt", unique=True)][:limit]
+        if self.test_lang:
+            return [self.create_media_data(id=1, name=f"{self.media_type.name}1 Dub", lang="en"), self.create_media_data(id=2, name=f"{self.media_type.name}1", lang="jp")][:limit]
+        return [self.create_media_data(id=1, name=f"{self.media_type.name}1"), self.create_media_data(id=2, name=f"{self.media_type.name}InProgress"), self.create_media_data(id=3, name="Untracked"), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(]/[:;_-="), self.create_media_data(id=5, name=f"{self.id} Unique Manga", alt_id="alt", unique=True)][:limit]
 
     def update_media_data(self, media_data):
         self.maybe_inject_error()
@@ -124,7 +125,6 @@ class TestUnofficialServer(TestServer):
 class TestAnimeServer(TestServer):
     id = "test_server_anime"
     media_type = MediaType.ANIME
-    _prefix = "Anime"
     stream_url = "https://www.test/url/4"
     stream_url_regex = re.compile(r".*/([0-9])")
     stream_urls = False

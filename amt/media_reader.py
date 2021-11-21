@@ -156,8 +156,7 @@ class MediaReader:
         if exact:
             results = list(filter(lambda x: x["name"] == term, results))
         results = list(filter(lambda x: not media_id or str(x["id"]) == str(media_id) or x.global_id == media_id, results))
-        if sort_func:
-            results.sort(key=sort_func)
+        results.sort(key=sort_func if sort_func else self.settings.get_prefered_lang_key)
         if len(results) == 0:
             return None
         media_data = self.select_media(term, results, "Select media: ", auto_select_if_single=exact or media_id)
@@ -503,7 +502,7 @@ class MediaReader:
             return False
         return media_data
 
-    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, update_progress_only=False, force=False):
+    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, update_progress_only=False, force=False, **kwargs):
         tracker = self.get_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         new_count = 0
@@ -517,7 +516,7 @@ class MediaReader:
             if not media_data_list:
                 if update_progress_only:
                     continue
-                media_data = self.search_for_media(entry["name"], entry["media_type"], exact=exact, skip_remote_search=local_only)
+                media_data = self.search_for_media(entry["name"], entry["media_type"], exact=exact, skip_remote_search=local_only, **kwargs)
                 if media_data:
                     self.track(media_data, tracker.id, entry["id"], entry["name"])
                     assert self.get_tracked_media(tracker.id, entry["id"])

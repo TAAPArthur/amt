@@ -27,12 +27,15 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     sub_parsers = parser.add_subparsers(dest="type")
 
+    sub_search_parsers = argparse.ArgumentParser(add_help=False)
+    sub_search_parsers.add_argument("--sort-by-preferred-lang", action="store_const", const=media_reader.settings.get_prefered_lang_key, default=None, help="Sort results by preferred Settings:preferred_primary_language", dest="sort_func")
+    sub_search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
+    sub_search_parsers.add_argument("--limit", type=int, default=None, help="How many chapters will be downloaded per series")
+    sub_search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
+    sub_search_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
+
     # add remove
-    search_parsers = sub_parsers.add_parser("search", description="Search for and add media")
-    search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
-    search_parsers.add_argument("--limit", type=int, default=None, help="How many chapters will be downloaded per series")
-    search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
-    search_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
+    search_parsers = sub_parsers.add_parser("search", parents=[sub_search_parsers], description="Search for and add media")
     search_parsers.add_argument("name", help="The string to search by")
     search_parsers.set_defaults(func=media_reader.search_for_media)
 
@@ -187,11 +190,9 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     stats_parser.add_argument("username", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
 
     # trackers and progress
-    load_parser = sub_parsers.add_parser("load", description="Attempts to add all tracked media")
-    load_parser.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
+    load_parser = sub_parsers.add_parser("load", parents=[sub_search_parsers], description="Attempts to add all tracked media")
     load_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
     load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
-    load_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media", dest="update_progress_only")
     load_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
     load_parser.add_argument("user_name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")

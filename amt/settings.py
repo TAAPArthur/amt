@@ -54,6 +54,9 @@ class Settings:
     # Server or media specific settings
     # Any keys defined in this dict should be declared in the class
     _specific_settings = {
+        "preferred_primary_language": {
+            MediaType.ANIME.name: ["jp", "Japanese", ""]
+        },
         "viewer": {
             MediaType.ANIME.name: "mpv --merge-files --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
             MediaType.MANGA.name: "sxiv {media}",
@@ -72,6 +75,7 @@ class Settings:
     keep_unavailable = False
     post_process_cmd = ""
     text_languages = ["en", "en-US", "English"]
+    preferred_primary_language = ["en", "en-US", "English", ""]
     threads = 8  # per server thread count
     viewer = ""
 
@@ -215,6 +219,12 @@ class Settings:
 
     def is_allowed_text_lang(self, lang, media_data):
         return lang in self.get_field("text_languages", media_data)
+
+    def get_prefered_lang_key(self, media_data):
+        try:
+            return self.get_field("preferred_primary_language", media_data).index(media_data.get("lang", ""))
+        except ValueError:
+            return float("inf")
 
     def get_prompt_for_input(self, prompt):
         return input(prompt)

@@ -1159,6 +1159,18 @@ class ArgsTest(CliUnitTestClass):
             if media_data["progress"]:
                 self.assertEqual(media_data["progress"], media_data.get_last_read())
 
+    def test_load_sort_by_lang(self):
+        for server in (self.test_server, self.test_anime_server):
+            server.test_lang = True
+            for lang in ("en", "jp"):
+                self.media_reader.media.clear()
+                self.settings.preferred_primary_language = [lang]
+                with self.subTest(lang=lang, server=server.id):
+                    parse_args(media_reader=self.media_reader, args=["--auto", "load", "--server", server.id, "--sort-by-preferred-lang", "test_user"])
+                    self.assertEqual(1, len(self.media_reader.get_media_ids()))
+                    media_data = list(self.media_reader.get_media())[0]
+                    self.assertEqual(media_data["lang"], lang)
+
     def test_untrack(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "load"])
         assert all([self.media_reader.get_tracker_info(media_data) for media_data in self.media_reader.get_media()])
