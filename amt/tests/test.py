@@ -483,6 +483,11 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 assert media_data == list(server.search(name))[0]
                 assert server.search(name[:3])
 
+    def test_search_inexact(self):
+        self.assertTrue(self.test_server.search("The Manga1"))
+        self.assertTrue(self.test_server.search("Manga1: the second coming"))
+        self.assertTrue(self.test_server.search("Manga"))
+
     def login_test_helper(self, expected_exception=ValueError):
         server = self.media_reader.get_server(TestServerLogin.id)
         self.add_test_media(server=server)
