@@ -57,17 +57,17 @@ class MediaReader:
             for prefix in ("http://", "https://"):
                 self.session.mount(prefix, HTTPAdapter(max_retries=Retry(total=self.settings.max_retries, status_forcelist=self.settings.status_to_retry)))
 
-        self.session.headers.update({
-            "Connection": "keep-alive",
-            "User-Agent": self.settings.user_agent
-        })
-
         for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers), (torrent_helpers_list, self._torrent_helpers)):
             for cls in cls_list:
                 for instance in cls.get_instances(self.session, self.settings):
                     if self.settings.is_server_enabled(instance.id, instance.official):
                         assert instance.id not in instance_map, f"Duplicate server id: {instance.id}"
                         instance_map[instance.id] = instance
+
+        self.session.headers.update({
+            "Connection": "keep-alive",
+            "User-Agent": self.settings.user_agent
+        })
 
         if self._trackers:
             self.set_tracker(self._trackers.get(self.settings.tracker_id, list(self._trackers.values())[0]))

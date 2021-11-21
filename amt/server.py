@@ -38,6 +38,7 @@ class RequestServer:
                     'platform': 'linux',
                     'desktop': True
                 })
+                # TODO remove on new cloudscraper release
                 RequestServer.cloudscraper.cookies = session.cookies
             self.session = RequestServer.cloudscraper
         else:
