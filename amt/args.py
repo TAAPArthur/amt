@@ -30,7 +30,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_search_parsers = argparse.ArgumentParser(add_help=False)
     sub_search_parsers.add_argument("--sort-by-preferred-lang", action="store_const", const=media_reader.settings.get_prefered_lang_key, default=None, help="Sort results by preferred Settings:preferred_primary_language", dest="sort_func")
     sub_search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
-    sub_search_parsers.add_argument("--limit", type=int, default=None, help="How many chapters will be downloaded per series")
+    sub_search_parsers.add_argument("--limit", type=int, default=10, help="How many chapters will be downloaded per series")
     sub_search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     sub_search_parsers.add_argument("--server", choices=media_reader.get_servers_ids(), dest="server_id")
 
