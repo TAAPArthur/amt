@@ -6,7 +6,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from shlex import quote
-from subprocess import DEVNULL, CalledProcessError
+from subprocess import CalledProcessError
 from threading import Lock
 
 from .util.media_type import MediaType
@@ -49,7 +49,6 @@ class Settings:
     no_save_session = False
     shell = True
     subtitles_dir = ".subtitles/"
-    suppress_cmd_output = False
 
     # Server or media specific settings
     # Any keys defined in this dict should be declared in the class
@@ -259,7 +258,7 @@ class Settings:
 
     def run_cmd(self, cmd, wd=None):
         logging.info("Running cmd %s: shell = %s, wd=%s", cmd, self.shell, wd)
-        subprocess.check_call(cmd, stdout=DEVNULL if self.suppress_cmd_output else None, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
+        subprocess.check_call(cmd, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
 
     @staticmethod
     def _smart_quote(name):
