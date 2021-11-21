@@ -483,14 +483,14 @@ class MediaReader:
             media_data = self.select_media(name, known_matching_media, "Select from known media: ")
 
         elif not skip_remote_search:
-            for name in alt_names:
-                media_data = self.search_add(name, media_type=media_type, exact=exact, **kwargs)
+            for n in alt_names:
+                media_data = self.search_add(n, media_type=media_type, exact=exact, **kwargs)
                 if media_data:
                     break
             if not media_data and self.settings.get_download_torrent_cmd(media_type):
                 logging.info("Checking to see if %s can be found with helpers", name)
-                for name in alt_names:
-                    media_data = self.search_add(name, media_type=media_type, exact=exact, server_list=self.get_torrent_helpers(), no_add=True, **kwargs)
+                for n in alt_names:
+                    media_data = self.search_add(n, media_type=media_type, exact=exact, server_list=self.get_torrent_helpers(), no_add=True, **kwargs)
                     if media_data:
                         logging.info("Found match; Downloading torrent file")
                         self._torrent_helpers[media_data["server_id"]].download_torrent_file(media_data)
