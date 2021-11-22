@@ -3,7 +3,7 @@ import os
 
 from . import stats
 from .media_reader import MediaReader
-from .server import MediaType
+from .util.media_type import MediaType
 from .stats import Details, SortIndex, StatGroup
 
 
@@ -28,44 +28,12 @@ class MediaReaderCLI(MediaReader):
             logging.warning("Invalid input; skipping")
             return None
 
-    def list_servers(self):
-        for id in sorted(self.get_servers_ids()):
-            print(id)
-
-    def list_media(self, name=None, media_type=None, out_of_date_only=False, tag=None, csv=False):
-        for media_data in self.get_media(name=name, media_type=media_type, tag=tag):
-            last_chapter_num = media_data.get_last_chapter_number()
-            last_read = media_data.get_last_read()
-            if not out_of_date_only or last_chapter_num != last_read:
-                if csv:
-                    print("\t".join([media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read), str(last_chapter_num), ",".join(media_data["tags"])]))
-                else:
-                    print("{}\t{} {}\t{}/{} {}".format(media_data.friendly_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, ",".join(media_data["tags"])))
-
-    def list_chapters(self, name, show_ids=False):
-        media_data = self.get_single_media(name=name)
-        for chapter in media_data.get_sorted_chapters():
-            print("{:4}:{}{}".format(chapter["number"], chapter["title"], ":" + chapter["id"] if show_ids else ""))
-
     def list_some_media_from_server(self, server_id, limit=None):
         self.print_results(self.get_server(server_id).get_media_list(limit=limit)[:limit])
 
-    def get_all_names(self, media_type=None, disallow_servers=False):
-        names = []
-        if not disallow_servers:
-            for server_id in self.get_servers_ids():
-                if not media_type or self.get_server(server_id).media_type & media_type:
-                    names.append(server_id)
-        for media_id, media in self.media.items():
-            if not media_type or media["media_type"] & media_type:
-                names.append(media_id)
-                if media.global_id_alt:
-                    names.append(media.global_id_alt)
-                names.append(media["name"])
-        return names
-
-    def get_all_single_names(self, media_type=None):
-        return self.get_all_names(media_type=media_type, disallow_servers=True)
+    def list_servers(self):
+        for id in sorted(self.state.get_server_ids()):
+            print(id)
 
     def test_login(self, server_ids=None, force=False):
         failures = False

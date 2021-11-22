@@ -146,12 +146,13 @@ class GenericServer(MediaServer):
         """
         raise NotImplementedError
 
-    def search(self, term, limit=None):
+    def search(self, term, limit=20):
         """
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
-        return list(find_media_with_similar_name_in_list(get_alt_names(term), self.get_media_list(limit=limit)))
+        items = find_media_with_similar_name_in_list(get_alt_names(term), self.get_media_list())
+        return sorted(items, key=lambda x: abs(len(x["name"]) - len(term)))[:limit]
 
     def update_media_data(self, media_data):  # pragma: no cover
         """

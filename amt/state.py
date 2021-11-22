@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 
 from .util.media_type import MediaType
 
@@ -16,7 +17,7 @@ def json_decoder(obj):
 class State:
     version = 1.2
 
-    def __init__(self, settings, session):
+    def __init__(self, settings, session=None):
         self.settings = settings
         self.session = session
         self.bundles = {}
@@ -24,6 +25,9 @@ class State:
         self.all_media = {}
         self.hashes = {}
         self.cookie_hash = None
+        self.server_cache = {}
+
+        self.load()
 
     @staticmethod
     def get_hash(json_dict):
@@ -59,15 +63,20 @@ class State:
         self.save_session_cookies()
         self.save_to_file(self.settings.get_metadata_file(), self.all_media)
         self.save_to_file(self.settings.get_bundle_metadata_file(), self.bundles)
+        self.save_to_file(self.settings.get_server_cache_file(), self.server_cache)
         for media_data in self.media.values():
             self.save_to_file(self.settings.get_chapter_metadata_file(media_data), media_data.chapters)
 
-    def load(self):
-        self.load_session_cookies()
-        self.load_bundles()
-        self.load_media()
+    def set_session(self, session, no_load=False):
+        self.session = session
+        if not no_load:
+            self.load_session_cookies()
 
-    def load_bundles(self):
+    def load(self):
+        self.load_media()
+        self.server_cache = self.read_file_as_dict(self.settings.get_server_cache_file())
+        if not self.server_cache:
+            self.update_server_cache()
         self.bundles = self.read_file_as_dict(self.settings.get_bundle_metadata_file())
 
     def load_media(self):
@@ -153,6 +162,33 @@ class State:
             if self.disabled_media[key]["server_id"] in server_list:
                 self.media[key] = self.disabled_media[key]
                 del self.disabled_media[key]
+        self.update_server_cache(server_list)
+
+    def update_server_cache(self, server_list={}):
+        self.server_cache = {server.id: {"media_type": server.media_type.value, "has_login": server.has_login()} for server in server_list.values()}
+
+    def get_all_names(self, media_type=None, disallow_servers=False):
+        names = []
+        if not disallow_servers:
+            for server_id in self.server_cache:
+                if not media_type or self.server_cache[server_id]["media_type"] & media_type:
+                    names.append(server_id)
+        for media_id, media in self.media.items():
+            if not media_type or media["media_type"] & media_type:
+                names.append(media_id)
+                if media.global_id_alt:
+                    names.append(media.global_id_alt)
+                names.append(media["name"])
+        return names
+
+    def get_all_single_names(self, media_type=None):
+        return self.get_all_names(media_type=media_type, disallow_servers=True)
+
+    def get_server_ids(self):
+        return self.server_cache.keys()
+
+    def get_server_ids_with_logins(self):
+        return [k for k, v in self.server_cache.items() if v["has_login"]]
 
     def mark_bundle_as_read(self, bundle_name):
         bundled_data = self.bundles[bundle_name]
@@ -163,6 +199,41 @@ class State:
         bundled_data = self.bundles[bundle] if isinstance(bundle, str) else bundle
         for data in bundled_data:
             return self.media[data["media_id"]]
+
+    def get_media(self, name=None, media_type=None, tag=None, shuffle=False):
+        if isinstance(name, dict):
+            yield name
+            return
+        media = self.media.values()
+        if shuffle:
+            media = list(media)
+            random.shuffle(media)
+        for media_data in media:
+            if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id):
+                continue
+            if media_type and media_data["media_type"] & media_type == 0:
+                continue
+            if tag and tag not in media_data["tags"] or tag == "" and not media_data["tags"]:
+                continue
+            yield media_data
+
+    def get_single_media(self, name=None, media_type=None):
+        return next(self.get_media(media_type=media_type, name=name))
+
+    def list_media(self, name=None, media_type=None, out_of_date_only=False, tag=None, csv=False):
+        for media_data in self.get_media(name=name, media_type=media_type, tag=tag):
+            last_chapter_num = media_data.get_last_chapter_number()
+            last_read = media_data.get_last_read()
+            if not out_of_date_only or last_chapter_num != last_read:
+                if csv:
+                    print("\t".join([media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read), str(last_chapter_num), ",".join(media_data["tags"])]))
+                else:
+                    print("{}\t{} {}\t{}/{} {}".format(media_data.friendly_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, ",".join(media_data["tags"])))
+
+    def list_chapters(self, name, show_ids=False):
+        media_data = self.get_single_media(name=name)
+        for chapter in media_data.get_sorted_chapters():
+            print("{:4}:{}{}".format(chapter["number"], chapter["title"], ":" + chapter["id"] if show_ids else ""))
 
 
 class MediaData(dict):

@@ -95,8 +95,9 @@ class BaseUnitTestClass(unittest.TestCase):
             if ENABLED_SERVERS:
                 self.settings.set_field("enabled_servers", ENABLED_SERVERS)
 
+        state = State(self.settings)
         _servers.sort(key=lambda x: x.id)
-        self.media_reader = cls(settings=self.settings, server_list=_servers) if self.real else cls(settings=self.settings, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
+        self.media_reader = cls(state=state, server_list=_servers) if self.real else cls(state=state, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
 
     def for_each(self, func, media_list, raiseException=True):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
@@ -541,20 +542,20 @@ class MediaReaderTest(BaseUnitTestClass):
         self.assertRaises(KeyError, self.media_reader.remove_media, media_data)
 
     def test_load_servers(self):
-        self.assertEqual(len(TEST_SERVERS), len(self.media_reader.get_servers_ids()))
+        self.assertEqual(len(TEST_SERVERS), len(self.media_reader.state.get_server_ids()))
         self.assertEqual(len(TEST_TRACKERS), len(self.media_reader.get_tracker_ids()))
 
     def test_select_servers(self):
-        server_ids = list(self.media_reader.get_servers_ids())
+        server_ids = list(self.media_reader.state.get_server_ids())
         self.settings.disabled_servers = server_ids
         self.reload(save_settings=True)
-        self.assertFalse(self.media_reader.get_servers_ids())
+        self.assertFalse(self.media_reader.state.get_server_ids())
         self.settings.disabled_servers = server_ids[1:]
         self.reload(save_settings=True)
-        self.assertEqual(server_ids[:1], list(self.media_reader.get_servers_ids()))
+        self.assertEqual(server_ids[:1], list(self.media_reader.state.get_server_ids()))
         self.settings.enabled_servers = server_ids[-1:]
         self.reload(save_settings=True)
-        self.assertEqual(server_ids[-1:], list(self.media_reader.get_servers_ids()))
+        self.assertEqual(server_ids[-1:], list(self.media_reader.state.get_server_ids()))
 
     def test_disable_unofficial_servers(self):
         self.add_test_media()
@@ -630,7 +631,7 @@ class MediaReaderTest(BaseUnitTestClass):
         self.media_reader.state.configure_media({})
         assert not self.media_reader.media
         self.media_reader.state.save()
-        self.media_reader.state.configure_media(self.media_reader.get_servers_ids())
+        self.media_reader.state.configure_media({s.id: s for s in self.media_reader.get_servers()})
         assert self.media_reader.media
         self.assertEqual(old_hash, State.get_hash(self.media_reader.media))
 
@@ -874,7 +875,7 @@ class GenericServerTest():
             finally:
                 assert server.needs_to_login()
 
-        self.for_each(func, self.media_reader.get_servers_ids_with_logins())
+        self.for_each(func, self.media_reader.state.get_server_ids_with_logins())
 
 
 class LocalServerTest(GenericServerTest, BaseUnitTestClass):
@@ -1016,12 +1017,12 @@ auth=True
 password=A
 """)
         self.reload(True)
-        self.assertEqual(3, len(self.media_reader.get_servers_ids()))
+        self.assertEqual(3, len(self.media_reader.state.get_server_ids()))
         self.test_workflow()
 
     def test_media_num(self):
         self.add_test_media()
-        self.assertEqual(3 * len(self.media_reader.get_servers_ids()), len(self.media_reader.get_media_ids()))
+        self.assertEqual(3 * len(self.media_reader.state.get_server_ids()), len(self.media_reader.get_media_ids()))
 
     def test_validate_media(self):
         media_list = self.add_test_media()
@@ -1051,7 +1052,7 @@ password=A
                 dir_path = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), self.resources_dir_name)
                 if os.path.exists(dir_path):
                     num_files += 1
-        self.assertEqual(len(self.media_reader.get_servers_ids()), num_files)
+        self.assertEqual(len(self.media_reader.state.get_server_ids()), num_files)
 
 
 class ArgsTest(CliUnitTestClass):
@@ -1098,7 +1099,7 @@ class ArgsTest(CliUnitTestClass):
     def test_cookies(self):
         key, value = "Key", "value"
         self.media_reader.session.cookies.set(key, value)
-        parse_args(media_reader=self.media_reader, args=["--clear-cookies", "list"])
+        parse_args(media_reader=self.media_reader, args=["--clear-cookies"])
         self.assertNotEqual(self.media_reader.session.cookies.get(key), value)
 
     @patch("getpass.getpass", return_value="0")
@@ -1177,7 +1178,7 @@ class ArgsTest(CliUnitTestClass):
                 self.media_reader.media.clear()
                 self.settings.preferred_primary_language = [lang]
                 with self.subTest(lang=lang, server=server.id):
-                    parse_args(media_reader=self.media_reader, args=["--auto", "load", "--server", server.id, "--sort-by-preferred-lang", "test_user"])
+                    parse_args(media_reader=self.media_reader, args=["--auto", "load", "--server", server.id, "test_user"])
                     self.assertEqual(1, len(self.media_reader.get_media_ids()))
                     media_data = list(self.media_reader.get_media())[0]
                     self.assertEqual(media_data["lang"], lang)
@@ -1307,7 +1308,7 @@ class ArgsTest(CliUnitTestClass):
     def test_search_fallback_and_autoimport(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "--exact", TestTorrentHelper.available_torrent_file])
         parse_args(media_reader=self.media_reader, args=["--auto", "auto-import"])
-        self.assertTrue(self.media_reader.get_single_media(TestTorrentHelper.available_torrent_file))
+        self.assertTrue(self.media_reader.get_single_media(name=TestTorrentHelper.available_torrent_file))
         self.verify_all_chapters_downloaded()
 
     def test_search_fail(self):
@@ -1347,7 +1348,7 @@ class ArgsTest(CliUnitTestClass):
         self.assertEqual(len(self.media_reader.get_media_ids()), len(media_list))
 
         for media_data in media_list:
-            self.assertEqual(media_data, self.media_reader.get_single_media(media_data.global_id))
+            self.assertEqual(media_data, self.media_reader.get_single_media(name=media_data.global_id))
 
     def test_remove(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "manga"])
@@ -1611,7 +1612,7 @@ class ArgsTest(CliUnitTestClass):
         self.media_reader.state.update_verion()
         self.media_reader.state.all_media["version"] -= .1 if minor else 1
         self.assertEqual(self.media_reader.state.is_out_of_date_minor(), minor)
-        parse_args(media_reader=self.media_reader, args=["upgrade" if not minor else "list"])
+        parse_args(media_reader=self.media_reader, args=["upgrade"] if not minor else [])
         self.assertEqual(list(self.media_reader.get_media_ids()), ids)
         self.assertEqual(removed_key in self.media_reader.media[ids[0]], minor)
         self.assertTrue(new_key in self.media_reader.media[ids[0]])
@@ -1659,7 +1660,7 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
                     self.assertTrue(self.media_reader.state.save_session_cookies())
                     server.session.cookies.clear()
                     self.assertTrue(self.media_reader.state.save_session_cookies())
-        self.assertEqual(min(2, len(self.media_reader.get_servers_ids())), len(sessions))
+        self.assertEqual(min(2, len(self.media_reader.state.get_server_ids())), len(sessions))
 
 
 class ServerStreamTest(RealBaseUnitTestClass):

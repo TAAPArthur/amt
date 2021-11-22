@@ -93,6 +93,9 @@ class Settings:
     def get_bundle_metadata_file(self):
         return os.path.join(self.data_dir, "bundles.json")
 
+    def get_server_cache_file(self):
+        return os.path.join(self.cache_dir, "server_cache.json")
+
     def get_cookie_file(self):
         return os.path.join(self.cache_dir, "cookies.txt")
 

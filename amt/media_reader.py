@@ -3,7 +3,6 @@ import inspect
 import logging
 import os
 import pkgutil
-import random
 import shutil
 
 import requests
@@ -44,10 +43,10 @@ import_sub_classes(servers, TorrentHelper, TORRENT_HELPERS)
 
 class MediaReader:
 
-    def __init__(self, settings=None, server_list=SERVERS, tracker_list=TRACKERS, torrent_helpers_list=TORRENT_HELPERS):
-        self.settings = settings if settings else Settings()
+    def __init__(self, state=None, server_list=SERVERS, tracker_list=TRACKERS, torrent_helpers_list=TORRENT_HELPERS):
+        self.state = state if state else State(Settings())
+        self.settings = state.settings
         self.session = requests.Session()
-        self.state = State(self.settings, self.session)
         self._servers = {}
         self._torrent_helpers = {}
         self._trackers = {}
@@ -71,7 +70,7 @@ class MediaReader:
 
         if self._trackers:
             self.set_tracker(self._trackers.get(self.settings.tracker_id, list(self._trackers.values())[0]))
-        self.state.load()
+        self.state.set_session(self.session)
         self.state.configure_media(self._servers)
         self.media = self.state.media
         self.bundles = self.state.bundles
@@ -86,12 +85,6 @@ class MediaReader:
     def get_servers(self):
         return self._servers.values()
 
-    def get_servers_ids(self):
-        return self._servers.keys()
-
-    def get_servers_ids_with_logins(self):
-        return [k for k in self._servers.keys() if self.get_server(k).has_login()]
-
     def get_server(self, id):
         return self._servers.get(id, None)
 
@@ -101,25 +94,11 @@ class MediaReader:
     def get_media_ids(self):
         return self.media.keys()
 
-    def get_media(self, name=None, media_type=None, tag=None, shuffle=False):
-        if isinstance(name, dict):
-            yield name
-            return
-        media = self.media.values()
-        if shuffle:
-            media = list(media)
-            random.shuffle(media)
-        for media_data in media:
-            if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id):
-                continue
-            if media_type and media_data["media_type"] & media_type == 0:
-                continue
-            if tag and tag not in media_data["tags"] or tag == "" and not media_data["tags"]:
-                continue
-            yield media_data
+    def get_media(self, name=None, **kwargs):
+        yield from self.state.get_media(name=name, **kwargs)
 
-    def get_single_media(self, name=None, media_type=None):
-        return next(self.get_media(media_type=media_type, name=name))
+    def get_single_media(self, **kwargs):
+        return next(self.state.get_media(**kwargs))
 
     def get_unreads(self, name=None, media_type=None, shuffle=False, limit=None, any_unread=False):
         count = 0
@@ -485,7 +464,7 @@ class MediaReader:
         elif not skip_remote_search:
             for n in alt_names:
                 media_data = self.search_add(n, media_type=media_type, exact=exact, **kwargs)
-                if media_data:
+                if media_data is not None:
                     break
             if not media_data and self.settings.get_download_torrent_cmd(media_type):
                 logging.info("Checking to see if %s can be found with helpers", name)
