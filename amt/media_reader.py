@@ -19,12 +19,9 @@ from .util.media_type import MediaType
 from .util.name_parser import (find_media_with_similar_name_in_list,
                                get_alt_names, get_media_name_from_file)
 
-SERVERS = set()
-TRACKERS = set()
-TORRENT_HELPERS = set()
 
-
-def import_sub_classes(m, base_class, results):
+def import_sub_classes(m, base_class, ):
+    results = set()
     for _finder, name, _ispkg in pkgutil.iter_modules(m.__path__, m.__name__ + "."):
         try:
             module = importlib.import_module(name)
@@ -34,11 +31,12 @@ def import_sub_classes(m, base_class, results):
         except ImportError:
             logging.debug("Could not import %s", name)
             pass
+    return results
 
 
-import_sub_classes(servers, Server, SERVERS)
-import_sub_classes(trackers, Tracker, TRACKERS)
-import_sub_classes(servers, TorrentHelper, TORRENT_HELPERS)
+SERVERS = import_sub_classes(servers, Server)
+TRACKERS = import_sub_classes(trackers, Tracker)
+TORRENT_HELPERS = import_sub_classes(servers, TorrentHelper)
 
 
 class MediaReader:

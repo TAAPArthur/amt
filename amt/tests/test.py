@@ -40,15 +40,10 @@ TEST_TEMP = TEST_BASE + "tmp/"
 
 logging.basicConfig(format="[%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
 
-TEST_SERVERS = set()
-TEST_TRACKERS = set()
-TEST_TORRENT_HELPERS = set()
-LOCAL_SERVERS = set()
-
-import_sub_classes(tests, TestServer, TEST_SERVERS)
-import_sub_classes(tests, TestTracker, TEST_TRACKERS)
-import_sub_classes(tests, TestTorrentHelper, TEST_TORRENT_HELPERS)
-import_sub_classes(servers, LocalServer, LOCAL_SERVERS)
+TEST_SERVERS = import_sub_classes(tests, TestServer)
+TEST_TRACKERS = import_sub_classes(tests, TestTracker)
+TEST_TORRENT_HELPERS = import_sub_classes(tests, TestTorrentHelper)
+LOCAL_SERVERS = import_sub_classes(servers, LocalServer)
 
 SKIP_DOWNLOAD = os.getenv("SKIP_DOWNLOAD")
 SINGLE_THREADED = os.getenv("DEBUG")
@@ -449,8 +444,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
     def test_skip_servers_that_cannot_be_imported(self):
         with patch.dict(sys.modules, {"amt.tests.test_server": None}):
-            remaining_servers = set()
-            import_sub_classes(tests, TestServer, remaining_servers)
+            remaining_servers = import_sub_classes(tests, TestServer)
             self.assertNotEqual(remaining_servers, TEST_SERVERS)
 
     def test_media_reader_add_remove_media(self):
