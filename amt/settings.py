@@ -3,8 +3,6 @@ import logging
 import os
 import re
 import subprocess
-from datetime import datetime
-from pathlib import Path
 from shlex import quote
 from subprocess import CalledProcessError
 from threading import Lock
@@ -80,7 +78,7 @@ class Settings:
     viewer = ""
 
     def __init__(self, home=None, no_save_session=False, no_load=False, skip_env_override=False):
-        home = home if home else os.getenv("AMT_HOME", Path.home())
+        home = home if home else os.getenv("AMT_HOME", os.getenv("HOME"))
         self.config_dir = os.path.join(os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config")), APP_NAME)
         self.cache_dir = os.path.join(os.getenv("XDG_CACHE_HOME", os.path.join(home, ".cache")), APP_NAME)
         self.data_dir = os.path.join(os.getenv("XDG_DATA_HOME", os.path.join(home, ".local/share")), APP_NAME)
@@ -297,6 +295,7 @@ class Settings:
         return self._open_viewer(viewer, os.path.join(self.bundle_dir, bundle_name), title=bundle_name)
 
     def bundle(self, img_dirs, name=None, media_data=None):
+        from datetime import datetime
         os.makedirs(self.bundle_dir, exist_ok=True)
         arg = " ".join(map(Settings._smart_quote, img_dirs))
         count = 0
