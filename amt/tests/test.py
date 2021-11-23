@@ -56,7 +56,6 @@ class BaseUnitTestClass(unittest.TestCase):
     real = False
     cli = False
     media_reader = None
-    TIME_LIMIT = None
     default_server_list = list(TEST_SERVERS)
 
     def __init__(self, methodName="runTest"):
@@ -120,7 +119,6 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.post_process_cmd = ""
 
     def setUp(self):
-        self.startTime = time.time()
         # Clear all env variables
         for k in set(os.environ.keys()):
             del os.environ[k]
@@ -136,16 +134,10 @@ class BaseUnitTestClass(unittest.TestCase):
         self.test_anime_server = self.media_reader.get_server(TestAnimeServer.id)
         assert not self.media_reader.get_media_ids()
 
-    def check_time(self):
-        t = time.time() - self.startTime
-        time_limit = self.TIME_LIMIT if self.TIME_LIMIT else 32 if self.real else 1
-        self.assertTrue(t < time_limit, f"{self.id()}: {t:.3f}")
-
     def tearDown(self):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         self.close_sessions()
         logging.getLogger().removeHandler(self.stream_handler)
-        self.check_time()
 
     def add_test_media(self, server=None, media_type=None, no_update=False, limit=None, limit_per_server=None):
         media_list = server.get_media_list() if server else [x for server in self.media_reader.get_servers() if not media_type or server.media_type & media_type for x in server.get_media_list()[:limit_per_server]]
@@ -853,8 +845,6 @@ class GenericServerTest():
                 return True
 
     def test_workflow(self):
-        if self.real:
-            self.TIME_LIMIT = 60
         self.for_each(self.server_workflow_test_helper, self.media_reader.get_servers())
 
     def test_login_fail(self):
@@ -1771,7 +1761,6 @@ class ServerSpecificTest(RealBaseUnitTestClass):
 
     def test_jnovel_club_manga_parts_full_download(self):
         from ..servers.jnovelclub import JNovelClubMangaParts
-        self.TIME_LIMIT = 60
         # Make the test faster
         GenericDecoder.PENDING_CACHE_NUM = 1
         server = self.media_reader.get_server(JNovelClubMangaParts.id)
