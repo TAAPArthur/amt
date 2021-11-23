@@ -69,7 +69,7 @@ class Settings:
     chapter_page_format = "{page_number:04d}.{ext}"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     disable_ssl_verification = False
-    download_torrent_cmd = "btcli add -T {media_id} {torrent_file}"
+    download_torrent_cmd = ""
     keep_unavailable = False
     post_process_cmd = ""
     text_languages = ["en", "en-US", "English"]
