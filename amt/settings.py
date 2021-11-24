@@ -146,7 +146,7 @@ class Settings:
         return value
 
     def get_field(self, name, media_data=None):
-        for key in media_data.get_labels() if isinstance(media_data, dict) else [media_data]:
+        for key in media_data.get_labels() if isinstance(media_data, dict) else [media_data] if isinstance(media_data, (str, int)) or not media_data else [media_data.id, media_data.media_type.name]:
             if name in self._specific_settings and key in self._specific_settings[name]:
                 return self._specific_settings[name][key]
         return getattr(self, name)
@@ -221,9 +221,9 @@ class Settings:
     def is_allowed_text_lang(self, lang, media_data):
         return lang in self.get_field("text_languages", media_data)
 
-    def get_prefered_lang_key(self, media_data):
+    def get_prefered_lang_key(self, media_data, lang=None):
         try:
-            return self.get_field("preferred_primary_language", media_data).index(media_data.get("lang", ""))
+            return self.get_field("preferred_primary_language", media_data).index(lang or media_data.get("lang", ""))
         except ValueError:
             return float("inf")
 

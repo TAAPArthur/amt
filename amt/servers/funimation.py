@@ -113,7 +113,12 @@ class Funimation(GenericFunimation):
     def _get_episode_id(self, url):
         match = self.stream_url_regex.search(url)
         r = self.session_get(self.new_api_episdoe_url.format(match.group(1), match.group(2)))
-        return str(r.json()["videoList"][0]["id"])
+        video_info = []
+        for video in r.json()["videoList"]:
+            lang_code_score = [self.settings.get_prefered_lang_key(self, lang=lang["languageCode"]) for lang in video["spokenLanguages"]]
+            lang_name_score = [self.settings.get_prefered_lang_key(self, lang=lang["name"]) for lang in video["spokenLanguages"]]
+            video_info.append((min(lang_code_score + lang_name_score), video["id"]))
+        return str(min(sorted(video_info))[1])
 
     def update_media_data(self, media_data: dict, r=None):
         if not r:
