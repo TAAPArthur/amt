@@ -224,7 +224,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     offset_parser = add_parser_helper(sub_parsers, "offset")
     offset_parser.add_argument("name", default=None, choices=state.get_all_names())
-    offset_parser.add_argument("offset", type=int, default=0, nargs="?", help="Decrease the chapter number reported by the server by N")
+    offset_parser.add_argument("offset", type=int, default=None, nargs="?", help="Decrease the chapter number reported by the server by N")
 
     # upgrade state
     add_parser_helper(sub_parsers, "upgrade-state", aliases=["upgrade"], description="Upgrade old state to newer format")

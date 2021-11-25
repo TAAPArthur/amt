@@ -274,6 +274,9 @@ class MediaData(dict):
     def get_last_chapter_number(self):
         return max(self["chapters"].values(), key=lambda x: x["number"])["number"] if self["chapters"] else 0
 
+    def get_first_chapter_number_greater_than_zero(self):
+        return min(self["chapters"].values(), key=lambda x: x["number"] if x["number"] > 0 else float("inf"))["number"]
+
     def get_last_read(self):
         return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={"number": 0})["number"]
 

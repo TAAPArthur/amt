@@ -1290,6 +1290,17 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["update"])
         self.assertEqual(offset_list, sorted([chapter_data["number"] for chapter_data in chapters.values()]))
 
+    def test_offset_none(self):
+        def update_media_data(media_data):
+            self.test_server.update_chapter_data(media_data, id=1, title="1", number=0)
+            self.test_server.update_chapter_data(media_data, id=2, title="2", number=20)
+            self.test_server.update_chapter_data(media_data, id=3, title="3", number=30)
+        self.test_server.update_media_data = update_media_data
+        media_data = self.add_test_media(limit=1, server=self.test_server)[0]
+        parse_args(media_reader=self.media_reader, args=["offset", media_data.global_id])
+        self.assertEqual(19, media_data["offset"])
+        self.assertEqual(1, media_data.get_first_chapter_number_greater_than_zero())
+
     def test_search(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "manga"])
         media_data = self.media_reader.get_single_media()

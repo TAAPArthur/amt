@@ -514,10 +514,11 @@ class MediaReader:
 
     def offset(self, name, offset):
         for media_data in self.get_media(name=name):
-            diff_offset = offset - media_data.get("offset", 0)
+            local_offset = offset if offset is not None else media_data.get_first_chapter_number_greater_than_zero() - 1
+            diff_offset = local_offset - media_data.get("offset", 0)
             for chapter in media_data["chapters"].values():
                 chapter["number"] -= diff_offset
-            media_data["offset"] = offset
+            media_data["offset"] = local_offset
 
     def tag(self, name, tag_name):
         for media_data in self.get_media(name=name):
