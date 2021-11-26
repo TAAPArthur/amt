@@ -479,12 +479,13 @@ class MediaReader:
             return False
         return media_data
 
-    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, update_progress_only=False, force=False, **kwargs):
+    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, update_progress_only=False, force=False, remove=False, **kwargs):
         tracker = self.get_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         new_count = 0
 
         unknown_media = []
+        tracked_media = []
         for entry in data:
             if media_type and not entry["media_type"] & media_type:
                 logging.debug("Skipping %s", entry)
@@ -503,12 +504,18 @@ class MediaReader:
                     continue
                 media_data_list = [media_data]
 
+            tracked_media.extend(map(lambda x: x.global_id, media_data_list))
             for media_data in media_data_list:
                 progress = entry["progress"] if not media_data["progress_volumes"] else entry["progress_volumes"]
                 self.mark_chapters_until_n_as_read(media_data, progress, force=force)
                 media_data["progress"] = progress
         if unknown_media:
             logging.info("Could not find any of %s", unknown_media)
+        if not update_progress_only and remove:
+            for media_data in list(self.get_media(media_type=media_type)):
+                if media_data.global_id not in tracked_media:
+                    logging.info("Removing %s because it is no longer present on tracker", media_data.global_id)
+                    self.remove_media(media_data)
         return new_count
     # MISC
 

@@ -1143,6 +1143,12 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", f"--media-type={MediaType.ANIME.name}", "test_user"])
         assert all([x["media_type"] == MediaType.ANIME for x in self.media_reader.get_media()])
 
+    def test_load_remove(self):
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", "test_user"])
+        self.media_reader.get_tracker().set_custom_anime_list([], MediaType.ANIME)
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--remove", f"--media-type={MediaType.ANIME.name}", "test_user"])
+        self.assertFalse(list(self.media_reader.get_media(media_type=MediaType.ANIME)))
+
     def test_load_add_progress_only(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--progress-only", "test_user"])
         assert not self.media_reader.get_media_ids()

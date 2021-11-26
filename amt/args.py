@@ -193,6 +193,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     load_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
     load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
     load_parser.add_argument("--progress-only", "-p", action="store_const", const=True, default=False, help="Only update progress of tracked media", dest="update_progress_only")
+    load_parser.add_argument("--remove", action="store_const", const=True, default=False, help="Remove media that was tracked but no longer active on tracker")
     load_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
     load_parser.add_argument("user_name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
 
