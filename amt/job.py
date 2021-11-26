@@ -1,6 +1,5 @@
 import logging
 import traceback
-from collections import deque
 from queue import Queue
 from threading import Thread
 
@@ -20,7 +19,7 @@ class Job:
         self.numThreads = numThreads
         self.queue = Queue()
         self.exception = None
-        self.results = deque()
+        self.results = []
         self.enqueue(iterable)
         self.raiseException = raiseException
 
