@@ -4,6 +4,7 @@ import re
 
 from bs4 import BeautifulSoup
 
+from ..job import Job
 from ..server import Server, get_extension
 from ..util.media_type import MediaType
 
@@ -90,10 +91,13 @@ class Funimation(GenericFunimation):
         r = self.session_get(url)
         soup = self.soupify(BeautifulSoup, r)
         media_data = []
+        job = Job(self.settings.threads, raiseException=True)
         for item in soup.findAll("item")[:limit]:
-            title = item.find("title").text
             id = item.find("id").text
-            r = self.session_get(self.episode_url.format(id))
+            job.add(lambda id=id: (self.session_get(self.episode_url.format(id)), id))
+
+        for r, id in job.run():
+            title = item.find("title").text
             data = r.json()
             season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"], audio) for item in data["items"] for audio in item["audio"]}
             experiences = {item["item"]["seasonId"]: item["mostRecentSvod"]["experience"] for item in data["items"]}

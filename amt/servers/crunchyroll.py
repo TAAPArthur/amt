@@ -1,6 +1,7 @@
 import logging
 import re
 
+from ..job import Job
 from ..server import Server
 from ..util.media_type import MediaType
 
@@ -250,14 +251,13 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     def search(self, term, limit=None):
         data = self.session_get_json(self.search_series.format(self.get_session_id(), term, limit if limit else 0) if term else self.list_all_series.format(self.get_session_id()))
-        media_data = []
-        for item in data["data"]:
-            item_alt_id = item["url"].split("/")[-1]
-            media_data += list([media for media in self._create_media_data(item["series_id"], item_alt_id, limit=limit)])
-            if limit and len(media_data) >= limit:
-                break
 
-        return media_data
+        def get_all_seasons(item):
+            item_alt_id = item["url"].split("/")[-1]
+            return [media for media in self._create_media_data(item["series_id"], item_alt_id)]
+
+        job = Job(self.settings.threads, data["data"][:limit], func=get_all_seasons, raiseException=True)
+        return job.run()
 
     def update_media_data(self, media_data: dict):
         data = self.session_get_json(self.list_media.format(self.get_session_id(), media_data["id"]))["data"]

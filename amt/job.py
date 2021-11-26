@@ -15,11 +15,12 @@ class ItemWrapper():
 
 
 class Job:
-    def __init__(self, numThreads, iterable=[], raiseException=False):
+    def __init__(self, numThreads, iterable=[], func=None, raiseException=False):
         self.numThreads = numThreads
         self.queue = Queue()
         self.exception = None
         self.results = []
+        self.func = func
         self.enqueue(iterable)
         self.raiseException = raiseException
 
@@ -36,7 +37,7 @@ class Job:
             func = item if not isinstance(item, ItemWrapper) else item.item
             try:
                 if func:
-                    ret = func()
+                    ret = func() if not self.func else self.func(func)
                     self.results.append(ret) if not isinstance(ret, list) else self.results.extend(ret)
             except Exception as e:
                 if isinstance(e, RetryException) and not isinstance(item, ItemWrapper):
