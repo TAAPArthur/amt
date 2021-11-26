@@ -92,6 +92,8 @@ class BaseUnitTestClass(unittest.TestCase):
         state = State(self.settings)
         _servers.sort(key=lambda x: x.id)
         self.media_reader = cls(state=state, server_list=_servers) if self.real else cls(state=state, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
+        if not self.settings.disabled_servers and self.real:
+            assert(self.media_reader.get_servers())
 
     def for_each(self, func, media_list, raiseException=True):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
