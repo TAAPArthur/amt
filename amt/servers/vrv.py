@@ -143,7 +143,7 @@ class Vrv(Server):
             series_id = item["id"]
             data = self.session_get_with_key_pair(self.seasons_api_url.format(series_id=series_id)).json()
             for season in data["items"]:
-                media.append(self.create_media_data(series_id, item["title"], season_id=season["id"], season_title=season["title"]))
+                media.append(self.create_media_data(series_id, item["title"], season_id=season["id"], season_title=season["title"], lang=None))
         return media
 
     def update_media_data(self, media_data: dict, r=None):

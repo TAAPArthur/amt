@@ -80,8 +80,16 @@ class RequestServer:
 
 
 class MediaServer(RequestServer):
-    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_volumes=None, **kwargs):
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_volumes=progress_volumes if progress_volumes is not None else self.progress_volumes, tags=[], **kwargs))
+    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_volumes=None, lang="", **kwargs):
+        if lang is None:
+            match = re.search(r"\((\w*) Dub\)", name) or re.search(r"\((\w*) Dub\)", season_title)
+            if match:
+                lang = match.group(1) if match else ""
+            else:
+                match = re.search(r"\(Dub\)", name) or re.search(r"\(Dub\)", season_title)
+                lang = "dub" if match else ""
+
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_volumes=progress_volumes if progress_volumes is not None else self.progress_volumes, tags=[], lang=lang, **kwargs))
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False, **kwargs):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():

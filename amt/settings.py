@@ -53,7 +53,7 @@ class Settings:
     # Any keys defined in this dict should be declared in the class
     _specific_settings = {
         "preferred_primary_language": {
-            MediaType.ANIME.name: ["jp", "Japanese", ""]
+            MediaType.ANIME.name: ["JP", "JAPANESE", ""]
         },
         "viewer": {
             MediaType.ANIME.name: "mpv --merge-files --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
@@ -73,7 +73,7 @@ class Settings:
     keep_unavailable = False
     post_process_cmd = ""
     text_languages = ["en", "en-US", "English"]
-    preferred_primary_language = ["en", "en-US", "English", ""]
+    preferred_primary_language = ["EN", "EN-US", "ENGLISH", ""]
     threads = 8  # per server thread count
     viewer = ""
 
@@ -223,7 +223,7 @@ class Settings:
 
     def get_prefered_lang_key(self, media_data, lang=None):
         try:
-            return self.get_field("preferred_primary_language", media_data).index(lang or media_data.get("lang", ""))
+            return self.get_field("preferred_primary_language", media_data).index((lang or media_data.get("lang", "")).upper())
         except ValueError:
             return float("inf")
 

@@ -236,7 +236,6 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     episode_url = api_base_url + "/info.0.json?session_id={}&media_id={}"
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
     media_type = MediaType.ANIME
-    audio_lang_regex = re.compile(r"\((\w*) Dub\)")
 
     stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/.*-(\d+)$")
 
@@ -244,9 +243,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         season_data = self.session_get_json(self.series_url.format(self.get_session_id(), series_id))["data"]
         for season in season_data[:limit]:
             if not season_id or season["collection_id"] == season_id:
-                match = self.audio_lang_regex.search(season["name"])
-                lang = match.group(1) if match else ""
-                yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], dir_name=item_alt_id, lang=lang)
+                yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], dir_name=item_alt_id, lang=None)
 
     def get_media_list(self, limit=4):
         return self.search("", limit=limit)
