@@ -204,19 +204,19 @@ class MediaReader:
         last_read_list = []
         failures = 0
         for media_data in list(self.get_media(name=name)):
-            self.remove_media(media_data)
             if move_self:
                 def func(x): return -sum([media_data.get(key, None) == x[key] for key in x])
-                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if raw_id else media_data["id"] if force_same_id else None, sort_func=func)
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if raw_id else media_data["id"] if force_same_id else None, sort_func=func, no_add=True)
             else:
-                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]])
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]], no_add=True)
             if new_media_data:
                 media_data.copy_fields_to(new_media_data)
                 media_list.append(new_media_data)
                 last_read_list.append(media_data.get_last_read())
+                self.remove_media(media_data)
+                self.add_media(new_media_data, no_update=True)
             else:
                 logging.info("Failed to migrate %s", media_data.global_id)
-                self.add_media(media_data, no_update=True)
                 failures += 1
 
         self.for_each(self.update_media, media_list, raiseException=True)
@@ -467,7 +467,8 @@ class MediaReader:
             if not media_data and self.settings.get_download_torrent_cmd(media_type):
                 logging.info("Checking to see if %s can be found with helpers", name)
                 for n in alt_names:
-                    media_data = self.search_add(n, media_type=media_type, exact=exact, server_list=self.get_torrent_helpers(), no_add=True, **kwargs)
+                    kwargs["no_add"] = True
+                    media_data = self.search_add(n, media_type=media_type, exact=exact, server_list=self.get_torrent_helpers(), **kwargs)
                     if media_data:
                         logging.info("Found match; Downloading torrent file")
                         self._torrent_helpers[media_data["server_id"]].download_torrent_file(media_data)
