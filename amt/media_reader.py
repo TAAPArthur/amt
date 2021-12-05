@@ -141,6 +141,38 @@ class MediaReader:
             self.add_media(media_data)
         return media_data
 
+    def search_for_media(self, name, media_type=None, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
+        alt_names = get_alt_names(name) if not exact else [name]
+        media_data = known_matching_media = None
+
+        if not skip_local_search:
+            known_matching_media = list(find_media_with_similar_name_in_list(alt_names, filter(lambda x: not self.get_tracker_info(x), self.get_media(media_type=media_type))))
+
+        if known_matching_media:
+            logging.debug("Checking among known media")
+            media_data = self.select_media(name, known_matching_media, "Select from known media: ")
+
+        elif not skip_remote_search:
+            for n in alt_names:
+                media_data = self.search_add(n, media_type=media_type, exact=exact, **kwargs)
+                if media_data is not None:
+                    break
+            if not media_data and self.settings.get_download_torrent_cmd(media_type):
+                logging.info("Checking to see if %s can be found with helpers", name)
+                for n in alt_names:
+                    kwargs["no_add"] = True
+                    media_data = self.search_add(n, media_type=media_type, exact=exact, server_list=self.get_torrent_helpers(), **kwargs)
+                    if media_data:
+                        logging.info("Found match; Downloading torrent file")
+                        self._torrent_helpers[media_data["server_id"]].download_torrent_file(media_data)
+                        logging.info("Starting torrent download")
+                        self.settings.start_torrent_download(media_data)
+                        return False
+        if not media_data:
+            logging.info("Could not find media %s", name)
+            return False
+        return media_data
+
     def add_from_url(self, url):
         for server in self.get_servers():
             if server.can_stream_url(url):
@@ -447,38 +479,6 @@ class MediaReader:
             for media_data in media_to_sync:
                 media_data["progress"] = media_data.get_last_read()
         return bool(data)
-
-    def search_for_media(self, name, media_type=None, exact=False, skip_local_search=False, skip_remote_search=False, **kwargs):
-        alt_names = get_alt_names(name) if not exact else [name]
-        media_data = known_matching_media = None
-
-        if not skip_local_search:
-            known_matching_media = list(find_media_with_similar_name_in_list(alt_names, filter(lambda x: not self.get_tracker_info(x), self.get_media(media_type=media_type))))
-
-        if known_matching_media:
-            logging.debug("Checking among known media")
-            media_data = self.select_media(name, known_matching_media, "Select from known media: ")
-
-        elif not skip_remote_search:
-            for n in alt_names:
-                media_data = self.search_add(n, media_type=media_type, exact=exact, **kwargs)
-                if media_data is not None:
-                    break
-            if not media_data and self.settings.get_download_torrent_cmd(media_type):
-                logging.info("Checking to see if %s can be found with helpers", name)
-                for n in alt_names:
-                    kwargs["no_add"] = True
-                    media_data = self.search_add(n, media_type=media_type, exact=exact, server_list=self.get_torrent_helpers(), **kwargs)
-                    if media_data:
-                        logging.info("Found match; Downloading torrent file")
-                        self._torrent_helpers[media_data["server_id"]].download_torrent_file(media_data)
-                        logging.info("Starting torrent download")
-                        self.settings.start_torrent_download(media_data)
-                        return False
-        if not media_data:
-            logging.info("Could not find media %s", name)
-            return False
-        return media_data
 
     def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, update_progress_only=False, force=False, remove=False, **kwargs):
         tracker = self.get_tracker()
