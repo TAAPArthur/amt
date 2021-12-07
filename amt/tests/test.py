@@ -1152,7 +1152,7 @@ class ArgsTest(CliUnitTestClass):
         self.assertFalse(list(self.media_reader.get_media(media_type=MediaType.ANIME)))
 
     def test_load_add_progress_only(self):
-        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--progress-only", "test_user"])
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--no-add", "test_user"])
         assert not self.media_reader.get_media_ids()
 
     def test_load_add_new_media(self):

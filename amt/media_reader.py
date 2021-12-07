@@ -480,7 +480,7 @@ class MediaReader:
                 media_data["progress"] = media_data.get_last_read()
         return bool(data)
 
-    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, update_progress_only=False, force=False, remove=False, **kwargs):
+    def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, no_add=False, force=False, remove=False, **kwargs):
         tracker = self.get_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
         new_count = 0
@@ -493,7 +493,7 @@ class MediaReader:
                 continue
             media_data_list = self.get_tracked_media(tracker.id, entry["id"])
             if not media_data_list:
-                if update_progress_only:
+                if no_add:
                     continue
                 media_data = self.search_for_media(entry["name"], entry["media_type"], exact=exact, skip_remote_search=local_only, **kwargs)
                 if media_data:
@@ -512,7 +512,7 @@ class MediaReader:
                 media_data["progress"] = progress
         if unknown_media:
             logging.info("Could not find any of %s", unknown_media)
-        if not update_progress_only and remove:
+        if remove:
             for media_data in list(self.get_media(media_type=media_type)):
                 if media_data.global_id not in tracked_media:
                     logging.info("Removing %s because it is no longer present on tracker", media_data.global_id)
