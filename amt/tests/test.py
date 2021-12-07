@@ -1196,7 +1196,7 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["stats", "--media-type", MediaType.ANIME.name, "test_user"])
         parse_args(media_reader=self.media_reader, args=["stats", "-s", "NAME", "test_user"])
         parse_args(media_reader=self.media_reader, args=["stats", "-g", "NAME", "test_user"])
-        parse_args(media_reader=self.media_reader, args=["stats", "--details", "-d", "NAME", "test_user"])
+        parse_args(media_reader=self.media_reader, args=["stats", "-d", "NAME", "test_user"])
 
     def test_stats_default_user(self):
         self.add_test_media()

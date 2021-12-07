@@ -177,8 +177,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # stats
     stats_parser = add_parser_helper(sub_parsers, "stats", description="Show tracker stats")
-    stats_parser.add_argument("--details", action="store_const", const=True, default=False, help="Show media")
-    stats_parser.add_argument("--details-type", "-d", choices=list(Details), type=Details.__getattr__, default=Details.NAME, help="How details are displayed")
+    stats_parser.add_argument("--details-type", "-d", choices=list(Details), type=Details.__getattr__, default=Details.NO_DETAILS, help="How details are displayed")
+    stats_parser.add_argument("--details-limit", "-l", type=int, default=None, help="How many details are shown")
     stats_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     stats_parser.add_argument("--min-count", "-m", type=int, default=0, help="Ignore groups with fewer than N elements")
     stats_parser.add_argument("--min-score", type=float, default=1, help="Ignore entries with score less than N")
