@@ -1,4 +1,5 @@
 import logging
+
 from .media_reader import MediaReader
 from .util.media_type import MediaType
 

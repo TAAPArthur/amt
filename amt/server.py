@@ -2,10 +2,10 @@ import json
 import logging
 import os
 import re
-from functools import cache
-from threading import Lock
 
+from functools import cache
 from requests.exceptions import HTTPError
+from threading import Lock
 
 from .job import Job
 from .state import ChapterData, MediaData

@@ -2,9 +2,9 @@ import json
 import logging
 import os
 import random
+
 from . import stats
 from .stats import Details, SortIndex, StatGroup
-
 from .util.media_type import MediaType
 
 

@@ -1,9 +1,9 @@
 import json
 import os
 import re
+
 from collections import defaultdict
 from datetime import datetime
-
 from requests_oauthlib import OAuth1
 
 from ..server import Server

@@ -20,4 +20,3 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         pyflakes .
-        isort -c .

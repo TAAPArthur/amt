@@ -1,13 +1,11 @@
 import os
-
 import requests
+
 from bs4 import BeautifulSoup
 
 from ..server import Server
+from ..util import name_parser
 from ..util.media_type import MediaType
-from ..util.name_parser import (get_media_id_from_name,
-                                get_media_name_from_file,
-                                get_number_from_file_name)
 
 
 class RemoteServer(Server):
@@ -92,19 +90,19 @@ class RemoteServer(Server):
                 yield from self.list_files(base_path, path=path + formatted_name, depth=depth - 1)
 
     def _create_media_data(self, link):
-        media_name = get_media_name_from_file(requests.utils.unquote(link), is_dir=link[-1] == "/")
-        return self.create_media_data(get_media_id_from_name(link), media_name, alt_id=link)
+        media_name = name_parser .get_media_name_from_file(requests.utils.unquote(link), is_dir=link[-1] == "/")
+        return self.create_media_data(name_parser.get_media_id_from_name(link), media_name, alt_id=link)
 
     def get_media_list(self, limit=None):
         return [self._create_media_data(link) for _, link in self.list_files()][:limit]
 
     def update_media_data(self, media_data):
         if media_data["alt_id"][-1] != "/":
-            self.update_chapter_data(media_data, media_data["alt_id"], title=media_data["name"], number=get_number_from_file_name(media_data["alt_id"], media_name=media_data["name"], default_num=1))
+            self.update_chapter_data(media_data, media_data["alt_id"], title=media_data["name"], number=name_parser .get_number_from_file_name(media_data["alt_id"], media_name=media_data["name"], default_num=1))
             return
 
         for _, link in self.list_files(media_data["alt_id"]):
-            self.update_chapter_data(media_data, link, title=link, number=get_number_from_file_name(link, media_name=media_data["name"], default_num=1), premium=self.has_login())
+            self.update_chapter_data(media_data, link, title=link, number=name_parser .get_number_from_file_name(link, media_name=media_data["name"], default_num=1), premium=self.has_login())
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         if media_data["alt_id"][-1] != "/":

@@ -1,9 +1,9 @@
 import functools
 import logging
-from heapq import heappop, heappush
-from threading import Lock
 
 from PIL import Image
+from heapq import heappop, heappush
+from threading import Lock
 
 CACHE_SIZE = 60000
 

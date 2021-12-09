@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 import unittest
+
 from inspect import findsource
 from subprocess import CalledProcessError
 from unittest.mock import patch
@@ -22,8 +23,7 @@ from ..servers.remote import RemoteServer
 from ..settings import Settings
 from ..state import ChapterData, MediaData, State
 from ..util.media_type import MediaType
-from .test_server import (TEST_BASE, TestAnimeServer, TestServer,
-                          TestServerLogin, TestTorrentHelper)
+from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestServerLogin, TestTorrentHelper)
 from .test_tracker import TestTracker
 
 HAS_PIL = True
