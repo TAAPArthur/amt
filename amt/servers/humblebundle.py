@@ -31,8 +31,7 @@ class GenericHumbleBundle(Server):
         return json.loads(match.group(1)) if match else []
 
     def get_media_of_type(self, key, platform="ebook"):
-        r = self.session_get(self.meida_info_url.format(key))
-        data = r.json()
+        data = self.session_get_cache_json(self.meida_info_url.format(key))
         for product in data["subproducts"]:
             id = product["machine_name"]
             name = product["human_name"]

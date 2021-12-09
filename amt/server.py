@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -68,6 +69,27 @@ class RequestServer:
     @cache
     def session_get_mem_cache(self, url, **kwargs):
         return self.session_get(url, **kwargs)
+
+    def session_get_cache_json(self, url, skip_cache=False, **kwargs):
+        file = self.settings.get_web_cache(url)
+        if skip_cache:
+            return self.session_get(url, **kwargs).json()
+        try:
+            with open(file, "r") as f:
+                return json.load(f)
+        except (json.decoder.JSONDecodeError, FileNotFoundError):
+            pass
+        r = self.session_get(url, **kwargs)
+        data = r.json()
+
+        for i in range(2):
+            try:
+                with open(file, "w") as f:
+                    json.dump(data, f)
+                    break
+            except FileNotFoundError:
+                os.makedirs(self.settings.cache_dir, exist_ok=True)
+        return data
 
     def session_get(self, url, **kwargs):
         return self._request(True, url, **kwargs)

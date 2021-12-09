@@ -1,4 +1,5 @@
 import inspect
+import json
 import logging
 import os
 import re
@@ -391,6 +392,10 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.post_process_cmd = "exit 1"
         self.assertRaises(CalledProcessError, self.settings.post_process, None, [], None)
 
+    def test_get_web_cache(self):
+        path = self.settings.get_web_cache("https://someurl.domain.com/some/path")[len(self.settings.cache_dir) + 1:]
+        self.assertTrue("/" not in path, path)
+
 
 class SettingsCredentialsTest(BaseUnitTestClass):
 
@@ -435,6 +440,17 @@ class SettingsCredentialsTest(BaseUnitTestClass):
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
+
+    def test_session_get_cache_json(self):
+        server = self.media_reader.get_server(TestServer.id)
+        assert server
+        url = "https://dummy_url"
+        os.makedirs(self.settings.cache_dir, exist_ok=True)
+        file = self.settings.get_web_cache(url)
+        data = [0, 1, 0]
+        with open(file, "w") as f:
+            json.dump(data, f)
+        self.assertEqual(data, server.session_get_cache_json(url))
 
     def test_skip_servers_that_cannot_be_imported(self):
         with patch.dict(sys.modules, {"amt.tests.test_server": None}):
