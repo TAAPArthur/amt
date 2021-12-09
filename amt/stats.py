@@ -1,5 +1,5 @@
 from collections import defaultdict
-from enum import Enum
+from enum import Enum, auto
 
 
 class BaseEnum(Enum):
@@ -10,32 +10,35 @@ class BaseEnum(Enum):
 
 class StatGroup(BaseEnum):
     NAME = 0
-    YEAR = 1
-    DECADE = 2
-    SEASON = 3
-    GENRE = 4
-    TAG = 5
-    STUDIO = 6
-    STUDIO_SEP = 7
-    ALL = 8
+    YEAR = auto()
+    DECADE = auto()
+    YEAR_END = auto()
+    DECADE_END = auto()
+    SEASON = auto()
+    GENRE = auto()
+    TAG = auto()
+    STUDIO = auto()
+    STUDIO_SEP = auto()
+    ALL = auto()
 
 
 class SortIndex(BaseEnum):
     NAME = 0
-    COUNT = 1
-    SCORE = 2
-    TIME = 3
-    WSCORE = 4
+    COUNT = auto()
+    SCORE = auto()
+    TIME = auto()
+    WSCORE = auto()
 
 
 class Details(BaseEnum):
     NO_DETAILS = 0
-    NAME = 1
-    YEAR = 2
-    SEASON = 3
-    GENRE = 4
-    TAGS = 5
-    STUDIO = 6
+    NAME = auto()
+    YEAR = auto()
+    YEAR_END = auto()
+    SEASON = auto()
+    GENRE = auto()
+    TAGS = auto()
+    STUDIO = auto()
 
 
 def group_entries(media_list, min_score=1):
@@ -43,9 +46,11 @@ def group_entries(media_list, min_score=1):
     genereData = defaultdict(list)
     seasonData = defaultdict(list)
     yearData = defaultdict(list)
+    yearEndData = defaultdict(list)
     studioData = defaultdict(list)
     studioSepData = defaultdict(list)
     decadeData = defaultdict(list)
+    decadeEndData = defaultdict(list)
     allData = defaultdict(list)
     for media in media_list:
         if media["score"] >= min_score and (media["progress"] or media["progress_volumes"]):
@@ -53,11 +58,14 @@ def group_entries(media_list, min_score=1):
             [genereData[x].append(media) for x in media["genres"]]
             yearData[str(media["year"])].append(media)
             decadeData[str(int(media["year"] / 10) * 10)].append(media)
+            if media["year_end"]:
+                yearEndData[str(media["year_end"])].append(media)
+                decadeEndData[str(int(media["year_end"] / 10) * 10)].append(media)
             seasonData[media["season"]].append(media)
             studioData[",".join(sorted(media["studio"]))].append(media)
             [studioSepData[x].append(media) for x in media["studio"]]
             allData["All"].append(media)
-    return {x["name"]: [x] for x in media_list}, yearData, decadeData, seasonData, genereData, tagData, studioData, studioSepData, allData
+    return {x["name"]: [x] for x in media_list}, yearData, decadeData, yearEndData, decadeEndData, seasonData, genereData, tagData, studioData, studioSepData, allData
 
 
 def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details_type=Details.NAME, details_limit=None):

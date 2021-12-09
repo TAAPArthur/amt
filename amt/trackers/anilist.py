@@ -30,6 +30,7 @@ class Anilist(Tracker):
                 seasonYear
                 seasonInt
                 startDate{year}
+                endDate{year}
                 season
                 episodes
                 duration
@@ -128,6 +129,7 @@ class Anilist(Tracker):
                 score=x["score"],
                 time_spent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"] or x["progressVolumes"] or 0,
                 year=x["media"]["startDate"]["year"],
+                year_end=x["media"]["endDate"]["year"],
                 season="{} {}".format(x["media"]["season"], x["media"]["seasonYear"]) if x["media"]["season"] else str(x["media"]["startDate"]["year"]),
                 genres=x["media"]["genres"],
                 tags=[x["name"] for x in x["media"]["tags"] if x["rank"] > 70],

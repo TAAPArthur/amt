@@ -25,7 +25,7 @@ class TestTracker(Tracker):
             self.media_list[id][2] = progress
 
     def get_tracker_list(self, user_name=None, id=None, status="CURRENT"):
-        return [self.get_media_dict(id=i, media_type=item[0], name=item[1], progress=item[2], score=item[3]) for i, item in enumerate(self.media_list)] if self.customList is None else self.customList
+        return [self.get_media_dict(id=i, media_type=item[0], name=item[1], progress=item[2], score=item[3], year=i, year_end=i) for i, item in enumerate(self.media_list)] if self.customList is None else self.customList
 
     def set_custom_anime_list(self, l, media_type=MediaType.ANIME):
         self.customList = [self.get_media_dict(i, media_type, item, 1) for i, item in enumerate(l)]

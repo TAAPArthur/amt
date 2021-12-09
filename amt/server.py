@@ -414,9 +414,9 @@ class Tracker(RequestServer):
     id = None
     official = True
 
-    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, time_spent=0, year=0, season=None, genres=[], tags=[], studio=[]):
+    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, time_spent=0, year=0, year_end=0, season=None, genres=[], tags=[], studio=[]):
         return {"id": id, "media_type": media_type, "name": name, "progress": progress, "progress_volumes": progress_volumes,
-                "score": score, "time_spent": time_spent, "year": year, "season": season, "genres": genres, "tags": tags, "studio": studio
+                "score": score, "time_spent": time_spent, "year": year, "year_end": year_end, "season": season, "genres": genres, "tags": tags, "studio": studio
                 }
 
     def get_auth_url(self):  # pragma: no cover
