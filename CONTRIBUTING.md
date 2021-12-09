@@ -23,7 +23,7 @@ There are also Trackers and TorrentHelpers, but there's only currently one of ea
 * HiDive (Anime; type 2)
 * MyAnimeList (Tracker)
 
-Other servers are welcome. All the code must run
+Other servers are welcome. All the code must run on Linux.
 If there is a dedicated tool that has the desired functionality, it doesn't have to be re-implemented. The Server class could be a wrapper around it. However, I haven't yet seen tools that are both minimal and match the interface, so there have been a lot of rewrites from similar project.
 
 ## Can Provider X be added?
