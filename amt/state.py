@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import random
+from . import stats
+from .stats import Details, SortIndex, StatGroup
 
 from .util.media_type import MediaType
 
@@ -234,6 +236,23 @@ class State:
         media_data = self.get_single_media(name=name)
         for chapter in media_data.get_sorted_chapters():
             print("{:4}:{}{}".format(chapter["number"], chapter["title"], ":" + chapter["id"] if show_ids else ""))
+
+    def save_stats(self, identifier, stats):
+        stats_file = self.settings.get_stats_file()
+        saved_data = self.read_file_as_dict(stats_file)
+        saved_data.update({identifier or "": stats})
+        self.save_to_file(stats_file, saved_data)
+
+    def list_stats(self, username=None, media_type=None, stat_group=StatGroup.NAME, sort_index=SortIndex.NAME, reverse=False, min_count=0, min_score=1, details_type=Details.NAME, details_limit=None):
+        saved_data = self.read_file_as_dict(self.settings.get_stats_file())
+        data = saved_data.get(username if username else "", {})
+        if media_type:
+            data = list(filter(lambda x: x["media_type"] == media_type, data))
+        grouped_data = stats.group_entries(data, min_score=min_score)[stat_group.value]
+        sorted_data = stats.compute_stats(grouped_data, sort_index.value, reverse=reverse, min_count=min_count, details_type=details_type, details_limit=details_limit)
+        print("IDX", stats.get_header_str(stat_group, details_type=details_type))
+        for i, entry in enumerate(sorted_data):
+            print(f"{i+1:3} {stats.get_entry_str(entry, details_type)}")
 
 
 class MediaData(dict):

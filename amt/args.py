@@ -176,17 +176,19 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     login_parser.add_argument("server_ids", default=None, choices=state.get_server_ids_with_logins(), nargs="?")
 
     # stats
-    stats_parser = add_parser_helper(sub_parsers, "stats", description="Show tracker stats")
+    stats_parser = add_parser_helper(sub_parsers, "stats", func_str="list_stats", description="Show tracker stats", parents=[readonly_parsers])
     stats_parser.add_argument("--details-type", "-d", choices=list(Details), type=Details.__getattr__, default=Details.NO_DETAILS, help="How details are displayed")
     stats_parser.add_argument("--details-limit", "-l", type=int, default=None, help="How many details are shown")
     stats_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     stats_parser.add_argument("--min-count", "-m", type=int, default=0, help="Ignore groups with fewer than N elements")
     stats_parser.add_argument("--min-score", type=float, default=1, help="Ignore entries with score less than N")
-    stats_parser.add_argument("--refresh", action="store_const", const=True, default=False, help="Don't use cached data")
     stats_parser.add_argument("--sort-index", "-s", choices=list(SortIndex), type=SortIndex.__getattr__, default=SortIndex.SCORE.name, help="Choose sort index")
     stats_parser.add_argument("--stat-group", "-g", choices=list(StatGroup), type=StatGroup.__getattr__, default=StatGroup.NAME, help="Choose stat grouping")
-    stats_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
-    stats_parser.add_argument("username", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
+    stats_parser.add_argument("username", default=None, nargs="?", help="Username or id to load info of; defaults to the currently authenticated user")
+
+    stats_update_parser = add_parser_helper(sub_parsers, "stats-update", description="Update tracker stats")
+    stats_update_parser.add_argument("--user-id", default=None, help="id to load tracking info of")
+    stats_update_parser.add_argument("username", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
 
     # trackers and progress
     load_parser = add_parser_helper(sub_parsers, "load_from_tracker", aliases=["load"], parents=[sub_search_parsers], description="Attempts to add all tracked media")

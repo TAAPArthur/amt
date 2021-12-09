@@ -1204,9 +1204,9 @@ class ArgsTest(CliUnitTestClass):
 
     def test_stats_refresh(self):
         self.add_test_media()
-        parse_args(media_reader=self.media_reader, args=["stats", "--refresh"])
+        parse_args(media_reader=self.media_reader, args=["stats-update"])
         parse_args(media_reader=self.media_reader, args=["stats"])
-        parse_args(media_reader=self.media_reader, args=["stats", "--refresh"])
+        parse_args(media_reader=self.media_reader, args=["stats-update"])
 
     def test_mark_read(self):
         media_list = self.add_test_media()

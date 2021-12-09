@@ -480,6 +480,10 @@ class MediaReader:
                 media_data["progress"] = media_data.get_last_read()
         return bool(data)
 
+    def stats_update(self, username=None, user_id=None):
+        data = list(self.get_tracker().get_full_list_data(id=user_id, user_name=username))
+        self.state.save_stats(username or user_id, data)
+
     def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, no_add=False, force=False, remove=False, **kwargs):
         tracker = self.get_tracker()
         data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
