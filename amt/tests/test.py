@@ -120,6 +120,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.bundle_viewer = "[ -f {media} ]"
         self.settings.bundle_cmd = "ls {files} >/dev/null; touch {name}"
         self.settings.post_process_cmd = ""
+        self.settings.tmp_dir = TEST_HOME + ".tmp"
 
     def setUp(self):
         # Clear all env variables
@@ -1526,6 +1527,13 @@ class ArgsTest(CliUnitTestClass):
 
     def test_stream(self):
         parse_args(media_reader=self.media_reader, args=["stream", TestAnimeServer.get_streamable_url()])
+        self.verify_no_media()
+
+    def test_stream_temp(self):
+        self.add_test_media(self.test_anime_server, limit=1)
+        parse_args(media_reader=self.media_reader, args=["--tmp-dir", "stream", TestServer.get_streamable_url()])
+        assert not os.path.exists(self.settings.get_metadata_file())
+        self.reload()
         self.verify_no_media()
 
     def test_stream_quality(self):

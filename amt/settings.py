@@ -77,19 +77,26 @@ class Settings:
     preferred_primary_language = ["EN", "EN-US", "ENGLISH", ""]
     threads = 8  # per server thread count
     viewer = ""
+    tmp_dir = "/tmp/.amt"
 
     def __init__(self, home=None, no_save_session=False, no_load=False, skip_env_override=False):
         home = home if home else os.getenv("AMT_HOME", os.getenv("HOME"))
         self.config_dir = os.path.join(os.getenv("XDG_CONFIG_HOME", os.path.join(home, ".config")), APP_NAME)
         self.cache_dir = os.path.join(os.getenv("XDG_CACHE_HOME", os.path.join(home, ".cache")), APP_NAME)
         self.data_dir = os.path.join(os.getenv("XDG_DATA_HOME", os.path.join(home, ".local/share")), APP_NAME)
-        self.bundle_dir = os.path.join(self.data_dir, "Bundles")
-        self.media_dir = os.getenv("AMT_MEDIA_DIR", os.path.join(self.data_dir, "Media"))
-        self.external_downloads_dir = os.path.join(self.data_dir, "Torrents")
+        self.set_data_dirs(self.data_dir)
 
         self.no_save_session = no_save_session
         if not no_load:
             self.load(skip_env_override=skip_env_override)
+
+    def set_tmp_dir(self):
+        self.set_data_dirs(self.tmp_dir)
+
+    def set_data_dirs(self, data_dir=None):
+        self.bundle_dir = os.path.join(data_dir, "Bundles")
+        self.media_dir = os.path.join(data_dir, "Media")
+        self.external_downloads_dir = os.path.join(data_dir, "Torrents")
 
     def get_bundle_metadata_file(self):
         return os.path.join(self.data_dir, "bundles.json")

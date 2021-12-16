@@ -23,7 +23,7 @@ def add_parser_helper(sub_parser, name, func_str=None, **kwargs):
 
 
 def parse_args(args=None, media_reader=None, already_upgraded=False):
-    SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "type", "func", "readonly", "func_str"}
+    SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "type", "func", "readonly", "func_str", "tmp_dir"}
 
     state = State(Settings()) if not media_reader else media_reader.state
 
@@ -32,6 +32,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     parser.add_argument("--clear-cookies", default=False, action="store_const", const=True, help="Clear all cached cookies")
     parser.add_argument("--log-level", default="INFO", choices=logging._levelToName.values(), help="Controls verbosity of logs")
     parser.add_argument("--no-save", default=False, action="store_const", const=True, help="Do not save state/cookies")
+    parser.add_argument("--tmp-dir", default=False, action="store_const", const=True, help="Save state to tmp-dir")
 
     sub_parsers = parser.add_subparsers(dest="type")
 
@@ -246,6 +247,9 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     namespace = parser.parse_args(args)
     logging.getLogger().setLevel(namespace.log_level)
+    if namespace.tmp_dir:
+        state.settings.set_tmp_dir()
+        namespace.no_save = True
 
     action = namespace.type
     kwargs = {k: v for k, v in vars(namespace).items() if k not in SPECIAL_PARAM_NAMES}
