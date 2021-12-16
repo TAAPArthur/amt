@@ -84,7 +84,7 @@ class Settings:
         self.cache_dir = os.path.join(os.getenv("XDG_CACHE_HOME", os.path.join(home, ".cache")), APP_NAME)
         self.data_dir = os.path.join(os.getenv("XDG_DATA_HOME", os.path.join(home, ".local/share")), APP_NAME)
         self.bundle_dir = os.path.join(self.data_dir, "Bundles")
-        self.media_dir = os.path.join(self.data_dir, "Media")
+        self.media_dir = os.getenv("AMT_MEDIA_DIR", os.path.join(self.data_dir, "Media"))
         self.external_downloads_dir = os.path.join(self.data_dir, "Torrents")
 
         self.no_save_session = no_save_session

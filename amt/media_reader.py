@@ -372,6 +372,11 @@ class MediaReader:
                 if download:
                     server.download_chapter(media_data, chapter)
                 else:
+                    if media_data["media_type"] != MediaType.ANIME:
+                        chapters = media_data.get_sorted_chapters()
+                        index = chapters.index(media_data["chapters"][chapter_id])
+                        num_list = list(map(lambda x: x["number"], chapters[index:]))
+                        return self.play(name=media_data, num_list=num_list, limit=None if cont else 1)
                     if not server.is_fully_downloaded(media_data, chapter):
                         server.pre_download(media_data, chapter)
                     streamable_url = server.get_stream_url(media_data, chapter, stream_index=stream_index)

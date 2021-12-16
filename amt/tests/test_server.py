@@ -20,6 +20,26 @@ class TestServer(Server):
     error_delay = 0
     test_lang = False
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stream_url_regex = re.compile(f"/{self.id}/([0-9]*)/([0-9]*)")
+
+    @classmethod
+    def get_streamable_url(clzz, media_id=1, chapter_id=1):
+        return f"https://{clzz.id}/{media_id}/{chapter_id}"
+
+    def get_chapter_id_for_url(self, url):
+        assert self.can_stream_url(url)
+        return self.stream_url_regex.search(url).group(2)
+
+    def get_media_data_from_url(self, url):
+        assert self.can_stream_url(url)
+        media_id = self.stream_url_regex.search(url).group(1)
+        for media_data in self.get_media_list():
+            if str(media_data["id"]) == media_id:
+                return media_data
+        return None
+
     def maybe_inject_error(self):
         if self.error_to_inject:
             if self.error_delay > 0:
@@ -125,19 +145,7 @@ class TestUnofficialServer(TestServer):
 class TestAnimeServer(TestServer):
     id = "test_server_anime"
     media_type = MediaType.ANIME
-    stream_url = "https://www.test/url/4"
-    stream_url_regex = re.compile(r".*/([0-9])")
     stream_urls = False
-
-    def get_chapter_id_for_url(self, url):
-        assert self.can_stream_url(url)
-        assert url == self.stream_url
-        return self.stream_url_regex.match(url).group(1)
-
-    def get_media_data_from_url(self, url):
-        assert self.can_stream_url(url)
-        media_data = self.get_media_list()[1]
-        return media_data
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
         assert isinstance(media_data, dict) if media_data else True
