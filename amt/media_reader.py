@@ -105,9 +105,9 @@ class MediaReader:
 
             lastRead = media_data.get_last_read()
             for chapter in media_data.get_sorted_chapters():
-                if not chapter["read"] and (any_unread or chapter["number"] > lastRead):
+                if not chapter["read"] and (any_unread or (chapter["number"] > lastRead and not chapter["special"])):
                     yield server, media_data, chapter
-                    count += not chapter["special"]
+                    count += 1
                     if limit and count == limit:
                         return
 

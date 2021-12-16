@@ -115,7 +115,8 @@ class MediaServer(RequestServer):
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False, **kwargs):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():
-            return
+            number = 0
+            special = True
         id = str(id)
         if isinstance(number, str):
             try:
