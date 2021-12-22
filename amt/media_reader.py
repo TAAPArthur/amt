@@ -358,7 +358,7 @@ class MediaReader:
                     return media, media["chapters"][chapter_id]
         return None, None
 
-    def stream(self, url, cont=False, download=False, stream_index=0):
+    def stream(self, url, cont=False, download=False, stream_index=0, offset=0):
         for server in self.get_servers():
             if server.can_stream_url(url):
                 chapter_id = server.get_chapter_id_for_url(url)
@@ -372,19 +372,9 @@ class MediaReader:
                 if download:
                     server.download_chapter(media_data, chapter)
                 else:
-                    if media_data["media_type"] != MediaType.ANIME:
-                        chapters = media_data.get_sorted_chapters()
-                        index = chapters.index(media_data["chapters"][chapter_id])
-                        num_list = list(map(lambda x: x["number"], chapters[index:]))
-                        return self.play(name=media_data, num_list=num_list, limit=None if cont else 1)
-                    if not server.is_fully_downloaded(media_data, chapter):
-                        server.pre_download(media_data, chapter)
-                    streamable_url = server.get_stream_url(media_data, chapter, stream_index=stream_index)
-                    logging.info("Streaming %s", streamable_url)
-                    if self.settings.open_viewer(streamable_url, media_data=media_data, chapter_data=chapter):
-                        chapter["read"] = True
-                        if cont:
-                            return 1 + self.play(name=media_data)
+                    min_chapter_num = media_data["chapters"][chapter_id]["number"] + offset
+                    num_list = list(map(lambda x: x["number"], filter(lambda x: x["number"] >= min_chapter_num, media_data["chapters"].values())))
+                    return self.play(name=media_data, num_list=num_list, limit=None if cont else 1)
                 return 1
         logging.error("Could not find any matching server")
         return False

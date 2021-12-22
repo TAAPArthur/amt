@@ -116,6 +116,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     steam_parser = add_parser_helper(sub_parsers, "stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
     steam_parser.add_argument("--cont", "-c", default=False, action="store_const", const=True)
     steam_parser.add_argument("--download", "-d", default=False, action="store_const", const=True)
+    steam_parser.add_argument("--offset", type=float, default=0, help="Offset the url by N chapters")
     steam_parser.add_argument("--stream-index", "-q", default=0, type=int)
     steam_parser.add_argument("url")
 
