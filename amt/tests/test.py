@@ -80,7 +80,7 @@ class BaseUnitTestClass(unittest.TestCase):
         if save_settings:
             self.settings.save()
 
-        self.settings = Settings(home=TEST_HOME)
+        self.settings = Settings()
         if set_settings:
             self.setup_settings()
 
@@ -126,6 +126,7 @@ class BaseUnitTestClass(unittest.TestCase):
         # Clear all env variables
         for k in set(os.environ.keys()):
             del os.environ[k]
+        os.environ["AMT_HOME"] = TEST_HOME
         self.stream_handler = logging.StreamHandler(sys.stdout)
         logger = logging.getLogger()
         logger.handlers = []
@@ -361,8 +362,8 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.set_field("password_save_cmd", "dummy_cmd")
         self.settings.set_field("password_save_cmd", "dummy_cmd2", TestServer.id)
         self.settings.save()
-        self.assertEquals(Settings(home=TEST_HOME).get_field("password_save_cmd"), "dummy_cmd")
-        self.assertEquals(Settings(home=TEST_HOME).get_field("password_save_cmd", TestServer.id), "dummy_cmd2")
+        self.assertEquals(Settings().get_field("password_save_cmd"), "dummy_cmd")
+        self.assertEquals(Settings().get_field("password_save_cmd", TestServer.id), "dummy_cmd2")
 
     def test_settings_env_override(self):
         os.environ["AMT_PASSWORD_LOAD_CMD"] = "1"
