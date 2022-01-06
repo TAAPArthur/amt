@@ -305,10 +305,16 @@ class MediaReader:
 
     def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False, any_unread=False, page_limit=None, stream_index=0):
         """Downloads all chapters that are not read"""
-        def download_selected_chapters(x):
-            server, media_data, chapter = x
-            return server.download_chapter(media_data, chapter, page_limit=page_limit, stream_index=stream_index)
-        return sum(self.for_each(download_selected_chapters, self.get_unreads(name=name, media_type=media_type, any_unread=any_unread, limit=limit), raiseException=not ignore_errors))
+
+        unique_media = {}
+        for server, media_data, chapter in self.get_unreads(name=name, media_type=media_type, any_unread=any_unread, limit=limit):
+            if media_data.global_id not in unique_media:
+                unique_media[media_data.global_id] = []
+            unique_media[media_data.global_id].append((server, media_data, chapter))
+
+        def download_selected_chapters_for_server(x):
+            return sum([server.download_chapter(media_data, chapter, page_limit=page_limit, stream_index=stream_index) for server, media_data, chapter in x])
+        return sum(self.for_each(download_selected_chapters_for_server, unique_media.values(), raiseException=not ignore_errors))
 
     def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
         paths = []
