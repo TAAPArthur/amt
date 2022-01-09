@@ -303,7 +303,7 @@ class MediaReader:
                 if end == start:
                     break
 
-    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False, any_unread=False, page_limit=None, stream_index=0):
+    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False, any_unread=False, page_limit=None, stream_index=0, force=False):
         """Downloads all chapters that are not read"""
 
         unique_media = {}
@@ -313,7 +313,7 @@ class MediaReader:
             unique_media[media_data.global_id].append((server, media_data, chapter))
 
         def download_selected_chapters_for_server(x):
-            return sum([server.download_chapter(media_data, chapter, page_limit=page_limit, stream_index=stream_index) for server, media_data, chapter in x])
+            return sum([server.download_chapter(media_data, chapter, page_limit=page_limit, stream_index=stream_index, supress_exeception=force) for server, media_data, chapter in x])
         return sum(self.for_each(download_selected_chapters_for_server, unique_media.values(), raiseException=not ignore_errors))
 
     def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
@@ -399,14 +399,14 @@ class MediaReader:
             if chapter["number"] in num_list:
                 yield server, media_data, chapter
 
-    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False):
+    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force=False):
         num = 0
         for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread)):
             if media_data["media_type"] == MediaType.ANIME:
                 if not server.is_fully_downloaded(media_data, chapter):
                     server.pre_download(media_data, chapter)
             else:
-                server.download_chapter(media_data, chapter)
+                server.download_chapter(media_data, chapter, supress_exeception=force)
             success = self.settings.open_viewer(
                 server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter, stream_index=stream_index),
                 media_data=media_data, chapter_data=chapter)

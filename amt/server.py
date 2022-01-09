@@ -377,19 +377,19 @@ class Server(GenericServer):
             os.makedirs(sub_dir, exist_ok=True)
             self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
 
-    def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0):
+    def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
         if self.is_fully_downloaded(media_data, chapter_data):
             logging.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
         try:
             if self.synchronize_chapter_downloads:
                 self._lock.acquire()
-            return self._download_chapter(media_data, chapter_data, page_limit, offset, stream_index)
+            return self._download_chapter(media_data, chapter_data, page_limit, offset, stream_index, supress_exeception=supress_exeception)
         finally:
             if self.synchronize_chapter_downloads:
                 self._lock.release()
 
-    def _download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0):
+    def _download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
         logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
@@ -397,7 +397,7 @@ class Server(GenericServer):
         list_of_pages = []
 
         # download pages
-        job = Job(self.settings.get_threads(media_data), raiseException=True)
+        job = Job(self.settings.get_threads(media_data), raiseException=not supress_exeception)
         for i, page_data in enumerate(self.get_media_chapter_data(media_data, chapter_data, stream_index=stream_index)):
             if page_limit is not None and i == page_limit:
                 break

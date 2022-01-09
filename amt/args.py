@@ -69,6 +69,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     update_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?", help="Update only specified media")
 
     download_parser = add_parser_helper(sub_parsers, "download-unread-chapters", aliases=["download-unread"], help="Downloads all chapters that have not been read")
+    download_parser.add_argument("--force", "-f", default=False, action="store_const", const=True)
     download_parser.add_argument("--limit", "-l", type=int, default=0, help="How many chapters will be downloaded per series")
     download_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     download_parser.add_argument("--stream-index", "-q", default=0, type=int)
@@ -94,6 +95,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_consume_parsers = argparse.ArgumentParser(add_help=False)
     sub_consume_parsers.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
     sub_consume_parsers.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
+    sub_consume_parsers.add_argument("--force", "-f", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--limit", "-l", default=0, type=int)
     sub_consume_parsers.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--stream-index", "-q", default=0, type=int)
