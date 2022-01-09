@@ -55,7 +55,7 @@ class Mangadex(Server):
             for chapter_data in sorted(data["data"], key=lambda x: x["attributes"]["publishAt"], reverse=True):
                 attr = chapter_data["attributes"]
                 if self.settings.is_allowed_text_lang(attr["translatedLanguage"], media_data):
-                    if attr["chapter"] not in visited_chapter_numbers and attr["data"]:
+                    if attr["chapter"] not in visited_chapter_numbers:
                         visited_chapter_numbers.add(attr["chapter"])
                         self.update_chapter_data(media_data, id=chapter_data["id"], number=attr["chapter"], title=attr["title"])
             offset += data["limit"]
@@ -64,6 +64,9 @@ class Mangadex(Server):
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         r = self.session_get(self.server_url.format(chapter_data["id"]))
+        data = r.json()
+        h = data["chapter"]["hash"]
+        formats = ["data", "dataSaver"][stream_index]
+        pages = data["chapter"][formats]
         base_url = r.json()["baseUrl"]
-        attr = self.session_get(self.chapter_url.format(chapter_data["id"])).json()["data"]["attributes"]
-        return [self.create_page_data(url="{}/data/{}/{}".format(base_url, attr["hash"], page)) for page in attr["data"]]
+        return [self.create_page_data(url="{}/data/{}/{}".format(base_url, h, page)) for page in pages]
