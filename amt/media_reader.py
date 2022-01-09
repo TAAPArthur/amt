@@ -152,7 +152,7 @@ class MediaReader:
             logging.debug("Checking among known media")
             media_data = self.select_media(name, known_matching_media, "Select from known media: ")
 
-        elif not skip_remote_search:
+        if not media_data and not skip_remote_search:
             for n in alt_names:
                 media_data = self.search_add(n, media_type=media_type, exact=exact, **kwargs)
                 if media_data is not None:
