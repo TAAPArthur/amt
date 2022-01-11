@@ -3,7 +3,7 @@ import logging
 
 from .settings import Settings
 from .state import State
-from .stats import Details, SortIndex, StatGroup
+from .stats import Details, SortIndex, StatGroup, TimeUnit
 from .util.media_type import MediaType
 
 
@@ -188,6 +188,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     stats_parser.add_argument("--min-score", type=float, default=1, help="Ignore entries with score less than N")
     stats_parser.add_argument("--sort-index", "-s", choices=list(SortIndex), type=SortIndex.__getattr__, default=SortIndex.SCORE.name, help="Choose sort index")
     stats_parser.add_argument("--stat-group", "-g", choices=list(StatGroup), type=StatGroup.__getattr__, default=StatGroup.NAME, help="Choose stat grouping")
+    stats_parser.add_argument("--time-unit", "-t", choices=list(TimeUnit), type=TimeUnit.__getattr__, default=TimeUnit.HOURS, help="Choose time unit")
+
     stats_parser.add_argument("username", default=None, nargs="?", help="Username or id to load info of; defaults to the currently authenticated user")
 
     stats_update_parser = add_parser_helper(sub_parsers, "stats-update", description="Update tracker stats")

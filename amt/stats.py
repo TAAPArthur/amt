@@ -1,5 +1,5 @@
 from collections import defaultdict
-from enum import Enum, auto
+from enum import Enum, auto, IntEnum
 
 
 class BaseEnum(Enum):
@@ -41,6 +41,13 @@ class Details(BaseEnum):
     STUDIO = auto()
 
 
+class TimeUnit(BaseEnum, IntEnum):
+    MINUTES = 1
+    HOURS = 60
+    DAYS = 24 * HOURS
+    YEARS = 365.25 * DAYS
+
+
 def group_entries(media_list, min_score=1):
     tagData = defaultdict(list)
     genereData = defaultdict(list)
@@ -68,7 +75,7 @@ def group_entries(media_list, min_score=1):
     return {x["name"]: [x] for x in media_list}, yearData, decadeData, yearEndData, decadeEndData, seasonData, genereData, tagData, studioData, studioSepData, allData
 
 
-def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details_type=Details.NAME, details_limit=None):
+def compute_stats(media_map, sortIndex, reverse=True, min_count=0, time_unit=TimeUnit.HOURS, details_type=Details.NAME, details_limit=None):
     stats = []
     for key, media_list in media_map.items():
         count = len(media_list)
@@ -77,7 +84,7 @@ def compute_stats(media_map, sortIndex, reverse=True, min_count=0, details_type=
             totalTime = sum([media["time_spent"] for media in media_list])
             weightedScore = sum([media["score"] * media["time_spent"] / totalTime for media in media_list]) if totalTime else 0
             media_names = ", ".join(list(map(lambda x: str(x[details_type.name.lower()]), sorted(media_list, key=lambda x: x["score"], reverse=not reverse)))[:details_limit]) if details_type != Details.NO_DETAILS else None
-            stats.append((key, count, avgScore, totalTime / 60, weightedScore, media_names))
+            stats.append((key, count, avgScore, totalTime / time_unit, weightedScore, media_names))
     stats.sort(key=lambda x: x[sortIndex], reverse=not reverse)
     return stats
 
