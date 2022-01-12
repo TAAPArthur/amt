@@ -83,21 +83,17 @@ class GenericFunimation(Server):
 class Funimation(GenericFunimation):
     id = "funimation"
     search_url = "https://api-funimation.dadcdigital.com/xml/longlist/content/page/?id=search&q={}"
-    list_url = "https://api-funimation.dadcdigital.com/xml/longlist/content/page/?id=shows&limit={}"
+    list_url = "https://funimation.com"
     new_api_episdoe_url = "https://title-api.prd.funimationsvc.com/v1/shows/{}/episodes/{}/?region=US&deviceType=web&locale=en"
     stream_url_regex = re.compile("funimation.com/v/([^/]*)/([^/]*)")
 
-    def _get_media_list(self, url, limit=None):
-        r = self.session_get(url)
-        soup = self.soupify(BeautifulSoup, r)
+    def _get_media_list(self, ids, limit=None):
         media_data = []
         job = Job(self.settings.threads, raiseException=True)
-        for item in soup.findAll("item")[:limit]:
-            id = item.find("id").text
-            job.add(lambda id=id: (self.session_get(self.episode_url.format(id)), id))
+        for id, title in ids[:limit]:
+            job.add(lambda id=id: (self.session_get(self.episode_url.format(id)), id, title))
 
-        for r, id in job.run():
-            title = item.find("title").text
+        for r, id, title in job.run():
             data = r.json()
             season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"], audio) for item in data["items"] for audio in item["audio"]}
             experiences = {item["item"]["seasonId"]: item["mostRecentSvod"]["experience"] for item in data["items"]}
@@ -109,10 +105,16 @@ class Funimation(GenericFunimation):
         return media_data
 
     def get_media_list(self, limit=2):
-        return self._get_media_list(self.list_url.format(limit if limit else 0))
+        soup = self.soupify(BeautifulSoup, self.session_get(self.list_url))
+        ids = []
+        for item in soup.findAll("div", {"class": "slide"})[:limit]:
+            ids.append((item["data-id"], item["data-title"]))
+        return self._get_media_list(ids, limit=limit)
 
     def search(self, term, alt_id=None, limit=2):
-        return self._get_media_list(self.search_url.format(term), limit=limit)
+        soup = self.soupify(BeautifulSoup, self.session_get(self.search_url.format(term)))
+        ids = [(item.find("id").text, item.find("title").text) for item in soup.findAll("item")[:limit]]
+        return self._get_media_list(ids, limit=limit)
 
     def _get_episode_id(self, url):
         match = self.stream_url_regex.search(url)
