@@ -103,6 +103,8 @@ Optional dependency breakdown
 * cloudscraper:        required to enable MangaSee and HumbleBundle
 * m3u8 & pycryptodome: required just to stream media for Crunchyroll (enables more formats for Funimation and VRV)
 * requests_oauthlib:   required to enable VRV
+* cloudscraper :       required to search for Crunchyroll (manga)
+* beautifulsoup4 :     required to search entire selection for Crunchyroll (manga)
 
 ## Want to help
 See [CONTRIBUTING](CONTRIBUTING.md).

@@ -1,8 +1,9 @@
+import json
 import logging
 import re
 
 from ..job import Job
-from ..server import Server
+from ..server import Server, RequestServer
 from ..util.media_type import MediaType
 
 
@@ -74,91 +75,15 @@ class GenericCrunchyrollServer(Server):
         return False
 
 
-"""
-Crunchyroll Manga's api doesn't seem to allow getting a list of series nor searching through them
-There aren't that many manga, so here is a hard coded list
-"""
-SERIES_DATA = {
-    179: "Attack on Titan",
-    181: "Space Brothers",
-    205: "UQ HOLDER!",
-    237: "Sun-Ken Rock",
-    245: "Silver Nina",
-    247: "Inside Mari",
-    249: "Love Theory",
-    261: "Orange",
-    263: "Star Light Woman",
-    265: "Is this Girl for Real!?",
-    267: "Okitenemuru",
-    271: "King's Game: Origin",
-    273: "ReCollection",
-    275: "Action Mask",
-    277: "Arpeggio of Blue Steel",
-    279: "Spirit Circle",
-    281: "Shindo",
-    283: "Buffalo 5 Girls",
-    287: "Investor Z",
-    291: "Memoirs of Amorous Gentlemen",
-    293: "The Diary of Ochibi",
-    301: "The Heroic Legend of Arslan",
-    305: "Ajin : Demi-Human",
-    313: "Insufficient Direction",
-    317: "The Tenth Prism",
-    335: "Joshi Kausei",
-    337: "Girl May Kill",
-    341: "Cronos Haze",
-    345: "Murder Incarnation",
-    351: "The Legend of Onikirimaru",
-    353: "Bokura wa Minna Kawaisou",
-    385: "HYPERSONIC music club",
-    389: "Donyatsu",
-    397: "Tales of Wedding Rings",
-    409: "Aizawa-san Multiplies",
-    411: "Father and Son",
-    413: "Scum's wish",
-    423: "The Morose Mononokean",
-    433: "Arakawa Under the Bridge",
-    463: "The Daily Life of Crunchyroll-Hime",
-    469: "The Grim Reaper and an Argent Cavalier",
-    477: "Restaurant to Another World",
-    479: "Knight's & Magic",
-    481: "Final Fantasy Lost Stranger",
-    487: "APOSIMZ",
-    491: "Drifting Dragons",
-    493: "Farewell, My Dear Cramer",
-    495: "Grand Blue Dreaming",
-    499: "To Your Eternity",
-    507: "EDENS ZERO",
-    511: "Holmes of Kyoto",
-    513: "Crossing Time",
-    515: "Honkai Impact 3rd",
-    517: "YanOta: The Delinquent and the Otaku",
-    519: "Talentless Nana",
-    521: "Lofty Flower, fall for me!!",
-    523: "One Room of Happiness",
-    527: "Genshin Impact",
-    528: "Kiana Plays Honkai",
-    529: "Elan Palatinus",
-    530: "London Holiday",
-    531: "Springfest",
-    532: "Moon Shadow",
-    533: "Second Key",
-    534: "ASHIDAKA - The Iron Hero",
-    535: "Cardcaptor Sakura: Clear Card",
-    536: "The Ghost in the Shell: The Human Algorithm",
-    537: "A Sign of Affection",
-    539: "Alien Space",
-    540: "Shangri-La Frontier",
-    541: "Muv-Luv Alternative",
-    542: "Four Knights of the Apocalypse",
-}
-
-
 class Crunchyroll(GenericCrunchyrollServer):
     id = "crunchyroll"
 
     base_url = "https://www.crunchyroll.com"
     manga_url = base_url + "/comics/manga/{0}/volumes"
+
+    alpha_list_url = base_url + "/comics/manga/alpha?group=all"
+    popular_list_url = base_url + "/comics/manga"
+    popular_media_regex = re.compile(r"#media_group_(\d*).*bubble_data., (.*)\);")
 
     api_base_url = "https://api-manga.crunchyroll.com"
     api_series_url = api_base_url + "/series?sort=popular"
@@ -189,7 +114,21 @@ class Crunchyroll(GenericCrunchyrollServer):
         return bytes(b ^ 66 for b in buffer)
 
     def get_media_list(self, limit=None):
-        return [self.create_media_data(id=id, name=name, locale="enUS") for id, name in SERIES_DATA.items()][:limit]
+        media_name_ids = {}
+        if RequestServer.cloudscraper:
+            try:
+                from bs4 import BeautifulSoup
+                soup = self.soupify(BeautifulSoup, self.session_get(self.alpha_list_url))
+                for group_item in soup.findAll("li", {"class": "group-item"}):
+                    media_name_ids[group_item["group_id"]] = group_item.find("a")["title"]
+            except ImportError:
+                pass
+            r = self.session_get(self.popular_list_url)
+            match = self.popular_media_regex.findall(r.text)
+            for media_id, data in match:
+                media_name_ids[media_id] = json.loads(data)["name"]
+
+        return list(map(lambda media_id: self.create_media_data(id=media_id, name=media_name_ids[media_id], locale="enUS"), media_name_ids))
 
     def search(self, term, limit=None):
         regex = re.compile(r"[^\w\d]")
