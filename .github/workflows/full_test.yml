@@ -23,4 +23,4 @@ jobs:
         pip install -r requirements-optional.txt
     - name: Test and Code coverage
       run: |
-        make full_test_coverage || make full_test_coverage
+        make full_test_coverage

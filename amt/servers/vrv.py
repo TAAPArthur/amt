@@ -175,7 +175,6 @@ class Vrv(Server):
         return [streams[name][""]["url"] for name in streams if "drm" not in name and "url" in streams[name][""] and "manifest.mpd" not in streams[name][""]["url"]]
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
-
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
         r = self.session_get_mem_cache(r.json()["playback"])
         subtitle_data = r.json()["subtitles"]
@@ -198,5 +197,3 @@ class Vrv(Server):
                                 fp.write(f"{buffer}\n")
                             buffer = line
                     fp.write(f"{buffer}\n")
-
-        return path

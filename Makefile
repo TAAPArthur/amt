@@ -10,7 +10,11 @@ debug:
 	python -m unittest --buffer -f -v $(TEST_ARGS)
 
 inspect:
-	python -m unittest -v $(TEST_ARGS)
+	python -m unittest -v -f $(TEST_ARGS)
+
+
+quick_test: export QUICK=1
+quick_test: test
 
 quick_test_coverage: export QUICK=1
 quick_test_coverage: test_coverage

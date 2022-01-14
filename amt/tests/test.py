@@ -19,6 +19,7 @@ from ..args import parse_args
 from ..job import Job, RetryException
 from ..media_reader import SERVERS, MediaReader, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
+from ..server import RequestServer
 from ..servers.local import LocalServer, get_local_server_id
 from ..servers.remote import RemoteServer
 from ..settings import Settings
@@ -130,6 +131,8 @@ class BaseUnitTestClass(unittest.TestCase):
         # Clear all env variables
         for k in set(os.environ.keys()):
             del os.environ[k]
+
+        RequestServer.cloudscraper = None
         os.environ["AMT_HOME"] = TEST_HOME
         self.stream_handler = logging.StreamHandler(sys.stdout)
         logger = logging.getLogger()
@@ -212,6 +215,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.assertEqual(target_len, len(self.media_reader.get_media_ids()))
 
     def verfiy_media_list(self, media_list=None, server=None):
+        assert media_list is not None
         if media_list:
             assert isinstance(media_list, list)
             for media_data in media_list:
@@ -898,10 +902,12 @@ class GenericServerTest():
 
         if media_list:
             with self.subTest(server=server.id, list=False):
-                search_media_list = server.search(media_list[0]["name"], limit=1) or server.search(media_list[0]["name"].split()[0], limit=1)
+                for N in (1, 10):
+                    search_media_list = server.search(media_list[0]["name"], limit=N) or server.search(media_list[0]["name"].split()[0], limit=N)
+                    if search_media_list:
+                        break
                 assert search_media_list
                 self.verfiy_media_list(media_list, server=server)
-        assert media_list is not None
         return media_list
 
     def test_workflow(self):
@@ -1737,6 +1743,7 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
                     self.assertFalse(server.session.cookies)
                     r = server.session.get("https://www.crunchyroll.com")
                     self.assertTrue(r.cookies)
+                    self.assertEqual(server.session.cookies, self.media_reader.session.cookies)
                     self.assertTrue(server.session.cookies is self.media_reader.session.cookies)
                     self.assertTrue(self.media_reader.state.save_session_cookies())
                     server.session.cookies.clear()
