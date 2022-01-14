@@ -17,7 +17,7 @@ class Nyaa(TorrentHelper):
         soup = self.soupify(BeautifulSoup, r)
         table = soup.find("table", {"class": "torrent-list"})
         results = []
-        for row, link in ((row, link) for row in table.findAll("tr") for link in row.findAll("a")):
+        for row, link in ((row, link) for row in table.findAll("tr") for link in row.findAll("a")) if table else []:
             if link["href"].startswith("/view/") and not link["href"].endswith("#comments"):
                 slug = link["href"].split("/")[-1]
                 title = link["title"]
