@@ -19,6 +19,9 @@ class StatGroup(BaseEnum):
     TAG = auto()
     STUDIO = auto()
     STUDIO_SEP = auto()
+    SCORE = auto()
+    ROUNDED_SCORE = auto()
+    FSCORE = auto()
     ALL = auto()
 
 
@@ -39,6 +42,7 @@ class Details(BaseEnum):
     GENRE = auto()
     TAGS = auto()
     STUDIO = auto()
+    SCORE = auto()
 
 
 class TimeUnit(BaseEnum, IntEnum):
@@ -58,6 +62,9 @@ def group_entries(media_list, min_score=1):
     studioSepData = defaultdict(list)
     decadeData = defaultdict(list)
     decadeEndData = defaultdict(list)
+    scoreData = defaultdict(list)
+    roundedScoreData = defaultdict(list)
+    flooredScoreData = defaultdict(list)
     allData = defaultdict(list)
     for media in media_list:
         if media["score"] >= min_score and (media["progress"] or media["progress_volumes"]):
@@ -71,8 +78,11 @@ def group_entries(media_list, min_score=1):
             seasonData[media["season"]].append(media)
             studioData[",".join(sorted(media["studio"]))].append(media)
             [studioSepData[x].append(media) for x in media["studio"]]
+            scoreData[str(media["score"])].append(media)
+            roundedScoreData[str(round(media["score"]))].append(media)
+            flooredScoreData[str(int(media["score"]))].append(media)
             allData["All"].append(media)
-    return {x["name"]: [x] for x in media_list}, yearData, decadeData, yearEndData, decadeEndData, seasonData, genereData, tagData, studioData, studioSepData, allData
+    return {x["name"]: [x] for x in media_list}, yearData, decadeData, yearEndData, decadeEndData, seasonData, genereData, tagData, studioData, studioSepData, scoreData, roundedScoreData, flooredScoreData, allData
 
 
 def compute_stats(media_map, sortIndex, reverse=True, min_count=0, time_unit=TimeUnit.HOURS, details_type=Details.NAME, details_limit=None):
