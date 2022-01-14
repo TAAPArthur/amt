@@ -358,6 +358,15 @@ class SettingsTest(BaseUnitTestClass):
             for field in Settings.get_members():
                 self.assertEqual(self.settings.get_field(field), getattr(Settings, field), field)
 
+    def test_settings_load_unknown_value(self):
+
+        self.settings.save()
+        future_key = "future_key"
+        with open(self.settings.get_settings_file(), "w") as f:
+            f.write(f"{future_key}=True")
+        self.reload()
+        self.assertFalse(self.settings.get_field(future_key))
+
     def test_settings_save_load_new_value(self):
         self.settings.set_field("password_save_cmd", "dummy_cmd")
         self.settings.set_field("password_save_cmd", "dummy_cmd2", TestServer.id)

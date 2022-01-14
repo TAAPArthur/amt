@@ -181,6 +181,9 @@ class Settings:
                 for line in filter(lambda x: x.strip() and x.strip()[0] != "#", f):
                     name, value = (line if not line.endswith("\n") else line[:-1]).split("=", 1)
                     attr, slug = name.split(".", 2) if "." in name else (name, None)
+                    if attr not in Settings.get_members():
+                        logging.warning("Unknown field %s; Skipping", attr)
+                        continue
                     self.set_field(attr, value, slug)
         except FileNotFoundError:
             pass
