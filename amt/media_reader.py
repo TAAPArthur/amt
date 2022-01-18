@@ -5,7 +5,7 @@ import os
 import pkgutil
 import shutil
 
-import requests
+from requests import Session
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
@@ -44,7 +44,7 @@ class MediaReader:
     def __init__(self, state=None, server_list=SERVERS, tracker_list=TRACKERS, torrent_helpers_list=TORRENT_HELPERS):
         self.state = state if state else State(Settings())
         self.settings = state.settings
-        self.session = requests.Session()
+        self.session = Session()
         self._servers = {}
         self._torrent_helpers = {}
         self._trackers = {}

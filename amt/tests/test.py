@@ -1800,6 +1800,7 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
+        ("https://beta.crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
         ("https://crunchyroll.com/gintama/gintama-season-2-253-265-gintama-classic-it-takes-a-bit-of-courage-to-enter-a-street-vendors-stand-615207", "47620", "20725", "615207"),
         ("https://crunchyroll.com/manga/to-your-eternity/read/1", "499", None, "16329"),
         ("https://crunchyroll.com/one-piece/episode-1-im-luffy-the-man-whos-gonna-be-king-of-the-pirates-650673", "257631", "21685", "650673"),
@@ -1814,7 +1815,6 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://mangasee123.com/read-online/Onepunch-Man-chapter-147-index-2-page-1.html", "Onepunch-Man", None, "201470"),
         ("https://viz.com/shonenjump/one-piece-chapter-1/chapter/5090?action=read", "one-piece", None, "5090"),
         ("https://vrv.co/watch/GR3VWXP96/One-Piece:Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
-        ("https://beta.crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
         ("https://wlnupdates.com/series-id/49815/itai-no-wa-iya-nanode-bogyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", "49815", None, None),
     ]
 

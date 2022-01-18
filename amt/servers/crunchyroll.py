@@ -89,7 +89,6 @@ class Crunchyroll(GenericCrunchyrollServer):
     popular_media_regex = re.compile(r"#media_group_(\d*).*bubble_data., (.*)\);")
 
     api_base_url = "https://api-manga.crunchyroll.com"
-    api_series_url = api_base_url + "/series?sort=popular"
     api_chapter_url = api_base_url + "/list_chapter?session_id={}&chapter_id={}&auth={}"
     api_chapters_url = api_base_url + "/chapters?series_id={}"
 

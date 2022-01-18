@@ -88,6 +88,12 @@ class RequestServer:
             raise
         return r
 
+    def session_get(self, url, **kwargs):
+        return self._request(True, url, **kwargs)
+
+    def session_post(self, url, **kwargs):
+        return self._request(False, url, **kwargs)
+
     def session_get_cookie(self, name):
         assert self.domain
         for cookie in self.session.cookies:
@@ -121,12 +127,6 @@ class RequestServer:
             except FileNotFoundError:
                 os.makedirs(self.settings.get_web_cache_dir(), exist_ok=True)
         return data
-
-    def session_get(self, url, **kwargs):
-        return self._request(True, url, **kwargs)
-
-    def session_post(self, url, **kwargs):
-        return self._request(False, url, **kwargs)
 
     def soupify(self, BeautifulSoup, r):
         return BeautifulSoup(r.text, self.settings.bs4_parser)
