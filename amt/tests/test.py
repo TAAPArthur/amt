@@ -1839,7 +1839,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 if chapter_id:
                     self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
                     self.assertTrue(chapter_id in media_data["chapters"])
-        self.for_each(func, self.streamable_urls)
+        self.for_each(func, self.streamable_urls + self.premium_streamable_urls)
 
     def test_media_steam(self):
         url_list = self.streamable_urls if not PREMIUM_TEST else self.streamable_urls + self.premium_streamable_urls
