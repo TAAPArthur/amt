@@ -100,10 +100,9 @@ Optional dependency breakdown
 * PIL:                 required to download manga for Viz and JNovelClub
 * beautifulsoup4:      required to download images for JNovelClub (only for light novel parts)
 * beautifulsoup4:      required to enable DB multiverse, Funimation, WLNUpdates, Nyaa and RemoteServer
-* cloudscraper:        required to enable MangaSee and HumbleBundle
+* cloudscraper:        required to enable Crunchyroll (manga), MangaSee and HumbleBundle
 * m3u8 & pycryptodome: required just to stream media for Crunchyroll (enables more formats for Funimation and VRV)
 * requests_oauthlib:   required to enable VRV
-* cloudscraper :       required to search for Crunchyroll (manga)
 * beautifulsoup4 :     required to search entire selection for Crunchyroll (manga)
 
 ## Want to help

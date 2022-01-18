@@ -77,6 +77,7 @@ class GenericCrunchyrollServer(Server):
 
 class Crunchyroll(GenericCrunchyrollServer):
     id = "crunchyroll"
+    need_cloud_scraper = True
 
     base_url = "https://www.crunchyroll.com"
     manga_url = base_url + "/comics/manga/{0}/volumes"
