@@ -62,7 +62,7 @@ class GenericFunimation(Server):
                 exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                 if exp["experienceId"] == int(chapter_data["alt_id"]) and "textTracks" in exp["sources"][0]:
                     for track in exp["sources"][0]["textTracks"]:
-                        yield track["language"], track["src"], None, False
+                        yield track["language"], track["src"], None, False, 0
                     break
 
     def get_stream_urls(self, media_data=None, chapter_data=None):

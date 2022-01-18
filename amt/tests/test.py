@@ -1830,6 +1830,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209", "269787", "25186", "796209"),
         ("https://crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193", "260315", "21563", "652193"),
         ("https://funimation.com/v/one-piece/im-luffy-the-man-whos-gonna-be-king-of-the-pirates", "20224", "20227", "22338"),
+        ("https://hidive.com/stream/legend-of-the-galactic-heroes-gaiden/s02e001", "legend-of-the-galactic-heroes-gaiden", None, "s02e001"),
         ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),
         ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1", "seirei-gensouki-spirit-chronicles-manga", None, "seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1"),
         ("https://mangadex.org/chapter/ea697e18-470c-4e80-baf0-a3972720178f/1", "8a3d319d-2d10-4364-928c-0f30fd367c24", None, "ea697e18-470c-4e80-baf0-a3972720178f"),
@@ -1878,7 +1879,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
                 self.assert_server_enabled_or_skip_test(servers)
                 server = servers[0]
-                if server.media_type == MediaType.ANIME:
+                if server.media_type == MediaType.ANIME and server.has_free_chapters:
                     self.assertTrue(self.media_reader.stream(url))
         self.for_each(func, url_list)
 

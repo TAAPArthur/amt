@@ -6,6 +6,7 @@ import time
 
 from requests.exceptions import HTTPError, SSLError
 from threading import Lock
+from datetime import datetime, timedelta
 
 from .job import Job
 from .state import ChapterData, MediaData
@@ -21,6 +22,15 @@ def get_extension(url):
     return ext
 
 
+class RequestsClient():
+    def __init__(self, session):
+        self.session = session
+
+    def download(self, uri, timeout=None, headers={}, verify_ssl=True):
+        r = self.session.get(uri, timeout=timeout)
+        return r.text, r.url
+
+
 class RequestServer:
 
     session = None
@@ -31,6 +41,7 @@ class RequestServer:
     maybe_need_cloud_scraper = False
     _normal_session = None  # the normal session in case a wrapper is used
     domain = None
+    implict_referer = True
 
     def __init__(self, session, settings=None):
         self.settings = settings
@@ -63,7 +74,7 @@ class RequestServer:
         logging.debug("Request args: %s ", kwargs)
         if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
             kwargs["verify"] = False
-        if "headers" not in kwargs:
+        if self.implict_referer and "headers" not in kwargs:
             kwargs["headers"] = {"Referer": f"https://{self.domain}"}
         session = self.session
         if not kwargs.get("verify", True):
@@ -104,9 +115,9 @@ class RequestServer:
                 return cookie.value
         return None
 
-    def session_get_mem_cache(self, url, **kwargs):
+    def session_get_mem_cache(self, url, post=False, **kwargs):
         if url not in self.mem_cache:
-            self.mem_cache[url] = self.session_get(url, **kwargs)
+            self.mem_cache[url] = self.session_post(url, **kwargs) if post else self.session_get(url, **kwargs)
         return self.mem_cache[url]
 
     def session_get_cache_json(self, url, key=None, skip_cache=False, ttl=7, to_json_func=None, **kwargs):
@@ -192,11 +203,11 @@ class MediaServer(RequestServer):
             media_data["chapters"][id]["read"] = False
         return True
 
-    def create_page_data(self, url, id=None, encryption_key=None, ext=None):
+    def create_page_data(self, url, id=None, encryption_key=None, ext=None, headers={}):
         if not ext:
             ext = get_extension(url)
         assert ext, url
-        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext)
+        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext, headers=headers)
 
 
 class GenericServer(MediaServer):
@@ -249,6 +260,18 @@ class GenericServer(MediaServer):
         """
         raise NotImplementedError
 
+    def get_m3u8_segments(self, url):
+        import m3u8
+        m = m3u8.load(url, http_client=RequestsClient(self.session))
+        if not m.segments:
+            playlist = sorted(m.playlists, key=lambda x: x.stream_info.bandwidth, reverse=True)
+            m = m3u8.load(playlist[0].uri, http_client=RequestsClient(self.session))
+        assert m.segments
+        return m.segments
+
+    def extra_page_data_params(self, media_data, chapter_data):
+        return {}
+
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         """
         Returns a list of page/episode data. For anime (specifically for video files) this may be a list of size 1
@@ -265,13 +288,8 @@ class GenericServer(MediaServer):
             ext = get_extension(url)
             try:
                 if ext == "m3u8":
-                    import m3u8
-                    m = m3u8.load(url)
-                    if not m.segments:
-                        playlist = sorted(m.playlists, key=lambda x: x.stream_info.bandwidth, reverse=True)
-                        m = m3u8.load(playlist[0].uri)
-                    assert m.segments
-                    return [self.create_page_data(url=segment.uri, encryption_key=segment.key, ext="ts") for segment in m.segments]
+                    segments = self.get_m3u8_segments(url)
+                    return [self.create_page_data(url=segment.uri, encryption_key=segment.key, ext="ts", **self.extra_page_data_params(media_data, chapter_data)) for segment in segments]
                 else:
                     return [self.create_page_data(url=url, ext=ext)]
             except ImportError as e:
@@ -283,12 +301,12 @@ class GenericServer(MediaServer):
         By default it blindly writes the specified url to disk, decrypting it
         if needed.
         """
-        r = self.session_get(page_data["url"], stream=True)
+        r = self.session_get(page_data["url"], headers=page_data["headers"])
         content = r.content
         key = page_data["encryption_key"]
         if key:
             from Crypto.Cipher import AES
-            key_bytes = self.session_get_mem_cache(key.uri).content
+            key_bytes = self.session_get_mem_cache(key.uri, headers=page_data["headers"]).content
             iv = int(key.iv, 16).to_bytes(16, "big") if key.iv else None
             content = AES.new(key_bytes, AES.MODE_CBC, iv).decrypt(content)
         with open(path, 'wb') as fp:
@@ -330,13 +348,14 @@ class GenericServer(MediaServer):
         """
 
         subtitle_regex = re.compile(r"\w*-\w\d*_[2-9]\d*$")
-        for lang, url, ext, flip in self.get_subtitle_info(media_data, chapter_data):
+        for lang, url, ext, flip, offset in self.get_subtitle_info(media_data, chapter_data):
             if self.settings.is_allowed_text_lang(lang, media_data):
                 if not ext:
                     ext = get_extension(url)
                 basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
                 path = os.path.join(dir_path, basename)
                 if not os.path.exists(path):
+                    delta = timedelta(seconds=offset)
                     r = self.session_get(url)
                     if flip:
                         with open(path, 'w') as fp:
@@ -350,6 +369,12 @@ class GenericServer(MediaServer):
                                 else:
                                     if buffer is not None:
                                         fp.write(f"{buffer}\n")
+                                    # 00:02:04.583 --> 00:02:13.250 line:84%
+                                    if delta:
+                                        m = re.findall("(?:^| )(\d\d:\d\d:\d\d)", line)
+                                        for original_time in m:
+                                            corrected_time = (datetime.strptime(original_time, "%H:%M:%S") + delta).strftime("%H:%M:%S")
+                                            line = line.replace(original_time, corrected_time)
                                     buffer = line
                             fp.write(f"{buffer}\n")
                     else:

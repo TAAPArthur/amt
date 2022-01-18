@@ -181,9 +181,9 @@ class Vrv(Server):
                         results.append(streams[name][key]["url"])
         return results
 
-    def download_subtitles(self, media_data, chapter_data, dir_path):
+    def get_subtitle_info(self, media_data, chapter_data):
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
         r = self.session_get_mem_cache(r.json()["playback"])
         subtitle_data = r.json()["subtitles"]
         for lang, subtitles in subtitle_data.items():
-            yield lang, subtitles["url"], subtitles["format"], True
+            yield lang, subtitles["url"], subtitles["format"], True, 0

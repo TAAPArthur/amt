@@ -20,7 +20,7 @@ There are also Trackers and TorrentHelpers, but there's only currently one of ea
 * ~Funimation digital library (Anime; type 3)~
 * ~HumbleBundle (type 3)~
 * Webtoon (Manga; type 2) (well known api)
-* HiDive (Anime; type 2)
+* ~HiDive (Anime; type 2)~
 * MyAnimeList (Tracker)
 
 Other servers are welcome. All the code must run on Linux.

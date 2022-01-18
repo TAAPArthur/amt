@@ -56,7 +56,8 @@ class Settings:
             MediaType.ANIME.name: ["JP", "JAPANESE", ""]
         },
         "viewer": {
-            MediaType.ANIME.name: "mpv --merge-files --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
+            MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
+            "hidive": "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --http-header-fields='Referer: https://www.hidive.com/stream/' --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
             MediaType.MANGA.name: "sxiv {media}",
             MediaType.NOVEL.name: "zathura {media}"
         }
