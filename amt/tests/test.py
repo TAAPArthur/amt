@@ -116,7 +116,7 @@ class BaseUnitTestClass(unittest.TestCase):
             self.settings.max_retries = 10
         self.settings.fallback_to_insecure_connection = True
 
-        self.settings.download_torrent_cmd = "mkdir {media_id}; touch {media_id}/file.test"
+        self.settings.post_download_torrent_file_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.settings.suppress_cmd_output = True
         self.settings.viewer = "exit 0"
         self.settings._specific_settings = {}

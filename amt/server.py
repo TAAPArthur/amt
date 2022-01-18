@@ -443,7 +443,9 @@ class TorrentHelper(MediaServer):
         """
         Downloads the raw torrent file
         """
-        self.save_torrent_file(media_data, self.settings.get_external_downloads_path(media_data))
+        path = self.settings.get_external_downloads_path(media_data)
+        logging.info("Downloading to %s", path)
+        self.save_torrent_file(media_data, path)
 
     def save_torrent_file(self, media_data, path):  # pragma: no cover
         """Save the torrent file to disk"""

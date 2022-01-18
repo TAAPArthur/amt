@@ -157,7 +157,7 @@ class MediaReader:
                 media_data = self.search_add(n, media_type=media_type, exact=exact, **kwargs)
                 if media_data is not None:
                     break
-            if not media_data and self.settings.get_download_torrent_cmd(media_type):
+            if not media_data:
                 logging.info("Checking to see if %s can be found with helpers", name)
                 for n in alt_names:
                     kwargs["no_add"] = True
@@ -166,7 +166,7 @@ class MediaReader:
                         logging.info("Found match; Downloading torrent file")
                         self._torrent_helpers[media_data["server_id"]].download_torrent_file(media_data)
                         logging.info("Starting torrent download")
-                        self.settings.start_torrent_download(media_data)
+                        self.settings.post_torrent_download(media_data)
                         return False
         if not media_data:
             logging.info("Could not find media %s", name)

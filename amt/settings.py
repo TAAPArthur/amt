@@ -72,7 +72,8 @@ class Settings:
     special_chapter_dir_name_format = "{chapter_id}"
     disable_ssl_verification = False
     fallback_to_insecure_connection = False
-    download_torrent_cmd = ""
+    torrent_file_format = "{media_id}_{media_name}.torrent"
+    post_download_torrent_file_cmd = ""
     keep_unavailable = False
     post_process_cmd = ""
     text_languages = ["en", "en-US", "English"]
@@ -208,7 +209,7 @@ class Settings:
         return path
 
     def get_external_downloads_path(self, media_data):
-        return os.path.join(self.get_external_downloads_dir(MediaType(media_data["media_type"])), media_data["id"] + ".torrent")
+        return os.path.join(self.get_external_downloads_dir(MediaType(media_data["media_type"])), self.torrent_file_format.format(media_id=media_data["id"], media_name=media_data["name"]))
 
     def get_chapter_metadata_file(self, media_data):
         return os.path.join(self.get_media_dir(media_data), "chapter_metadata.json")
@@ -335,7 +336,8 @@ class Settings:
         if cmd:
             self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths)), wd=dir_path))
 
-    def start_torrent_download(self, media_data):
-        cmd = self.get_field("download_torrent_cmd", media_data)
+    def post_torrent_download(self, media_data):
+        cmd = self.get_field("post_download_torrent_file_cmd", media_data)
         file = self.get_external_downloads_path(media_data)
-        self.run_cmd(cmd.format(media_id=media_data["id"], torrent_file=file), wd=os.path.dirname(file))
+        if cmd:
+            self.run_cmd(cmd.format(media_id=media_data["id"], torrent_file=file), wd=os.path.dirname(file))
