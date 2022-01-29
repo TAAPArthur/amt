@@ -19,6 +19,7 @@ class GenericJNovelClub(Server):
     api_domain = "https://labs.j-novel.club"
     api_base_url = api_domain + "/app/v1"
     user_info_url = api_base_url + "/me?format=json"
+    need_cloud_scraper = True
 
     series_info_url = api_base_url + "/series/{}?format=json"
     series_url = api_base_url + "/series?format=json"
