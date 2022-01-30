@@ -4,7 +4,6 @@ import re
 
 from bs4 import BeautifulSoup
 
-from ..job import Job
 from ..server import Server, get_extension
 from ..util.media_type import MediaType
 
@@ -83,6 +82,8 @@ class GenericFunimation(Server):
 
 class Funimation(GenericFunimation):
     id = "funimation"
+    multi_threaded = True
+
     search_url = "https://api-funimation.dadcdigital.com/xml/longlist/content/page/?id=search&q={}"
     list_url = "https://funimation.com"
     new_api_episdoe_url = "https://title-api.prd.funimationsvc.com/v1/shows/{}/episodes/{}/?region=US&deviceType=web&locale=en"
@@ -90,11 +91,9 @@ class Funimation(GenericFunimation):
 
     def _get_media_list(self, ids, limit=None):
         media_data = []
-        job = Job(self.settings.threads, raiseException=True)
-        for id, title in ids[:limit]:
-            job.add(lambda id=id: (self.session_get(self.episode_url.format(id)), id, title))
+        items = [lambda id=id: (self.session_get(self.episode_url.format(id)), id, title) for id, title in ids[:limit]]
 
-        for r, id, title in job.run():
+        for r, id, title in self.run_in_parallel(items):
             data = r.json()
             season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"], audio) for item in data["items"] for audio in item["audio"]}
             experiences = {item["item"]["seasonId"]: item["mostRecentSvod"]["experience"] for item in data["items"]}

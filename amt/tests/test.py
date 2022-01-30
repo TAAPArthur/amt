@@ -893,18 +893,21 @@ class GenericServerTest():
         assert media_list is not None
         return media_list
 
-    def server_workflow_test_helper(self, server):
-        for media_data in self._test_list_and_search(server):
-            self.media_reader.add_media(media_data)
-            for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
-                if not SKIP_DOWNLOAD:
-                    self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2))
-                    self.verify_download(media_data, chapter_data)
-                    assert not server.download_chapter(media_data, chapter_data, page_limit=1)
-                return True
-
     def test_workflow(self):
-        self.for_each(self.server_workflow_test_helper, self.media_reader.get_servers())
+        def func(server):
+            with self.subTest(server=server.id):
+                for media_data in self._test_list_and_search(server):
+                    self.media_reader.add_media(media_data)
+                    for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
+                        if not SKIP_DOWNLOAD and not server.slow_download:
+                            self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2))
+                            self.verify_download(media_data, chapter_data)
+                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+                        return True
+        self.for_each(func, filter(lambda server: not server.multi_threaded, self.media_reader.get_servers()))
+        for server in self.media_reader.get_servers():
+            if server.multi_threaded:
+                func(server)
 
     def test_login_fail(self):
         self.media_reader.settings.password_manager_enabled = True

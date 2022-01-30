@@ -2,7 +2,6 @@ import json
 import logging
 import re
 
-from ..job import Job
 from ..server import Server, RequestServer
 from ..util.media_type import MediaType
 
@@ -168,6 +167,7 @@ class Crunchyroll(GenericCrunchyrollServer):
 
 class CrunchyrollAnime(GenericCrunchyrollServer):
     id = "crunchyroll_anime"
+    multi_threaded = True
 
     api_base_url = "http://api.crunchyroll.com"
     list_all_series = api_base_url + "/list_series.0.json?media_type=anime&session_id={}"
@@ -195,9 +195,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         def get_all_seasons(item):
             item_alt_id = item["url"].split("/")[-1]
             return [media for media in self._create_media_data(item["series_id"], item_alt_id)]
-
-        job = Job(self.settings.threads, data["data"][:limit], func=get_all_seasons, raiseException=True)
-        return job.run()
+        return self.run_in_parallel(data["data"][:limit], func=get_all_seasons)
 
     def update_media_data(self, media_data: dict):
         data = self.session_get_json(self.list_media.format(self.get_session_id(), media_data["id"]))["data"]

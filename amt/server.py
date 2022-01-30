@@ -178,8 +178,10 @@ class GenericServer(MediaServer):
     has_free_chapters = True
     # Used to determine if the account can access premium content
     is_premium = False
-    # Used to indicate that the download feature for the server is slow (testing)
+    # Used to indicate that the download feature for the server is slow (for testing)
     slow_download = False
+    # Used to indicate that the server may use multiple threads to complete ops (for testing)
+    multi_threaded = False
 
     def get_media_list(self, limit=None):  # pragma: no cover
         """
@@ -424,6 +426,11 @@ class Server(GenericServer):
         logging.info("%s %d %s is downloaded; Total pages %d", media_data["name"], chapter_data["number"], chapter_data["title"], len(list_of_pages))
 
         return True
+
+    def run_in_parallel(self, items, func=None):
+        assert self.multi_threaded
+        job = Job(self.settings.get_threads(self.id), items, func, raiseException=True)
+        return job.run()
 
 
 class TorrentHelper(MediaServer):
