@@ -71,6 +71,7 @@ class Settings:
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     special_chapter_dir_name_format = "{chapter_id}"
     disable_ssl_verification = False
+    fallback_to_insecure_connection = False
     download_torrent_cmd = ""
     keep_unavailable = False
     post_process_cmd = ""

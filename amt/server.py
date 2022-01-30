@@ -4,7 +4,7 @@ import os
 import re
 
 from functools import cache
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, SSLError
 from threading import Lock
 
 from .job import Job
@@ -53,11 +53,19 @@ class RequestServer:
     def _request(self, get, url, **kwargs):
         logging.info("Making %s request to %s ", "GET" if get else "POST", url)
         logging.debug("Request args: %s ", kwargs)
-        kwargs["verify"] = not self.settings.get_disable_ssl_verification(self.id)
-        r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
-        if r.status_code != 200:
-            logging.warning("HTTP Error: %d", r.status_code)
-        r.raise_for_status()
+        if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
+            kwargs["verify"] = False
+        try:
+            r = self.session.get(url, **kwargs) if get else self.session.post(url, **kwargs)
+            if r.status_code != 200:
+                logging.warning("HTTP Error: %d", r.status_code)
+            r.raise_for_status()
+        except SSLError:
+            if self.settings.get_fallback_to_insecure_connection(self.id):
+                logging.warning("Retry request insecurely %s", url)
+                kwargs["verify"] = False
+                return self._request(get, url, **kwargs)
+            raise
         return r
 
     def session_get_cookie(self, name, domain=None):

@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import requests
 import shutil
 import subprocess
 import sys
@@ -108,10 +109,12 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.shell = True
         if not self.real or SINGLE_THREADED:
             self.settings.threads = 0
-            self.settings.max_retries = 10
-            self.settings.backoff_factor = .01
         else:
             self.settings.threads = len(SERVERS)
+        if not self.real:
+            self.settings.backoff_factor = .01
+            self.settings.max_retries = 10
+        self.settings.fallback_to_insecure_connection = True
 
         self.settings.download_torrent_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.settings.suppress_cmd_output = True
@@ -452,6 +455,28 @@ class SettingsCredentialsTest(BaseUnitTestClass):
 
 
 class ServerWorkflowsTest(BaseUnitTestClass):
+
+    def test_session_get_post_with_ssl_error(self):
+        def fake_request(*args, **kwargs):
+            if kwargs.get("verify", True):
+                raise requests.exceptions.SSLError()
+            r = requests.Response()
+            r.status_code = 200
+            return r
+        self.test_server.session.get = fake_request
+        self.test_server.session.post = self.test_server.session.get
+
+        self.settings.fallback_to_insecure_connection = False
+        self.settings.disable_ssl_verification = False
+        self.assertRaises(requests.exceptions.SSLError, self.test_server.session_get, "some_url")
+        self.assertRaises(requests.exceptions.SSLError, self.test_server.session_post, "some_url")
+        self.assertRaises(requests.exceptions.SSLError, self.test_server.session_get_mem_cache, "some_url")
+        for fallback, disable in ((True, False), (False, True)):
+            self.settings.fallback_to_insecure_connection = fallback
+            self.settings.disable_ssl_verification = disable
+            self.assertTrue(self.test_server.session_get("some_url"))
+            self.assertTrue(self.test_server.session_post("some_url"))
+            self.assertTrue(self.test_server.session_get_mem_cache("some_url"))
 
     def test_session_get_cache_json(self):
         server = self.media_reader.get_server(TestServer.id)
