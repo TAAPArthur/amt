@@ -24,6 +24,7 @@ class GenericFunimation(Server):
     sources_api_url = api_base + "/showexperience/{}/?pinst_id=23571113"
 
     media_type = MediaType.ANIME
+    slow_download = True
 
     def _get_csrf(self):
         r = self.session_get(self.login_url)

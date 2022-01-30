@@ -178,6 +178,8 @@ class GenericServer(MediaServer):
     has_free_chapters = True
     # Used to determine if the account can access premium content
     is_premium = False
+    # Used to indicate that the download feature for the server is slow (testing)
+    slow_download = False
 
     def get_media_list(self, limit=None):  # pragma: no cover
         """
