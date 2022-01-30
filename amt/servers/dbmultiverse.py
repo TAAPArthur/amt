@@ -24,9 +24,8 @@ class Dbmultiverse(Server):
     def update_media_data(self, media_data):
         r = self.session_get(self.media_url.format(media_data["lang"]))
         soup = self.soupify(BeautifulSoup, r)
-
-        chapters = soup.findAll("div", {"class": "cadrelect chapters"})
-        chapter_map = {int(x["ch"].replace("page", "")): x for x in chapters}
+        chapters = soup.findAll("div", {"class": "chapter"})
+        chapter_map = {int(x["num_chapter"]): x for x in chapters}
         lastest_chapter = max(chapter_map.keys())
         # Latest chapter may gain pages later so don't include it
         del chapter_map[lastest_chapter]
