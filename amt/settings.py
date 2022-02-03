@@ -81,6 +81,7 @@ class Settings:
     threads = 8  # per server thread count
     viewer = ""
     tmp_dir = "/tmp/.amt"
+    always_use_cloudscraper = False  # server setting to force cloudscraper
 
     def __init__(self, no_save_session=False, no_load=False, skip_env_override=False):
         home = os.getenv("AMT_HOME", os.getenv("HOME"))

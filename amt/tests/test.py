@@ -115,6 +115,7 @@ class BaseUnitTestClass(unittest.TestCase):
             self.settings.backoff_factor = .01
             self.settings.max_retries = 10
         self.settings.fallback_to_insecure_connection = True
+        self.settings.always_use_cloudscraper = False
 
         self.settings.post_download_torrent_file_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.settings.suppress_cmd_output = True
@@ -493,6 +494,16 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         with patch.dict(sys.modules, {"amt.tests.test_server": None}):
             remaining_servers = import_sub_classes(tests, TestServer)
             self.assertNotEqual(remaining_servers, TEST_SERVERS)
+
+    def test_force_cloudfare(self):
+        try:
+            self.settings.set_field("always_use_cloudscraper", True, TestServer.id)
+            server = TestServer(self.media_reader.session, self.settings)
+            server2 = TestAnimeServer(self.media_reader.session, self.settings)
+            self.assertNotEqual(server.session, self.media_reader.session)
+            self.assertEqual(server2.session, self.media_reader.session)
+        except ImportError:
+            self.skipTest("cloudscraper not installed")
 
     def test_media_reader_add_remove_media(self):
         for server in self.media_reader.get_servers():

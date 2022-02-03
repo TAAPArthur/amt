@@ -31,7 +31,7 @@ class RequestServer:
 
     def __init__(self, session, settings=None):
         self.settings = settings
-        if self.need_cloud_scraper:
+        if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:
             import cloudscraper
             if getattr(RequestServer, "cloudscraper", None) is None:
                 RequestServer.cloudscraper = cloudscraper.create_scraper(browser={
