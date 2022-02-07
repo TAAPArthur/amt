@@ -74,7 +74,7 @@ class BaseUnitTestClass(unittest.TestCase):
             if server.session != self.media_reader.session:
                 server.session.close()
 
-    def reload(self, set_settings=False, save_settings=False):
+    def reload(self, set_settings=False, save_settings=False, keep_setings=False):
         if self.media_reader:
             self.close_sessions()
 
@@ -82,9 +82,10 @@ class BaseUnitTestClass(unittest.TestCase):
         if save_settings:
             self.settings.save()
 
-        self.settings = Settings()
-        if set_settings:
-            self.setup_settings()
+        if not keep_setings:
+            self.settings = Settings()
+            if set_settings:
+                self.setup_settings()
 
         _servers = list(self.default_server_list)
         if self.real:
@@ -903,14 +904,14 @@ class ApplicationTestWithErrors(CliUnitTestClass):
 
 
 class GenericServerTest():
-    def _test_list_and_search(self, server):
+    def _test_list_and_search(self, server, test_just_list=False):
         media_list = None
         with self.subTest(server=server.id, list=True):
             media_list = server.get_media_list()
             assert media_list or not server.has_free_chapters
             self.verfiy_media_list(media_list, server=server)
 
-        if media_list:
+        if media_list and not test_just_list:
             with self.subTest(server=server.id, list=False):
                 for N in (1, 10):
                     search_media_list = server.search(media_list[0]["name"], limit=N) or server.search(media_list[0]["name"].split()[0], limit=N)
@@ -919,6 +920,17 @@ class GenericServerTest():
                 assert search_media_list
                 self.verfiy_media_list(media_list, server=server)
         return media_list
+
+    def for_each_sever(self, func):
+        self.for_each(func, filter(lambda server: not server.multi_threaded, self.media_reader.get_servers()))
+        for server in self.media_reader.get_servers():
+            if server.multi_threaded:
+                func(server)
+
+    def test_always_use_cloudscraper(self):
+        self.settings.set_field("always_use_cloudscraper", True)
+        self.reload(keep_setings=True)
+        self.for_each_sever(lambda x: self._test_list_and_search(x, test_just_list=True))
 
     def test_workflow(self):
         def func(server):
@@ -931,10 +943,7 @@ class GenericServerTest():
                             self.verify_download(media_data, chapter_data)
                             assert not server.download_chapter(media_data, chapter_data, page_limit=1)
                         return True
-        self.for_each(func, filter(lambda server: not server.multi_threaded, self.media_reader.get_servers()))
-        for server in self.media_reader.get_servers():
-            if server.multi_threaded:
-                func(server)
+        self.for_each_sever(func)
 
     def test_login_fail(self):
         self.media_reader.settings.password_manager_enabled = True
