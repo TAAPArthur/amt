@@ -383,7 +383,7 @@ class MediaReader:
                 else:
                     min_chapter_num = media_data["chapters"][chapter_id]["number"] + offset
                     num_list = list(map(lambda x: x["number"], filter(lambda x: x["number"] >= min_chapter_num, media_data["chapters"].values())))
-                    return self.play(name=media_data, num_list=num_list, limit=None if cont else 1)
+                    return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True)
                 return 1
         logging.error("Could not find any matching server")
         return False
