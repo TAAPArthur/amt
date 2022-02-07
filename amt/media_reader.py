@@ -56,10 +56,13 @@ class MediaReader:
 
         for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers), (torrent_helpers_list, self._torrent_helpers)):
             for cls in cls_list:
-                for instance in cls.get_instances(self.session, self.settings):
-                    if self.settings.is_server_enabled(instance.id, instance.official):
-                        assert instance.id not in instance_map, f"Duplicate server id: {instance.id}"
-                        instance_map[instance.id] = instance
+                try:
+                    for instance in cls.get_instances(self.session, self.settings):
+                        if self.settings.is_server_enabled(instance.id, instance.official):
+                            assert instance.id not in instance_map, f"Duplicate server id: {instance.id}"
+                            instance_map[instance.id] = instance
+                except ImportError:
+                    logging.debug("Could not instantiate %s", cls)
 
         self.session.headers.update({
             "Connection": "keep-alive",

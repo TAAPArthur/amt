@@ -606,6 +606,16 @@ class MediaReaderTest(BaseUnitTestClass):
         self.assertEqual(len(TEST_SERVERS), len(self.media_reader.state.get_server_ids()))
         self.assertEqual(len(TEST_TRACKERS), len(self.media_reader.get_tracker_ids()))
 
+    def test_failed_instantiation(self):
+        class FakeServer(TestServer):
+            id = "fakeServerId"
+
+            def __init__(self, *args, **kwargs):
+                raise ImportError("explicitly thrown error")
+        self.default_server_list = [FakeServer]
+        self.reload()
+        self.assertTrue(FakeServer.id not in self.media_reader.state.get_server_ids())
+
     def test_select_servers(self):
         server_ids = list(self.media_reader.state.get_server_ids())
         self.settings.disabled_servers = server_ids
