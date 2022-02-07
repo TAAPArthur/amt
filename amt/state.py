@@ -256,16 +256,17 @@ class State:
         saved_data.update({identifier or "": stats})
         self.save_to_file(stats_file, saved_data)
 
-    def list_stats(self, username=None, media_type=None, stat_group=StatGroup.NAME, sort_index=SortIndex.NAME, reverse=False, min_count=0, min_score=1, time_unit=0, details_type=Details.NAME, details_limit=None):
+    def list_stats(self, username=None, media_type=None, stat_group=StatGroup.NAME, sort_index=SortIndex.NAME, reverse=False, min_count=0, min_score=1, time_unit=0, no_header=False, details_type=Details.NAME, details_limit=None):
         saved_data = self.read_file_as_dict(self.settings.get_stats_file())
         data = saved_data.get(username if username else "", {})
         if media_type:
             data = list(filter(lambda x: x["media_type"] == media_type, data))
         grouped_data = stats.group_entries(data, min_score=min_score)[stat_group.value]
         sorted_data = stats.compute_stats(grouped_data, sort_index.value, reverse=reverse, min_count=min_count, time_unit=time_unit, details_type=details_type, details_limit=details_limit)
-        print("IDX", stats.get_header_str(stat_group, details_type=details_type))
-        for i, entry in enumerate(sorted_data):
-            print(f"{i+1:3} {stats.get_entry_str(entry, details_type)}")
+        if not no_header:
+            print("\t".join(stats.get_stat_headers(stat_group, details_type=details_type)))
+        for entry in stats.get_stat_entries(sorted_data, details_type):
+            print(stats.format_stat_entry(entry))
 
 
 class MediaData(dict):

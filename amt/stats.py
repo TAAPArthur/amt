@@ -66,6 +66,7 @@ def group_entries(media_list, min_score=1):
     roundedScoreData = defaultdict(list)
     flooredScoreData = defaultdict(list)
     allData = defaultdict(list)
+    individualData = {}
     for media in media_list:
         if media["score"] >= min_score and (media["progress"] or media["progress_volumes"]):
             [tagData[x].append(media) for x in media["tags"]]
@@ -82,7 +83,8 @@ def group_entries(media_list, min_score=1):
             roundedScoreData[str(round(media["score"]))].append(media)
             flooredScoreData[str(int(media["score"]))].append(media)
             allData["All"].append(media)
-    return {x["name"]: [x] for x in media_list}, yearData, decadeData, yearEndData, decadeEndData, seasonData, genereData, tagData, studioData, studioSepData, scoreData, roundedScoreData, flooredScoreData, allData
+            individualData[media["name"]] = [media]
+    return individualData, yearData, decadeData, yearEndData, decadeEndData, seasonData, genereData, tagData, studioData, studioSepData, scoreData, roundedScoreData, flooredScoreData, allData
 
 
 def compute_stats(media_map, sortIndex, reverse=True, min_count=0, time_unit=TimeUnit.HOURS, details_type=Details.NAME, details_limit=None):
@@ -99,9 +101,14 @@ def compute_stats(media_map, sortIndex, reverse=True, min_count=0, time_unit=Tim
     return stats
 
 
-def get_header_str(statGroup, details_type=Details.NO_DETAILS):
-    return f"{statGroup.name:50.50}\t" + "\t".join(list(map(lambda x: x.name, SortIndex))[1:]) + (f"\t{details_type.name}" if details_type != Details.NO_DETAILS else "")
+def get_stat_headers(statGroup, details_type=Details.NO_DETAILS):
+    return ["IDX", f"{statGroup.name:50.50}"] + list(map(lambda x: x.name, SortIndex))[1:] + [f"\t{details_type.name}" if details_type != Details.NO_DETAILS else ""]
 
 
-def get_entry_str(entry, details_type=Details.NO_DETAILS):
-    return "{:50.50}\t{:5}\t{:5.2f}\t{:5.1f}\t{:5.2f}".format(entry[0], entry[1], entry[2], entry[3], entry[4]) + (f"\t{entry[-1]}" if details_type != Details.NO_DETAILS else "")
+def get_stat_entries(sorted_data, details_type=Details.NO_DETAILS):
+    for i, entry in enumerate(sorted_data):
+        yield i + 1, entry[0].replace(" ", "_"), entry[1], entry[2], entry[3], entry[4], (entry[-1] if details_type != Details.NO_DETAILS else "")
+
+
+def format_stat_entry(entry):
+    return "{:3}\t{:50.50}\t{:5}\t{:5.2f}\t{:5.1f}\t{:5.2f}\t{}".format(*entry)
