@@ -154,6 +154,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     list_parser.add_argument("--media-type", default=None, choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     list_parser.add_argument("--out-of-date-only", default=False, action="store_const", const=True)
     list_parser.add_argument("--tag", const="", nargs="?")
+    list_parser.add_argument("--tracked", action="store_const", const=True, default=None)
+    list_parser.add_argument("--untracked", action="store_const", const=False, dest="tracked", default=None)
     list_parser.add_argument("name", nargs="?", default=None, choices=state.get_server_ids())
 
     chapter_parsers = add_parser_helper(sub_parsers, "list-chapters", parents=[readonly_parsers])

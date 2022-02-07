@@ -202,7 +202,10 @@ class State:
         for data in bundled_data:
             return self.media[data["media_id"]]
 
-    def get_media(self, name=None, media_type=None, tag=None, shuffle=False):
+    def is_tracked(self, media_data):
+        return bool(media_data["trackers"])
+
+    def get_media(self, name=None, media_type=None, tag=None, shuffle=False, tracked=None):
         if isinstance(name, dict):
             yield name
             return
@@ -217,13 +220,15 @@ class State:
                 continue
             if tag and tag not in media_data["tags"] or tag == "" and not media_data["tags"]:
                 continue
+            if tracked is not None and self.is_tracked(media_data) != tracked:
+                continue
             yield media_data
 
     def get_single_media(self, name=None, media_type=None):
         return next(self.get_media(media_type=media_type, name=name))
 
-    def list_media(self, name=None, media_type=None, out_of_date_only=False, tag=None, csv=False):
-        for media_data in self.get_media(name=name, media_type=media_type, tag=tag):
+    def list_media(self, name=None, media_type=None, out_of_date_only=False, tag=None, csv=False, tracked=None):
+        for media_data in self.get_media(name=name, media_type=media_type, tag=tag, tracked=tracked):
             last_chapter_num = media_data.get_last_chapter_number()
             last_read = media_data.get_last_read()
             if not out_of_date_only or last_chapter_num != last_read:

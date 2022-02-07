@@ -1189,6 +1189,13 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["list"])
         parse_args(media_reader=self.media_reader, args=["list", "--csv"])
 
+    def test_list_tracked(self):
+        self.add_test_media()
+        for i in range(2):
+            parse_args(media_reader=self.media_reader, args=["list", "--tracked"])
+            parse_args(media_reader=self.media_reader, args=["list", "--untracked"])
+            parse_args(media_reader=self.media_reader, args=["--auto", "load"])
+
     def test_list_from_servers(self):
         parse_args(media_reader=self.media_reader, args=["list-from-servers", TestServer.id])
 
