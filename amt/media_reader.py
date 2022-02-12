@@ -18,23 +18,24 @@ from .util.name_parser import (find_media_with_similar_name_in_list,
                                get_alt_names, get_media_name_from_file)
 
 
-def import_sub_classes(m, base_class, ):
-    results = set()
+def import_sub_classes(m, clazz, *args):
+    base_classes = [clazz] + list(args)
+    result_sets = [set() for i in range(len(base_classes))]
     for _finder, name, _ispkg in pkgutil.iter_modules(m.__path__, m.__name__ + "."):
         try:
             module = importlib.import_module(name)
             for _name, obj in dict(inspect.getmembers(module, inspect.isclass)).items():
-                if issubclass(obj, base_class) and obj.id:
-                    results.add(obj)
-        except ImportError:
-            logging.debug("Could not import %s", name)
-            pass
-    return results
+                for results, base_class in zip(result_sets, base_classes):
+                    if issubclass(obj, base_class) and obj.id:
+                        results.add(obj)
+        except ImportError as e:
+            logging.debug("Could not import %s: %s", name, e)
+
+    return result_sets if args else result_sets[0]
 
 
-SERVERS = import_sub_classes(servers, Server)
+SERVERS, TORRENT_HELPERS = import_sub_classes(servers, Server, TorrentHelper)
 TRACKERS = import_sub_classes(trackers, Tracker)
-TORRENT_HELPERS = import_sub_classes(servers, TorrentHelper)
 
 
 class MediaReader:
