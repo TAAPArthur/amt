@@ -16,6 +16,7 @@ This program also relies on some external tools like `mpv` and `zathura` but oth
 ```
 make install
 ```
+which just invokes `python setup.py install "--root=$(DESTDIR)/"`
 
 ## Setup
 
@@ -37,9 +38,13 @@ This assumes you have an Anilist account and want to add all media you are curre
 
 ### Manual setup
 
-* `amt search term` Search for some media. The search mechanism are the same as for `amt load` described above
-* `amt add-from-url url` where url is the same the same one you would use to watch it from a browser
-* `amt stream url` Instead of adding the media, just start playing the media specified by the url
+#### If you have the name
+1. `amt search term` Search for some media. The search mechanism are the same as for `amt load` described above
+2. `amt play` to play from the first episode or `amt play N` to play the Nth episode. Subsequent `amt play` commands can be used to play the next media. Use `amt view` for manga/novels or consume if you don't care.
+
+### If you have the url
+* `amt add-from-url url` where url is the same the same one you would use to watch it from a browser. Then start from (2) above
+* Or just `amt stream url` to not add the media internally. Add the `-c` option if you want to continue to the next episode
 
 
 ## Key commands

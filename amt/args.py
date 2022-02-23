@@ -47,23 +47,23 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_search_parsers.add_argument("--server", choices=state.get_server_ids(), dest="server_id")
 
     # add remove
-    search_parsers = add_parser_helper(sub_parsers, "search_for_media", aliases=["search"], parents=[sub_search_parsers], description="Search for and add media")
+    search_parsers = add_parser_helper(sub_parsers, "search_for_media", aliases=["search"], parents=[sub_search_parsers], help="Search for and add media")
     search_parsers.add_argument("name", help="The string to search by")
 
-    migrate_parsers = add_parser_helper(sub_parsers, "migrate", description="Move media to another server")
+    migrate_parsers = add_parser_helper(sub_parsers, "migrate", help="Move media to another server")
     migrate_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     migrate_parsers.add_argument("--force-same-id", action="store_const", const=True, default=False, help="Forces the media id to be the same")
     migrate_parsers.add_argument("--self", action="store_const", const=True, default=False, help="Re-adds the media", dest="move_self")
     migrate_parsers.add_argument("name", choices=state.get_all_names(), help="Global id of media to move")
 
-    add_parsers = add_parser_helper(sub_parsers, "add-from-url", description="Add media by human viewable location")
+    add_parsers = add_parser_helper(sub_parsers, "add-from-url", help="Add media by human viewable location")
     add_parsers.add_argument("url", help="Either the series home page or the page for an arbitrary chapter (depends on server)")
 
-    remove_parsers = add_parser_helper(sub_parsers, "remove", func_str="remove-media", description="Remove media")
+    remove_parsers = add_parser_helper(sub_parsers, "remove", func_str="remove-media", help="Remove media")
     remove_parsers.add_argument("id", choices=state.get_all_single_names(), help="Global id of media to remove")
 
     # update and download
-    update_parser = add_parser_helper(sub_parsers, "update", description="Update all media")
+    update_parser = add_parser_helper(sub_parsers, "update", help="Update all media")
     update_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     update_parser.add_argument("--no-shuffle", default=False, action="store_const", const=True)
     update_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?", help="Update only specified media")
@@ -141,7 +141,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     auto_import_parser = add_parser_helper(sub_parsers, "auto-import", func_str="auto-import-media")
     auto_import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
 
-    import_parser = add_parser_helper(sub_parsers, "import", func_str="import-media")
+    import_parser = add_parser_helper(sub_parsers, "import", func_str="import-media", help="Import local media into amt")
     import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
     import_parser.add_argument("--media-type", default="ANIME", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
@@ -149,7 +149,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     import_parser.add_argument("files", nargs="+")
 
     # info
-    list_parser = add_parser_helper(sub_parsers, "list", func_str="list-media", parents=[readonly_parsers])
+    list_parser = add_parser_helper(sub_parsers, "list", func_str="list-media", parents=[readonly_parsers], help="List added media")
     list_parser.add_argument("--csv", action="store_const", const=True, default=False, help="List in a script friendly format")
     list_parser.add_argument("--media-type", default=None, choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     list_parser.add_argument("--out-of-date-only", default=False, action="store_const", const=True)
@@ -158,21 +158,21 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     list_parser.add_argument("--untracked", action="store_const", const=False, dest="tracked", default=None)
     list_parser.add_argument("name", nargs="?", default=None, choices=state.get_server_ids())
 
-    chapter_parsers = add_parser_helper(sub_parsers, "list-chapters", parents=[readonly_parsers])
+    chapter_parsers = add_parser_helper(sub_parsers, "list-chapters", parents=[readonly_parsers], help="List chapters of media")
     chapter_parsers.add_argument("--show-ids", action="store_const", const=True, default=False)
     chapter_parsers.add_argument("name", choices=state.get_all_names())
 
-    add_parser_helper(sub_parsers, "list-servers")
+    add_parser_helper(sub_parsers, "list-servers", help="List enabled servers")
 
-    list_from_servers = add_parser_helper(sub_parsers, "list_some_media_from_server", aliases=["list-from-servers"])
+    list_from_servers = add_parser_helper(sub_parsers, "list_some_media_from_server", aliases=["list-from-servers"], help="list some available media from the specified server")
     list_from_servers.add_argument("--limit", "-l", type=int, default=None)
     list_from_servers.add_argument("server_id", choices=state.get_server_ids())
 
-    tag_parser = add_parser_helper(sub_parsers, "tag")
+    tag_parser = add_parser_helper(sub_parsers, "tag", help="Apply an arbirary label")
     tag_parser.add_argument("tag_name")
     tag_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?")
 
-    untag_parser = add_parser_helper(sub_parsers, "untag")
+    untag_parser = add_parser_helper(sub_parsers, "untag", help="Remove a previously applied label")
     untag_parser.add_argument("tag_name")
     untag_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?")
 
@@ -207,46 +207,46 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     load_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
     load_parser.add_argument("user_name", default=None, nargs="?", help="Username to load tracking info of; defaults to the currently authenticated user")
 
-    untrack_paraser = add_parser_helper(sub_parsers, "remove_tracker", aliases=["untrack"], description="Removing tracker info")
+    untrack_paraser = add_parser_helper(sub_parsers, "remove_tracker", aliases=["untrack"], help="Removes tracker info")
     untrack_paraser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     untrack_paraser.add_argument("name", choices=state.get_all_single_names(), nargs="?", help="Media to untrack")
 
-    copy_tracker_parser = add_parser_helper(sub_parsers, "copy-tracker", description="Copies tracking info from src to dest")
+    copy_tracker_parser = add_parser_helper(sub_parsers, "copy-tracker", help="Copies tracking info from src to dest")
     copy_tracker_parser.add_argument("src", choices=state.get_all_single_names(), help="Src media")
     copy_tracker_parser.add_argument("dst", choices=state.get_all_single_names(), help="Dst media")
 
-    sync_parser = add_parser_helper(sub_parsers, "sync_progress", aliases=["sync"], description="Attempts to update tracker with current progress")
+    sync_parser = add_parser_helper(sub_parsers, "sync_progress", aliases=["sync"], help="Update tracker with current progress")
     sync_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually update trackers")
     sync_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow progress to decrease")
     sync_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     sync_parser.add_argument("name", choices=state.get_all_names(), nargs="?", help="Media to sync")
 
-    mark_unread_parsers = add_parser_helper(sub_parsers, "mark-unread", description="Mark all known chapters as unread")
+    mark_unread_parsers = add_parser_helper(sub_parsers, "mark-unread", help="Mark all known chapters as unread")
     mark_unread_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     mark_unread_parsers.add_argument("name", default=None, choices=state.get_all_names(), nargs="?")
     mark_unread_parsers.set_defaults(func_str="mark_read", force=True, N=-1, abs=True)
 
-    mark_parsers = add_parser_helper(sub_parsers, "mark-read", description="Mark all known chapters as read")
+    mark_parsers = add_parser_helper(sub_parsers, "mark-read", help="Mark all known chapters as read")
     mark_parsers.add_argument("--abs", action="store_const", const=True, default=False, help="Treat N as an abs number")
     mark_parsers.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
     mark_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     mark_parsers.add_argument("name", default=None, choices=state.get_all_names(), nargs="?")
     mark_parsers.add_argument("N", type=int, default=0, nargs="?", help="Consider the last N chapters as not up-to-date")
 
-    offset_parser = add_parser_helper(sub_parsers, "offset")
+    offset_parser = add_parser_helper(sub_parsers, "offset", help="Adjust server chapter numbers")
     offset_parser.add_argument("name", default=None, choices=state.get_all_names())
-    offset_parser.add_argument("offset", type=int, default=None, nargs="?", help="Decrease the chapter number reported by the server by N")
+    offset_parser.add_argument("offset", type=int, default=None, nargs="?", help="Decrease the chapter number reported by the server by N; specify 0 to reset")
 
     # upgrade state
-    add_parser_helper(sub_parsers, "upgrade-state", aliases=["upgrade"], description="Upgrade old state to newer format")
+    add_parser_helper(sub_parsers, "upgrade-state", aliases=["upgrade"], help="Upgrade old state to newer format")
 
     # store password state
-    set_password_parser = add_parser_helper(sub_parsers, "set-password", description="Set password")
+    set_password_parser = add_parser_helper(sub_parsers, "set-password", help="Set password for a server")
     set_password_parser.add_argument("server_id", choices=state.get_server_ids_with_logins())
     set_password_parser.add_argument("username")
     set_password_parser.set_defaults(func=state.settings.store_credentials)
 
-    auth_parser = add_parser_helper(sub_parsers, "auth")
+    auth_parser = add_parser_helper(sub_parsers, "auth", help="Authenticate to a tracker")
     auth_parser.add_argument("--just-print", action="store_const", const=True, default=False, help="Just print the auth url")
     auth_parser.add_argument("tracker_id", choices=state.get_server_ids_with_logins(), nargs="?")
 
