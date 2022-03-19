@@ -1242,7 +1242,7 @@ class ArgsTest(CliUnitTestClass):
         media_data = next(iter(self.media_reader.get_media()))
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
         assert self.media_reader.get_tracker_info(media_data)
-        self.assertEqual(media_data["progress"], media_data.get_last_read())
+        self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
 
     def test_load_filter_by_type(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", f"--media-type={MediaType.ANIME.name}", "test_user"])
@@ -1264,7 +1264,7 @@ class ArgsTest(CliUnitTestClass):
         for media_data in self.media_reader.get_media():
             assert self.media_reader.get_tracker_info(media_data)
             if media_data["progress"]:
-                self.assertEqual(media_data["progress"], media_data.get_last_read())
+                self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
 
     def test_load_sort_by_lang(self):
         for server in (self.test_server, self.test_anime_server):
@@ -1328,8 +1328,8 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["sync"])
         for i in range(2):
             for media_data in self.media_reader.get_media():
-                self.assertEqual(media_data.get_last_chapter_number(), media_data.get_last_read())
-                self.assertEqual(media_data["progress"], media_data.get_last_read())
+                self.assertEqual(media_data.get_last_chapter_number(), media_data.get_last_read_chapter_number())
+                self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
             self.reload()
 
     def test_download(self):
@@ -1442,7 +1442,7 @@ class ArgsTest(CliUnitTestClass):
             media_data2 = self.media_reader.get_single_media(name=media_data["name"])
             if not media_data.get("unique", False):
                 self.assertNotEqual(media_data.global_id, media_data2.global_id)
-            self.assertEqual(media_data.get_last_read(), media_data2.get_last_read())
+            self.assertEqual(media_data.get_last_read_chapter_number(), media_data2.get_last_read_chapter_number())
             self.assertEqual(media_data["progress"], media_data2["progress"])
             self.assertEqual(self.media_reader.get_tracker_info(media_data), self.media_reader.get_tracker_info(media_data2))
 
@@ -1732,7 +1732,7 @@ class ArgsTest(CliUnitTestClass):
         if not minor:
             self.assertTrue(all(["special" in x for x in self.media_reader.media[ids[1]]["chapters"].values()]))
             self.assertTrue(all(["old_chapter_field" not in x for x in self.media_reader.media[ids[2]]["chapters"].values()]))
-        self.assertTrue(all([media_data.get_last_read() == media_data.get_last_chapter_number() for media_data in self.media_reader.get_media()]))
+        self.assertTrue(all([media_data.get_last_read_chapter_number() == media_data.get_last_chapter_number() for media_data in self.media_reader.get_media()]))
 
     def test_upgrade_minor(self):
         self._test_upgrade_helper(True)

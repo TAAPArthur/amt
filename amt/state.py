@@ -230,7 +230,7 @@ class State:
     def list_media(self, name=None, media_type=None, out_of_date_only=False, tag=None, csv=False, tracked=None):
         for media_data in self.get_media(name=name, media_type=media_type, tag=tag, tracked=tracked):
             last_chapter_num = media_data.get_last_chapter_number()
-            last_read = media_data.get_last_read()
+            last_read = media_data.get_last_read_chapter_number()
             if not out_of_date_only or last_chapter_num != last_read:
                 if csv:
                     print("\t".join([media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read), str(last_chapter_num), ",".join(media_data["tags"])]))
@@ -301,8 +301,11 @@ class MediaData(dict):
     def get_first_chapter_number_greater_than_zero(self):
         return min(self["chapters"].values(), key=lambda x: x["number"] if x["number"] > 0 else float("inf"))["number"]
 
-    def get_last_read(self):
-        return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={"number": 0})["number"]
+    def get_last_read_chapter(self):
+        return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={"number": 0})
+
+    def get_last_read_chapter_number(self):
+        return self.get_last_read_chapter()["number"]
 
     def get_labels(self):
         return [self.global_id, self["name"], self["server_id"], MediaType(self["media_type"]).name]

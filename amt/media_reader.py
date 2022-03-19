@@ -106,7 +106,7 @@ class MediaReader:
         for media_data in self.get_media(name, media_type=media_type, shuffle=shuffle):
             server = self.get_server(media_data["server_id"])
 
-            lastRead = media_data.get_last_read()
+            lastRead = media_data.get_last_read_chapter_number()
             for chapter in media_data.get_sorted_chapters():
                 if not chapter["read"] and (any_unread or (chapter["number"] > lastRead and not chapter["special"])):
                     yield server, media_data, chapter
@@ -247,7 +247,7 @@ class MediaReader:
             if new_media_data:
                 media_data.copy_fields_to(new_media_data)
                 media_list.append(new_media_data)
-                last_read_list.append(media_data.get_last_read())
+                last_read_list.append(media_data.get_last_read_chapter_number())
                 self.remove_media(media_data)
                 self.add_media(new_media_data, no_update=True)
             else:
@@ -283,6 +283,7 @@ class MediaReader:
         """
         server = self.get_server(media_data["server_id"])
         chapter_ids = set(media_data["chapters"].keys())
+        last_read_chapter = media_data.get_last_read_chapter()
         server.update_media_data(media_data)
 
         if not self.settings.get_keep_unavailable(media_data):
@@ -357,7 +358,7 @@ class MediaReader:
         for media_data in self.get_media(media_type=media_type, name=name):
             last_read = media_data.get_last_chapter_number() + N if not abs else N
             if not force:
-                last_read = max(media_data.get_last_read(), last_read)
+                last_read = max(media_data.get_last_read_chapter_number(), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
     def get_media_by_chapter_id(self, server_id, chapter_id):
@@ -395,7 +396,7 @@ class MediaReader:
 
     def get_chapters(self, media_type, name, num_list, force_abs=False):
         media_data = self.get_single_media(media_type=media_type, name=name)
-        last_read = media_data.get_last_read()
+        last_read = media_data.get_last_read_chapter_number()
         num_list = list(map(lambda x: last_read + x if x <= 0 and not force_abs else x, num_list))
         server = self.get_server(media_data["server_id"])
         for chapter in media_data.get_sorted_chapters():
@@ -473,15 +474,15 @@ class MediaReader:
         media_to_sync = []
         for media_data in self.get_media(name=name, media_type=media_type):
             tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_tracker().id)
-            if tracker_info and (force or media_data["progress"] < int(media_data.get_last_read())):
-                data.append((tracker_info[0], media_data.get_last_read(), media_data["progress_volumes"]))
+            if tracker_info and (force or media_data["progress"] < int(media_data.get_last_read_chapter_number())):
+                data.append((tracker_info[0], media_data.get_last_read_chapter_number(), media_data["progress_volumes"]))
                 media_to_sync.append(media_data)
-                logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], media_data.get_last_read())
+                logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], media_data.get_last_read_chapter_number())
 
         if data and not dry_run:
             self.get_tracker().update(data)
             for media_data in media_to_sync:
-                media_data["progress"] = media_data.get_last_read()
+                media_data["progress"] = media_data.get_last_read_chapter_number()
         return bool(data)
 
     def stats_update(self, username=None, user_id=None):
