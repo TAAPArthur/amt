@@ -13,6 +13,7 @@ from ..util.media_type import MediaType
 
 
 class GenericJNovelClub(Server):
+    progress_volumes = True
 
     alias = "j_novel_club"
     login_url = "https://api.j-novel.club/api/users/login"
@@ -60,7 +61,6 @@ class GenericJNovelClub(Server):
 class JNovelClub(GenericJNovelClub):
     id = "j_novel_club"
     media_type = MediaType.NOVEL
-    progress_volumes = True
     owned_url = "https://api.j-novel.club/api/users/me?filter={'include':[{'ownedBooks':'serie'}]}"
     has_free_chapters = False
 
@@ -100,7 +100,6 @@ class JNovelClubManga(JNovelClub):
 
 
 class GenericJNovelClubParts(GenericJNovelClub):
-    progress_volumes = False
 
     part_to_series_url = JNovelClub.api_base_url + "/parts/{}/serie?format=json"
     parts_url = JNovelClub.api_base_url + "/volumes/{}/parts?format=json"
@@ -118,8 +117,12 @@ class GenericJNovelClubParts(GenericJNovelClub):
             part_data = self.session_get_cache_json(self.parts_url.format(volume["slug"]), skip_cache=i == len(volumes) - 1)
             parts = part_data["parts"]
 
+            volume_number = volume["number"]
+
+            total = volume["totalParts"] if volume["totalParts"] else len(parts)
             for part in parts:
-                self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=part["number"], title=part["title"], premium=not part["preview"])
+                number = round(volume_number + (part["number"] - parts[0]["number"] + 1) / total - 1, 2)
+                self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=number, title=part["title"], premium=not part["preview"])
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         return [self.create_page_data(self.pages_url.format(chapter_data["alt_id"]))]
