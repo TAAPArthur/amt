@@ -19,6 +19,7 @@ class TestServer(Server):
     inaccessible = False
     error_delay = 0
     test_lang = False
+    offset_chapter_num = 0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -100,6 +101,8 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=28, title="Chapter4", number=4, date="1998-08-10", inaccessible=self.inaccessible),
         else:
             self.update_chapter_data(media_data, id=29, title="Chapter1", number=1)
+        for chapter_data in media_data["chapters"].values():
+            chapter_data["number"] += self.offset_chapter_num
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         self.maybe_inject_error()

@@ -1332,6 +1332,18 @@ class ArgsTest(CliUnitTestClass):
                 self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
             self.reload()
 
+    def test_progress_after_progress_type_change(self):
+        self.add_test_media(self.test_server)
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only"])
+        parse_args(media_reader=self.media_reader, args=["mark-read"])
+        parse_args(media_reader=self.media_reader, args=["sync"])
+        self.test_server.progress_volumes = not self.test_server.progress_volumes
+        self.test_server.offset_chapter_num = 100
+        parse_args(media_reader=self.media_reader, args=["update"])
+        for media_data in self.media_reader.get_media(self.test_server.id):
+            self.assertEqual(media_data.get_last_chapter_number(), media_data.get_last_read_chapter_number())
+            self.assertEqual(media_data.get_last_chapter_number(), media_data["progress"])
+
     def test_download(self):
         self.add_test_media(limit=1)
         parse_args(media_reader=self.media_reader, args=["download-unread"])

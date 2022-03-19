@@ -292,6 +292,10 @@ class MediaReader:
                     if not server.is_fully_downloaded(media_data, media_data["chapters"][chapter_id]):
                         del media_data["chapters"][chapter_id]
 
+        if server.progress_volumes != media_data["progress_volumes"]:
+            if last_read_chapter.get("id", None) in media_data["chapters"]:
+                media_data["progress"] = media_data["chapters"][last_read_chapter["id"]]["number"]
+
         return len(media_data["chapters"].keys() - chapter_ids)
 
     # Downloading
