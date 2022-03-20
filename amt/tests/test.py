@@ -102,6 +102,12 @@ class BaseUnitTestClass(unittest.TestCase):
     def for_each(self, func, media_list, raiseException=True):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
+    def for_each_server(self, func):
+        self.for_each(func, filter(lambda server: not server.multi_threaded, self.media_reader.get_servers()))
+        for server in self.media_reader.get_servers():
+            if server.multi_threaded:
+                func(server)
+
     def setup_settings(self):
         self.settings.no_save_session = True
         self.settings.no_load_session = True
@@ -921,16 +927,10 @@ class GenericServerTest():
                 self.verfiy_media_list(media_list, server=server)
         return media_list
 
-    def for_each_sever(self, func):
-        self.for_each(func, filter(lambda server: not server.multi_threaded, self.media_reader.get_servers()))
-        for server in self.media_reader.get_servers():
-            if server.multi_threaded:
-                func(server)
-
-    def test_always_use_cloudscraper(self):
+    def test_settings_always_use_cloudscraper(self):
         self.settings.set_field("always_use_cloudscraper", True)
         self.reload(keep_setings=True)
-        self.for_each_sever(lambda x: self._test_list_and_search(x, test_just_list=True))
+        self.for_each_server(lambda x: self._test_list_and_search(x, test_just_list=True))
 
     def test_workflow(self):
         def func(server):
@@ -943,7 +943,7 @@ class GenericServerTest():
                             self.verify_download(media_data, chapter_data)
                             assert not server.download_chapter(media_data, chapter_data, page_limit=1)
                         return True
-        self.for_each_sever(func)
+        self.for_each_server(func)
 
     def test_login_fail(self):
         self.media_reader.settings.password_manager_enabled = True
@@ -1810,36 +1810,33 @@ class ServerStreamTest(RealBaseUnitTestClass):
     ]
 
     premium_streamable_urls = [
-        ("https://www.funimation.com/shows/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
-        ("https://www.funimation.com/shows/the-irregular-at-magic-high-school/visitor-arc-i/simulcast/?lang=japanese&qid=f290b76b82d5938b", "1079937", "1174339", "1174543"),
+        ("https://www.funimation.com/v/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
     ]
 
     def test_verify_valid_stream_urls(self):
-        for url, media_id, season_id, chapter_id in self.streamable_urls:
+        for url, media_id, season_id, chapter_id in self.streamable_urls + self.premium_streamable_urls:
             with self.subTest(url=url):
                 servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
                 self.assert_server_enabled_or_skip_test(servers)
                 self.assertEqual(len(servers), 1)
 
     def test_get_media_data_from_url(self):
-        def func(url_data):
-            url, media_id, season_id, chapter_id = url_data
-            with self.subTest(url=url):
-                servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                self.assert_server_enabled_or_skip_test(servers)
-                self.assertEqual(len(servers), 1)
-                server = servers[0]
-                media_data = server.get_media_data_from_url(url)
-                assert media_data
-                if not media_data["chapters"]:
-                    server.update_media_data(media_data)
-                self.assertEqual(media_id, str(media_data["id"]))
-                if season_id:
-                    self.assertEqual(season_id, str(media_data["season_id"]))
-                if chapter_id:
-                    self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
-                    self.assertTrue(chapter_id in media_data["chapters"])
-        self.for_each(func, self.streamable_urls + self.premium_streamable_urls)
+        def func(server):
+            for url, media_id, season_id, chapter_id in self.streamable_urls:
+                if not server.can_stream_url(url):
+                    continue
+                with self.subTest(server=server.id, url=url):
+                    media_data = server.get_media_data_from_url(url)
+                    assert media_data
+                    if not media_data["chapters"]:
+                        server.update_media_data(media_data)
+                    self.assertEqual(media_id, str(media_data["id"]))
+                    if season_id:
+                        self.assertEqual(season_id, str(media_data["season_id"]))
+                    if chapter_id:
+                        self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
+                        self.assertTrue(chapter_id in media_data["chapters"])
+        self.for_each_server(func)
 
     def test_media_steam(self):
         url_list = self.streamable_urls if not PREMIUM_TEST else self.streamable_urls + self.premium_streamable_urls
