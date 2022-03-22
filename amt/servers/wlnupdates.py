@@ -1,6 +1,7 @@
 import re
 
 from bs4 import BeautifulSoup
+from requests.exceptions import HTTPError
 
 from ..server import Server
 from ..util.media_type import MediaType
@@ -55,12 +56,15 @@ class WLN_Updates(Server):
                 sample_url[translation_id] = chapter["srcurl"]
 
         for source in sorted(sources.keys(), key=lambda x: sources[x], reverse=True):
-            soup = self.soupify(BeautifulSoup, self.session_get(sample_url[source]))
-            translation_group_name, func = self.known_sources[source]
-            for slug, number, title in func(soup):
-                if number not in visted_chapters:
-                    self.update_chapter_data(media_data, id=f"{number}-{source}", number=number, title=f"{translation_group_name} {title}", alt_id=slug)
-                    visted_chapters.add(number)
+            try:
+                soup = self.soupify(BeautifulSoup, self.session_get(sample_url[source]))
+                translation_group_name, func = self.known_sources[source]
+                for slug, number, title in func(soup):
+                    if number not in visted_chapters:
+                        self.update_chapter_data(media_data, id=f"{number}-{source}", number=number, title=f"{translation_group_name} {title}", alt_id=slug)
+                        visted_chapters.add(number)
+            except HTTPError:
+                pass
 
         for chapter in data["releases"]:
             if chapter["srcurl"] and chapter["chapter"] and chapter["tlgroup"]["id"] not in self.known_sources:
