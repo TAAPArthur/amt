@@ -136,7 +136,10 @@ class MediaServer(RequestServer):
                 number = float(number.replace("-", "."))
             except ValueError:
                 special = True
-                number = float(re.search("\d+", number).group(0))
+                try:
+                    number = float(re.search("\d+", number).group(0))
+                except:
+                    number = 0
         if media_data["offset"]:
             number = round(number - media_data["offset"], 4)
         if number % 1 == 0:
