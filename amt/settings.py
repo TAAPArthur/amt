@@ -66,7 +66,7 @@ class Settings:
     bundle_cmd = "zip {name} {files}"
     bundle_format = "{date}_{name}.cbz"
     bundle_viewer = "zathura {media}"
-    chapter_dir_name_format = "{chapter_number:06.1f}"
+    chapter_dir_name_format = "{chapter_number:07.2f}"
     chapter_page_format = "{page_number:04d}.{ext}"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
     special_chapter_dir_name_format = "{chapter_id}"
