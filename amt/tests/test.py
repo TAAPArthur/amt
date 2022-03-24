@@ -419,10 +419,6 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.post_process_cmd = "exit 1"
         self.assertRaises(CalledProcessError, self.settings.post_process, None, [], None)
 
-    def test_get_web_cache(self):
-        path = self.settings.get_web_cache("https://someurl.domain.com/some/path")[len(self.settings.cache_dir) + 1:]
-        self.assertTrue("/" not in path, path)
-
 
 class SettingsCredentialsTest(BaseUnitTestClass):
 
@@ -494,7 +490,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         server = self.media_reader.get_server(TestServer.id)
         assert server
         url = "https://dummy_url"
-        os.makedirs(self.settings.cache_dir, exist_ok=True)
+        os.makedirs(self.settings.get_web_cache_dir(), exist_ok=True)
         file = self.settings.get_web_cache(url)
         data = [0, 1, 0]
         with open(file, "w") as f:
@@ -1525,6 +1521,14 @@ class ArgsTest(CliUnitTestClass):
         self.add_test_media(self.test_server)
         parse_args(media_reader=self.media_reader, args=["clean", "--remove-not-on-disk"])
         self.assertEqual(0, len(os.listdir(self.settings.get_server_dir(TestServer.id))))
+
+    def test_clean_web_cache(self):
+        parse_args(media_reader=self.media_reader, args=["clean", "--url-cache"])
+        os.makedirs(self.settings.get_web_cache_dir())
+        with open(os.path.join(self.settings.get_web_cache_dir(), "file"), "w") as f:
+            f.write("dummy_data")
+        parse_args(media_reader=self.media_reader, args=["clean", "--url-cache"])
+        self.assertFalse(os.path.exists(self.settings.get_web_cache_dir()))
 
     def test_bundle_read(self):
         self.add_test_media(self.test_server)

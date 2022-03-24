@@ -84,9 +84,9 @@ class RequestServer:
         return self.session_get(url, **kwargs)
 
     def session_get_cache_json(self, url, skip_cache=False, **kwargs):
-        file = self.settings.get_web_cache(url)
         if skip_cache:
             return self.session_get(url, **kwargs).json()
+        file = self.settings.get_web_cache(url)
         try:
             with open(file, "r") as f:
                 return json.load(f)
@@ -101,7 +101,7 @@ class RequestServer:
                     json.dump(data, f)
                     break
             except FileNotFoundError:
-                os.makedirs(self.settings.cache_dir, exist_ok=True)
+                os.makedirs(self.settings.get_web_cache_dir(), exist_ok=True)
         return data
 
     def session_get(self, url, **kwargs):

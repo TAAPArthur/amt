@@ -127,8 +127,11 @@ class Settings:
     def get_stats_file(self):
         return os.path.join(self.cache_dir, "stats.json")
 
+    def get_web_cache_dir(self):
+        return os.path.join(self.cache_dir, "web_cache")
+
     def get_web_cache(self, url):
-        return os.path.join(self.cache_dir, url.replace("/", "_"))
+        return os.path.join(self.get_web_cache_dir(), url.replace("/", "_"))
 
     @classmethod
     def get_members(clazz):
