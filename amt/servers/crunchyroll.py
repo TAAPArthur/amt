@@ -4,6 +4,7 @@ import re
 
 from ..server import Server, RequestServer
 from ..util.media_type import MediaType
+from requests.exceptions import HTTPError
 
 
 class GenericCrunchyrollServer(Server):
@@ -121,7 +122,7 @@ class Crunchyroll(GenericCrunchyrollServer):
                 soup = self.soupify(BeautifulSoup, self.session_get(self.alpha_list_url))
                 for group_item in soup.findAll("li", {"class": "group-item"}):
                     media_name_ids[group_item["group_id"]] = group_item.find("a")["title"]
-            except ImportError:
+            except (HTTPError, ImportError):
                 pass
             r = self.session_get(self.popular_list_url)
             match = self.popular_media_regex.findall(r.text)
