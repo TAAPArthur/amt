@@ -131,7 +131,7 @@ class Crunchyroll(GenericCrunchyrollServer):
 
         return list(map(lambda media_id: self.create_media_data(id=media_id, name=media_name_ids[media_id], locale="enUS"), media_name_ids))
 
-    def search(self, term, limit=None):
+    def search_for_media(self, term, limit=None):
         regex = re.compile(r"[^\w\d]")
         term = regex.sub("", term.lower())
         return list(filter(lambda x: term in regex.sub("", x["name"].lower()), self.get_media_list()))[:limit]
@@ -188,9 +188,9 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
                 yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], dir_name=item_alt_id, lang=None)
 
     def get_media_list(self, limit=4):
-        return self.search("", limit=limit)
+        return self.search_for_media("", limit=limit)
 
-    def search(self, term, limit=None):
+    def search_for_media(self, term, limit=None):
         data = self.session_get_json(self.search_series.format(self.get_session_id(), term, limit if limit else 0) if term else self.list_all_series.format(self.get_session_id()))
 
         def get_all_seasons(item):

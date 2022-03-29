@@ -111,7 +111,7 @@ class Funimation(GenericFunimation):
             ids.append((item["data-id"], item["data-title"]))
         return self._get_media_list(ids, limit=limit)
 
-    def search(self, term, alt_id=None, limit=2):
+    def search_for_media(self, term, alt_id=None, limit=2):
         soup = self.soupify(BeautifulSoup, self.session_get(self.search_url.format(term)))
         ids = [(item.find("id").text, item.find("title").text) for item in soup.findAll("item")[:limit]]
         return self._get_media_list(ids, limit=limit)
@@ -188,7 +188,7 @@ class FunimationLibrary(GenericFunimation):
         data = self.session.get(self.list_url, headers=self.get_auth_header()).json()
         return list(self._get_media_list_helper(data))[:limit]
 
-    def search(self, term, limit=None):
+    def search_for_media(self, term, limit=None):
         if self.needs_authentication():
             return []
         data = self.session.get(self.search_url.format(term), headers=self.get_auth_header()).json()

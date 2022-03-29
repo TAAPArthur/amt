@@ -166,7 +166,7 @@ class TestTorrentHelper(TorrentHelper):
 
     available_torrent_file = "TorrentableMedia"
 
-    def search(self, term, limit=None):
+    def search_for_media(self, term, limit=None):
         return [self.create_media_data(id=term, name=term)] if term == self.available_torrent_file else []
 
     def save_torrent_file(self, media_data, path):

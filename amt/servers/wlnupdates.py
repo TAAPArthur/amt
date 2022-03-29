@@ -23,7 +23,7 @@ class WLN_Updates(Server):
         r = self.session_post(self.api_url, json={"mode": "search-advanced", "series-type": {"Translated": "included"}})
         return [self.create_media_data(x["id"], x["title"]) for x in r.json()["data"][:limit]]
 
-    def search(self, term, limit=None):
+    def search_for_media(self, term, limit=None):
         r = self.session_post(self.api_url, json={"title": term, "mode": "search-title"})
         return [self.create_media_data(x["sid"], x["match"][0][1]) for x in r.json()["data"]["results"][:limit]]
 

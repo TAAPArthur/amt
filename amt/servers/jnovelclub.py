@@ -52,7 +52,7 @@ class GenericJNovelClub(Server):
         data = r.json()["series"]
         return self._create_media_data_helper(data)[:limit]
 
-    def search(self, term, limit=None):
+    def search_for_media(self, term, limit=None):
         r = self.session_post(self.search_url, json={"query": term.replace(" (Manga)", ""), "type": 1 if self.media_type == MediaType.NOVEL else 2})
         data = r.json()["series"][:limit]
         return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", "")) for item in data]
@@ -75,7 +75,7 @@ class JNovelClub(GenericJNovelClub):
     def get_media_list(self, limit=None):
         return self.filter_owned_volumes(super().get_media_list)[:limit]
 
-    def search(self, term, limit=None):
+    def search_for_media(self, term, limit=None):
         return self.filter_owned_volumes(lambda: super().search(term=term))[:limit]
 
     def update_media_data(self, media_data: dict):

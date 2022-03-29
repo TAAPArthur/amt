@@ -10,9 +10,9 @@ class Nyaa(TorrentHelper):
     torrent_url = base_url + "/download/{}.torrent"
 
     def get_media_list(self, limit=10):
-        return self.search("", limit=limit)
+        return self.search_for_media("", limit=limit)
 
-    def search(self, term, limit=10):
+    def search_for_media(self, term, limit=10):
         r = self.session_get(self.search_url.format(self.category, term))
         soup = self.soupify(BeautifulSoup, r)
         table = soup.find("table", {"class": "torrent-list"})

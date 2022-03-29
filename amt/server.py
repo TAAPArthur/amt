@@ -118,6 +118,26 @@ class RequestServer:
 
 
 class MediaServer(RequestServer):
+
+    def search(self, term, literal=False, limit=20):
+        """
+        Searches for a media containing term
+        Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
+        """
+        terms = get_alt_names(term) if not literal else [term]
+        media_list = self.search_helper(terms, limit)
+        return sorted(media_list, key=lambda x: abs(len(x["name"]) - len(term)))[:limit]
+
+    def search_helper(self, terms, limit):
+        media_map = {}
+        for term in terms:
+            media_list = self.search_for_media(term, limit=limit)
+            for media_data in media_list:
+                media_map[media_data["id"]] = media_data
+            if limit and len(media_map) >= limit:
+                break
+        return media_map.values()
+
     def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_volumes=None, lang="", **kwargs):
         if lang is None:
             match = re.search(r"\((\w*) Dub\)", name) or re.search(r"\((\w*) Dub\)", season_title)
@@ -200,13 +220,12 @@ class GenericServer(MediaServer):
         """
         raise NotImplementedError
 
-    def search(self, term, limit=20):
+    def search_for_media(self, term, limit=None):
         """
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
-        items = find_media_with_similar_name_in_list(get_alt_names(term), self.get_media_list())
-        return sorted(items, key=lambda x: abs(len(x["name"]) - len(term)))[:limit]
+        return find_media_with_similar_name_in_list(get_alt_names(term), self.get_media_list())
 
     def update_media_data(self, media_data):  # pragma: no cover
         """

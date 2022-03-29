@@ -29,7 +29,7 @@ class Mangaplus(Server):
     def get_media_list(self, limit=None):
         return self.search("", limit=limit)
 
-    def search(self, term, limit=None):
+    def search_for_media(self, term, limit=None):
         term = term.lower()
         results = []
         r = self.session_get(self.api_search_url)
