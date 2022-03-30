@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import time
 
 from functools import cache
 from requests.exceptions import HTTPError, SSLError
@@ -83,13 +84,15 @@ class RequestServer:
     def session_get_mem_cache(self, url, **kwargs):
         return self.session_get(url, **kwargs)
 
-    def session_get_cache_json(self, url, skip_cache=False, **kwargs):
+    def session_get_cache_json(self, url, skip_cache=False, ttl=7, **kwargs):
         if skip_cache:
             return self.session_get(url, **kwargs).json()
         file = self.settings.get_web_cache(url)
         try:
-            with open(file, "r") as f:
-                return json.load(f)
+            if ttl <= 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
+                with open(file, "r") as f:
+                    logging.debug("Returning cached value for %s", url)
+                    return json.load(f)
         except (json.decoder.JSONDecodeError, FileNotFoundError):
             pass
         r = self.session_get(url, **kwargs)
