@@ -1,7 +1,7 @@
 import re
 
-from bs4 import BeautifulSoup
 from PIL import Image
+from bs4 import BeautifulSoup
 
 from ..server import Server
 from ..util.decoder import paste
@@ -184,7 +184,7 @@ class VizManga(GenericVizManga):
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         chapter_url = self.api_chapter_url.format(media_data["id"], str(chapter_data["number"]).replace(".", "-"), chapter_data["id"])
         match = self.page_regex.search(self.session_get(chapter_url).text)
-        num_pages = int(match.group(1)) + 1
+        num_pages = int(match.group(1))
         return self.get_media_chapter_data_helper(chapter_data, num_pages)
 
 
@@ -226,7 +226,7 @@ class VizMangaLibrary(GenericVizManga):
             match = self.volume_number_regex.search(r.text)
             volume_number = match.group(1)
             match = self.page_regex.search(r.text)
-            num_pages = int(match.group(1)) + 1
+            num_pages = int(match.group(1))
             self.update_chapter_data(media_data, id=volume_id, title=str(volume_number), number=volume_number, premium=True, num_pages=num_pages)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
