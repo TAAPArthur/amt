@@ -74,7 +74,7 @@ class BaseUnitTestClass(unittest.TestCase):
             if server.session != self.media_reader.session:
                 server.session.close()
 
-    def reload(self, set_settings=False, save_settings=False, keep_setings=False):
+    def reload(self, set_settings=False, save_settings=False, keep_settings=False):
         if self.media_reader:
             self.close_sessions()
 
@@ -82,7 +82,7 @@ class BaseUnitTestClass(unittest.TestCase):
         if save_settings:
             self.settings.save()
 
-        if not keep_setings:
+        if not keep_settings:
             self.settings = Settings()
             if set_settings:
                 self.setup_settings()
@@ -925,7 +925,7 @@ class GenericServerTest():
 
     def test_settings_always_use_cloudscraper(self):
         self.settings.set_field("always_use_cloudscraper", True)
-        self.reload(keep_setings=True)
+        self.reload(keep_settings=True)
         self.for_each_server(lambda x: self._test_list_and_search(x, test_just_list=True))
 
     def test_workflow(self):
@@ -944,9 +944,13 @@ class GenericServerTest():
     def test_login_fail(self):
         self.media_reader.settings.password_manager_enabled = True
         self.media_reader.settings.password_load_cmd = r"echo -e A\\tB"
+        self.settings.max_retries = 1
+        self.reload(keep_settings=True)
 
         def func(server_id):
             server = self.media_reader.get_server(server_id)
+            if not server.alias:
+                return
             try:
                 with self.subTest(server=server.id, method="relogin"):
                     assert not server.relogin()
