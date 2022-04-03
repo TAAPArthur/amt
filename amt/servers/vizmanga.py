@@ -15,7 +15,7 @@ class GenericVizManga(Server):
     login_url = base_url + "/manga/try_manga_login"
     refresh_login_url = base_url + "/account/refresh_login_links"
     login_url = base_url + "/account/try_login"
-    api_chapter_data_url = base_url + "/manga/get_manga_url?device_id=3&manga_id={}&page={}"
+    api_chapter_data_url = base_url + "/manga/get_manga_url?device_id=3&manga_id={}&pages={}"
     wsj_subscriber_regex = re.compile(r"var is_wsj_subscriber = (\w*);")
 
     def get_token(self):
@@ -44,18 +44,17 @@ class GenericVizManga(Server):
         return not self.needs_authentication()
 
     def get_media_chapter_data_helper(self, chapter_data, num_pages):
-
         pages = []
-        for i in range(num_pages):
-            pages.append(self.create_page_data(url=self.api_chapter_data_url.format(chapter_data["id"], i), ext="jpg"))
+        page_nums = ",".join(map(str, range(num_pages)))
+        r = self.session_get(self.api_chapter_data_url.format(chapter_data["id"], page_nums))
+        data = r.json()["data"]
+        for num in range(num_pages):
+            url = data[str(num)]
+            pages.append(self.create_page_data(url=url, ext="jpg"))
         return pages
 
     def save_chapter_page(self, page_data, path):
-        r = self.session_get(page_data["url"], headers={"Referer": "https://www.viz.com"})
-        real_img_url = r.text.strip()
-
-        r = self.session_get(real_img_url, stream=True)
-
+        r = self.session_get(page_data["url"], stream=True)
         orig = Image.open(r.raw)  # type: Image.Image
         solution = self.solve_image(orig)
         solution.save(path)
