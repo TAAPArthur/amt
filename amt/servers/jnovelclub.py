@@ -114,7 +114,7 @@ class GenericJNovelClubParts(GenericJNovelClub):
                 shutil.rmtree(chapter_path)
         volumes = r.json()["volumes"]
         for i, volume in enumerate(volumes):
-            part_data = self.session_get_cache_json(self.parts_url.format(volume["slug"]), skip_cache=i == len(volumes) - 1)
+            part_data = self.session_get_cache_json(self.parts_url.format(volume["slug"]), skip_cache=i == len(volumes) - 1, ttl=-1)
             parts = part_data["parts"]
 
             volume_number = volume["number"]

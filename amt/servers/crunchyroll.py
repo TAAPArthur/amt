@@ -131,11 +131,6 @@ class Crunchyroll(GenericCrunchyrollServer):
 
         return list(map(lambda media_id: self.create_media_data(id=media_id, name=media_name_ids[media_id], locale="enUS"), media_name_ids))
 
-    def search_for_media(self, term, limit=None):
-        regex = re.compile(r"[^\w\d]")
-        term = regex.sub("", term.lower())
-        return list(filter(lambda x: term in regex.sub("", x["name"].lower()), self.get_media_list()))[:limit]
-
     def update_media_data(self, media_data: dict):
         json_data = self.session_get_json(self.api_chapters_url.format(media_data["id"]))
 

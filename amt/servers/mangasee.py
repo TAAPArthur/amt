@@ -36,8 +36,7 @@ class Mangasee(Server):
                 return chapter_data["id"]
 
     def get_media_list(self, limit=None):
-        r = self.session_get(self.media_list_url)
-        data = r.json()
+        data = self.session_get_cache_json(self.media_list_url)
         return [self.create_media_data(media_data["i"], media_data["s"]) for media_data in data[:limit]]
 
     def update_media_data(self, media_data):

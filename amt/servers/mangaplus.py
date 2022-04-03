@@ -10,7 +10,7 @@ class Mangaplus(Server):
 
     base_url = "https://mediaplus.shueisha.co.jp"
     api_url = "https://jumpg-webapi.tokyo-cdn.com/api"
-    api_search_url = api_url + "/title_list/all?format=json"
+    api_list_url = api_url + "/title_list/all?format=json"
     api_media_url = api_url + "/title_detail?title_id={0}&format=json"
     api_chapter_url = api_url + "/manga_viewer?chapter_id={0}&split=yes&img_quality=high&format=json"
     media_url = base_url + "/titles/{0}?format=json"
@@ -27,16 +27,11 @@ class Mangaplus(Server):
         return self.stream_url_regex.search(url).group(1)
 
     def get_media_list(self, limit=None):
-        return self.search("", limit=limit)
-
-    def search_for_media(self, term, limit=None):
-        term = term.lower()
+        data = self.session_get_cache_json(self.api_list_url)
         results = []
-        r = self.session_get(self.api_search_url)
-        for series in r.json()["success"]["allTitlesView"]["titles"]:
-            if term in series["name"].lower():
-                results.append(self.create_media_data(id=series["titleId"], name=series["name"], lang=series.get("language", "English").lower()))
-        return results[:limit]
+        for series in data["success"]["allTitlesView"]["titles"][:limit]:
+            results.append(self.create_media_data(id=series["titleId"], name=series["name"], lang=series.get("language", "English").lower()))
+        return results
 
     def update_media_data(self, media_data):
         r = self.session_get(self.api_media_url.format(media_data["id"]))
