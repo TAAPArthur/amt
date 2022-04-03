@@ -31,6 +31,7 @@ class RequestServer:
     need_cloud_scraper = False
     maybe_need_cloud_scraper = False
     _normal_session = None  # the normal session in case a wrapper is used
+    domain = None
 
     def __init__(self, session, settings=None):
         self.settings = settings
@@ -62,6 +63,8 @@ class RequestServer:
         logging.debug("Request args: %s ", kwargs)
         if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
             kwargs["verify"] = False
+        if "headers" not in kwargs:
+            kwargs["headers"] = {"Referer": f"https://{self.domain}"}
         session = self.session
         if not kwargs.get("verify", True):
             session = self._normal_session
@@ -85,9 +88,10 @@ class RequestServer:
             raise
         return r
 
-    def session_get_cookie(self, name, domain=None):
+    def session_get_cookie(self, name):
+        assert self.domain
         for cookie in self.session.cookies:
-            if cookie.name == name and (domain in cookie.domain or cookie.domain in domain):
+            if cookie.name == name and (self.domain in cookie.domain or cookie.domain in self.domain):
                 return cookie.value
         return None
 

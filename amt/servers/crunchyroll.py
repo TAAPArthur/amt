@@ -10,6 +10,7 @@ from requests.exceptions import HTTPError
 class GenericCrunchyrollServer(Server):
     alias = "crunchyroll"
 
+    domain = "crunchyroll.com"
     api_auth_url = "https://api-manga.crunchyroll.com/cr_authenticate?session_id={}&version=0&format=json"
     base_url = "https://api.crunchyroll.com"
     start_session_url = base_url + "/start_session.0.json"
@@ -19,12 +20,12 @@ class GenericCrunchyrollServer(Server):
     _access_type = "com.crunchyroll.crunchyroid"
 
     def get_session_id(self, force=False):
-        session_id = self.session_get_cookie("session_id", domain=self.base_url)
+        session_id = self.session_get_cookie("session_id")
         if not force and session_id:
             return session_id
         with self._lock:
-            if session_id != self.session_get_cookie("session_id", domain=self.base_url):
-                return self.session_get_cookie("session_id", domain=self.base_url)
+            if session_id != self.session_get_cookie("session_id"):
+                return self.session_get_cookie("session_id")
             data = self.session_post(
                 self.start_session_url,
                 data={
@@ -34,7 +35,7 @@ class GenericCrunchyrollServer(Server):
                 }
             ).json()["data"]
 
-            assert self.session_get_cookie("session_id", domain=self.base_url) == data["session_id"]
+            assert self.session_get_cookie("session_id") == data["session_id"]
             return data["session_id"]
 
     def session_get_json(self, url):

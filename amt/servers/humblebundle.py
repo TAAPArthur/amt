@@ -80,7 +80,7 @@ class GenericHumbleBundle(Server):
         return self.stream_url_regex.search(url).group(1)
 
     def needs_authentication(self):
-        cookie = self.session_get_cookie("hbflash", domain=self.domain)
+        cookie = self.session_get_cookie("hbflash")
         return not cookie or "signed" not in cookie
 
     def login(self, username, password):

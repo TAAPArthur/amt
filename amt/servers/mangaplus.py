@@ -8,7 +8,8 @@ RE_ENCRYPTION_KEY = re.compile(".{1,2}")
 class Mangaplus(Server):
     id = "mangaplus"
 
-    base_url = "https://mediaplus.shueisha.co.jp"
+    domain = "mediaplus.shueisha.co.jp"
+    base_url = f"https://{domain}"
     api_url = "https://jumpg-webapi.tokyo-cdn.com/api"
     api_list_url = api_url + "/title_list/all?format=json"
     api_media_url = api_url + "/title_detail?title_id={0}&format=json"

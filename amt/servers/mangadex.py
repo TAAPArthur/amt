@@ -8,6 +8,7 @@ class Mangadex(Server):
     official = False
 
     api_base_url = "https://api.mangadex.org"
+    domain = "mangadex.org"
 
     list_url = api_base_url + "/manga?limit={}"
     search_url = api_base_url + "/manga?title={}&limit={}"

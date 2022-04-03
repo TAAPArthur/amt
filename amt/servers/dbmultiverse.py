@@ -8,6 +8,7 @@ from ..server import Server
 class Dbmultiverse(Server):
     id = "dbmultiverse"
 
+    domain = "dragonball-multiverse.com"
     base_url = "https://www.dragonball-multiverse.com"
     media_url = base_url + "/{}/chapters.html?comic=page"
     chapter_url = base_url + "/{}/chapters.html?chapter={}"

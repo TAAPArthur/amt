@@ -16,6 +16,7 @@ class GenericJNovelClub(Server):
     progress_volumes = True
 
     alias = "j_novel_club"
+    domain = "j-novel.club"
     login_url = "https://api.j-novel.club/api/users/login"
     api_domain = "https://labs.j-novel.club"
     api_base_url = api_domain + "/app/v1"

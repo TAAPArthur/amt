@@ -10,6 +10,7 @@ from ..util.media_type import MediaType
 class WLN_Updates(Server):
     id = "wlnupdates"
     media_type = MediaType.NOVEL
+    domain = "wlnupdates.com"
     api_url = "https://www.wlnupdates.com/api"
     stream_url_regex = re.compile(r"wlnupdates.com/series-id/(\d*)/")
     number_in_chapter_url_regex = re.compile(r"(\d+[-\.]?\d*)")

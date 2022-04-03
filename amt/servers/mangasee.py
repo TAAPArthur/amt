@@ -9,7 +9,8 @@ class Mangasee(Server):
     official = False
     need_cloud_scraper = True
 
-    base_url = "https://mangasee123.com"
+    domain = "mangasee123.com"
+    base_url = f"https://{domain}"
     media_list_url = base_url + "/_search.php"
     manga_url = base_url + "/manga/{0}"
     chapter_url = base_url + "/read-online/{0}-chapter-{1}-page-1.html"
