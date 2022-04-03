@@ -1866,9 +1866,9 @@ class TrackerTest(RealBaseUnitTestClass):
         for tracker_id in self.media_reader.get_tracker_ids():
             tracker = self.media_reader.get_tracker_by_id(tracker_id)
             self.assertTrue(tracker.get_auth_url())
-            for data in (tracker.get_tracker_list(id=1), tracker.get_full_list_data(id=1)):
-                assert data
-                assert isinstance(list(data)[0], dict)
+            data = list(tracker.get_full_list_data(id=1))
+            assert data
+            assert isinstance(data[0], dict)
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):
