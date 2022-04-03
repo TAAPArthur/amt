@@ -170,7 +170,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     api_base_url = "http://api.crunchyroll.com"
     list_all_series = "https://www.crunchyroll.com/ajax/?req=RpcApiSearch_GetSearchCandidates"
-    list_media = api_base_url + "/list_media.0.json?limit=2000&media_type=anime&session_id={}&series_id={}"
+    list_season_url = api_base_url + "/list_media.0.json?limit=200&media_type=anime&session_id={}&collection_id={}"
     stream_url = api_base_url + "/info.0.json?fields=media.stream_data&locale=enUS&session_id={}&media_id={}"
     episode_url = api_base_url + "/info.0.json?session_id={}&media_id={}"
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
@@ -182,7 +182,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         season_data = self.session_get_json(self.series_url.format(self.get_session_id(), series_id))["data"]
         for season in season_data[:limit]:
             if not season_id or season["collection_id"] == season_id:
-                yield self.create_media_data(id=series_id, name=season["name"], season_id=season["collection_id"], dir_name=item_alt_id, lang=None)
+                yield self.create_media_data(id=series_id, alt_id=item_alt_id, name=season["name"], season_id=season["collection_id"], lang=None)
 
     def get_media_list(self, limit=4):
         return self.search_helper(None, limit=limit)
@@ -202,7 +202,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         return self.run_in_parallel(data[:limit], func=get_all_seasons)
 
     def update_media_data(self, media_data: dict):
-        data = self.session_get_json(self.list_media.format(self.get_session_id(), media_data["id"]))["data"]
+        data = self.session_get_json(self.list_season_url.format(self.get_session_id(), media_data["season_id"]))["data"]
         for chapter in data:
             if chapter["collection_id"] == media_data["season_id"] and not chapter["clip"]:
                 special = False
@@ -216,13 +216,10 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
                 self.update_chapter_data(media_data, id=chapter["media_id"], number=number, title=chapter["name"], premium=not chapter["free_available"], special=special)
 
     def get_media_data_from_url(self, url):
-
         match = self.stream_url_regex.search(url)
-        media_name_hint = match.group(1)
-        # media_name_prefix_hint = media_name_hint.split("-")[0]
         chapter_id = match.group(2)
         data = self.session_get_json(self.episode_url.format(self.get_session_id(), chapter_id))["data"]
-        media_data = next(self._create_media_data(data["series_id"], media_name_hint, season_id=data["collection_id"]))
+        media_data = next(self._create_media_data(data["series_id"], data["series_etp_guid"], season_id=data["collection_id"]))
         return media_data
 
     def get_chapter_id_for_url(self, url):
