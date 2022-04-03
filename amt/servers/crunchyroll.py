@@ -14,7 +14,6 @@ class GenericCrunchyrollServer(Server):
     domain = "crunchyroll.com"
     api_auth_url = "https://api-manga.crunchyroll.com/cr_authenticate?session_id={}&version=0&format=json"
     base_url = "https://api.crunchyroll.com"
-    start_session_url = base_url + "/start_session.0.json"
     login_url = base_url + "/login.0.json"
 
     _access_token = "WveH9VkPLrXvuNm"
@@ -22,28 +21,17 @@ class GenericCrunchyrollServer(Server):
 
     def get_session_id(self, force=False):
         session_id = self.session_get_cookie("session_id")
-        if not force and session_id:
-            return session_id
-        with self._lock:
-            if session_id != self.session_get_cookie("session_id"):
-                return self.session_get_cookie("session_id")
-            data = self.session_post(
-                self.start_session_url,
-                data={
-                    "device_id": "1234567",
-                    "device_type": self._access_type,
-                    "access_token": self._access_token,
-                }
-            ).json()["data"]
-
-            assert self.session_get_cookie("session_id") == data["session_id"]
-            return data["session_id"]
+        if force or session_id is None:
+            self.session_get(f"https://{self.domain}")
+            session_id = self.session_get_cookie("session_id")
+        return session_id
 
     def session_get_json(self, url):
         data = self.session_get(url).json()
         if data is not None and data.get("error", False) and data["code"] == "bad_session":
             expired_session_id = self.get_session_id()
             new_session_id = self.get_session_id(force=True)
+            assert expired_session_id != new_session_id
             new_url = url.replace(expired_session_id, new_session_id)
             data = self.session_get(new_url).json()
         return data
