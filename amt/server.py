@@ -99,7 +99,7 @@ class RequestServer:
     def session_get_mem_cache(self, url, **kwargs):
         return self.session_get(url, **kwargs)
 
-    def session_get_cache_json(self, url, skip_cache=False, ttl=7, **kwargs):
+    def session_get_cache_json(self, url, skip_cache=False, ttl=7, to_json_func=None, **kwargs):
         if skip_cache:
             return self.session_get(url, **kwargs).json()
         file = self.settings.get_web_cache(url)
@@ -111,7 +111,7 @@ class RequestServer:
         except (json.decoder.JSONDecodeError, FileNotFoundError):
             pass
         r = self.session_get(url, **kwargs)
-        data = r.json()
+        data = to_json_func(r) if to_json_func else r.json()
 
         for i in range(2):
             try:

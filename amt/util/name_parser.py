@@ -34,5 +34,5 @@ def get_alt_names(media_name):
 def find_media_with_similar_name_in_list(media_names, media_list):
     media_names = list(map(str.lower, media_names))
     for media_data in media_list:
-        if any(map(lambda name: name in media_data["name"].lower() or name in media_data["season_title"].lower() or media_data["name"].lower() in name, media_names)):
+        if any(map(lambda name: name in media_data["name"].lower() or ("season_title" in media_data and name in media_data["season_title"].lower()) or media_data["name"].lower() in name, media_names)):
             yield media_data

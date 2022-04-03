@@ -78,6 +78,8 @@ class BaseUnitTestClass(unittest.TestCase):
         if self.media_reader:
             self.close_sessions()
 
+        RequestServer.cloudscraper = None
+
         cls = MediaReaderCLI if self.cli else MediaReader
         if save_settings:
             self.settings.save()
@@ -139,7 +141,6 @@ class BaseUnitTestClass(unittest.TestCase):
         for k in set(os.environ.keys()):
             del os.environ[k]
 
-        RequestServer.cloudscraper = None
         os.environ["AMT_HOME"] = TEST_HOME
         self.stream_handler = logging.StreamHandler(sys.stdout)
         logger = logging.getLogger()
