@@ -29,40 +29,51 @@ class RequestServer:
 
     # If true a cloudscraper object should be given instead of a normal session
     need_cloud_scraper = False
+    maybe_need_cloud_scraper = False
     _normal_session = None  # the normal session in case a wrapper is used
 
     def __init__(self, session, settings=None):
         self.settings = settings
+        self._normal_session = session
         if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:
-            import cloudscraper
-            if getattr(RequestServer, "cloudscraper", None) is None:
-                RequestServer.cloudscraper = cloudscraper.create_scraper(browser={
-                    'browser': 'firefox',
-                    'platform': 'linux',
-                    'desktop': True
-                })
-                # TODO remove on new cloudscraper release
-                RequestServer.cloudscraper.cookies = session.cookies
-            self.session = RequestServer.cloudscraper
-            self._normal_session = session
+            self.session = self.get_cloudscraper_session(session)
         else:
             self.session = session
         self._lock = Lock()
+
+    def get_cloudscraper_session(self, session):
+        import cloudscraper
+        if getattr(RequestServer, "cloudscraper", None) is None:
+            RequestServer.cloudscraper = cloudscraper.create_scraper(browser={
+                'browser': 'firefox',
+                'platform': 'linux',
+                'desktop': True
+            })
+            # TODO remove on new cloudscraper release
+            RequestServer.cloudscraper.cookies = session.cookies
+        return RequestServer.cloudscraper
 
     @classmethod
     def get_instances(clazz, session, settings=None):
         return [clazz(session, settings)]
 
-    def _request(self, get, url, **kwargs):
+    def _request(self, get, url, force_cloud_scraper=False, **kwargs):
         logging.info("Making %s request to %s ", "GET" if get else "POST", url)
         logging.debug("Request args: %s ", kwargs)
         if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
             kwargs["verify"] = False
-        session = self.session if kwargs.get("verify", True) or not self._normal_session else self._normal_session
+        session = self.session
+        if not kwargs.get("verify", True):
+            session = self._normal_session
+        elif force_cloud_scraper:
+            session = self.get_cloudscraper_session(self.session)
         try:
             r = session.get(url, **kwargs) if get else session.post(url, **kwargs)
             if r.status_code != 200:
-                logging.warning("HTTP Error: %d", r.status_code)
+                logging.warning("HTTP Error: %d; Session class %s", r.status_code, type(session))
+            if self.maybe_need_cloud_scraper and not force_cloud_scraper and r.status_code == 503:
+                if session == self._normal_session:
+                    return self._request(get, url, force_cloud_scraper=True, **kwargs)
             r.raise_for_status()
         except SSLError:
             if self.settings.get_fallback_to_insecure_connection(self.id):
