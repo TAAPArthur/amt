@@ -174,6 +174,7 @@ class JNovelClubParts(GenericJNovelClubParts):
 
 class JNovelClubMangaParts(GenericJNovelClubParts):
     id = "j_novel_club_manga_parts"
+    maybe_need_cloud_scraper = True
     media_type = MediaType.MANGA
     stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+-manga-[\w\d\-]+)")
     pages_url = JNovelClub.api_domain + "/embed/{}"
@@ -184,17 +185,12 @@ class JNovelClubMangaParts(GenericJNovelClubParts):
     encrypted_url = "https://m11.j-novel.club/nebel/wp/{}"
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
-        for i in range(self.settings.max_retries):
-            self.session_get("https://j-novel.club/read/{}".format(chapter_data["id"]))
-            r = self.session_get(self.pages_url.format(chapter_data["alt_id"]))
-            uuid = self.uuid_regex.search(r.text).group(1)
-            token = self.token_regex.search(r.text).group(1)
-            url = self.encrypted_url.format(uuid)
-            try:
-                r = self.session_post(url, data=token)
-                break
-            except:
-                time.sleep(2)
+        self.session_get("https://j-novel.club/read/{}".format(chapter_data["id"]))
+        r = self.session_get(self.pages_url.format(chapter_data["alt_id"]))
+        uuid = self.uuid_regex.search(r.text).group(1)
+        token = self.token_regex.search(r.text).group(1)
+        url = self.encrypted_url.format(uuid)
+        r = self.session_post(url, data=token)
         data = r.json()["readingOrder"]
 
         return [self.create_page_data(url=link["href"], encryption_key=token) for link in data]
