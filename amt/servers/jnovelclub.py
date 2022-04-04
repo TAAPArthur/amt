@@ -176,6 +176,7 @@ class JNovelClubParts(GenericJNovelClubParts):
 class JNovelClubMangaParts(GenericJNovelClubParts):
     id = "j_novel_club_manga_parts"
     maybe_need_cloud_scraper = True
+    slow_download = True
     media_type = MediaType.MANGA
     stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+-manga-[\w\d\-]+)")
     pages_url = JNovelClub.api_domain + "/embed/{}"
