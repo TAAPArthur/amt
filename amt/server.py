@@ -71,10 +71,13 @@ class RequestServer:
         elif force_cloud_scraper:
             session = self.get_cloudscraper_session(self.session)
         try:
-            r = session.get(url, **kwargs) if get else session.post(url, **kwargs)
-            if r.status_code != 200:
-                logging.warning("HTTP Error: %d; Session class %s", r.status_code, type(session))
-            if self.maybe_need_cloud_scraper and not force_cloud_scraper and r.status_code == 503:
+            for i in range(self.settings.get_max_retries(self.id)):
+                r = session.get(url, **kwargs) if get else session.post(url, **kwargs)
+                if r.status_code != 200:
+                    logging.warning("HTTP Error: %d; Session class %s; headers %s", r.status_code, type(session), kwargs.get("headers", {}))
+                if not r.status_code in self.settings.status_to_retry:
+                    break
+            if self.maybe_need_cloud_scraper and not force_cloud_scraper and r.status_code in (403, 503):
                 if session == self._normal_session:
                     return self._request(get, url, force_cloud_scraper=True, **kwargs)
             r.raise_for_status()

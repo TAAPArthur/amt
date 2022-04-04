@@ -11,6 +11,7 @@ import time
 import unittest
 
 from inspect import findsource
+from requests.exceptions import ConnectionError
 from subprocess import CalledProcessError
 from unittest.mock import patch
 
@@ -121,9 +122,6 @@ class BaseUnitTestClass(unittest.TestCase):
             self.settings.threads = 0
         else:
             self.settings.threads = len(SERVERS)
-        if not self.real:
-            self.settings.backoff_factor = .01
-            self.settings.max_retries = 10
         self.settings.fallback_to_insecure_connection = True
         self.settings.always_use_cloudscraper = False
 
@@ -1032,7 +1030,12 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
         os.makedirs(TEST_TEMP)
         os.chdir(TEST_TEMP)
         cls.web_server = subprocess.Popen(["python", "-m", "http.server", str(cls.port)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(.1)
+        while True:
+            try:
+                requests.get(f"http://localhost:{cls.port}")
+                break
+            except ConnectionError:
+                time.sleep(.01)
 
     @classmethod
     def tearDownClass(cls):
