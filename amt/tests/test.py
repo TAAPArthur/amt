@@ -1320,11 +1320,30 @@ class ArgsTest(CliUnitTestClass):
         media_data = media_list[0]
         name = media_data.global_id
         parse_args(media_reader=self.media_reader, args=["mark-read", name])
-        assert all(map(lambda x: x["read"], media_data["chapters"].values()))
+        self.verify_all_chapters_read(name=media_data)
+
         parse_args(media_reader=self.media_reader, args=["mark-read", "--force", name, "-1"])
         assert not all(map(lambda x: x["read"], media_data["chapters"].values()))
         parse_args(media_reader=self.media_reader, args=["mark-unread", name])
         assert not any(map(lambda x: x["read"], media_data["chapters"].values()))
+
+    def test_mark_read_progress(self):
+        media_list = self.add_test_media(server=self.test_server)
+        media_data = media_list[0]
+        parse_args(media_reader=self.media_reader, args=["mark-read", self.test_server.id])
+        parse_args(media_reader=self.media_reader, args=["sync"])
+        self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
+        self.verify_all_chapters_read()
+
+        self.test_server.hide = True
+        parse_args(media_reader=self.media_reader, args=["update"])
+        self.assertNotEqual(media_data["progress"], media_data.get_last_read_chapter_number())
+        self.test_server.hide = False
+        parse_args(media_reader=self.media_reader, args=["update"])
+
+        parse_args(media_reader=self.media_reader, args=["mark-read", "--progress"])
+        self.verify_all_chapters_read()
+        self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
 
     def test_sync_progress(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "load"])

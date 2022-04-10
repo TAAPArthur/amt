@@ -229,6 +229,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     mark_parsers = add_parser_helper(sub_parsers, "mark-read", help="Mark all known chapters as read")
     mark_parsers.add_argument("--abs", action="store_const", const=True, default=False, help="Treat N as an abs number")
+    mark_parsers.add_argument("--progress", action="store_const", const=True, default=False, help="Use the current saved progress as N")
     mark_parsers.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Allow chapters to be marked as unread")
     mark_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     mark_parsers.add_argument("name", default=None, choices=state.get_all_names(), nargs="?")

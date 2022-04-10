@@ -347,9 +347,11 @@ class MediaReader:
             elif force:
                 chapter["read"] = False
 
-    def mark_read(self, name=None, media_type=None, N=0, force=False, abs=False):
+    def mark_read(self, name=None, media_type=None, progress=False, N=0, force=False, abs=False):
         for media_data in self.get_media(media_type=media_type, name=name):
             last_read = media_data.get_last_chapter_number() + N if not abs else N
+            if progress:
+                last_read = media_data["progress"]
             if not force:
                 last_read = max(media_data.get_last_read_chapter_number(), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
@@ -467,15 +469,16 @@ class MediaReader:
         media_to_sync = []
         for media_data in self.get_media(name=name, media_type=media_type):
             tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_tracker().id)
-            if tracker_info and (force or media_data["progress"] < int(media_data.get_last_read_chapter_number())):
-                data.append((tracker_info[0], media_data.get_last_read_chapter_number(), media_data["progress_volumes"]))
+            if force or media_data["progress"] < int(media_data.get_last_read_chapter_number()):
                 media_to_sync.append(media_data)
-                logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], media_data.get_last_read_chapter_number())
+                if tracker_info:
+                    data.append((tracker_info[0], media_data.get_last_read_chapter_number(), media_data["progress_volumes"]))
+                    logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], media_data.get_last_read_chapter_number())
 
         if data and not dry_run:
             self.get_tracker().update(data)
-            for media_data in media_to_sync:
-                media_data["progress"] = media_data.get_last_read_chapter_number()
+        for media_data in media_to_sync:
+            media_data["progress"] = media_data.get_last_read_chapter_number()
         return bool(data)
 
     def stats_update(self, username=None, user_id=None):
