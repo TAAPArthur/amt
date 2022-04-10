@@ -2,7 +2,7 @@ import json
 import logging
 import re
 
-from ..server import Server, RequestServer
+from ..server import Server
 from ..util.media_type import MediaType
 from ..util.name_parser import find_media_with_similar_name_in_list
 from requests.exceptions import HTTPError
@@ -79,7 +79,7 @@ class GenericCrunchyrollServer(Server):
 
 class Crunchyroll(GenericCrunchyrollServer):
     id = "crunchyroll"
-    need_cloud_scraper = True
+    maybe_need_cloud_scraper = True
 
     base_url = "https://www.crunchyroll.com"
     manga_url = base_url + "/comics/manga/{0}/volumes"
@@ -117,18 +117,17 @@ class Crunchyroll(GenericCrunchyrollServer):
 
     def get_media_list(self, limit=None):
         media_name_ids = {}
-        if RequestServer.cloudscraper:
-            try:
-                from bs4 import BeautifulSoup
-                soup = self.soupify(BeautifulSoup, self.session_get(self.alpha_list_url))
-                for group_item in soup.findAll("li", {"class": "group-item"}):
-                    media_name_ids[group_item["group_id"]] = group_item.find("a")["title"]
-            except (HTTPError, ImportError):
-                pass
-            r = self.session_get(self.popular_list_url)
-            match = self.popular_media_regex.findall(r.text)
-            for media_id, data in match:
-                media_name_ids[media_id] = json.loads(data)["name"]
+        try:
+            from bs4 import BeautifulSoup
+            soup = self.soupify(BeautifulSoup, self.session_get(self.alpha_list_url))
+            for group_item in soup.findAll("li", {"class": "group-item"}):
+                media_name_ids[group_item["group_id"]] = group_item.find("a")["title"]
+        except (HTTPError, ImportError):
+            pass
+        r = self.session_get(self.popular_list_url)
+        match = self.popular_media_regex.findall(r.text)
+        for media_id, data in match:
+            media_name_ids[media_id] = json.loads(data)["name"]
 
         return list(map(lambda media_id: self.create_media_data(id=media_id, name=media_name_ids[media_id], locale="enUS"), media_name_ids))
 
