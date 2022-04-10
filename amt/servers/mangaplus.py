@@ -40,6 +40,7 @@ class Mangaplus(Server):
         for chapter in series_info["firstChapterList"] + series_info.get("lastChapterList", []):
             number = chapter["name"][1:] if chapter["name"][0] == "#" else chapter["name"]
             self.update_chapter_data(media_data, id=chapter["chapterId"], title=chapter["subTitle"], number=number)
+        media_data["nextTimeStamp"] = series_info.get("nextTimeStamp", 0)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         r = self.session_get(self.api_chapter_url.format(chapter_data["id"]))

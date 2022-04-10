@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import time
 
 from . import stats
 from .stats import Details, SortIndex, StatGroup
@@ -228,14 +229,16 @@ class State:
         return next(self.get_media(media_type=media_type, name=name))
 
     def list_media(self, name=None, media_type=None, out_of_date_only=False, tag=None, csv=False, tracked=None):
+        now = time.time()
         for media_data in self.get_media(name=name, media_type=media_type, tag=tag, tracked=tracked):
             last_chapter_num = media_data.get_last_chapter_number()
             last_read = media_data.get_last_read_chapter_number()
             if not out_of_date_only or last_chapter_num != last_read:
+                next_chapter_date_str = media_data.get_next_chapter_available_str(now)
                 if csv:
-                    print("\t".join([media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read), str(last_chapter_num), ",".join(media_data["tags"])]))
+                    print("\t".join([media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read), str(last_chapter_num), next_chapter_date_str, ",".join(media_data["tags"])]))
                 else:
-                    print("{}\t{} {}\t{}/{} {}".format(media_data.friendly_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, ",".join(media_data["tags"])))
+                    print("{}\t{} {}\t{}/{} {} {}".format(media_data.friendly_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, next_chapter_date_str, ",".join(media_data["tags"])))
 
     def list_chapters(self, name, show_ids=False):
         media_data = self.get_single_media(name=name)
@@ -289,6 +292,17 @@ class MediaData(dict):
     @property
     def friendly_id(self):
         return self.global_id if len(self.global_id) < 32 or not self.global_id_alt else self.global_id_alt
+
+    def get_next_chapter_available_str(self, time):
+        if not self.get("nextTimeStamp", 0):
+            return ""
+        delta = max(self["nextTimeStamp"] - time, 0)
+        if delta < 3600:
+            return f"{delta/60:.1f} minutes"
+        elif delta < 3600 * 24 * 1.5:
+            return f"{delta/3600:.1f} hours"
+        else:
+            return f"{delta/3600/24:.1f} days"
 
     def copy_fields_to(self, dest):
         for key in ("offset", "progress", "progress_volumes", "tags", "trackers"):

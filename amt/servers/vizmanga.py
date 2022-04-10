@@ -2,6 +2,7 @@ import re
 
 from PIL import Image
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 
 from ..server import Server
 from ..util.decoder import paste
@@ -179,6 +180,22 @@ class VizManga(GenericVizManga):
             title = chapter_number
 
             self.update_chapter_data(media_data, id=chapter_id, number=chapter_number, premium=premium, title=title, date=chapter_date)
+
+        text_str = soup.find("div", {"class": "section_future_chapter"}).getText().strip()
+        regexes_func = [
+            (re.compile("New chapter coming on (.*)"), lambda x: datetime.strptime(x, "%b %d, %Y").timestamp()),
+            (re.compile("New chapter coming in (\d+) day"), lambda x: (datetime.today() + timedelta(days=int(x))).timestamp()),
+            (re.compile("New chapter coming in (\d+) hour"), lambda x: (datetime.now() + timedelta(hours=int(x))).timestamp()),
+            (re.compile("New chapter coming in (\d+) min"), lambda x: (datetime.now() + timedelta(minutes=int(x))).timestamp()),
+        ]
+        timestamp = 0
+        for regex, func in regexes_func:
+            match = regex.search(text_str)
+            if match:
+                date_str = match.group(1)
+                timestamp = func(date_str)
+                break
+        media_data["nextTimeStamp"] = timestamp
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         chapter_url = self.api_chapter_url.format(media_data["id"], str(chapter_data["number"]).replace(".", "-"), chapter_data["id"])

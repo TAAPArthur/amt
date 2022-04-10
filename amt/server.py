@@ -108,10 +108,10 @@ class RequestServer:
     def session_get_mem_cache(self, url, **kwargs):
         return self.session_get(url, **kwargs)
 
-    def session_get_cache_json(self, url, skip_cache=False, ttl=7, to_json_func=None, **kwargs):
+    def session_get_cache_json(self, url, key=None, skip_cache=False, ttl=7, to_json_func=None, **kwargs):
         if skip_cache:
             return self.session_get(url, **kwargs).json()
-        file = self.settings.get_web_cache(url)
+        file = self.settings.get_web_cache(key or url)
         try:
             if ttl <= 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
                 with open(file, "r") as f:
@@ -165,7 +165,7 @@ class MediaServer(RequestServer):
                 match = re.search(r"\(Dub\)", name) or re.search(r"\(Dub\)", season_title)
                 lang = "dub" if match else ""
 
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_volumes=progress_volumes if progress_volumes is not None else self.progress_volumes, tags=[], lang=lang, **kwargs))
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_volumes=progress_volumes if progress_volumes is not None else self.progress_volumes, tags=[], lang=lang, nextTimeStamp=0, **kwargs))
 
     def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False, **kwargs):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():

@@ -4,6 +4,7 @@ import re
 import shutil
 import time
 
+from datetime import datetime
 from requests.exceptions import HTTPError
 
 from ..job import RetryException
@@ -105,6 +106,19 @@ class GenericJNovelClubParts(GenericJNovelClub):
     parts_url = JNovelClub.api_base_url + "/volumes/{}/parts?format=json"
     time_to_live_sec = 3600 * 24 * 7
 
+    events_url = JNovelClub.api_base_url + "/events?sort=launch&start_date={}&format=json"
+
+    def update_timestamp(self, media_data):
+        now = datetime.now()
+        iso_str = now.isoformat() + "Z"
+        events = self.session_get_cache_json(self.events_url.format(iso_str), key=self.events_url)["events"]
+        media_data["nextTimeStamp"] = 0
+        for event in filter(lambda x: x["serie"]["slug"] == media_data["id"], events):
+            avaliable_date = datetime.strptime(event["launch"], "%Y-%m-%dT%H:%M:%S%z").timestamp()
+            if avaliable_date > now.timestamp():
+                media_data["nextTimeStamp"] = avaliable_date
+                break
+
     def update_media_data(self, media_data: dict):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
 
@@ -123,6 +137,7 @@ class GenericJNovelClubParts(GenericJNovelClub):
             for part in parts:
                 number = round(volume_number + (part["number"] - parts[0]["number"] + 1) / total - 1, 2)
                 self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=number, title=part["title"], premium=not part["preview"])
+        self.update_timestamp(media_data)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         return [self.create_page_data(self.pages_url.format(chapter_data["alt_id"]))]

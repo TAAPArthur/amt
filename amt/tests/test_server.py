@@ -1,6 +1,7 @@
 import os
 import re
 
+from datetime import datetime
 from requests.exceptions import HTTPError
 
 from ..server import Server, TorrentHelper
@@ -24,6 +25,7 @@ class TestServer(Server):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.stream_url_regex = re.compile(f"/{self.id}/([0-9]*)/([0-9]*)")
+        self.timestamp = datetime.now().timestamp()
 
     @classmethod
     def get_streamable_url(clzz, media_id=1, chapter_id=1):
@@ -73,6 +75,8 @@ class TestServer(Server):
         if self.hide:
             return
         media_id = media_data["id"]
+        deltas = [0, 30, 60 * 2, 3600 * 2, 3600 * 24 * 7]
+        media_data["nextTimeStamp"] = self.timestamp + deltas[media_id % len(deltas)]
         assert media_id in map(lambda x: x["id"], self.get_media_list())
         if media_id == 1:
             self.update_chapter_data(media_data, id=1, title="Chapter1", number=1, date="2020-07-08", premium=self.has_login()),
