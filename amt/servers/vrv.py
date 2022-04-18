@@ -172,7 +172,16 @@ class Vrv(Server):
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
         r = self.session_get_mem_cache(r.json()["playback"])
         streams = r.json()["streams"]
-        return [streams[name][""]["url"] for name in streams if "drm" not in name and "url" in streams[name][""] and "manifest.mpd" not in streams[name][""]["url"]]
+        results = []
+        for soft_sub in (True, False):
+            for name in streams:
+                if "drm" in name:
+                    continue
+                for key in streams[name]:
+                    valid_lang = key == "" if soft_sub else self.settings.is_allowed_text_lang(key, self.id)
+                    if valid_lang and "url" in streams[name][key] and "manifest.mpd" not in streams[name][key]["url"]:
+                        results.append(streams[name][key]["url"])
+        return results
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
