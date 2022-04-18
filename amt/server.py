@@ -157,7 +157,7 @@ class MediaServer(RequestServer):
         return media_map.values()
 
     def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_volumes=None, lang="", **kwargs):
-        if lang is None:
+        if not lang:
             match = re.search(r"\((\w*) Dub\)", name) or re.search(r"\((\w*) Dub\)", season_title)
             if match:
                 lang = match.group(1) if match else ""
@@ -177,10 +177,7 @@ class MediaServer(RequestServer):
                 number = float(number.replace("-", "."))
             except ValueError:
                 special = True
-                try:
-                    number = float(re.search("\d+", number).group(0))
-                except:
-                    number = 0
+                number = float(re.search("\d+", number).group(0))
         if media_data["offset"]:
             number = round(number - media_data["offset"], 4)
         if number % 1 == 0:
