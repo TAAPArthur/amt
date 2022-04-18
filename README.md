@@ -89,7 +89,6 @@ assimilate all unread chapters and then read them
 
 ### Light novels
 * [J Novel club](https://j-novel.club/)
-* [WLNUpdates](https://www.wlnupdates.com/) (unofficial)
 
 ### Trackers
 * [Anilist](https://anilist.co/home)
@@ -104,7 +103,7 @@ assimilate all unread chapters and then read them
 Optional dependency breakdown
 * PIL:                 required to download manga for Viz and JNovelClub
 * beautifulsoup4:      required to download images for JNovelClub (only for light novel parts)
-* beautifulsoup4:      required to enable DB multiverse, Funimation, WLNUpdates, Nyaa and RemoteServer
+* beautifulsoup4:      required to enable DB multiverse, Funimation, Nyaa and RemoteServer
 * cloudscraper:        required to enable MangaSee and HumbleBundle
 * cloudscraper:        potentially required to access all features of Crunchyroll (manga and anime)
 * m3u8 & pycryptodome: required just to stream media for Crunchyroll (enables more formats for Funimation and VRV)
