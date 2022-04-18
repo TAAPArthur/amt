@@ -162,7 +162,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
     media_type = MediaType.ANIME
 
-    stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/.*-(\d+)$")
+    stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/[^/]*-(\d+)$")
 
     def _create_media_data(self, series_id, item_alt_id, season_id=None, limit=None):
         season_data = self.session_get_json(self.series_url.format(self.get_session_id(), series_id))["data"]
