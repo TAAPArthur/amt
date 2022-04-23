@@ -1,5 +1,4 @@
 import json
-import os
 import re
 
 from collections import defaultdict
@@ -20,7 +19,6 @@ class Vrv(Server):
     api_param_regex = re.compile(r"window.__APP_CONFIG__\s*=\s*(.*);")
     api_state_regex = re.compile(r"window.__INITIAL_STATE__\s*=\s*(.*);")
 
-    subtitle_regex = re.compile(r"\w*-\w\d*_[2-9]\d*$")
     domain = "vrv.co"
     api_base = "https://api.vrv.co"
     login_api_url = api_base + "/core/authenticate/by:credentials"
@@ -187,22 +185,5 @@ class Vrv(Server):
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
         r = self.session_get_mem_cache(r.json()["playback"])
         subtitle_data = r.json()["subtitles"]
-        for lang in subtitle_data:
-            if self.settings.is_allowed_text_lang(lang, media_data):
-                subtitles = subtitle_data[lang]
-                r = self.session_get(subtitles["url"])
-                basename = self.settings.get_page_file_name(media_data, chapter_data, ext=subtitles["format"])
-                path = os.path.join(dir_path, basename)
-                with open(path, 'w') as fp:
-                    iterable = iter(r.content.decode().splitlines())
-                    buffer = None
-                    for line in iterable:
-                        if self.subtitle_regex.match(line):
-                            buffer = None  # ignore blank line
-                            # don't output this line
-                            next(iterable)  # skip line with timestamp
-                        else:
-                            if buffer is not None:
-                                fp.write(f"{buffer}\n")
-                            buffer = line
-                    fp.write(f"{buffer}\n")
+        for lang, subtitles in subtitle_data.items():
+            yield lang, subtitles["url"], subtitles["format"], True

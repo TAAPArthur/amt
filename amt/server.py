@@ -328,7 +328,45 @@ class GenericServer(MediaServer):
         By default does nothing. Subtitles should generally have the same name
         as the final media
         """
-        pass
+
+        subtitle_regex = re.compile(r"\w*-\w\d*_[2-9]\d*$")
+        for lang, url, ext, flip in self.get_subtitle_info(media_data, chapter_data):
+            if self.settings.is_allowed_text_lang(lang, media_data):
+                if not ext:
+                    ext = get_extension(url)
+                basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
+                path = os.path.join(dir_path, basename)
+                if not os.path.exists(path):
+                    r = self.session_get(url)
+                    if flip:
+                        with open(path, 'w') as fp:
+                            iterable = iter(r.content.decode().splitlines())
+                            buffer = None
+                            for line in iterable:
+                                if subtitle_regex.match(line):
+                                    buffer = None  # ignore blank line
+                                    # don't output this line
+                                    next(iterable)  # skip line with timestamp
+                                else:
+                                    if buffer is not None:
+                                        fp.write(f"{buffer}\n")
+                                    buffer = line
+                            fp.write(f"{buffer}\n")
+                    else:
+                        with open(path, "wb") as fp:
+                            fp.write(r.content)
+
+    def get_subtitle_info(self, media_data, chapter_data):
+        """
+        Yeilds lang, url, ext, flip
+        lang - the language of the subtiles. If the language is permitted for this media, the entry will be skipped
+        url - the url to download the subtitles
+        ext - ext of the subtitles or None if we should auto detect by url
+        flip - whether we need to fix broken subtitle formats that invert mutli-line subs
+        """
+        # Empty generator
+        return
+        yield
 
     ################ Needed for servers requiring logins #####################
     def needs_authentication(self):

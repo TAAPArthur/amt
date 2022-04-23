@@ -1,10 +1,9 @@
 import logging
-import os
 import re
 
 from bs4 import BeautifulSoup
 
-from ..server import Server, get_extension
+from ..server import Server
 from ..util.media_type import MediaType
 
 
@@ -54,7 +53,7 @@ class GenericFunimation(Server):
             logging.info(data["error"])
             return False
 
-    def download_subtitles(self, media_data, chapter_data, dir_path):
+    def get_subtitle_info(self, media_data, chapter_data):
         r = self.session_get(self.show_api_url.format(chapter_data["alt_id"]))
 
         for season in r.json()["seasons"]:
@@ -63,15 +62,7 @@ class GenericFunimation(Server):
                 exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                 if exp["experienceId"] == int(chapter_data["alt_id"]) and "textTracks" in exp["sources"][0]:
                     for track in exp["sources"][0]["textTracks"]:
-                        if self.settings.is_allowed_text_lang(track["language"], media_data):
-                            subtitle_src = track["src"]
-                            ext = get_extension(subtitle_src)
-                            basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
-                            path = os.path.join(dir_path, basename)
-                            if not os.path.exists(path):
-                                r = self.session_get(subtitle_src)
-                                with open(path, "wb") as fp:
-                                    fp.write(r.content)
+                        yield track["language"], track["src"], None, False
                     break
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
