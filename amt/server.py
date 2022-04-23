@@ -4,7 +4,6 @@ import os
 import re
 import time
 
-from functools import cache
 from requests.exceptions import HTTPError, SSLError
 from threading import Lock
 
@@ -41,6 +40,7 @@ class RequestServer:
         else:
             self.session = session
         self._lock = Lock()
+        self.mem_cache = {}
 
     def get_cloudscraper_session(self, session):
         import cloudscraper
@@ -104,9 +104,10 @@ class RequestServer:
                 return cookie.value
         return None
 
-    @cache
     def session_get_mem_cache(self, url, **kwargs):
-        return self.session_get(url, **kwargs)
+        if url not in self.mem_cache:
+            self.mem_cache[url] = self.session_get(url, **kwargs)
+        return self.mem_cache[url]
 
     def session_get_cache_json(self, url, key=None, skip_cache=False, ttl=7, to_json_func=None, **kwargs):
         if skip_cache:
