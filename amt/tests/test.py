@@ -485,6 +485,26 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             self.assertTrue(self.test_server.session_post("some_url"))
             self.assertTrue(self.test_server.session_get_mem_cache("some_url"))
 
+    def test_session_get_post_with_connection_error(self):
+        self.counter = 0
+
+        def fake_request(*args, **kwargs):
+            self.counter = self.counter + 1
+            if self.counter % 2 == 1:
+                raise requests.exceptions.ConnectionError()
+            r = requests.Response()
+            r.status_code = 200
+            return r
+
+        def fake_request_err(*args, **kwargs):
+            raise requests.exceptions.ConnectionError()
+        self.test_server.session.get = fake_request_err
+        self.assertRaises(requests.exceptions.ConnectionError, self.test_server.session_get, "some_url")
+        self.test_server.session.get = fake_request
+        self.test_server.session.post = self.test_server.session.get
+        self.test_server.session_get("some_url")
+        self.test_server.session_post("some_url")
+
     def test_session_get_cache_json(self):
         server = self.media_reader.get_server(TestServer.id)
         assert server
