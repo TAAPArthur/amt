@@ -72,7 +72,7 @@ class Hidive(Server):
     def get_media_list(self, limit=2):
         return self._get_media_list(self.list_url, self.stream_url_regex)[:limit]
 
-    def search(self, term, alt_id=None, limit=2):
+    def search_for_media(self, term, alt_id=None, limit=2):
         return self._get_media_list(self.search_url.format(term), self.series_url_regex)[:limit]
 
     def update_media_data(self, media_data: dict, r=None):
@@ -108,7 +108,7 @@ class Hidive(Server):
         media_id = self.stream_url_regex.search(url).group(1)
         r = self.session_get(url)
         soup = self.soupify(BeautifulSoup, r)
-        title = soup.find("a", {"id": "TitleDetails"}).getText()
+        title = soup.find("div", {"class": "episodes"}).find("h1").getText().strip()
         return self.create_media_data(id=media_id, name=title)
 
     def get_chapter_id_for_url(self, url):
