@@ -82,7 +82,7 @@ class Funimation(GenericFunimation):
 
     def _get_media_list(self, ids, limit=None):
         media_data = []
-        items = [lambda id=id: (self.session_get(self.episode_url.format(id)), id, title) for id, title in ids[:limit]]
+        items = [lambda id=id, title=title: (self.session_get(self.episode_url.format(id)), id, title) for id, title in ids[:limit]]
 
         for r, id, title in self.run_in_parallel(items):
             data = r.json()
