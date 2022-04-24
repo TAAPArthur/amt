@@ -8,7 +8,7 @@ RE_ENCRYPTION_KEY = re.compile(".{1,2}")
 class Mangaplus(Server):
     id = "mangaplus"
 
-    domain = "mediaplus.shueisha.co.jp"
+    domain = "mangaplus.shueisha.co.jp"
     base_url = f"https://{domain}"
     api_url = "https://jumpg-webapi.tokyo-cdn.com/api"
     api_list_url = api_url + "/title_list/all?format=json"
@@ -16,16 +16,21 @@ class Mangaplus(Server):
     api_chapter_url = api_url + "/manga_viewer?chapter_id={0}&split=yes&img_quality=high&format=json"
     media_url = base_url + "/titles/{0}?format=json"
 
-    stream_url_regex = re.compile(r"mangaplus.shueisha.co.jp/viewer/(\d+)")
+    stream_url_regex = re.compile(domain + r"/viewer/(\d+)")
+    add_series_url_regex = re.compile(domain + r"/titles/(\d+)")
+
+    def get_chapter_id_for_url(self, url):
+        return self.stream_url_regex.search(url).group(1)
 
     def get_media_data_from_url(self, url):
+        match = self.add_series_url_regex.search(url)
+        if match:
+            media_id = int(match.group(1))
+            return next(filter(lambda x: x["id"] == media_id, self.get_media_list()))
         chapter_id = self.get_chapter_id_for_url(url)
         r = self.session_get(self.api_chapter_url.format(chapter_id))
         series_info = r.json()["success"]["mangaViewer"]
         return self.create_media_data(id=series_info["titleId"], name=series_info["titleName"])
-
-    def get_chapter_id_for_url(self, url):
-        return self.stream_url_regex.search(url).group(1)
 
     def get_media_list(self, limit=None):
         data = self.session_get_cache_json(self.api_list_url)

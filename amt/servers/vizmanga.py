@@ -126,13 +126,14 @@ class VizManga(GenericVizManga):
 
     chapter_regex = re.compile(r"/shonenjump/(.*)-chapter-([\d\-]*)/chapter/(\d*)")
 
-    stream_url_regex = re.compile(r"viz.com/shonenjump/([\w\-]*)-chapter-1/chapter/(\d+)")
+    stream_url_regex = re.compile(r"viz.com/shonenjump/([\w\-]*)-chapter-.*/chapter/(\d+)")
+    add_series_url_regex = re.compile(r"viz.com/shonenjump/chapters/([\w\-]*)")
 
-    series_name_regex = re.compile(r"var seriesTitle\s*=\s*.([\w ]*).;")
+    series_name_regex = re.compile(r"var series(?:_t|T)itle\s*=\s*.([^\"]*).;")
     page_regex = re.compile(r"var pages\s*=\s*(\d*);")
 
     def get_media_data_from_url(self, url):
-        media_id = self.stream_url_regex.search(url).group(1)
+        media_id = self._get_media_id_from_url(url)
         title = self.series_name_regex.search(self.session_get(url).text).group(1)
         return self.create_media_data(id=media_id, name=title)
 

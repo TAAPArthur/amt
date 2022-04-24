@@ -12,6 +12,7 @@ class Webtoons(Server):
     list_series_url = base_url + "/top"
     chapters_url = base_url + "/episodeList?titleNo={}"
     stream_url_regex = re.compile(domain + r".*/viewer\?title_no=(\d*)\&episode_no=(\d*)")
+    add_series_url_regex = re.compile(domain + r".*?title_no=(\d*)")
 
     url_split_regex = re.compile(r"title(?:_n|N)o=(\d*)")
 
@@ -61,7 +62,7 @@ class Webtoons(Server):
         return self.stream_url_regex.search(url).group(2)
 
     def get_media_data_from_url(self, url):
-        media_id = self.stream_url_regex.search(url).group(1)
+        media_id = self._get_media_id_from_url(url)
         r = self.session_get(self.chapters_url.format(media_id))
         soup = self.soupify(BeautifulSoup, r)
         element = soup.find("div", {"class": "info"})

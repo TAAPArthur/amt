@@ -20,10 +20,11 @@ class Mangasee(Server):
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
     page_regex = re.compile(r"vm.CurChapter = (.*);")
     domain_regex = re.compile(r"vm.CurPathName\w* = \"(.*)\";")
-    stream_url_regex = re.compile(r"mangasee123.com/read-online/(.*)-chapter-(\d*\.?\d?)(-index-\d+)?-page")
+    stream_url_regex = re.compile(domain + r"/read-online/(.*)-chapter-(\d*\.?\d?)(-index-\d+)?-page")
+    add_series_url_regex = re.compile(domain + r"/manga/(.*)")
 
     def get_media_data_from_url(self, url):
-        media_id = self.stream_url_regex.search(url).group(1)
+        media_id = self._get_media_id_from_url(url)
         for media_data in self.get_media_list():
             if media_data["id"] == media_id:
                 return media_data

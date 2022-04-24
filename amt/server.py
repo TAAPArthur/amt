@@ -229,9 +229,12 @@ class GenericServer(MediaServer):
     # If set this value will be used for credential lookup instead of id
     alias = None
     media_type = MediaType.MANGA
-    # Pattern to match to determine if this server can stream a given url.
+    # Regex to match to determine if this server can stream a given url.
     # It is also used to determine if server can add the media based on its chapter url
     stream_url_regex = None
+    # Regex to match to determine if we can add this series by the matching url
+    # Note that if this value is non-None then so must stream_url_regex
+    add_series_url_regex = None
     # Measures progress in volumes instead of chapter/episodes
     progress_volumes = False
     # True if the server only provides properly licensed media
@@ -318,6 +321,13 @@ class GenericServer(MediaServer):
         with open(path, 'wb') as fp:
             fp.write(content)
 
+    def _get_media_id_from_url(self, url):
+        """ Helper method to get the media_id from the url
+        This method should be treated as "protected" and not called by outside classes
+        as it may give nonsensical values
+        """
+        return (self.stream_url_regex.search(url) or self.add_series_url_regex.search(url)).group(1)
+
     def get_media_data_from_url(self, url):  # pragma: no cover
         """ Return the media data related to this url
 
@@ -336,6 +346,9 @@ class GenericServer(MediaServer):
 
     def can_stream_url(self, url):
         return self.stream_url_regex and self.stream_url_regex.search(url)
+
+    def can_add_media_from_url(self, url):
+        return self.can_stream_url(url) or self.add_series_url_regex and self.add_series_url_regex.search(url)
 
     ################ ANIME ONLY #####################
     def get_stream_url(self, media_data, chapter_data, stream_index=0):

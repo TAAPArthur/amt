@@ -1867,44 +1867,69 @@ class ServerStreamTest(RealBaseUnitTestClass):
     premium_streamable_urls = [
         ("https://www.funimation.com/v/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
     ]
+    addable_urls = [
+        ("https://crunchyroll.com/comics/manga/four-knights-of-the-apocalypse/volumes", 542),
+        ("https://hidive.com/tv/legend-of-the-galactic-heroes-gaiden", "legend-of-the-galactic-heroes-gaiden"),
+        ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
+        ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
+        ("https://webtoons.com/en/drama/lookism/list?title_no=1049", 1049),
+        ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
+        ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
+    ]
 
-    def test_verify_valid_stream_urls(self):
-        for url, media_id, season_id, chapter_id in self.streamable_urls + self.premium_streamable_urls:
-            with self.subTest(url=url):
-                servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                self.assert_server_enabled_or_skip_test(servers)
-                self.assertEqual(len(servers), 1)
+    def get_server_for_url(self, url, streamable=False):
+        servers = list(filter(lambda server: server.can_stream_url(url) if streamable else server.can_add_media_from_url(url), self.media_reader.get_servers()))
+        self.assert_server_enabled_or_skip_test(servers)
+        self.assertEqual(len(servers), 1)
+        return servers[0]
+
+    def test_a_verify_valid_stream_urls(self):
+        for streamable, url_list in [(True, self.streamable_urls), (False, self.addable_urls)]:
+            for url_data in url_list:
+                url = url_data[0]
+                with self.subTest(url=url):
+                    self.assertTrue(self.get_server_for_url(url, streamable))
+
+    def validate_url_data(self, media_data, url_data, server):
+        url, media_id, = url_data[0:2]
+        assert media_data
+        if not media_data["chapters"]:
+            server.update_media_data(media_data)
+        self.assertEqual(str(media_id), str(media_data["id"]))
+        if len(url_data) > 2:
+            season_id, chapter_id = url_data[2:4]
+            if season_id:
+                self.assertEqual(str(season_id), str(media_data["season_id"]))
+            if chapter_id:
+                self.assertEqual(str(chapter_id), str(server.get_chapter_id_for_url(url)))
+                self.assertTrue(str(chapter_id) in map(str, media_data["chapters"].keys()))
 
     def test_get_media_data_from_url(self):
-        def func(server):
-            for url, media_id, season_id, chapter_id in self.streamable_urls:
-                if not server.can_stream_url(url):
-                    continue
-                with self.subTest(server=server.id, url=url):
-                    media_data = server.get_media_data_from_url(url)
-                    assert media_data
-                    if not media_data["chapters"]:
-                        server.update_media_data(media_data)
-                    self.assertEqual(media_id, str(media_data["id"]))
-                    if season_id:
-                        self.assertEqual(season_id, str(media_data["season_id"]))
-                    if chapter_id:
-                        self.assertEqual(chapter_id, str(server.get_chapter_id_for_url(url)))
-                        self.assertTrue(chapter_id in media_data["chapters"])
-        self.for_each_server(func)
-
-    def test_media_steam(self):
-        url_list = self.streamable_urls if not PREMIUM_TEST else self.streamable_urls + self.premium_streamable_urls
-
         def func(url_data):
-            url, media_id, season_id, chapter_id = url_data
+            url = url_data[0]
             with self.subTest(url=url):
-                servers = list(filter(lambda server: server.can_stream_url(url), self.media_reader.get_servers()))
-                self.assert_server_enabled_or_skip_test(servers)
-                server = servers[0]
+                server = self.get_server_for_url(url)
+                media_data = server.get_media_data_from_url(url)
+                self.validate_url_data(media_data, url_data, server)
+        self.for_each(func, self.streamable_urls + self.addable_urls)
+
+    def test_add_media_from_url(self):
+        def func(url_data):
+            url = url_data[0]
+            with self.subTest(url=url):
+                server = self.get_server_for_url(url)
+                media_data = self.media_reader.add_from_url(url)
+                self.validate_url_data(media_data, url_data, server)
+        self.for_each(func, self.addable_urls)
+
+    def test_media_stream(self):
+        def func(url_data):
+            url = url_data[0]
+            with self.subTest(url=url):
+                server = self.get_server_for_url(url)
                 if server.media_type == MediaType.ANIME and server.has_free_chapters:
                     self.assertTrue(self.media_reader.stream(url))
-        self.for_each(func, url_list)
+        self.for_each(func, self.streamable_urls)
 
 
 class TrackerTest(RealBaseUnitTestClass):

@@ -108,6 +108,9 @@ class GenericJNovelClubParts(GenericJNovelClub):
 
     events_url = JNovelClub.api_base_url + "/events?sort=launch&start_date={}&format=json"
 
+    stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+)")
+    add_series_url_regex = re.compile(r"j-novel.club/s\w*/([\w\d\-]+)")
+
     def update_timestamp(self, media_data):
         now = datetime.now()
         iso_str = now.isoformat() + "Z"
@@ -142,7 +145,18 @@ class GenericJNovelClubParts(GenericJNovelClub):
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         return [self.create_page_data(self.pages_url.format(chapter_data["alt_id"]))]
 
+    def can_stream_url(self, url):
+        return super().can_stream_url(url) and (("-manga-" not in url) == (self.media_type == MediaType.NOVEL))
+
+    def can_add_media_from_url(self, url):
+        return super().can_add_media_from_url(url) and (("-manga-" not in url) == (self.media_type == MediaType.NOVEL))
+
     def get_media_data_from_url(self, url):
+        match = self.add_series_url_regex.search(url)
+        if match:
+            media_id = match.group(1)
+            r = self.session_get(self.series_info_url.format(media_id))
+            return self._create_media_data_helper([r.json()])[0]
         part_id = self.get_chapter_id_for_url(url)
         r = self.session_get(self.part_to_series_url.format(part_id))
         media_list = self._create_media_data_helper([r.json()])
@@ -181,18 +195,12 @@ class JNovelClubParts(GenericJNovelClubParts):
     media_type = MediaType.NOVEL
     pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
 
-    stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+)")
-
-    def can_stream_url(self, url):
-        return super().can_stream_url(url) and "-manga-" not in url
-
 
 class JNovelClubMangaParts(GenericJNovelClubParts):
     id = "j_novel_club_manga_parts"
     maybe_need_cloud_scraper = True
     slow_download = True
     media_type = MediaType.MANGA
-    stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+-manga-[\w\d\-]+)")
     pages_url = JNovelClub.api_domain + "/embed/{}"
 
     uuid_regex = re.compile(r"data-uuid=\"([^\"]*)\"")

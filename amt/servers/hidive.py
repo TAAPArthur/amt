@@ -22,8 +22,8 @@ class Hidive(Server):
 
     episode_data_url = base_url + "/play/settings"
 
-    stream_url_regex = re.compile(r"/stream/([^/]*)/([^/]*)")
-    series_url_regex = re.compile(r"/(?:tv|movies)/([^/]*)")
+    stream_url_regex = re.compile(domain + r"/stream/([^/]*)/([^/]*)")
+    add_series_url_regex = re.compile(domain + r"/(?:tv|movies)/([^/]*)")
 
     def needs_authentication(self):
         cached_id = self.session_get_cookie("CacheId")
@@ -73,7 +73,7 @@ class Hidive(Server):
         return self._get_media_list(self.list_url, self.stream_url_regex)[:limit]
 
     def search_for_media(self, term, alt_id=None, limit=2):
-        return self._get_media_list(self.search_url.format(term), self.series_url_regex)[:limit]
+        return self._get_media_list(self.search_url.format(term), self.add_series_url_regex)[:limit]
 
     def update_media_data(self, media_data: dict, r=None):
         regex = re.compile(self.episode_list_pattern.format(media_data["id"]))
@@ -105,7 +105,7 @@ class Hidive(Server):
                 yield lang, url, None, True, -5
 
     def get_media_data_from_url(self, url):
-        media_id = self.stream_url_regex.search(url).group(1)
+        media_id = self._get_media_id_from_url(url)
         r = self.session_get(url)
         soup = self.soupify(BeautifulSoup, r)
         title = soup.find("div", {"class": "episodes"}).find("h1").getText().strip()
