@@ -1842,6 +1842,8 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
+        ("https://www.dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
+        ("https://www.dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
         ("https://beta.crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
         ("https://beta.crunchyroll.com/watch/GYDKXWD96/sea-god-in-the-east-the-mighty-deep-in-the-west--chapter-1", "GRNVWN7Q6", "GYKEV49EY", "GYDKXWD96"),
         ("https://crunchyroll.com/gintama/gintama-season-2-253-265-gintama-classic-it-takes-a-bit-of-courage-to-enter-a-street-vendors-stand-615207", "47620", "20725", "615207"),
