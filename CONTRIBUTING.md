@@ -19,7 +19,7 @@ There are also Trackers and TorrentHelpers, but there's only currently one of ea
 * ~Crunchyroll Beta (Anime; type 2)~
 * ~Funimation digital library (Anime; type 3)~
 * ~HumbleBundle (type 3)~
-* Webtoon (Manga; type 2) (well known api)
+* ~Webtoon (Manga; type 2) (well known api)~
 * ~HiDive (Anime; type 2)~
 * Manga Planet (Anime; type 2)
 * MyAnimeList (Tracker)
