@@ -164,6 +164,61 @@ class TestAnimeServer(TestServer):
         assert isinstance(chapter_data, dict) if chapter_data else True
         return self.stream_urls or [f"https://{self.domain}/url.mp4?key=1&false", f"https://{self.domain}/url.ts?key=1&false"]
 
+    def session_get(self, url, **kwargs):
+        if url.startswith("subtitles"):
+            return self.subtitle_response()
+        return super().session_get(url, **kwargs)
+
+    def get_subtitle_info(self, media_data, chapter_data):
+        url = "subtitles.vtt"
+        alt_url = "subtitles"
+        yield media_data["lang"], url, None, True, 0
+        yield media_data["lang"], alt_url, None, True, 0
+        yield media_data["lang"], url, ".vtt", True, 0
+        yield "en", url, None, True, 0
+        yield "en", alt_url, None, True, -5
+        yield "en", url, None, True, +5
+        yield "unknown_lang", None, None, False, 0
+
+    def subtitle_response(self):
+        class FakeRequest():
+            text = """
+WEBVTT
+X-TIMESTAMP-MAP=MPEGTS:133508,LOCAL:00:00:00.000
+
+
+
+Subtitle-C1_1
+00:02:10.000 --> 00:02:12.375 line:84%
+<c.Subtitle-C1_1>Universal Calendar 745,</c>
+
+Subtitle-C2_1
+00:02:12.375 --> 00:02:15.708 line:84%
+<c.Subtitle-C2_1>Reich Calendar 436, December 4th:</c>
+
+Subtitle-C3_1
+00:02:16.208 --> 00:02:19.208 line:84%
+<c.Subtitle-C3_1>The two great military powers of humanity</c>
+
+Subtitle-C4_1
+00:02:19.208 --> 00:02:22.708 line:77%
+<c.Subtitle-C4_1>had deployed a large number of forces</c>
+
+Subtitle-C4_2
+00:02:19.209 --> 00:02:22.708 line:84%
+<c.Subtitle-C4_2>in the Tiamat Stellar Region.</c>
+
+Subtitle-C5_1
+00:02:25.666 --> 00:02:30.666 line:77%
+<c.Subtitle-C5_1>In this battle, the line-up of high-level commanders</c>
+
+Subtitle-C5_2
+00:02:25.667 --> 00:02:30.666 line:84%
+<c.Subtitle-C5_2>for the Alliance forces was as follows:</c>
+"""
+            content = text.encode("utf-8")
+        return FakeRequest()
+
 
 class TestNovel(TestServer):
     id = "test_server_novel"

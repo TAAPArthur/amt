@@ -405,7 +405,7 @@ class GenericServer(MediaServer):
                         with open(path, "wb") as fp:
                             fp.write(r.content)
 
-    def get_subtitle_info(self, media_data, chapter_data):
+    def get_subtitle_info(self, media_data, chapter_data):   # pragma: no cover
         """
         Yeilds lang, url, ext, flip
         lang - the language of the subtiles. If the language is permitted for this media, the entry will be skipped
