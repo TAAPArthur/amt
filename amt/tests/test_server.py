@@ -24,20 +24,24 @@ class TestServer(Server):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.stream_url_regex = re.compile(f"/{self.id}/([0-9]*)/([0-9]*)")
+        self.stream_url_regex = re.compile(f"{self.id}/([0-9]*)/([0-9]*)")
+        self.add_series_url_regex = re.compile(f"{self.id}/([0-9]*)")
         self.timestamp = datetime.now().timestamp()
 
     @classmethod
-    def get_streamable_url(clzz, media_id=1, chapter_id=1):
-        return f"https://{clzz.id}/{media_id}/{chapter_id}"
+    def get_streamable_url(clzz, media_id=4, chapter_id=1):
+        return clzz.get_addable_url(media_id=media_id) + f"/{chapter_id}"
+
+    @classmethod
+    def get_addable_url(clzz, media_id=5):
+        return f"https://{clzz.id}/{media_id}"
 
     def get_chapter_id_for_url(self, url):
         assert self.can_stream_url(url)
         return self.stream_url_regex.search(url).group(2)
 
     def get_media_data_from_url(self, url):
-        assert self.can_stream_url(url)
-        media_id = self.stream_url_regex.search(url).group(1)
+        media_id = self._get_media_id_from_url(url)
         for media_data in self.get_media_list():
             if str(media_data["id"]) == media_id:
                 return media_data
@@ -84,8 +88,8 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=2, title="Chapter2", number=2, date="2020-07-09", premium=self.has_login()),
             self.update_chapter_data(media_data, id=3, title="Chapter3", number=3, date="2020-07-10", premium=self.has_login())
         elif media_id == 2:
-            self.update_chapter_data(media_data, id=4, title="Chapter1", number=1),
-            self.update_chapter_data(media_data, id=5, title="Chapter1-1", number="1-1"),
+            self.update_chapter_data(media_data, id=1, title="Chapter1", number=1),
+            self.update_chapter_data(media_data, id=2, title="Chapter1-1", number="1-1"),
             self.update_chapter_data(media_data, id=6, title="Chapter1.2", number="1.2"),
             self.update_chapter_data(media_data, id=7, title="Chapter10", number="10"),
             self.update_chapter_data(media_data, id=8, title="Chapter11", number="11"),
@@ -94,18 +98,18 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=11, title="Chapter1000", number="1000"),
             self.update_chapter_data(media_data, id=12, title="Chapter9999", number="9999", premium=self.has_login()),
         elif media_id == 3:
-            self.update_chapter_data(media_data, id=21, title="Chapter1", number=1, date="2020-07-08"),
-            self.update_chapter_data(media_data, id=22, title="Chapter2", number=1.5, date="2020-07-08"),
+            self.update_chapter_data(media_data, id=1, title="Chapter1", number=1, date="2020-07-08"),
+            self.update_chapter_data(media_data, id=2, title="Chapter2", number=1.5, date="2020-07-08"),
             self.update_chapter_data(media_data, id=23, title="Chapter3", number=2, date="2020-07-08", premium=self.has_login()),
             self.update_chapter_data(media_data, id=24, title="Chapter4", number=3, date="2020-07-08", premium=self.has_login()),
         elif media_id == 4:
-            self.update_chapter_data(media_data, id=25, title="Chapter1", number=2, date="1998-08-10"),
-            self.update_chapter_data(media_data, id=30, title="Chapter1", number="1b", date="1998-08-10"),
+            self.update_chapter_data(media_data, id=1, title="Chapter1", number=2, date="1998-08-10"),
+            self.update_chapter_data(media_data, id=2, title="Chapter1", number="1b", date="1998-08-10"),
             self.update_chapter_data(media_data, id=26, title="ChapterSpecial", number=None, date="1998-08-10"),
             self.update_chapter_data(media_data, id=27, title="Chapter0.5", number=0.5, date="1998-08-10", special=True),
             self.update_chapter_data(media_data, id=28, title="Chapter4", number=4, date="1998-08-10", inaccessible=self.inaccessible),
         else:
-            self.update_chapter_data(media_data, id=29, title="Chapter1", number=1)
+            self.update_chapter_data(media_data, id=1, title="Chapter1", number=1)
         for chapter_data in media_data["chapters"].values():
             chapter_data["number"] += self.offset_chapter_num
 

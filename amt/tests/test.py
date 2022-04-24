@@ -1935,12 +1935,34 @@ class ServerStreamTest(RealBaseUnitTestClass):
 class TrackerTest(RealBaseUnitTestClass):
 
     def test_validate_tracker_info(self):
+        keys_for_lists_of_strings = ["external_links", "genres", "streaming_links", "studio", "tags"]
+        keys_for_strings = ["name", "season"]
+
         for tracker_id in self.media_reader.get_tracker_ids():
-            tracker = self.media_reader.get_tracker_by_id(tracker_id)
-            self.assertTrue(tracker.get_auth_url())
-            data = list(tracker.get_full_list_data(id=1))
-            assert data
-            assert isinstance(data[0], dict)
+            with self.subTest(tracker_id=tracker_id):
+                tracker = self.media_reader.get_tracker_by_id(tracker_id)
+                self.assertTrue(tracker.get_auth_url())
+                data = list(tracker.get_full_list_data(id=1))
+                assert data
+                for tracker_data in data:
+                    assert isinstance(tracker_data, dict)
+                    for key, value in tracker_data.items():
+                        if key == "media_type":
+                            assert isinstance(value, MediaType)
+                        elif key in keys_for_lists_of_strings:
+                            assert isinstance(value, list)
+                            for item in value:
+                                assert isinstance(item, str), f"{key}: {value}, should be a list of strings"
+                        elif key in keys_for_strings:
+                            assert isinstance(value, str), f"{key}: {value}, should be a string"
+                        elif key != "id" and value:
+                            float(value)
+
+    def test_load_from_tracker(self):
+        for tracker_id in self.media_reader.get_tracker_ids():
+            with self.subTest(tracker_id=tracker_id):
+                self.media_reader.set_tracker(tracker_id)
+                parse_args(media_reader=self.media_reader, args=["--auto", "load", "--user-id", "1"])
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):

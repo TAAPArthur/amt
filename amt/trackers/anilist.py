@@ -49,6 +49,12 @@ class Anilist(Tracker):
                     english
                     romaji
                 }
+                externalLinks {
+                  url
+                }
+                streamingEpisodes {
+                  url
+                }
             }
         }
     }
@@ -131,6 +137,8 @@ class Anilist(Tracker):
                 year=x["media"]["startDate"]["year"],
                 year_end=x["media"]["endDate"]["year"],
                 season="{} {}".format(x["media"]["season"], x["media"]["seasonYear"]) if x["media"]["season"] else str(x["media"]["startDate"]["year"]),
+                external_links=[url["url"] for url in x["media"]["externalLinks"]],
+                streaming_links=[url["url"] for url in x["media"]["streamingEpisodes"]],
                 genres=x["media"]["genres"],
                 tags=[x["name"] for x in x["media"]["tags"] if x["rank"] > 70],
                 studio=[n["name"] for n, e in zip(x["media"]["studios"]["nodes"], x["media"]["studios"]["edges"]) if e["isMain"]] if x["media"]["studios"]["nodes"] else []

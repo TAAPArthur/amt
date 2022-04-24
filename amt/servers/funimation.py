@@ -95,6 +95,9 @@ class Funimation(GenericFunimation):
 
         return media_data
 
+    def get_related_media_seasons(self, media_data):
+        return self._get_media_list([(media_data["id"], media_data["title"])])
+
     def get_media_list(self, limit=2):
         soup = self.soupify(BeautifulSoup, self.session_get(self.list_url))
         ids = []

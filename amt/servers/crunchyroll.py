@@ -171,6 +171,9 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
             if not season_id or season["collection_id"] == season_id:
                 yield self.create_media_data(id=series_id, alt_id=item_alt_id, name=season["name"], season_id=season["collection_id"], lang=None)
 
+    def get_related_media_seasons(self, media_data):
+        yield from self._create_media_data(media_data["id"], media_data["alt_id"])
+
     def get_media_list(self, limit=4):
         return self.search_helper(None, limit=limit)
 

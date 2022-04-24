@@ -321,6 +321,11 @@ class GenericServer(MediaServer):
         with open(path, 'wb') as fp:
             fp.write(content)
 
+    def get_related_media_seasons(self, media_data):
+        """ Returns all related seasons of media_data
+        """
+        return [media_data]
+
     def _get_media_id_from_url(self, url):
         """ Helper method to get the media_id from the url
         This method should be treated as "protected" and not called by outside classes
@@ -584,10 +589,10 @@ class Tracker(RequestServer):
     id = None
     official = True
 
-    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, time_spent=0, year=0, year_end=0, season=None, genres=[], tags=[], studio=[]):
-        return {"id": id, "media_type": media_type, "name": name, "progress": progress, "progress_volumes": progress_volumes,
-                "score": score, "time_spent": time_spent, "year": year, "year_end": year_end, "season": season, "genres": genres, "tags": tags, "studio": studio
-                }
+    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, time_spent=0, year=0, year_end=0, season=None, genres=tuple(), tags=tuple(), studio=tuple(), external_links=tuple(), streaming_links=tuple()):
+        m = dict(locals())
+        del m["self"]
+        return m
 
     def get_auth_url(self):  # pragma: no cover
         """ Return the url the user can goto to get the auth token"""
