@@ -85,6 +85,7 @@ assimilate all unread chapters and then read them
 ### Anime
 * [Crunchyroll](https://crunchyroll.com)
 * [Funimation](https://funimation.com)
+* [HiDive](https://hidive.com/)
 * [Vrv](https://vrv.co)
 
 ### Light novels
@@ -106,7 +107,7 @@ Optional dependency breakdown
 * beautifulsoup4:      required to enable DB multiverse, Funimation, Nyaa and RemoteServer
 * cloudscraper:        required to enable MangaSee and HumbleBundle
 * cloudscraper:        potentially required to access all features of Crunchyroll (manga and anime)
-* m3u8 & pycryptodome: required just to stream media for Crunchyroll (enables more formats for Funimation and VRV)
+* m3u8 & pycryptodome: required just download media for Crunchyroll and HiDive (enables more formats for Funimation and VRV)
 * requests_oauthlib:   required to enable VRV
 * beautifulsoup4 :     required to search entire selection for Crunchyroll (manga)
 
