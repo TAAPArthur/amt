@@ -169,7 +169,7 @@ class MediaServer(RequestServer):
         for term in terms:
             media_list = self.search_for_media(term, limit=limit)
             for media_data in media_list:
-                media_map[media_data["id"]] = media_data
+                media_map[media_data.global_id] = media_data
             if limit and len(media_map) >= limit:
                 break
         return media_map.values()
