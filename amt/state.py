@@ -294,9 +294,10 @@ class MediaData(dict):
         return self.global_id if len(self.global_id) < 32 or not self.global_id_alt else self.global_id_alt
 
     def get_next_chapter_available_str(self, time):
-        if not self.get("nextTimeStamp", 0):
+        timestamp = self.get("nextTimeStamp") or self.get("nextTimeStampTracker", 0)
+        if not timestamp:
             return ""
-        delta = max(self["nextTimeStamp"] - time, 0)
+        delta = max(timestamp - time, 0)
         if delta < 3600:
             return f"{delta/60:.1f} minutes"
         elif delta < 3600 * 24 * 1.5:
@@ -305,9 +306,9 @@ class MediaData(dict):
             return f"{delta/3600/24:.1f} days"
 
     def copy_fields_to(self, dest):
-        for key in ("offset", "progress", "progress_volumes", "tags", "trackers"):
-            assert key in dest
-            dest[key] = self.get(key)
+        for key in ("nextTimeStampTracker", "offset", "progress", "progress_volumes", "tags", "trackers"):
+            if key in self:
+                dest[key] = self.get(key)
 
     def get_last_chapter_number(self):
         return max(self["chapters"].values(), key=lambda x: x["number"])["number"] if self["chapters"] else 0

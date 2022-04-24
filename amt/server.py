@@ -589,7 +589,7 @@ class Tracker(RequestServer):
     id = None
     official = True
 
-    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, time_spent=0, year=0, year_end=0, season=None, genres=tuple(), tags=tuple(), studio=tuple(), external_links=tuple(), streaming_links=tuple()):
+    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, nextTimeStamp=None, time_spent=0, year=0, year_end=0, season=None, genres=tuple(), tags=tuple(), studio=tuple(), external_links=tuple(), streaming_links=tuple()):
         m = dict(locals())
         del m["self"]
         return m

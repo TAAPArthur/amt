@@ -482,6 +482,8 @@ class MediaReader:
             tracker_id = self.get_tracker().id
         for media_data in self.get_media(name=name, media_type=media_type):
             del media_data["trackers"][tracker_id]
+            if "nextTimeStampTracker" in media_data:
+                del media_data["nextTimeStampTracker"]
 
     def copy_tracker(self, src, dst):
         src_media_data = self.get_single_media(name=src)
@@ -541,6 +543,7 @@ class MediaReader:
                 progress = entry["progress"] if not media_data["progress_volumes"] else entry["progress_volumes"]
                 self.mark_chapters_until_n_as_read(media_data, progress, force=force)
                 media_data["progress"] = progress
+                media_data["nextTimeStampTracker"] = entry["nextTimeStamp"]
         if unknown_media:
             logging.info("Could not find any of %s", unknown_media)
         if remove:

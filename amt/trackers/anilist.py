@@ -34,6 +34,9 @@ class Anilist(Tracker):
                 season
                 episodes
                 duration
+                nextAiringEpisode {
+                  airingAt
+                }
                 genres
                 tags {
                     name
@@ -133,6 +136,7 @@ class Anilist(Tracker):
                 progress_volumes=x["progressVolumes"],
                 name=x["media"]["title"]["english"] or x["media"]["title"]["romaji"],
                 score=x["score"],
+                nextTimeStamp=x["media"]["nextAiringEpisode"]["airingAt"] if x["media"]["nextAiringEpisode"] else None,
                 time_spent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"] or x["progressVolumes"] or 0,
                 year=x["media"]["startDate"]["year"],
                 year_end=x["media"]["endDate"]["year"],
