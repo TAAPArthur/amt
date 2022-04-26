@@ -122,9 +122,10 @@ class RequestServer:
         return None
 
     def session_get_mem_cache(self, url, post=False, **kwargs):
-        if url not in self.mem_cache:
-            self.mem_cache[url] = self.session_post(url, **kwargs) if post else self.session_get(url, **kwargs)
-        return self.mem_cache[url]
+        key = url + (json.dumps(kwargs["data"], sort_keys=True) if "data" in kwargs else "")
+        if key not in self.mem_cache:
+            self.mem_cache[key] = self.session_post(url, **kwargs) if post else self.session_get(url, **kwargs)
+        return self.mem_cache[key]
 
     def session_get_cache_json(self, url, key=None, skip_cache=False, ttl=7, to_json_func=None, **kwargs):
         if skip_cache:
