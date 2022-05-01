@@ -132,6 +132,14 @@ class VizManga(GenericVizManga):
     series_name_regex = re.compile(r"var series(?:_t|T)itle\s*=\s*.([^\"]*).;")
     page_regex = re.compile(r"var pages\s*=\s*(\d*);")
 
+    next_chapter_regexes_func = [
+        (re.compile("New chapter coming on (.*)"), lambda x: datetime.strptime(x, "%b %d, %Y").timestamp()),
+        (re.compile("New chapter coming on (.*)"), lambda x: datetime.strptime(x, "%B %d, %Y").timestamp()),
+        (re.compile("New chapter coming in (\d+) day"), lambda x: (datetime.today() + timedelta(days=int(x))).timestamp()),
+        (re.compile("New chapter coming in (\d+) hour"), lambda x: (datetime.now() + timedelta(hours=int(x))).timestamp()),
+        (re.compile("New chapter coming in (\d+) min"), lambda x: (datetime.now() + timedelta(minutes=int(x))).timestamp()),
+    ]
+
     def get_media_data_from_url(self, url):
         media_id = self._get_media_id_from_url(url)
         title = self.series_name_regex.search(self.session_get(url).text).group(1)
@@ -186,18 +194,17 @@ class VizManga(GenericVizManga):
         timestamp = 0
         if element:
             text_str = element.getText().strip()
-            regexes_func = [
-                (re.compile("New chapter coming on (.*)"), lambda x: datetime.strptime(x, "%b %d, %Y").timestamp()),
-                (re.compile("New chapter coming in (\d+) day"), lambda x: (datetime.today() + timedelta(days=int(x))).timestamp()),
-                (re.compile("New chapter coming in (\d+) hour"), lambda x: (datetime.now() + timedelta(hours=int(x))).timestamp()),
-                (re.compile("New chapter coming in (\d+) min"), lambda x: (datetime.now() + timedelta(minutes=int(x))).timestamp()),
-            ]
-            for regex, func in regexes_func:
-                match = regex.search(text_str)
-                if match:
-                    date_str = match.group(1)
-                    timestamp = func(date_str)
-                    break
+            for regex, func in self.next_chapter_regexes_func:
+                try:
+                    match = regex.search(text_str)
+                    if match:
+                        date_str = match.group(1).replace("  ", " ")
+                        timestamp = func(date_str)
+                        break
+                except ValueError:
+                    continue
+            else:
+                assert False
         media_data["nextTimeStamp"] = timestamp
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
