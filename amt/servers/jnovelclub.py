@@ -58,6 +58,18 @@ class GenericJNovelClub(Server):
         data = r.json()["series"][:limit]
         return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", "")) for item in data]
 
+    def update_timestamp(self, media_data):
+        now = datetime.now()
+        iso_str = now.isoformat() + "Z"
+        events = self.session_get_cache_json(self.events_url.format(iso_str), key=self.events_url, ttl=1)["events"]
+        media_data["nextTimeStamp"] = 0
+        for event in filter(lambda x: x["serie"]["slug"] == media_data["id"], events):
+            if isinstance(self, GenericJNovelClubParts) == (event["details"] != "Ebook Publishing"):
+                avaliable_date = datetime.strptime(event["launch"], "%Y-%m-%dT%H:%M:%S%z").timestamp()
+                if avaliable_date > now.timestamp():
+                    media_data["nextTimeStamp"] = avaliable_date
+                    break
+
 
 class JNovelClub(GenericJNovelClub):
     id = "j_novel_club"
@@ -83,6 +95,8 @@ class JNovelClub(GenericJNovelClub):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
         for volume in r.json()["volumes"]:
             self.update_chapter_data(media_data, id=volume["legacyId"], number=volume["number"], title=volume["title"], premium=False, inaccessible=not volume["owned"])
+
+        self.update_timestamp(media_data)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         r = self.session_get(self.pages_url.format(chapter_data["id"]))
@@ -110,17 +124,6 @@ class GenericJNovelClubParts(GenericJNovelClub):
 
     stream_url_regex = re.compile(r"j-novel.club/read/([\w\d\-]+)")
     add_series_url_regex = re.compile(r"j-novel.club/s\w*/([\w\d\-]+)")
-
-    def update_timestamp(self, media_data):
-        now = datetime.now()
-        iso_str = now.isoformat() + "Z"
-        events = self.session_get_cache_json(self.events_url.format(iso_str), key=self.events_url)["events"]
-        media_data["nextTimeStamp"] = 0
-        for event in filter(lambda x: x["serie"]["slug"] == media_data["id"], events):
-            avaliable_date = datetime.strptime(event["launch"], "%Y-%m-%dT%H:%M:%S%z").timestamp()
-            if avaliable_date > now.timestamp():
-                media_data["nextTimeStamp"] = avaliable_date
-                break
 
     def update_media_data(self, media_data: dict):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
