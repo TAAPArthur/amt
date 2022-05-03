@@ -190,15 +190,14 @@ class MediaReader:
             return False
         return media_data
 
-    def add_from_url(self, url, skip_add=False, server_id=None, supress_exception=False, **kwargs):
+    def add_from_url(self, url, skip_add=False, server_id=None, **kwargs):
         for server in self.get_servers():
             if server_id in (None, server.id) and server.can_add_media_from_url(url):
                 media_data = server.get_media_data_from_url(url)
                 if not skip_add:
                     self.add_media(media_data)
                 return media_data
-        if not supress_exception:
-            raise ValueError("Could not find media to add")
+        return False
 
     def remove_media(self, media_data=None, id=None):
         if id:
@@ -405,7 +404,7 @@ class MediaReader:
                 else:
                     min_chapter_num = media_data["chapters"][chapter_id]["number"] + offset
                     num_list = list(map(lambda x: x["number"], filter(lambda x: x["number"] >= min_chapter_num, media_data["chapters"].values())))
-                    return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True)
+                    return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True) if num_list else False
                 return 1
         logging.error("Could not find any matching server")
         return False
@@ -507,7 +506,6 @@ class MediaReader:
             self.get_tracker().update(data)
         for media_data in media_to_sync:
             media_data["progress"] = media_data.get_last_read_chapter_number()
-        return bool(data)
 
     def stats_update(self, username=None, user_id=None):
         data = list(self.get_tracker().get_full_list_data(id=user_id, user_name=username))

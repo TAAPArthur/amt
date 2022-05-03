@@ -278,7 +278,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     try:
         if action:
             func = namespace.func if "func" in namespace else getattr(obj, (namespace.func_str if "func_str" in namespace else action).replace("-", "_"))
-            func(**kwargs)
+            ret = func(**kwargs)
+            return 1 if ret is False else 0
     finally:
         if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):
             state.save()

@@ -1675,6 +1675,9 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["stream", TestAnimeServer.get_streamable_url()])
         self.verify_no_media()
 
+    def stream_error(self):
+        assert parse_args(media_reader=self.media_reader, args=["stream", "bad_url"])
+
     def test_stream_temp(self):
         self.add_test_media(self.test_anime_server, limit=1)
         parse_args(media_reader=self.media_reader, args=["--tmp-dir", "stream", TestServer.get_streamable_url()])
@@ -1704,7 +1707,7 @@ class ArgsTest(CliUnitTestClass):
         self.verify_all_chapters_read(media_type=MediaType.ANIME)
 
     def test_add_from_url_bad(self):
-        self.assertRaises(ValueError, parse_args, media_reader=self.media_reader, args=["add-from-url", "bad-url"])
+        assert parse_args(media_reader=self.media_reader, args=["add-from-url", "bad-url"])
         self.verify_no_media()
 
     def test_import_auto_detect_name(self):
