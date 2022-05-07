@@ -850,6 +850,11 @@ class MediaReaderTest(BaseUnitTestClass):
         self.verify_all_chapters_downloaded()
         self.assertTrue(self.media_reader.play(limit=1))
 
+    def test_get_media(self):
+        self.add_test_media()
+        for name in self.media_reader.state.get_all_names():
+            self.assertTrue(self.media_reader.get_single_media(name=name))
+
     def test_get_media_tag(self):
         media_list = self.add_test_media()
         media_data = media_list[0]

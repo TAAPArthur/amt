@@ -171,17 +171,19 @@ class State:
         self.server_cache = {server.id: {"media_type": server.media_type.value, "has_login": server.has_login()} for server in server_list.values()}
 
     def get_all_names(self, media_type=None, disallow_servers=False):
-        names = []
+        names = set()
         if not disallow_servers:
             for server_id in self.server_cache:
                 if not media_type or self.server_cache[server_id]["media_type"] & media_type:
-                    names.append(server_id)
+                    names.add(server_id)
         for media_id, media in self.media.items():
             if not media_type or media["media_type"] & media_type:
-                names.append(media_id)
+                names.add(media_id)
                 if media.global_id_alt:
-                    names.append(media.global_id_alt)
-                names.append(media["name"])
+                    names.add(media.global_id_alt)
+                names.add(media["name"])
+                names.add(media["dir_name"])
+                names.add(str(media["id"]))
         return names
 
     def get_all_single_names(self, media_type=None):
@@ -215,7 +217,7 @@ class State:
             media = list(media)
             random.shuffle(media)
         for media_data in media:
-            if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id):
+            if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id, media_data.global_id_alt, str(media_data["id"]), media_data["dir_name"]):
                 continue
             if media_type and media_data["media_type"] & media_type == 0:
                 continue
