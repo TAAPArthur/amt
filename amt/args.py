@@ -11,7 +11,15 @@ def gen_auto_complete(parser):
     """ Support autocomplete via argcomplete if installed"""
     try:  # pragma: no cover
         import argcomplete
-        argcomplete.autocomplete(parser)
+        argcomplete.autocomplete(parser, default_completer=None)
+    except ImportError:
+        pass
+
+
+def add_file_completion(parser):
+    try:  # pragma: no cover
+        import argcomplete
+        parser.completer = argcomplete.completers.FilesCompleter
     except ImportError:
         pass
 
@@ -147,7 +155,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     import_parser.add_argument("--media-type", default="ANIME", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
     import_parser.add_argument("--skip-add", action="store_const", const=True, default=False, help="Don't auto add media")
-    import_parser.add_argument("files", nargs="+")
+    add_file_completion(import_parser.add_argument("files", nargs="+"))
 
     # info
     list_parser = add_parser_helper(sub_parsers, "list", func_str="list-media", parents=[readonly_parsers], help="List added media")
