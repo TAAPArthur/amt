@@ -7,11 +7,12 @@ from ..server import Server
 from ..util.media_type import MediaType
 from ..util.name_parser import (get_media_name_from_file,
                                 get_number_from_file_name)
+from ..util.progress_type import ProgressType
 
 
 class GenericHumbleBundle(Server):
     alias = "humblebundle"
-    progress_volumes = True
+    progress_type = ProgressType.VOLUME_ONLY
     official = True
     has_free_chapters = False
     is_premium = True

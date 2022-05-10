@@ -11,10 +11,11 @@ from ..job import RetryException
 from ..server import Server
 from ..util.decoder import GenericDecoder
 from ..util.media_type import MediaType
+from ..util.progress_type import ProgressType
 
 
 class GenericJNovelClub(Server):
-    progress_volumes = True
+    progress_type = ProgressType.CHAPTER_VOLUME
 
     alias = "j_novel_club"
     domain = "j-novel.club"
@@ -141,8 +142,8 @@ class GenericJNovelClubParts(GenericJNovelClub):
 
             total = volume["totalParts"] if volume["totalParts"] else len(parts)
             for part in parts:
-                number = round(volume_number + (part["number"] - parts[0]["number"] + 1) / total - 1, 2)
-                self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=number, title=part["title"], premium=not part["preview"])
+                vol_number = round(volume_number + (part["number"] - parts[0]["number"] + 1) / total - 1, 2)
+                self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=part["number"], volume_number=vol_number, title=part["title"], premium=not part["preview"])
         self.update_timestamp(media_data)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from ..server import Server
 from ..util.decoder import paste
+from ..util.progress_type import ProgressType
 
 # Improved from https://github.com/manga-py/manga-py
 
@@ -217,7 +218,7 @@ class VizManga(GenericVizManga):
 class VizMangaLibrary(GenericVizManga):
     id = "vizmanga_lib"
     alias = "vizmanga"
-    progress_volumes = True
+    progress_type = ProgressType.VOLUME_ONLY
     has_free_chapters = False
 
     base_url = "http://www.viz.com"

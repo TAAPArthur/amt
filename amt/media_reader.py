@@ -16,6 +16,7 @@ from .state import State
 from .util.media_type import MediaType
 from .util.name_parser import (find_media_with_similar_name_in_list,
                                get_alt_names, get_media_name_from_file)
+from .util.progress_type import ProgressType
 
 
 def import_sub_classes(m, clazz, *args):
@@ -297,7 +298,6 @@ class MediaReader:
         """
         server = self.get_server(media_data["server_id"])
         chapter_ids = set(media_data["chapters"].keys())
-        last_read_chapter = media_data.get_last_read_chapter()
         server.update_media_data(media_data)
 
         if not self.settings.get_keep_unavailable(media_data):
@@ -305,10 +305,6 @@ class MediaReader:
                 if chapter_id in media_data["chapters"] and not media_data["chapters"][chapter_id].check_if_updated_and_clear():
                     if not server.is_fully_downloaded(media_data, media_data["chapters"][chapter_id]):
                         del media_data["chapters"][chapter_id]
-
-        if server.progress_volumes != media_data["progress_volumes"]:
-            if last_read_chapter.get("id", None) in media_data["chapters"]:
-                media_data["progress"] = media_data["chapters"][last_read_chapter["id"]]["number"]
 
         return len(media_data["chapters"].keys() - chapter_ids)
 
@@ -374,7 +370,7 @@ class MediaReader:
 
     def mark_read(self, name=None, media_type=None, progress=False, N=0, force=False, abs=False):
         for media_data in self.get_media(media_type=media_type, name=name):
-            last_read = media_data.get_last_chapter_number() + N if not abs else N
+            last_read = media_data.get_last_chapter().get("number", 0) + N if not abs else N
             if progress:
                 last_read = media_data["progress"]
             if not force:
@@ -496,16 +492,21 @@ class MediaReader:
         media_to_sync = []
         for media_data in self.get_media(name=name, media_type=media_type):
             tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_tracker().id)
-            if force or media_data["progress"] < int(media_data.get_last_read_chapter_number()):
-                media_to_sync.append(media_data)
+            last_read_chapter = media_data.get_last_read_chapter()
+            if last_read_chapter and (force or media_data["progress"] < last_read_chapter["number"]):
+                media_to_sync.append((media_data, last_read_chapter["number"]))
                 if tracker_info:
-                    data.append((tracker_info[0], media_data.get_last_read_chapter_number(), media_data["progress_volumes"]))
-                    logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], media_data.get_last_read_chapter_number())
+                    if media_data["progress_type"] != ProgressType.CHAPTER_VOLUME:
+                        data.append((tracker_info[0], last_read_chapter["number"], media_data["progress_type"] == ProgressType.VOLUME_ONLY))
+                    else:
+                        data.append((tracker_info[0], last_read_chapter["number"], False))
+                        data.append((tracker_info[0], last_read_chapter["volume_number"], True))
+                    logging.info("Preparing to update %s from %d to %d", media_data["name"], media_data["progress"], last_read_chapter["number"])
 
         if data and not dry_run:
             self.get_tracker().update(data)
-        for media_data in media_to_sync:
-            media_data["progress"] = media_data.get_last_read_chapter_number()
+        for media_data, last_chapter_num in media_to_sync:
+            media_data["progress"] = last_chapter_num
 
     def stats_update(self, username=None, user_id=None):
         data = list(self.get_tracker().get_full_list_data(id=user_id, user_name=username))
@@ -538,7 +539,7 @@ class MediaReader:
 
             tracked_media.extend(map(lambda x: x.global_id, media_data_list))
             for media_data in media_data_list:
-                progress = entry["progress"] if not media_data["progress_volumes"] else entry["progress_volumes"]
+                progress = entry["progress"] if media_data["progress_type"] != ProgressType.VOLUME_ONLY else entry["progress_volumes"]
                 self.mark_chapters_until_n_as_read(media_data, progress, force=force)
                 media_data["progress"] = progress
                 media_data["nextTimeStampTracker"] = entry["nextTimeStamp"]

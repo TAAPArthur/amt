@@ -7,6 +7,7 @@ import time
 from . import stats
 from .stats import Details, SortIndex, StatGroup
 from .util.media_type import MediaType
+from .util.progress_type import ProgressType
 
 
 def json_decoder(obj):
@@ -18,7 +19,7 @@ def json_decoder(obj):
 
 
 class State:
-    version = 1.2
+    version = 1.3
 
     def __init__(self, settings, session=None):
         self.settings = settings
@@ -233,14 +234,16 @@ class State:
     def list_media(self, name=None, media_type=None, out_of_date_only=False, tag=None, csv=False, tracked=None):
         now = time.time()
         for media_data in self.get_media(name=name, media_type=media_type, tag=tag, tracked=tracked):
-            last_chapter_num = media_data.get_last_chapter_number()
-            last_read = media_data.get_last_read_chapter_number()
-            if not out_of_date_only or last_chapter_num != last_read:
+            last_chapter = media_data.get_last_chapter()
+            last_read = media_data.get_last_read_chapter()
+            if not out_of_date_only or last_chapter.get("number", 0) != last_read.get("number", 0):
+                num_key = "number" if media_data["progress_type"] != ProgressType.CHAPTER_VOLUME else "volume_number"
                 next_chapter_date_str = media_data.get_next_chapter_available_str(now)
+                args = [media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read.get(num_key, 0)), str(last_chapter.get(num_key, 0)), next_chapter_date_str, ",".join(media_data["tags"])]
                 if csv:
-                    print("\t".join([media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read), str(last_chapter_num), next_chapter_date_str, ",".join(media_data["tags"])]))
+                    print("\t".join(args))
                 else:
-                    print("{}\t{} {}\t{}/{} {} {}".format(media_data.friendly_id, media_data["name"], media_data["season_title"], last_read, last_chapter_num, next_chapter_date_str, ",".join(media_data["tags"])))
+                    print("{}\t{} {}\t{}/{} {} {}".format(*args))
 
     def list_chapters(self, name, show_ids=False):
         media_data = self.get_single_media(name=name)
@@ -308,21 +311,21 @@ class MediaData(dict):
             return f"{delta/3600/24:.1f} days"
 
     def copy_fields_to(self, dest):
-        for key in ("nextTimeStampTracker", "offset", "progress", "progress_volumes", "tags", "trackers"):
+        for key in ("nextTimeStampTracker", "offset", "progress", "progress_type", "tags", "trackers"):
             if key in self:
                 dest[key] = self.get(key)
 
-    def get_last_chapter_number(self):
-        return max(self["chapters"].values(), key=lambda x: x["number"])["number"] if self["chapters"] else 0
+    def get_last_chapter(self):
+        return max(self["chapters"].values(), key=lambda x: x["number"], default={})
 
     def get_first_chapter_number_greater_than_zero(self):
         return min(self["chapters"].values(), key=lambda x: x["number"] if x["number"] > 0 else float("inf"))["number"]
 
     def get_last_read_chapter(self):
-        return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={"number": 0})
+        return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={})
 
     def get_last_read_chapter_number(self):
-        return self.get_last_read_chapter()["number"]
+        return self.get_last_read_chapter().get("number", 0)
 
     def get_labels(self):
         return [self.global_id, self["name"], self["server_id"], MediaType(self["media_type"]).name]

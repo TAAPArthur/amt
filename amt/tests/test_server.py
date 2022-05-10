@@ -6,6 +6,7 @@ from requests.exceptions import HTTPError
 
 from ..server import Server, TorrentHelper
 from ..util.media_type import MediaType
+from ..util.progress_type import ProgressType
 
 TEST_BASE = "/tmp/amt/"
 
@@ -223,10 +224,15 @@ Subtitle-C5_2
 class TestNovel(TestServer):
     id = "test_server_novel"
     media_type = MediaType.NOVEL
+    progress_type = ProgressType.CHAPTER_VOLUME
+
+    def update_chapter_data(self, media_data, **kwargs):
+        super().update_chapter_data(media_data, volume_number=1, **kwargs)
 
 
 class TestTorrentHelper(TorrentHelper):
     id = "test_torrent_helper"
+    progress_type = ProgressType.VOLUME_ONLY
 
     available_torrent_file = "TorrentableMedia"
 

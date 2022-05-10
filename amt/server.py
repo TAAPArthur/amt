@@ -4,15 +4,15 @@ import os
 import re
 import time
 
+from datetime import datetime, timedelta
 from requests.exceptions import ConnectionError, HTTPError, SSLError
 from threading import Lock
-from datetime import datetime, timedelta
 
 from .job import Job
 from .state import ChapterData, MediaData
 from .util.media_type import MediaType
-from .util.name_parser import (find_media_with_similar_name_in_list,
-                               get_alt_names)
+from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
+from .util.progress_type import ProgressType
 
 
 def get_extension(url):
@@ -175,7 +175,7 @@ class MediaServer(RequestServer):
                 break
         return media_map.values()
 
-    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_volumes=None, lang="", **kwargs):
+    def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_type=None, lang="", **kwargs):
         if not lang:
             match = re.search(r"\((\w*) Dub\)", name) or re.search(r"\((\w*) Dub\)", season_title)
             if match:
@@ -184,9 +184,9 @@ class MediaServer(RequestServer):
                 match = re.search(r"\(Dub\)", name) or re.search(r"\(Dub\)", season_title)
                 lang = "dub" if match else ""
 
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_volumes=progress_volumes if progress_volumes is not None else self.progress_volumes, tags=[], lang=lang, nextTimeStamp=0, **kwargs))
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_type=progress_type if progress_type is not None else self.progress_type, tags=[], lang=lang, nextTimeStamp=0, **kwargs))
 
-    def update_chapter_data(self, media_data, id, title, number, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False, **kwargs):
+    def update_chapter_data(self, media_data, id, title, number, volume_number=None, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False, **kwargs):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():
             number = 0
             special = True
@@ -202,7 +202,7 @@ class MediaServer(RequestServer):
         if number % 1 == 0:
             number = int(number)
 
-        new_values = dict(id=id, title=title, number=number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, inaccessible=inaccessible, **kwargs)
+        new_values = dict(id=id, title=title, number=number, volume_number=volume_number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, inaccessible=inaccessible, **kwargs)
         if id in media_data["chapters"]:
             media_data["chapters"][id].update(new_values)
         else:
@@ -237,7 +237,7 @@ class GenericServer(MediaServer):
     # Note that if this value is non-None then so must stream_url_regex
     add_series_url_regex = None
     # Measures progress in volumes instead of chapter/episodes
-    progress_volumes = False
+    progress_type = ProgressType.CHAPTER_ONLY
     # True if the server only provides properly licensed media
     official = True
     # Download a single page from this server at a time
@@ -571,7 +571,7 @@ class TorrentHelper(MediaServer):
     id = None
     media_type = MediaType.ANIME
     official = False
-    progress_volumes = True
+    progress_type = ProgressType.VOLUME_ONLY
 
     def download_torrent_file(self, media_data):
         """

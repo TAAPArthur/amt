@@ -786,9 +786,16 @@ class MediaReaderTest(BaseUnitTestClass):
                 assert all(map(lambda x: x["read"], media_data["chapters"].values()))
             self.media_reader.update()
 
+    def test_sync_with_no_chapters(self):
+        self.add_test_media(self.test_server, no_update=True)
+        self.media_reader.sync_progress()
+
     def test_mark_read(self):
-        media_list = self.add_test_media(self.test_server)
+        media_list = self.add_test_media(self.test_server, no_update=True)
         self.media_reader.mark_read(self.test_server.id)
+        self.media_reader.update()
+        self.media_reader.mark_read(self.test_server.id)
+
         for media_data in media_list:
             assert all(map(lambda x: x["read"], media_data["chapters"].values()))
         self.media_reader.mark_read(self.test_server.id, N=-1)
@@ -1233,7 +1240,9 @@ class ArgsTest(CliUnitTestClass):
 
     def test_list(self):
         parse_args(media_reader=self.media_reader, args=["list"])
-        self.add_test_media()
+        self.add_test_media(no_update=True)
+        parse_args(media_reader=self.media_reader, args=["list"])
+        self.media_reader.update()
         parse_args(media_reader=self.media_reader, args=["list"])
         parse_args(media_reader=self.media_reader, args=["list", "--csv"])
 
@@ -1376,21 +1385,9 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["sync"])
         for i in range(2):
             for media_data in self.media_reader.get_media():
-                self.assertEqual(media_data.get_last_chapter_number(), media_data.get_last_read_chapter_number())
+                self.assertEqual(media_data.get_last_chapter()["number"], media_data.get_last_read_chapter_number())
                 self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
             self.reload()
-
-    def test_progress_after_progress_type_change(self):
-        self.add_test_media(self.test_server)
-        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only"])
-        parse_args(media_reader=self.media_reader, args=["mark-read"])
-        parse_args(media_reader=self.media_reader, args=["sync"])
-        self.test_server.progress_volumes = not self.test_server.progress_volumes
-        self.test_server.offset_chapter_num = 100
-        parse_args(media_reader=self.media_reader, args=["update"])
-        for media_data in self.media_reader.get_media(self.test_server.id):
-            self.assertEqual(media_data.get_last_chapter_number(), media_data.get_last_read_chapter_number())
-            self.assertEqual(media_data.get_last_chapter_number(), media_data["progress"])
 
     def test_download(self):
         self.add_test_media(limit=1)
@@ -1803,7 +1800,7 @@ class ArgsTest(CliUnitTestClass):
         if not minor:
             self.assertTrue(all(["special" in x for x in self.media_reader.media[ids[1]]["chapters"].values()]))
             self.assertTrue(all(["old_chapter_field" not in x for x in self.media_reader.media[ids[2]]["chapters"].values()]))
-        self.assertTrue(all([media_data.get_last_read_chapter_number() == media_data.get_last_chapter_number() for media_data in self.media_reader.get_media()]))
+        self.assertTrue(all([media_data.get_last_read_chapter()["number"] == media_data.get_last_chapter()["number"] for media_data in self.media_reader.get_media()]))
 
     def test_upgrade_minor(self):
         self._test_upgrade_helper(True)
