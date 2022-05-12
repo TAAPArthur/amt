@@ -127,7 +127,7 @@ class RequestServer:
             self.mem_cache[key] = self.session_post(url, **kwargs) if post else self.session_get(url, **kwargs)
         return self.mem_cache[key]
 
-    def session_get_cache_json(self, url, key=None, skip_cache=False, ttl=7, to_json_func=None, **kwargs):
+    def session_get_cache(self, url, key=None, skip_cache=False, ttl=7, use_json=False, output_format_func=None, **kwargs):
         if skip_cache:
             return self.session_get(url, **kwargs).json()
         file = self.settings.get_web_cache(key or url)
@@ -135,23 +135,27 @@ class RequestServer:
             if ttl <= 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
                 with open(file, "r") as f:
                     logging.debug("Returning cached value for %s", url)
-                    return json.load(f)
+                    return json.load(f) if use_json else f.read()
         except (json.decoder.JSONDecodeError, FileNotFoundError):
             pass
         r = self.session_get(url, **kwargs)
-        data = to_json_func(r) if to_json_func else r.json()
+        text = output_format_func(r.text) if output_format_func else r.text
+        data = json.loads(text) if use_json else text
 
         for i in range(2):
             try:
                 with open(file, "w") as f:
-                    json.dump(data, f)
+                    f.write(text)
                     break
             except FileNotFoundError:
                 os.makedirs(self.settings.get_web_cache_dir(), exist_ok=True)
         return data
 
+    def session_get_cache_json(self, url, **kwargs):
+        return self.session_get_cache(url, use_json=True, **kwargs)
+
     def soupify(self, BeautifulSoup, r):
-        return BeautifulSoup(r.text, self.settings.bs4_parser)
+        return BeautifulSoup(r if isinstance(r, str) else r.text, self.settings.bs4_parser)
 
 
 class MediaServer(RequestServer):

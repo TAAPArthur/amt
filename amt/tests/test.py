@@ -515,6 +515,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         with open(file, "w") as f:
             json.dump(data, f)
         self.assertEqual(data, server.session_get_cache_json(url))
+        self.assertEqual(json.dumps(data), server.session_get_cache(url))
 
     def test_skip_servers_that_cannot_be_imported(self):
         with patch.dict(sys.modules, {"amt.tests.test_server": None}):
@@ -1107,6 +1108,12 @@ password=root
         if ENABLED_SERVERS and not self.media_reader.get_servers():
             self.skipTest("Server not enabled")
         self.assertEqual(len(self.media_reader.get_servers()), len(list(MediaType)) * 2)
+
+    def test_cache(self):
+        media_data = self.add_test_media(limit=1)[0]
+        server = self.media_reader.get_server(media_data["server_id"])
+        server.session_get_cache(f"http://localhost:{self.port}")
+        server.session_get_cache(f"http://localhost:{self.port}")
 
     def test_no_valid_domains(self):
         with open(self.settings.get_remote_servers_config_file(), "w") as f:

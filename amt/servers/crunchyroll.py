@@ -108,13 +108,13 @@ class Crunchyroll(GenericCrunchyrollServer):
         media_name_ids = {}
         try:
             from bs4 import BeautifulSoup
-            soup = self.soupify(BeautifulSoup, self.session_get(self.alpha_list_url))
+            soup = self.soupify(BeautifulSoup, self.session_get_cache(self.alpha_list_url))
             for group_item in soup.findAll("li", {"class": "group-item"}):
                 media_name_ids[group_item["group_id"]] = group_item.find("a")["title"]
         except (HTTPError, ImportError):
             pass
-        r = self.session_get(self.popular_list_url)
-        match = self.popular_media_regex.findall(r.text)
+        text = self.session_get_cache(self.popular_list_url)
+        match = self.popular_media_regex.findall(text)
         for media_id, data in match:
             media_name_ids[media_id] = json.loads(data)["name"]
 
@@ -179,10 +179,10 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     def search_helper(self, terms, limit):
         try:
-            data = self.session_get_cache_json(self.list_all_series, to_json_func=lambda r: json.loads(r.text.splitlines()[1]))["data"]
+            data = self.session_get_cache_json(self.list_all_series, output_format_func=lambda text: text.splitlines()[1])["data"]
         except HTTPError:
             self.get_session_id(force=True)
-            data = self.session_get_cache_json(self.list_all_series, to_json_func=lambda r: json.loads(r.text.splitlines()[1]))["data"]
+            data = self.session_get_cache_json(self.list_all_series, output_format_func=lambda text: text.splitlines()[1])["data"]
 
         if terms:
             data = list(find_media_with_similar_name_in_list(terms, data))
