@@ -1811,6 +1811,10 @@ class ArgsTest(CliUnitTestClass):
     def test_upgrade_major(self):
         self._test_upgrade_helper(False)
 
+    def test_default_version(self):
+        self.assertFalse(self.media_reader.state.is_out_of_date_minor())
+        self.assertFalse(self.media_reader.state.is_out_of_date())
+
     def test_upgrade_change_in_chapter_format_as_needed(self):
         media_list = self.add_test_media(self.test_anime_server)
         for media_data in media_list:

@@ -85,7 +85,7 @@ class State:
     def load_media(self):
         self.all_media = self.read_file_as_dict(self.settings.get_metadata_file())
         if not self.all_media:
-            self.all_media = dict(media={}, disabled_media={})
+            self.all_media = dict(media={}, disabled_media={}, version=State.version)
         self.media = self.all_media["media"]
         self.disabled_media = self.all_media["disabled_media"]
 
@@ -150,7 +150,7 @@ class State:
         compatible (the upgraded file can be used with an older program (same
         major version) without any state loss
         """
-        return State.version - self.all_media.get("version", 0) < 1
+        return self.is_out_of_date() and State.version - self.all_media.get("version", 0) < 1
 
     def update_verion(self):
         self.all_media["version"] = State.version
