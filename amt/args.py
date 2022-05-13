@@ -48,7 +48,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     readonly_parsers.set_defaults(readonly=True)
 
     sub_search_parsers = argparse.ArgumentParser(add_help=False)
-    sub_search_parsers.add_argument("--no-sort-by-preferred-lang", action="store_const", const=None, default=state.settings.get_prefered_lang_key, help="Sort results by preferred Settings:preferred_primary_language", dest="sort_func")
+    sub_search_parsers.add_argument("--filter-by-preferred-lang", action="store_const", const=True, default=False, help="Sort results by preferred Settings:preferred_primary_language")
     sub_search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     sub_search_parsers.add_argument("--limit", type=int, default=10, help="How many chapters will be downloaded per series")
     sub_search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
@@ -58,8 +58,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     search_parsers = add_parser_helper(sub_parsers, "search_for_media", aliases=["search"], parents=[sub_search_parsers], help="Search for and add media")
     search_parsers.add_argument("name", help="The string to search by")
 
-    migrate_parsers = add_parser_helper(sub_parsers, "migrate", help="Move media to another server")
-    migrate_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
+    migrate_parsers = add_parser_helper(sub_parsers, "migrate", parents=[sub_search_parsers], help="Move media to another server")
     migrate_parsers.add_argument("--force-same-id", action="store_const", const=True, default=False, help="Forces the media id to be the same")
     migrate_parsers.add_argument("--self", action="store_const", const=True, default=False, help="Re-adds the media", dest="move_self")
     migrate_parsers.add_argument("name", choices=state.get_all_names(), help="Global id of media to move")

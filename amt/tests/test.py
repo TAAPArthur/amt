@@ -1316,9 +1316,9 @@ class ArgsTest(CliUnitTestClass):
             server.test_lang = True
             for lang in ("EN", "JP"):
                 self.media_reader.media.clear()
-                self.settings.preferred_primary_language = [lang]
+                self.settings.preferred_primary_language = [lang, lang.upper()]
                 with self.subTest(lang=lang, server=server.id):
-                    parse_args(media_reader=self.media_reader, args=["--auto", "load", "--server", server.id, "test_user"])
+                    parse_args(media_reader=self.media_reader, args=["--auto", "load", "--filter-by-preferred-lang", "--server", server.id, "test_user"])
                     self.assertEqual(1, len(self.media_reader.get_media_ids()))
                     media_data = list(self.media_reader.get_media())[0]
                     self.assertEqual(media_data["lang"].upper(), lang)

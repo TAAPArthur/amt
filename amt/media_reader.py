@@ -123,7 +123,7 @@ class MediaReader:
         if no_update is False or no_update is None and not media_data["chapters"]:
             self.update_media(media_data)
 
-    def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], server_list=None, no_add=False, media_id=None, sort_func=None, raiseException=False):
+    def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], server_list=None, no_add=False, media_id=None, raiseException=False, filter_by_preferred_lang=False):
         def func(x): return x.search(term, literal=exact, limit=limit)
         if server_id:
             assert not server_list
@@ -131,12 +131,15 @@ class MediaReader:
         else:
             results = self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), server_list if server_list is not None else self.get_servers()), raiseException=raiseException)
         if exact:
-            results = list(filter(lambda x: x["name"] == term, results))
-        results = list(filter(lambda x: not media_id or str(x["id"]) == str(media_id) or x.global_id == media_id, results))
-        results.sort(key=sort_func if sort_func else self.settings.get_prefered_lang_key)
+            results = filter(lambda x: x["name"] == term, results)
+        if media_id:
+            results = filter(lambda x: str(x["id"]) == str(media_id) or x.global_id == media_id, results)
+        if filter_by_preferred_lang:
+            results = filter(lambda x: self.settings.get_prefered_lang_key(x) != float("inf"), results)
+        results = list(results)
         if len(results) == 0:
             return None
-        media_data = self.select_media(term, results, "Select media: ", auto_select_if_single=exact or media_id)
+        media_data = self.select_media(term, results[:limit], "Select media: ", auto_select_if_single=exact or media_id)
         if not no_add and media_data:
             self.add_media(media_data)
         return media_data
@@ -249,16 +252,15 @@ class MediaReader:
 
     ############# Upgrade and migration
 
-    def migrate(self, name, exact=False, move_self=False, force_same_id=False, raw_id=False):
+    def migrate(self, name, media_type=None, exact=False, move_self=False, force_same_id=False, raw_id=False, server_id=None, **kwargs):
         media_list = []
         last_read_list = []
         failures = 0
         for media_data in list(self.get_media(name=name)):
             if move_self:
-                def func(x): return -sum([media_data.get(key, None) == x[key] for key in x])
-                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if raw_id else media_data["id"] if force_same_id else None, sort_func=func, no_add=True)
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if raw_id else media_data["id"] if force_same_id else None, no_add=True)
             else:
-                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]], no_add=True)
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_type or media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]], no_add=True, **kwargs)
             if new_media_data:
                 media_data.copy_fields_to(new_media_data)
                 media_list.append(new_media_data)
