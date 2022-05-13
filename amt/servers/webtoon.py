@@ -33,7 +33,8 @@ class Webtoons(Server):
     def search_for_media(self, term, limit=None):
         r = self.session_get(self.search_url.format(term))
         soup = self.soupify(BeautifulSoup, r)
-        return [self.get_media_list_helper(element) for element in soup.find("ul", class_="card_lst").find_all("li")]
+        element = soup.find("ul", class_="card_lst")
+        return [self.get_media_list_helper(element) for element in element.find_all("li")] if element else []
 
     def update_media_data(self, media_data):
         if not media_data.get("url"):
