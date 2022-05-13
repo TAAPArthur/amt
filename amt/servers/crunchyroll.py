@@ -89,7 +89,7 @@ class Crunchyroll(GenericCrunchyrollServer):
 
     def get_media_data_from_url(self, url):
         name_slug = self._get_media_id_from_url(url)
-        return self.search(name_slug)[0]
+        return self.search(name_slug)[0][1]
 
     def get_chapter_id_for_url(self, url):
         number = self.stream_url_regex.search(url).group(2)

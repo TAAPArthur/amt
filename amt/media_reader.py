@@ -129,7 +129,9 @@ class MediaReader:
             assert not server_list
             results = func(self.get_server(server_id))
         else:
-            results = self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), server_list if server_list is not None else self.get_servers()), raiseException=raiseException)
+            results = sorted(self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), server_list if server_list is not None else self.get_servers()), raiseException=raiseException), key=lambda x: x[0])
+
+        results = map(lambda x: x[1], results)
         if exact:
             results = filter(lambda x: x["name"] == term, results)
         if media_id:

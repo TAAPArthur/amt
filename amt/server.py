@@ -5,6 +5,7 @@ import re
 import time
 
 from datetime import datetime, timedelta
+from difflib import SequenceMatcher
 from requests.exceptions import ConnectionError, HTTPError, SSLError
 from threading import Lock
 
@@ -167,7 +168,10 @@ class MediaServer(RequestServer):
         """
         terms = get_alt_names(term) if not literal else [term]
         media_list = self.search_helper(terms, limit)
-        return sorted(media_list, key=lambda x: abs(len(x["name"]) - len(term)))[:limit]
+
+        def score(x):
+            return -(SequenceMatcher(None, term, x).ratio() + max([SequenceMatcher(None, t, x).ratio() for t in terms]))
+        return sorted(map(lambda x: (score(x["name"]), x), media_list), key=lambda x: x[0])[:limit]
 
     def search_helper(self, terms, limit):
         media_map = {}
