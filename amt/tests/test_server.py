@@ -61,7 +61,7 @@ class TestServer(Server):
                 if self.time_to_error == 0:
                     self.inject_error(None, 0)
 
-    def inject_error(self, error=Exception("Dummy error"), count=1, delay=0):
+    def inject_error(self, error=ValueError("Dummy error"), count=1, delay=0):
         self.error_to_inject = error
         self.time_to_error = count
         self.error_delay = delay

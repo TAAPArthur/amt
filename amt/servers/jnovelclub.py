@@ -111,7 +111,6 @@ class JNovelClub(GenericJNovelClub):
 
 class JNovelClubManga(JNovelClub):
     id = "j_novel_club_manga"
-    alias = "j_novel_club"
     media_type = MediaType.MANGA
 
 

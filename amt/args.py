@@ -176,7 +176,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     list_from_servers.add_argument("--limit", "-l", type=int, default=None)
     list_from_servers.add_argument("server_id", choices=state.get_server_ids())
 
-    tag_parser = add_parser_helper(sub_parsers, "tag", help="Apply an arbirary label")
+    tag_parser = add_parser_helper(sub_parsers, "tag", help="Apply an arbitrary label")
     tag_parser.add_argument("tag_name")
     tag_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?")
 

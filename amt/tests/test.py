@@ -557,7 +557,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def test_server_download_errors(self):
         media_data = self.add_test_media(server=self.test_server, limit=1)[0]
         self.test_server.inject_error(delay=1)
-        self.assertRaises(Exception, self.media_reader.download_unread_chapters, media_data)
+        self.assertRaises(ValueError, self.media_reader.download_unread_chapters, media_data)
         self.media_reader.download_unread_chapters(media_data)
         self.verify_all_chapters_downloaded()
 
@@ -566,7 +566,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             with self.subTest(server=server.id):
                 media_data = server.get_media_list()[0]
                 name = media_data["name"]
-                assert media_data == list(server.search(name))[0]
+                self.assertEquals(media_data, list(server.search(name))[0][1])
                 assert server.search(name[:3])
 
     def test_search_inexact(self):
@@ -914,7 +914,7 @@ class ApplicationTestWithErrors(CliUnitTestClass):
     def test_update_with_error(self):
         media_list = self.add_test_media(no_update=True)
         self.test_server.inject_error()
-        self.assertRaises(Exception, parse_args, media_reader=self.media_reader, args=["update"])
+        self.assertRaises(ValueError, parse_args, media_reader=self.media_reader, args=["update"])
         assert self.test_server.was_error_thrown()
         self.reload()
         self.assertEqual(len(media_list), len(self.media_reader.get_media_ids()))
@@ -922,7 +922,7 @@ class ApplicationTestWithErrors(CliUnitTestClass):
     def test_download_with_error(self):
         self.add_test_media()
         self.test_server.inject_error()
-        self.assertRaises(Exception, self.media_reader.download_unread_chapters)
+        self.assertRaises(ValueError, self.media_reader.download_unread_chapters)
         assert self.test_server.was_error_thrown()
 
     def test_download_with_retry(self):
@@ -988,17 +988,15 @@ class GenericServerTest():
         self.settings.max_retries = 1
         self.reload(keep_settings=True)
 
-        def func(server_id):
-            server = self.media_reader.get_server(server_id)
-            if not server.alias:
-                return
+        def func(server):
             try:
                 with self.subTest(server=server.id, method="relogin"):
                     assert not server.relogin()
             finally:
                 assert server.needs_to_login()
 
-        self.for_each(func, self.media_reader.state.get_server_ids_with_logins())
+        unique_login_servers = {x.alias or x.id: x for x in map(self.media_reader.get_server, self.media_reader.state.get_server_ids_with_logins())}
+        self.for_each(func, unique_login_servers.values())
 
 
 class LocalServerTest(GenericServerTest, BaseUnitTestClass):
@@ -1981,28 +1979,6 @@ class TrackerTest(RealBaseUnitTestClass):
 
 class ServerSpecificTest(RealBaseUnitTestClass):
 
-    def test_crunchyroll_session(self):
-        from ..servers.crunchyroll import CrunchyrollAnime
-        self.settings.no_save_session = False
-        self.media_reader.settings.no_load_session = False
-        server = self.media_reader.get_server(CrunchyrollAnime.id)
-        self.assert_server_enabled_or_skip_test(server)
-
-        session = server.get_session_id()
-        self.assertEqual(session, server.get_session_id())
-        self.media_reader.state.save()
-        self.reload()
-
-        self.assertEqual(session, self.media_reader.get_server(server.id).get_session_id())
-
-        with open(self.settings.get_cookie_file(), "r") as f:
-            cookie_data = map(lambda x: x.replace(session, "some_bad_session"), f.readlines())
-        with open(self.settings.get_cookie_file(), "w") as f:
-            f.writelines(cookie_data)
-        self.reload()
-        self.assertNotEqual(session, self.media_reader.get_server(server.id).get_session_id())
-        self.assertTrue(self.media_reader.get_server(server.id).get_media_list(limit=1))
-
     def test_jnovel_club_manga_parts_full_download(self):
         from ..servers.jnovelclub import JNovelClubMangaParts
         # Make the test faster
@@ -2038,47 +2014,6 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         for chapter_data in media_data["chapters"].values():
             chapter_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
             self.assertFalse(os.path.exists(chapter_path))
-
-
-@unittest.skipUnless(PREMIUM_TEST, "Premium tests is not enabled")
-class PremiumTest(RealBaseUnitTestClass):
-    def setUp(self):
-        super().setUp()
-        self.settings.password_manager_enabled = True
-
-    @unittest.skipIf(SKIP_DOWNLOAD, "Download tests is not enabled")
-    def test_download_premium(self):
-        for server in self.media_reader.get_servers():
-            if server.has_login() and not isinstance(server, TestServer):
-                with self.subTest(server=server.id, method="get_media_list"):
-                    media_list = server.get_media_list()
-                    download_passed = False
-                    for media_data in media_list:
-                        server.update_media_data(media_data)
-                        chapter_data = next(filter(lambda x: x["premium"], media_data["chapters"].values()), None)
-                        if chapter_data:
-                            assert server.download_chapter(media_data, chapter_data, page_limit=1)
-                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)
-
-                            self.verify_download(media_data, chapter_data)
-                            download_passed = True
-                            break
-                    assert download_passed
-
-    def test_get_list(self):
-        for tracker_id in self.media_reader.get_tracker_ids():
-            with self.subTest(tracker=tracker_id):
-                data = self.media_reader.get_tracker(tracker_id).get_tracker_list(id=1)
-                assert data
-                assert isinstance(data, list)
-                assert isinstance(data[0], dict)
-
-    def test_test_login(self):
-        assert self.media_reader.test_login()
-        for server in self.media_reader.get_servers():
-            if server.has_login():
-                with self.subTest(server=server.id):
-                    assert not server.needs_authentication()
 
 
 def load_tests(loader, tests, pattern):
