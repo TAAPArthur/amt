@@ -83,6 +83,9 @@ class State:
             self.update_server_cache()
         self.bundles = self.read_file_as_dict(self.settings.get_bundle_metadata_file())
 
+    def load_chapter_data(self, media_data):
+        media_data.chapters = self.read_file_as_dict(self.settings.get_chapter_metadata_file(media_data))
+
     def load_media(self):
         self.all_media = self.read_file_as_dict(self.settings.get_metadata_file())
         if not self.all_media:
@@ -94,8 +97,8 @@ class State:
             if key != media_data.global_id:
                 del self.media[key]
                 self.media[media_data.global_id] = media_data
-            if not media_data.chapters:
-                media_data.chapters = self.read_file_as_dict(self.settings.get_chapter_metadata_file(media_data))
+            assert not media_data.chapters
+            self.load_chapter_data(media_data)
 
     def _set_session_hash(self):
         """
@@ -271,12 +274,8 @@ class State:
 
 class MediaData(dict):
     def __init__(self, backing_map):
-        self.chapters = {}
-        if "chapters" in backing_map:
-            self.chapters = backing_map["chapters"]
-            del backing_map["chapters"]
-
         super().__init__(backing_map)
+        self.chapters = {}
 
     def __getitem__(self, key):
         if key == "chapters":

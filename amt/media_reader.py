@@ -120,6 +120,7 @@ class MediaReader:
         logging.debug("Adding %s", global_id)
         self.media[global_id] = media_data
         os.makedirs(self.settings.get_media_dir(media_data), exist_ok=True)
+        self.state.load_chapter_data(media_data)
         if no_update is False or no_update is None and not media_data["chapters"]:
             self.update_media(media_data)
 

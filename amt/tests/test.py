@@ -625,6 +625,15 @@ class MediaReaderTest(BaseUnitTestClass):
         self.media_reader.remove_media(media_data)
         self.assertRaises(KeyError, self.media_reader.remove_media, media_data)
 
+    def test_add_remove_remember(self):
+        media_data = self.add_test_media(limit=1)[0]
+        self.media_reader.mark_read()
+        self.media_reader.state.save()
+        self.reload()
+        self.media_reader.remove_media(id=media_data.global_id)
+        media_data = self.add_test_media(limit=1)[0]
+        self.verify_all_chapters_read(name=media_data)
+
     def test_load_servers(self):
         self.assertEqual(len(TEST_SERVERS), len(self.media_reader.state.get_server_ids()))
         self.assertEqual(len(TEST_TRACKERS), len(self.media_reader.get_tracker_ids()))
@@ -1818,17 +1827,6 @@ class ArgsTest(CliUnitTestClass):
     def test_default_version(self):
         self.assertFalse(self.media_reader.state.is_out_of_date_minor())
         self.assertFalse(self.media_reader.state.is_out_of_date())
-
-    def test_upgrade_change_in_chapter_format_as_needed(self):
-        media_list = self.add_test_media(self.test_anime_server)
-        for media_data in media_list:
-            assert media_data.chapters
-            media_data["chapters"] = media_data.chapters
-            media_data.chapters = {}
-        self.media_reader.state.save()
-        self.reload()
-        for media_data in self.media_reader.get_media():
-            assert media_data.chapters
 
 
 class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
