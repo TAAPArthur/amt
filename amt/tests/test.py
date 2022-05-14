@@ -542,7 +542,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 my_media_id_list = list(self.media_reader.get_media_ids())
                 self.assertEqual(1, len(my_media_id_list))
                 self.assertEqual(my_media_id_list[0], selected_media.global_id)
-                self.media_reader.remove_media(media_data=selected_media)
+                self.media_reader.remove_media(name=selected_media)
                 self.verify_no_media()
 
     def test_server_download(self):
@@ -622,15 +622,15 @@ class MediaReaderTest(BaseUnitTestClass):
         self.verify_media_len(1)
         self.assertRaises(ValueError, self.media_reader.add_media, media_data)
         self.verify_media_len(1)
-        self.media_reader.remove_media(media_data)
-        self.assertRaises(KeyError, self.media_reader.remove_media, media_data)
+        self.media_reader.remove_media(name=media_data)
+        self.assertRaises(KeyError, self.media_reader.remove_media, name=media_data)
 
     def test_add_remove_remember(self):
         media_data = self.add_test_media(limit=1)[0]
         self.media_reader.mark_read()
         self.media_reader.state.save()
         self.reload()
-        self.media_reader.remove_media(id=media_data.global_id)
+        self.media_reader.remove_media(name=media_data.global_id)
         media_data = self.add_test_media(limit=1)[0]
         self.verify_all_chapters_read(name=media_data)
 
@@ -1174,7 +1174,7 @@ password=A
                 assert media_data.get_sorted_chapters()
                 url = server.get_stream_urls(media_data, media_data.get_sorted_chapters()[0])[0]
                 self.assertTrue(self.media_reader.stream(url))
-                self.media_reader.remove_media(media_data)
+                self.media_reader.remove_media(name=media_data)
                 self.assertTrue(self.media_reader.stream(url))
 
     def test_download_resources(self):

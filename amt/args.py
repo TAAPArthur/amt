@@ -67,7 +67,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     add_parsers.add_argument("url", help="Either the series home page or the page for an arbitrary chapter (depends on server)")
 
     remove_parsers = add_parser_helper(sub_parsers, "remove", func_str="remove-media", help="Remove media")
-    remove_parsers.add_argument("id", choices=state.get_all_single_names(), help="Global id of media to remove")
+    remove_parsers.add_argument("name", choices=state.get_all_single_names(), help="id of media to remove")
 
     # update and download
     update_parser = add_parser_helper(sub_parsers, "update", help="Update all media")

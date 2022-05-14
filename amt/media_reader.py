@@ -206,9 +206,8 @@ class MediaReader:
                 return media_data
         return False
 
-    def remove_media(self, media_data=None, id=None):
-        if id:
-            media_data = self.get_single_media(name=id)
+    def remove_media(self, **kwargs):
+        media_data = self.get_single_media(**kwargs)
         del self.media[media_data.global_id]
 
     def auto_import_media(self, files=None, **kwargs):
@@ -268,7 +267,7 @@ class MediaReader:
                 media_data.copy_fields_to(new_media_data)
                 media_list.append(new_media_data)
                 last_read_list.append(media_data.get_last_read_chapter_number())
-                self.remove_media(media_data)
+                self.remove_media(name=media_data)
                 self.add_media(new_media_data, no_update=True)
             else:
                 logging.info("Failed to migrate %s", media_data.global_id)
@@ -554,7 +553,7 @@ class MediaReader:
             for media_data in list(self.get_media(media_type=media_type)):
                 if media_data.global_id not in tracked_media:
                     logging.info("Removing %s because it is no longer present on tracker", media_data.global_id)
-                    self.remove_media(media_data)
+                    self.remove_media(name=media_data)
         return new_count
     # MISC
 
@@ -579,7 +578,7 @@ class MediaReader:
         if remove_not_on_disk:
             for media_data in [x for x in self.get_media() if not os.path.exists(self.settings.get_chapter_metadata_file(x))]:
                 logging.info("Removing metadata for %s because it doesn't exist on disk", media_data["name"])
-                self.remove_media(media_data)
+                self.remove_media(name=media_data)
         media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media()}
         if bundles:
             logging.info("Removing all bundles")
