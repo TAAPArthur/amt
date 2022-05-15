@@ -82,31 +82,30 @@ class RequestServer:
             session = self._normal_session
         elif force_cloud_scraper:
             session = self.get_cloudscraper_session(self.session)
-        try:
-            for i in range(self.settings.get_max_retries(self.id)):
-                try:
-                    r = session.get(url, **kwargs) if get else session.post(url, **kwargs)
-                    if r.status_code != 200:
-                        logging.warning("HTTPError: %d; Session class %s; headers %s", r.status_code, type(session), kwargs.get("headers", {}))
-                    if not r.status_code in self.settings.status_to_retry:
-                        break
-                except ConnectionError as e:
-                    logging.warning("ConnectionError: %s Session class %s", str(e), type(session))
-                    if i == self.settings.get_max_retries(self.id) - 1:
-                        raise
-                    continue
-            if self.maybe_need_cloud_scraper and not force_cloud_scraper and r.status_code in (403, 503):
-                if session == self._normal_session:
-                    return self._request(get, url, force_cloud_scraper=True, **kwargs)
-            r.raise_for_status()
-        except SSLError:
-            if self.settings.get_fallback_to_insecure_connection(self.id):
-                logging.warning("Retry request insecurely %s", url)
-                if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:
-                    logging.warning("Using insecure connections and cloudscraper are not supported and may result in an error like 'ValueError: Cannot set verify_mode to CERT_NONE when check_hostname is enabled.'")
-                kwargs["verify"] = False
-                return self._request(get, url, **kwargs)
-            raise
+        for i in range(self.settings.get_max_retries(self.id)):
+            try:
+                r = session.get(url, **kwargs) if get else session.post(url, **kwargs)
+                if r.status_code != 200:
+                    logging.warning("HTTPError: %d; Session class %s; headers %s", r.status_code, type(session), kwargs.get("headers", {}))
+                if not r.status_code in self.settings.status_to_retry:
+                    break
+            except SSLError:
+                if self.settings.get_fallback_to_insecure_connection(self.id):
+                    logging.warning("Retry request insecurely %s", url)
+                    if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:
+                        logging.warning("Using insecure connections and cloudscraper are not supported and may result in an error like 'ValueError: Cannot set verify_mode to CERT_NONE when check_hostname is enabled.'")
+                    kwargs["verify"] = False
+                    return self._request(get, url, **kwargs)
+                raise
+            except ConnectionError as e:
+                logging.warning("ConnectionError: %s Session class %s", str(e), type(session))
+                if i == self.settings.get_max_retries(self.id) - 1:
+                    raise
+                continue
+        if self.maybe_need_cloud_scraper and not force_cloud_scraper and r.status_code in (403, 503):
+            if session == self._normal_session:
+                return self._request(get, url, force_cloud_scraper=True, **kwargs)
+        r.raise_for_status()
         return r
 
     def session_get(self, url, **kwargs):
