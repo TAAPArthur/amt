@@ -102,7 +102,7 @@ class Vrv(Server):
     def oauth_token_secret(self):
         return self.session.cookies.get("oauth_token_secret", domain=self.domain)
 
-    def _request(self, get, url, **kwargs):
+    def update_default_args(self, kwargs):
         if kwargs.get("auth", "") != False:
             if self.oauth_token:
                 oauth = OAuth1(self.apiParams["oAuthKey"], self.apiParams["oAuthSecret"],
@@ -114,7 +114,6 @@ class Vrv(Server):
             kwargs.update({"auth": oauth})
         else:
             del kwargs["auth"]
-        return super()._request(get, url, **kwargs)
 
     def needs_authentication(self):
         if self.session.cookies.get("oauth_client_key", domain=self.domain):

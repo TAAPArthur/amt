@@ -70,13 +70,17 @@ class RequestServer:
     def get_instances(clazz, session, settings=None):
         return [clazz(session, settings)]
 
-    def _request(self, get, url, force_cloud_scraper=False, **kwargs):
-        logging.info("Making %s request to %s ", "GET" if get else "POST", url)
+    def update_default_args(self, kwargs):
+        pass
+
+    def _request(self, post_request, url, force_cloud_scraper=False, **kwargs):
+        logging.info("Making %s request to %s ", "POST" if post_request else "GET", url)
         logging.debug("Request args: %s ", kwargs)
         if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
             kwargs["verify"] = False
         if self.implict_referer and "headers" not in kwargs:
             kwargs["headers"] = {"Referer": f"https://{self.domain}"}
+        self.update_default_args(kwargs)
         session = self.session
         if not kwargs.get("verify", True):
             session = self._normal_session
@@ -84,7 +88,7 @@ class RequestServer:
             session = self.get_cloudscraper_session(self.session)
         for i in range(self.settings.get_max_retries(self.id)):
             try:
-                r = session.get(url, **kwargs) if get else session.post(url, **kwargs)
+                r = session.post(url, **kwargs) if post_request else session.get(url, **kwargs)
                 if r.status_code != 200:
                     logging.warning("HTTPError: %d; Session class %s; headers %s", r.status_code, type(session), kwargs.get("headers", {}))
                 if not r.status_code in self.settings.status_to_retry:
@@ -95,7 +99,7 @@ class RequestServer:
                     if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:
                         logging.warning("Using insecure connections and cloudscraper are not supported and may result in an error like 'ValueError: Cannot set verify_mode to CERT_NONE when check_hostname is enabled.'")
                     kwargs["verify"] = False
-                    return self._request(get, url, **kwargs)
+                    return self._request(post_request, url, **kwargs)
                 raise
             except ConnectionError as e:
                 logging.warning("ConnectionError: %s Session class %s", str(e), type(session))
@@ -104,15 +108,15 @@ class RequestServer:
                 continue
         if self.maybe_need_cloud_scraper and not force_cloud_scraper and r.status_code in (403, 503):
             if session == self._normal_session:
-                return self._request(get, url, force_cloud_scraper=True, **kwargs)
+                return self._request(post_request, url, force_cloud_scraper=True, **kwargs)
         r.raise_for_status()
         return r
 
-    def session_get(self, url, **kwargs):
-        return self._request(True, url, **kwargs)
+    def session_get(self, url, post=False, **kwargs):
+        return self._request(post, url, **kwargs)
 
     def session_post(self, url, **kwargs):
-        return self._request(False, url, **kwargs)
+        return self._request(True, url, **kwargs)
 
     def session_get_cookie(self, name):
         assert self.domain
