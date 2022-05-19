@@ -26,14 +26,17 @@ class GenericCrunchyrollServer(Server):
             session_id = self.session_get_cookie("session_id")
         return session_id
 
-    def session_get_json(self, url):
-        data = self.session_get(url).json()
+    def session_get_json(self, url, **kwargs):
+        data = self.session_get(url, **kwargs).json()
         if data is not None and data.get("error", False) and data["code"] == "bad_session":
+            logging.info("Failed request %s", data)
             expired_session_id = self.get_session_id()
             new_session_id = self.get_session_id(force=True)
             assert expired_session_id != new_session_id
             new_url = url.replace(expired_session_id, new_session_id)
             data = self.session_get(new_url).json()
+        if data.get("error", False):
+            logging.error("Failed request %s %s", url, data)
         return data
 
     def _store_login_data(self, data):
@@ -52,12 +55,13 @@ class GenericCrunchyrollServer(Server):
         return True
 
     def login(self, username, password):
-        response = self.session_post(self.login_url,
-                                     data={
-                                         "session_id": self.get_session_id(),
-                                         "account": username,
-                                         "password": password
-                                     }).json()
+        response = self.session_get_json(self.login_url,
+                                         post=True,
+                                         data={
+                                             "session_id": self.get_session_id(),
+                                             "account": username,
+                                             "password": password
+                                         })
         if "data" in response:
             self._store_login_data(response)
             return True
