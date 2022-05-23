@@ -185,9 +185,9 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     untag_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?")
 
     # credentials
-    login_parser = add_parser_helper(sub_parsers, "test-login", aliases=["login"], description="Relogin to all servers")
+    login_parser = add_parser_helper(sub_parsers, "login", description="Relogin to all servers")
     login_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force re-login")
-    login_parser.add_argument("server_ids", default=None, choices=state.get_server_ids_with_logins(), nargs="?")
+    login_parser.add_argument("server_ids", default=None, choices=[[]] + state.get_server_ids_with_logins(), nargs="*")
 
     # stats
     stats_parser = add_parser_helper(sub_parsers, "stats", func_str="list_stats", description="Show tracker stats", parents=[readonly_parsers])

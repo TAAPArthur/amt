@@ -1207,7 +1207,7 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["search", "manga"])
         self.verify_no_media()
 
-    def test_test_login(self):
+    def test_login(self):
         server = self.media_reader.get_server(TestServerLogin.id)
         self.assertTrue(server.needs_to_login())
 

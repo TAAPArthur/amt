@@ -32,7 +32,7 @@ class MediaReaderCLI(MediaReader):
         for id in sorted(self.state.get_server_ids()):
             print(id)
 
-    def test_login(self, server_ids=None, force=False):
+    def login(self, server_ids=None, force=False):
         failures = False
         for server in self.get_servers():
             if server.has_login() and (not server_ids or server.id in server_ids):
