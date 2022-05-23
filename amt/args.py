@@ -30,20 +30,7 @@ def add_parser_helper(sub_parser, name, func_str=None, **kwargs):
     return parser
 
 
-def parse_args(args=None, media_reader=None, already_upgraded=False):
-    SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "type", "func", "readonly", "func_str", "tmp_dir"}
-
-    state = State(Settings()) if not media_reader else media_reader.state
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--auto", action="store_const", const=True, default=False, help="Automatically select input instead of prompting")
-    parser.add_argument("--clear-cookies", default=False, action="store_const", const=True, help="Clear all cached cookies")
-    parser.add_argument("--log-level", default="INFO", choices=logging._levelToName.values(), help="Controls verbosity of logs")
-    parser.add_argument("--no-save", default=False, action="store_const", const=True, help="Do not save state/cookies")
-    parser.add_argument("--tmp-dir", default=False, action="store_const", const=True, help="Save state to tmp-dir")
-
-    sub_parsers = parser.add_subparsers(dest="type")
-
+def setup_subparsers(state, sub_parsers):
     readonly_parsers = argparse.ArgumentParser(add_help=False)
     readonly_parsers.set_defaults(readonly=True)
 
@@ -146,7 +133,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     # external
 
-    auto_import_parser = add_parser_helper(sub_parsers, "auto-import", func_str="auto-import-media")
+    auto_import_parser = add_parser_helper(sub_parsers, "auto-import", func_str="auto-import-media", help="Import media already selected from torrents (WIP)")
     auto_import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
 
     import_parser = add_parser_helper(sub_parsers, "import", func_str="import-media", help="Import local media into amt")
@@ -185,12 +172,12 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     untag_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?")
 
     # credentials
-    login_parser = add_parser_helper(sub_parsers, "login", description="Relogin to all servers")
+    login_parser = add_parser_helper(sub_parsers, "login", help="Relogin to all servers")
     login_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force re-login")
     login_parser.add_argument("server_ids", default=None, choices=[[]] + state.get_server_ids_with_logins(), nargs="*")
 
     # stats
-    stats_parser = add_parser_helper(sub_parsers, "stats", func_str="list_stats", description="Show tracker stats", parents=[readonly_parsers])
+    stats_parser = add_parser_helper(sub_parsers, "stats", func_str="list_stats", help="Show tracker stats", parents=[readonly_parsers])
     stats_parser.add_argument("--details-type", "-d", choices=list(Details), type=Details.__getattr__, default=Details.NO_DETAILS, help="How details are displayed")
     stats_parser.add_argument("--details-limit", "-l", type=int, default=None, help="How many details are shown")
     stats_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
@@ -203,12 +190,12 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
 
     stats_parser.add_argument("username", default=None, nargs="?", help="Username or id to load info of; defaults to the currently authenticated user")
 
-    stats_update_parser = add_parser_helper(sub_parsers, "stats-update", description="Update tracker stats")
+    stats_update_parser = add_parser_helper(sub_parsers, "stats-update", help="Update tracker stats")
     stats_update_parser.add_argument("--user-id", default=None, help="id to load tracking info of")
     stats_update_parser.add_argument("username", default=None, nargs="?", help="Username to load info of; defaults to the currently authenticated user")
 
     # trackers and progress
-    load_parser = add_parser_helper(sub_parsers, "load_from_tracker", aliases=["load"], parents=[sub_search_parsers], description="Attempts to add all tracked media")
+    load_parser = add_parser_helper(sub_parsers, "load_from_tracker", aliases=["load"], parents=[sub_search_parsers], help="Attempts to add all tracked media")
     load_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
     load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
     load_parser.add_argument("--no-add", action="store_const", const=True, default=False, help="Don't search for and add new media")
@@ -260,7 +247,26 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     auth_parser.add_argument("--just-print", action="store_const", const=True, default=False, help="Just print the auth url")
     auth_parser.add_argument("tracker_id", choices=state.get_server_ids_with_logins(), nargs="?")
 
+
+def parse_args(args=None, media_reader=None, already_upgraded=False):
+    SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "type", "func", "readonly", "func_str", "tmp_dir"}
+
+    state = State(Settings()) if not media_reader else media_reader.state
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--auto", action="store_const", const=True, default=False, help="Automatically select input instead of prompting")
+    parser.add_argument("--clear-cookies", default=False, action="store_const", const=True, help="Clear all cached cookies")
+    parser.add_argument("--log-level", default="INFO", choices=logging._levelToName.values(), help="Controls verbosity of logs")
+    parser.add_argument("--no-save", default=False, action="store_const", const=True, help="Do not save state/cookies")
+    parser.add_argument("--tmp-dir", default=False, action="store_const", const=True, help="Save state to tmp-dir")
+
+    sub_parsers = parser.add_subparsers(dest="type")
+
+    setup_subparsers(state, sub_parsers)
+
     gen_auto_complete(parser)
+
+    sub_parsers._choices_actions.sort(key=lambda x: x.dest)
 
     namespace = parser.parse_args(args)
     logging.getLogger().setLevel(namespace.log_level)

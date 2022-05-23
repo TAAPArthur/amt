@@ -16,7 +16,7 @@ from subprocess import CalledProcessError
 from unittest.mock import patch
 
 from .. import servers, tests
-from ..args import parse_args
+from ..args import parse_args, setup_subparsers
 from ..job import Job, RetryException
 from ..media_reader import SERVERS, MediaReader, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
@@ -1188,6 +1188,13 @@ password=A
 
 
 class ArgsTest(CliUnitTestClass):
+
+    def test_help_defined(self):
+        import argparse
+        parser = argparse.ArgumentParser()
+        sub_parsers = parser.add_subparsers(dest="type")
+        setup_subparsers(self.media_reader.state, sub_parsers)
+        self.assertEqual(len(set(sub_parsers._name_parser_map.values())), len(sub_parsers._choices_actions))
 
     def test_no_auto_create_dirs(self):
         parse_args(media_reader=self.media_reader, args=["list"])
