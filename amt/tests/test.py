@@ -1196,6 +1196,9 @@ class ArgsTest(CliUnitTestClass):
         setup_subparsers(self.media_reader.state, sub_parsers)
         self.assertEqual(len(set(sub_parsers._name_parser_map.values())), len(sub_parsers._choices_actions))
 
+    def test_no_arguments(self):
+        self.assertTrue(parse_args(media_reader=self.media_reader, args=[]))
+
     def test_no_auto_create_dirs(self):
         parse_args(media_reader=self.media_reader, args=["list"])
         self.assertFalse(os.listdir(TEST_HOME))
@@ -1814,7 +1817,7 @@ class ArgsTest(CliUnitTestClass):
         self.media_reader.state.update_verion()
         self.media_reader.state.all_media["version"] -= .1 if minor else 1
         self.assertEqual(self.media_reader.state.is_out_of_date_minor(), minor)
-        parse_args(media_reader=self.media_reader, args=["upgrade"] if not minor else [])
+        parse_args(media_reader=self.media_reader, args=["upgrade"] if not minor else ["--auto"])
         self.assertEqual(list(self.media_reader.get_media_ids()), ids)
         self.assertEqual(removed_key in self.media_reader.media[ids[0]], minor)
         self.assertTrue(new_key in self.media_reader.media[ids[0]])

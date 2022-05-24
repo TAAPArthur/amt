@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 
 from .settings import Settings
 from .state import State
@@ -265,6 +266,10 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     setup_subparsers(state, sub_parsers)
 
     gen_auto_complete(parser)
+
+    if args is None and len(sys.argv) == 1 or args is not None and len(args) == 0:
+        parser.print_help(sys.stderr)
+        return 1
 
     sub_parsers._choices_actions.sort(key=lambda x: x.dest)
 
