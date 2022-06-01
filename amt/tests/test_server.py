@@ -175,11 +175,12 @@ class TestAnimeServer(TestServer):
         alt_url = "subtitles"
         yield media_data["lang"], url, None, True, 0
         yield media_data["lang"], alt_url, None, True, 0
-        yield media_data["lang"], url, ".vtt", True, 0
+        yield media_data["lang"], url, "vtt", True, 0
         yield "en", url, None, True, 0
         yield "en", alt_url, None, True, -5
         yield "en", url, None, True, +5
-        yield "unknown_lang", None, None, False, 0
+        yield "en", url, "txt", False, 0
+        yield "unknown_lang", None, "txt", False, 0
 
     def subtitle_response(self):
         class FakeRequest():
