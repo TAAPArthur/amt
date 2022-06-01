@@ -224,5 +224,8 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         chapter_id = chapter_data["id"]
 
         data = self.session_get_json(self.stream_url.format(self.get_session_id(), chapter_id))
+        if "data" not in data:
+            self.raise_mature_content_exception(data)
+
         streams = data["data"]["stream_data"]["streams"]
         return [stream["url"] for stream in streams]

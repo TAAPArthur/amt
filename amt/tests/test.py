@@ -26,7 +26,7 @@ from ..servers.remote import RemoteServer
 from ..settings import Settings
 from ..state import ChapterData, MediaData, State
 from ..util.media_type import MediaType
-from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestServerLogin, TestTorrentHelper)
+from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestServerLogin, TestServerLoginAnime, TestTorrentHelper)
 from .test_tracker import TestTracker
 
 HAS_PIL = True
@@ -594,6 +594,13 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def test_server_download_inaccessiable(self):
         self.media_reader.get_server(TestServerLogin.id).inaccessible = True
         self.login_test_helper()
+
+    def test_relogin_on_mature_content(self):
+        server = self.media_reader.get_server(TestServerLoginAnime.id)
+        media_list = self.add_test_media(server=server)
+        for media_data in media_list:
+            server.reset()
+            self.media_reader.download_unread_chapters(media_data)
 
     def test_missing_m3u8(self):
         server = self.media_reader.get_server(TestAnimeServer.id)

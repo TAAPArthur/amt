@@ -221,6 +221,15 @@ Subtitle-C5_2
         return FakeRequest()
 
 
+class TestServerLoginAnime(TestAnimeServer, TestServerLogin):
+    id = "test_server_login_anime"
+
+    def get_stream_urls(self, media_data=None, chapter_data=None):
+        if not self._is_logged_in:
+            self.raise_mature_content_exception({"msg": "Need to login"})
+        return super().get_stream_urls(media_data, chapter_data)
+
+
 class TestNovel(TestServer):
     id = "test_server_novel"
     media_type = MediaType.NOVEL

@@ -68,6 +68,10 @@ class GenericFunimation(Server):
     def get_stream_urls(self, media_data=None, chapter_data=None):
         chapter_id = chapter_data["alt_id"]
         r = self.session_get(self.sources_api_url.format(chapter_id))
+        data = r.json()
+        if "items" not in data:
+            self.raise_mature_content_exception(data)
+
         return [item["src"] for item in r.json()["items"]]
 
 

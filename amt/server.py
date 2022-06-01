@@ -23,6 +23,10 @@ def get_extension(url):
     return ext
 
 
+class MatureContentException(Exception):
+    pass
+
+
 class RequestsClient():
     def __init__(self, session):
         self.session = session
@@ -299,7 +303,7 @@ class GenericServer(MediaServer):
         The default implementation is for anime servers and will contain the preferred stream url
         """
         last_err = None
-        urls = self.get_stream_urls(media_data=media_data, chapter_data=chapter_data)
+        urls = self.maybe_login_and_get_stream_urls(media_data=media_data, chapter_data=chapter_data)
 
         logging.debug("Stream urls %s", urls)
         if stream_index != 0:
@@ -367,12 +371,30 @@ class GenericServer(MediaServer):
     def can_add_media_from_url(self, url):
         return self.can_stream_url(url) or self.add_series_url_regex and self.add_series_url_regex.search(url)
 
+    def raise_mature_content_exception(self, msg):
+        raise MatureContentException(msg)
+
+    def relogin_on_mature_content_exception(self, func):
+        try:
+            return func()
+        except MatureContentException as e:
+            if self.needs_to_login():
+                self.relogin()
+                return func()
+            logging.error("Probably need to login to view the media: %s", str(e))
+            raise
+
     ################ ANIME ONLY #####################
     def get_stream_url(self, media_data, chapter_data, stream_index=0):
         """ Returns a url to stream from
         Override get_stream_urls instead
         """
-        return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))[stream_index]
+
+        return list(self.maybe_login_and_get_stream_urls(media_data=media_data, chapter_data=chapter_data))[stream_index]
+
+    def maybe_login_and_get_stream_urls(self, media_data, chapter_data):
+        def func(): return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))
+        return self.relogin_on_mature_content_exception(func)
 
     def get_stream_urls(self, media_data, chapter_data):  # pragma: no cover
         raise NotImplementedError
@@ -532,7 +554,8 @@ class Server(GenericServer):
         if self.media_type == MediaType.ANIME:
             sub_dir = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), self.settings.subtitles_dir)
             os.makedirs(sub_dir, exist_ok=True)
-            self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
+            def func(): self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
+            self.relogin_on_mature_content_exception(func)
 
     def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
         if self.is_fully_downloaded(media_data, chapter_data):
