@@ -23,9 +23,21 @@ class Settings:
 
     # Password manager related settings
     password_manager_enabled = True
-    password_save_cmd = "{ echo {username}; cat - } | tpm insert {server_id}"
-    password_load_cmd = "tpm show {server_id}"
+    # The format variables username and server_id can be used. The following
+    # command must store username and password (which will be read from
+    # stdin) in such a way that password_load_cmd will return it correctly
+    password_save_cmd = ""
+    # Only format variable server_id can be used. The following command must
+    # retrieve the username and password to be used for the given server and
+    # write them to stdout. By default the username and password should be
+    # separated by a string denoted by credential_separator_regex
+    password_load_cmd = ""
+    # Controls how the output from password_load_cmd will be split to get the
+    # username and password
     credential_separator_regex = r"[\t|\n]+"
+    # Allows for passwords to be overridden on the cli. For example,
+    # AMT_PASSWORD_OVERRIDE_FUNIMATION=A\tB will use username A and password B
+    # for server funimation. The server name can be all lower or all uppercase.
     password_override_prefix = "PASSWORD_OVERRIDE_"
 
     # HTTP related; Generally used as args to requests
