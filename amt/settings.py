@@ -43,7 +43,7 @@ class Settings:
     # HTTP related; Generally used as args to requests
     bs4_parser = "html.parser"
     max_retries = 3
-    status_to_retry = [429, 500, 502, 503, 504]
+    status_to_retry = [403, 429, 500, 502, 503, 504]
     user_agent = "Mozilla/5.0"
 
     # Cookies
