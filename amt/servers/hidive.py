@@ -23,7 +23,7 @@ class Hidive(Server):
     episode_data_url = base_url + "/play/settings"
 
     stream_url_regex = re.compile(domain + r"/stream/([^/]*)/([^/]*)")
-    add_series_url_regex = re.compile(domain + r"/(?:tv|movies)/([^/]*)")
+    add_series_url_regex = re.compile(f"(?:{domain}|^)/(?:tv|movies)/([^/]*)")
 
     def needs_authentication(self):
         cached_id = self.session_get_cookie("CacheId")
@@ -50,7 +50,7 @@ class Hidive(Server):
         return not self.needs_authentication()
 
     def find_links_from_url(self, url, regex):
-        r = self.session.get(url)
+        r = self.session_get(url)
         soup = self.soupify(BeautifulSoup, r)
         for link in soup.findAll("a"):
             href = link.get("data-playurl", "") or link.get("href", "")
