@@ -58,12 +58,13 @@ class GenericFunimation(Server):
 
         for season in r.json()["seasons"]:
             for chapter in season["episodes"]:
-                video = chapter["languages"][media_data["lang"].lower()]["alpha"]
-                exp = video["simulcast"] if "simulcast" in video else video["uncut"]
-                if exp["experienceId"] == int(chapter_data["alt_id"]) and "textTracks" in exp["sources"][0]:
-                    for track in exp["sources"][0]["textTracks"]:
-                        yield track["language"], track["src"], None, False, 0
-                    break
+                if media_data["lang"].lower() in chapter["languages"]:
+                    video = chapter["languages"][media_data["lang"].lower()]["alpha"]
+                    exp = video["simulcast"] if "simulcast" in video else video["uncut"]
+                    if exp["experienceId"] == int(chapter_data["alt_id"]) and "textTracks" in exp["sources"][0]:
+                        for track in exp["sources"][0]["textTracks"]:
+                            yield track["language"], track["src"], None, False, 0
+                        break
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
         chapter_id = chapter_data["alt_id"]
