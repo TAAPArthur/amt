@@ -1,4 +1,4 @@
-# Anime Manga Tracker (beta)
+# Anime Manga Tracker
 CLI tool to download/stream anime/manga (and now light novels) from (mainly) official sources
 
 The goal is to provide an simple and unobtrusive way to consume manga/anime using custom players.

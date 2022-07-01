@@ -1,5 +1,7 @@
 APP_NAME := amt
 
+all: quick_test
+
 test_coverage:
 	coverage run --source=amt -m unittest --buffer $(TEST_ARGS)
 
