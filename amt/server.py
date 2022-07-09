@@ -77,6 +77,11 @@ class RequestServer:
     def update_default_args(self, kwargs):
         pass
 
+    def backoff(self, c):
+        b = self.settings.get_backoff_factor(self.id)
+        logging.info(f"Sleeping for {b**c} seconds after seeing {c} failures")
+        time.sleep(b**c)
+
     def _request(self, post_request, url, force_cloud_scraper=False, **kwargs):
         logging.info("Making %s request to %s ", "POST" if post_request else "GET", url)
         logging.debug("Request args: %s ", kwargs)
@@ -94,9 +99,10 @@ class RequestServer:
             try:
                 r = session.post(url, **kwargs) if post_request else session.get(url, **kwargs)
                 if r.status_code != 200:
-                    logging.warning("HTTPError: %d; Session class %s; headers %s", r.status_code, type(session), kwargs.get("headers", {}))
+                    logging.warning("HTTPError: %d; Session class %s; headers %s; %s", r.status_code, type(session), kwargs.get("headers", {}), r.text[:256])
                 if not r.status_code in self.settings.status_to_retry:
                     break
+                self.backoff(i + 1)
             except SSLError:
                 if self.settings.get_fallback_to_insecure_connection(self.id):
                     logging.warning("Retry request insecurely %s", url)

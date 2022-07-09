@@ -505,6 +505,25 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         self.test_server.session_get("some_url")
         self.test_server.session_post("some_url")
 
+    def test_session_get_post_with_failed_http_status(self):
+        self.media_reader.settings.status_to_retry = [429]
+        self.media_reader.settings.max_retries = 2
+        self.media_reader.settings.backoff_factor = .01
+        always_fail = False
+        self.counter = 0
+
+        def fake_request(*args, **kwargs):
+            self.counter = self.counter + 1
+            r = requests.Response()
+            r.status_code = 429 if always_fail or self.counter % 2 == 1 else 200
+            return r
+        self.test_server.session.get = fake_request
+        self.test_server.session.post = fake_request
+        self.test_server.session_get("some_url")
+        self.test_server.session_post("some_url")
+        always_fail = True
+        self.assertRaises(requests.exceptions.HTTPError, self.test_server.session_get, "some_url")
+
     def test_session_get_cache_json(self):
         server = self.media_reader.get_server(TestServer.id)
         assert server
