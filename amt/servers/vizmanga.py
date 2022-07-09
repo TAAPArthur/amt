@@ -1,4 +1,5 @@
 import re
+import time
 
 from PIL import Image
 from bs4 import BeautifulSoup
@@ -19,6 +20,8 @@ class GenericVizManga(Server):
     login_url = base_url + "/account/try_login"
     api_chapter_data_url = base_url + "/manga/get_manga_url?device_id=3&manga_id={}&pages={}"
     wsj_subscriber_regex = re.compile(r"var is_wsj_subscriber = (\w*);")
+
+    limits_url = base_url + "/manga/auth?device_id=3&manga_id={}"
 
     def get_token(self):
         auth_token = self.session_get(self.refresh_login_url)
@@ -44,6 +47,13 @@ class GenericVizManga(Server):
                 "authenticity_token": token,
             })
         return not self.needs_authentication()
+
+    def get_limit_data(self, chapter_id):
+        data = self.session_get_cache_json(self.limits_url.format(chapter_id), ttl=.25)
+        archive_info = data["archive_info"]
+        if archive_info["next_reset_epoch"] <= time.time():
+            data = self.session_get_cache_json(self.limits_url.format(chapter_id), ttl=0)
+        return data["archive_info"]
 
     def get_media_chapter_data_helper(self, chapter_data, num_pages):
         pages = []
@@ -140,6 +150,12 @@ class VizManga(GenericVizManga):
         (re.compile("New chapter coming in (\d+) hour"), lambda x: (datetime.now() + timedelta(hours=int(x))).timestamp()),
         (re.compile("New chapter coming in (\d+) min"), lambda x: (datetime.now() + timedelta(minutes=int(x))).timestamp()),
     ]
+
+    def get_remaining_chapters(self, media_data):
+        chapter_data = media_data.get_last_read_chapter() or media_data.get_last_chapter()
+        if chapter_data:
+            archive_info = self.get_limit_data(chapter_data["id"])
+            return archive_info["num_remaining"], int(archive_info["next_reset_epoch"] - time.time())
 
     def get_media_data_from_url(self, url):
         media_id = self._get_media_id_from_url(url)

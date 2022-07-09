@@ -1254,6 +1254,13 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["login"])
         self.assertFalse(server.needs_to_login())
 
+    def test_get_remaining_chapters(self):
+        server = self.media_reader.get_server(TestServerLogin.id)
+        self.add_test_media(server=server, limit=1)[0]
+
+        parse_args(media_reader=self.media_reader, args=["get_remaining_chapters"])
+        parse_args(media_reader=self.media_reader, args=["get_remaining_chapters", TestServerLogin.id])
+
     def test_test_login_fail(self):
         server = self.media_reader.get_server(TestServerLogin.id)
         server.error_login = True

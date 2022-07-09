@@ -606,6 +606,19 @@ class Server(GenericServer):
         job = Job(self.settings.get_threads(self.id), items, func, raiseException=True)
         return job.run()
 
+    def has_chapter_limit(self):
+        return self.get_remaining_chapters.__func__ is not Server.get_remaining_chapters
+
+    def get_remaining_chapters(self, media_data):
+        """ Number of chapters of the given media that can be downloaded right now
+        Some servers will only let one download X chapters per time period, so this method
+        provides a way to query how many more chapters can be obtained. Note that while we check
+        for a specific media, the limit is often global.
+
+        This method should only be called if the user is logged in.
+        """
+        return float("inf"), 0
+
 
 class TorrentHelper(MediaServer):
     id = None

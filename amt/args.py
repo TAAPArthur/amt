@@ -177,6 +177,9 @@ def setup_subparsers(state, sub_parsers):
     login_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force re-login")
     login_parser.add_argument("server_ids", default=None, choices=[[]] + state.get_server_ids_with_logins(), nargs="*")
 
+    rem_chapters_parser = add_parser_helper(sub_parsers, "get_remaining_chapters", aliases=["get_rem_chapters"], help="Get number of chapters that can be downloaded")
+    rem_chapters_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?")
+
     # stats
     stats_parser = add_parser_helper(sub_parsers, "stats", func_str="list_stats", help="Show tracker stats", parents=[readonly_parsers])
     stats_parser.add_argument("--details-type", "-d", choices=list(Details), type=Details.__getattr__, default=Details.NO_DETAILS, help="How details are displayed")
