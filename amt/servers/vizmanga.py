@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 
@@ -7,6 +8,7 @@ from datetime import datetime, timedelta
 
 from ..server import Server
 from ..util.decoder import paste
+from ..util.exceptions import ChapterLimitException
 from ..util.progress_type import ProgressType
 
 # Improved from https://github.com/manga-py/manga-py
@@ -59,9 +61,14 @@ class GenericVizManga(Server):
         pages = []
         page_nums = ",".join(map(str, range(num_pages)))
         r = self.session_get(self.api_chapter_data_url.format(chapter_data["id"], page_nums))
-        data = r.json()["data"]
+        data = r.json()
+        if not data["ok"] or data["data"] == "no_auth":
+            archive_info = self.get_limit_data(chapter_data["id"])
+            logging.debug("Failed to get page info %s", archive_info["err"]["msg"])
+            raise ChapterLimitException(archive_info["next_reset_epoch"], archive_info["download_limit"])
+        urls = data["data"]
         for num in range(num_pages):
-            url = data[str(num)]
+            url = urls[str(num)]
             pages.append(self.create_page_data(url=url, ext="jpg"))
         return pages
 

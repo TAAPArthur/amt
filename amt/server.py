@@ -11,6 +11,7 @@ from threading import Lock
 
 from .job import Job
 from .state import ChapterData, MediaData
+from .util.exceptions import MatureContentException
 from .util.media_type import MediaType
 from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
 from .util.progress_type import ProgressType
@@ -21,10 +22,6 @@ def get_extension(url):
     if ext and ext[0] == ".":
         ext = ext[1:]
     return ext
-
-
-class MatureContentException(Exception):
-    pass
 
 
 class RequestsClient():
