@@ -298,6 +298,12 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
         if action:
             func = namespace.func if "func" in namespace else getattr(obj, (namespace.func_str if "func_str" in namespace else action).replace("-", "_"))
             ret = func(**kwargs)
+            if ret is not None and not isinstance(ret, int):
+                if isinstance(ret, str) or isinstance(ret, tuple):
+                    print(ret)
+                else:
+                    for obj in ret:
+                        print("\t".join(map(str, obj)) if isinstance(obj, tuple) else obj)
             return 1 if ret is False else 0
     finally:
         if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):

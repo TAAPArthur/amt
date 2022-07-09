@@ -102,13 +102,17 @@ def compute_stats(media_map, sortIndex, reverse=True, min_count=0, time_unit=Tim
 
 
 def get_stat_headers(statGroup, details_type=Details.NO_DETAILS):
-    return ["IDX", f"{statGroup.name:50.50}"] + list(map(lambda x: x.name, SortIndex))[1:] + [f"\t{details_type.name}" if details_type != Details.NO_DETAILS else ""]
+    return ("IDX", f"{statGroup.name:50.50}") + tuple(map(lambda x: x.name, SortIndex))[1:] + (f"\t{details_type.name}" if details_type != Details.NO_DETAILS else "", )
+
+
+class StatsEntry():
+    def __init__(self, *args):
+        self.entry = args
+
+    def __str__(self):
+        return "{:3}\t{:50.50}\t{:5}\t{:5.2f}\t{:5.1f}\t{:5.2f}\t{}".format(*self.entry)
 
 
 def get_stat_entries(sorted_data, details_type=Details.NO_DETAILS):
     for i, entry in enumerate(sorted_data):
-        yield i + 1, entry[0].replace(" ", "_"), entry[1], entry[2], entry[3], entry[4], (entry[-1] if details_type != Details.NO_DETAILS else "")
-
-
-def format_stat_entry(entry):
-    return "{:3}\t{:50.50}\t{:5}\t{:5.2f}\t{:5.1f}\t{:5.2f}\t{}".format(*entry)
+        yield StatsEntry(i + 1, entry[0].replace(" ", "_"), entry[1], entry[2], entry[3], entry[4], (entry[-1] if details_type != Details.NO_DETAILS else ""))

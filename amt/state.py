@@ -244,14 +244,14 @@ class State:
                 next_chapter_date_str = media_data.get_next_chapter_available_str(now)
                 args = [media_data.friendly_id, media_data["name"], media_data["season_title"], str(last_read.get(num_key, 0)), str(last_chapter.get(num_key, 0)), next_chapter_date_str, ",".join(media_data["tags"])]
                 if csv:
-                    print("\t".join(args))
+                    yield args
                 else:
-                    print("{}\t{} {}\t{}/{} {} {}".format(*args))
+                    yield "{}\t{} {}\t{}/{} {} {}".format(*args)
 
     def list_chapters(self, name, show_ids=False):
         media_data = self.get_single_media(name=name)
         for chapter in media_data.get_sorted_chapters():
-            print("{:4}:{}{}".format(chapter["number"], chapter["title"], ":" + chapter["id"] if show_ids else ""))
+            yield "{:4}:{}{}".format(chapter["number"], chapter["title"], ":" + chapter["id"] if show_ids else "")
 
     def save_stats(self, identifier, stats):
         stats_file = self.settings.get_stats_file()
@@ -267,9 +267,8 @@ class State:
         grouped_data = stats.group_entries(data, min_score=min_score)[stat_group.value]
         sorted_data = stats.compute_stats(grouped_data, sort_index.value, reverse=reverse, min_count=min_count, time_unit=time_unit, details_type=details_type, details_limit=details_limit)
         if not no_header:
-            print("\t".join(stats.get_stat_headers(stat_group, details_type=details_type)))
-        for entry in stats.get_stat_entries(sorted_data, details_type):
-            print(stats.format_stat_entry(entry))
+            yield stats.get_stat_headers(stat_group, details_type=details_type)
+        yield from stats.get_stat_entries(sorted_data, details_type)
 
 
 class MediaData(dict):
@@ -282,6 +281,9 @@ class MediaData(dict):
             return self.chapters
         else:
             return super().__getitem__(key)
+
+    def __str__(self):
+        return "{}\t{} {} ({})".format(self.global_id, self["name"], self.get("label", self["season_title"]), MediaType(self["media_type"]).name)
 
     def get_sorted_chapters(self):
         return sorted(self["chapters"].values(), key=lambda x: x["number"])
