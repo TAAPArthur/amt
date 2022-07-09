@@ -140,7 +140,7 @@ class RequestServer:
             return self.session_get(url, **kwargs).json()
         file = self.settings.get_web_cache(key or url)
         try:
-            if ttl <= 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
+            if ttl < 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
                 with open(file, "r") as f:
                     logging.debug("Returning cached value for %s", url)
                     return json.load(f) if use_json else f.read()
