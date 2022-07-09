@@ -1284,6 +1284,7 @@ class ArgsTest(CliUnitTestClass):
         self.settings.password_save_cmd = f"( echo {{username}}; cat - ) > {TEST_HOME}{{server_id}}"
         parse_args(media_reader=self.media_reader, args=["set-password", TestServerLogin.id, "username"])
         self.assertEquals(("username", "0"), self.media_reader.settings.get_credentials(TestServerLogin.id))
+        parse_args(media_reader=self.media_reader, args=["get-password", TestServerLogin.id])
 
     def test_list_tag(self):
         self.add_test_media()

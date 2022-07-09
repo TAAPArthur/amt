@@ -247,6 +247,10 @@ def setup_subparsers(state, sub_parsers):
     set_password_parser.add_argument("username")
     set_password_parser.set_defaults(func=state.settings.store_credentials)
 
+    get_password_parser = add_parser_helper(sub_parsers, "get-password", help="Get password for a server")
+    get_password_parser.add_argument("server_id", choices=state.get_server_ids_with_logins())
+    get_password_parser.set_defaults(func=state.settings.get_credentials)
+
     auth_parser = add_parser_helper(sub_parsers, "auth", help="Authenticate to a tracker")
     auth_parser.add_argument("--just-print", action="store_const", const=True, default=False, help="Just print the auth url")
     auth_parser.add_argument("tracker_id", choices=state.get_server_ids_with_logins(), nargs="?")
