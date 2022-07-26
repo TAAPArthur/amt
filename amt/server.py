@@ -288,18 +288,6 @@ class GenericServer(MediaServer):
         """
         raise NotImplementedError
 
-    def get_m3u8_segments(self, url):
-        import m3u8
-        m = m3u8.load(url, http_client=RequestsClient(self.session))
-        if not m.segments:
-            playlist = sorted(m.playlists, key=lambda x: x.stream_info.bandwidth, reverse=True)
-            m = m3u8.load(playlist[0].uri, http_client=RequestsClient(self.session))
-        assert m.segments
-        return m.segments
-
-    def extra_page_data_params(self, media_data, chapter_data):
-        return {}
-
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         """
         Returns a list of page/episode data. For anime (specifically for video files) this may be a list of size 1
@@ -317,7 +305,7 @@ class GenericServer(MediaServer):
             try:
                 if ext == "m3u8":
                     segments = self.get_m3u8_segments(url)
-                    return [self.create_page_data(url=segment.uri, encryption_key=segment.key, ext="ts", **self.extra_page_data_params(media_data, chapter_data)) for segment in segments]
+                    return [self.create_page_data(url=segment.uri, encryption_key=segment.key, ext="ts") for segment in segments]
                 else:
                     return [self.create_page_data(url=url, ext=ext)]
             except ImportError as e:
@@ -374,19 +362,6 @@ class GenericServer(MediaServer):
     def can_add_media_from_url(self, url):
         return self.can_stream_url(url) or self.add_series_url_regex and self.add_series_url_regex.search(url)
 
-    def raise_mature_content_exception(self, msg):
-        raise MatureContentException(msg)
-
-    def relogin_on_mature_content_exception(self, func):
-        try:
-            return func()
-        except MatureContentException as e:
-            if self.needs_to_login():
-                self.relogin()
-                return func()
-            logging.error("Probably need to login to view the media: %s", str(e))
-            raise
-
     ################ ANIME ONLY #####################
     def get_stream_url(self, media_data, chapter_data, stream_index=0):
         """ Returns a url to stream from
@@ -401,6 +376,15 @@ class GenericServer(MediaServer):
 
     def get_stream_urls(self, media_data, chapter_data):  # pragma: no cover
         raise NotImplementedError
+
+    def get_m3u8_segments(self, url):
+        import m3u8
+        m = m3u8.load(url, http_client=RequestsClient(self.session))
+        if not m.segments:
+            playlist = sorted(m.playlists, key=lambda x: x.stream_info.bandwidth, reverse=True)
+            m = m3u8.load(playlist[0].uri, http_client=RequestsClient(self.session))
+        assert m.segments
+        return m.segments
 
     def download_subtitles(self, media_data, chapter_data, dir_path):
         """ Only for ANIME, Download subtitles to dir_path
@@ -455,6 +439,7 @@ class GenericServer(MediaServer):
         yield
 
     ################ Needed for servers requiring logins #####################
+
     def needs_authentication(self):
         """
         Checks if the user is logged in
@@ -532,6 +517,19 @@ class Server(GenericServer):
 
     def get_children(self, media_data, chapter_data):
         return "{}/*".format(self.settings.get_chapter_dir(media_data, chapter_data))
+
+    def raise_mature_content_exception(self, msg):
+        raise MatureContentException(msg)
+
+    def relogin_on_mature_content_exception(self, func):
+        try:
+            return func()
+        except MatureContentException as e:
+            if self.needs_to_login():
+                self.relogin()
+                return func()
+            logging.error("Probably need to login to view the media: %s", str(e))
+            raise
 
     def needs_to_login(self):
         try:

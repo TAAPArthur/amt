@@ -84,9 +84,12 @@ class Hidive(Server):
                 title = element.get("data-original-title") or element.get("title")
                 self.update_chapter_data(media_data, id=match.group(1), number=match.group(2), title=title, premium=True)
 
-    def extra_page_data_params(self, media_data, chapter_data):
+    def get_media_chapter_data(self, media_data, chapter_data, **kwargs):
         referer = f"https://www.hidive.com/stream/{media_data['id']}/chapter_data['id']"
-        return dict(headers={"Referer": referer})
+        headers = dict(headers={"Referer": referer})
+        page_data = super().get_media_chapter_data(media_data, chapter_data, **kwargs)
+        [page.update(headers) for page in page_data]
+        return page_data
 
     def get_episode_info(self, media_data, chapter_data):
         return self.session_get_mem_cache(self.episode_data_url, post=True, data={"Title": media_data["id"], "Key": chapter_data["id"], "PlayerId": "f4f895ce1ca713ba263b91caeb1daa2d08904783"}).json()
