@@ -1898,8 +1898,6 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
-        ("https://www.dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
-        ("https://www.dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
         ("https://beta.crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
         ("https://beta.crunchyroll.com/watch/GYDKXWD96/sea-god-in-the-east-the-mighty-deep-in-the-west--chapter-1", "GRNVWN7Q6", "GYKEV49EY", "GYDKXWD96"),
         ("https://crunchyroll.com/gintama/gintama-season-2-253-265-gintama-classic-it-takes-a-bit-of-courage-to-enter-a-street-vendors-stand-615207", "47620", "20725", "615207"),
@@ -1907,6 +1905,9 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://crunchyroll.com/one-piece/episode-1-im-luffy-the-man-whos-gonna-be-king-of-the-pirates-650673", "257631", "21685", "650673"),
         ("https://crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209", "269787", "25186", "796209"),
         ("https://crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193", "260315", "21563", "652193"),
+        ("https://dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
+        ("https://dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
+        ("https://freewebnovel.com/itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu/chapter-1.html", "itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", None, "chapter-1"),
         ("https://funimation.com/v/one-piece/im-luffy-the-man-whos-gonna-be-king-of-the-pirates", "20224", "20227", "22338"),
         ("https://hidive.com/stream/legend-of-the-galactic-heroes-gaiden/s02e001", "legend-of-the-galactic-heroes-gaiden", None, "s02e001"),
         ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),

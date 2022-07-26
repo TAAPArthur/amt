@@ -89,6 +89,7 @@ assimilate all unread chapters and then read them
 * [Vrv](https://vrv.co)
 
 ### Light novels
+* [FreeWebNovel](https://freewebnovel.com) (unofficial)
 * [J Novel club](https://j-novel.club/)
 
 ### Trackers
@@ -104,7 +105,7 @@ assimilate all unread chapters and then read them
 Optional dependency breakdown
 * PIL:                 required to download manga for Viz and JNovelClub
 * beautifulsoup4:      required to download images for JNovelClub (only for light novel parts)
-* beautifulsoup4:      required to enable DB multiverse, Funimation, Nyaa, RemoteServer and Webtoons
+* beautifulsoup4:      required to enable DB multiverse, FreeWebNovel, Funimation, Nyaa, RemoteServer and Webtoons
 * cloudscraper:        required to enable MangaSee and HumbleBundle
 * cloudscraper:        potentially required to access all features of Crunchyroll (manga and anime)
 * m3u8 & pycryptodome: required just download media for Crunchyroll and HiDive (enables more formats for Funimation and VRV)
