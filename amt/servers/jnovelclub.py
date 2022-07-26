@@ -55,6 +55,7 @@ class GenericJNovelClub(Server):
         return self._create_media_data_helper(data)[:limit]
 
     def search_for_media(self, term, limit=None):
+        term = term.replace("'", "_")
         r = self.session_post(self.search_url, json={"query": term.replace(" (Manga)", ""), "type": 1 if self.media_type == MediaType.NOVEL else 2})
         data = r.json()["series"][:limit]
         return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", "")) for item in data]
