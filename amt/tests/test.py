@@ -1925,7 +1925,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.funimation.com/v/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
     ]
     addable_urls = [
-        ("https://crunchyroll.com/comics/manga/four-knights-of-the-apocalypse/volumes", 542),
+        ("https://www.crunchyroll.com/comics/manga/hoshi-no-samidare-the-lucifer-and-biscuit-hammer/volumes", 255),
         ("https://hidive.com/tv/legend-of-the-galactic-heroes-gaiden", "legend-of-the-galactic-heroes-gaiden"),
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
