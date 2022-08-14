@@ -130,22 +130,22 @@ class MediaReader:
         if no_update is False or no_update is None and not media_data["chapters"]:
             self.update_media(media_data)
 
-    def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], server_list=None, no_add=False, media_id=None, raiseException=False, filter_by_preferred_lang=False):
+    def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], server_list=None, no_add=False, media_id=None, raiseException=False):
         def func(x): return x.search(term, literal=exact, limit=limit)
         if server_id:
             assert not server_list
             results = func(self.get_server(server_id))
         else:
-            results = sorted(self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), server_list if server_list is not None else self.get_servers()), raiseException=raiseException), key=lambda x: x[0])
+            results = self.for_each(func, filter(lambda x: x.id not in servers_to_exclude and (media_type is None or media_type & x.media_type), server_list if server_list is not None else self.get_servers()), raiseException=raiseException)
+
+        results.sort(key=lambda x: (x[0], self.settings.get_search_score(x[1])))
 
         results = map(lambda x: x[1], results)
         if exact:
             results = filter(lambda x: x["name"] == term, results)
         if media_id:
             results = filter(lambda x: str(x["id"]) == str(media_id) or x.global_id == media_id, results)
-        if filter_by_preferred_lang:
-            results = filter(lambda x: self.settings.get_prefered_lang_key(x) != float("inf"), results)
-        results = list(results)
+        results = list(results)[:limit]
         if len(results) == 0:
             return None
         media_data = self.select_media(term, results[:limit], "Select media: ", auto_select_if_single=exact or media_id)

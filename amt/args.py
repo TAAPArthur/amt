@@ -36,7 +36,6 @@ def setup_subparsers(state, sub_parsers):
     readonly_parsers.set_defaults(readonly=True)
 
     sub_search_parsers = argparse.ArgumentParser(add_help=False)
-    sub_search_parsers.add_argument("--filter-by-preferred-lang", action="store_const", const=True, default=False, help="Sort results by preferred Settings:preferred_primary_language")
     sub_search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
     sub_search_parsers.add_argument("--limit", type=int, default=10, help="How many chapters will be downloaded per series")
     sub_search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")

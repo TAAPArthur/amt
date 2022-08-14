@@ -1,4 +1,5 @@
 import getpass
+import json
 import logging
 import os
 import re
@@ -65,8 +66,8 @@ class Settings:
     # Server or media specific settings
     # Any keys defined in this dict should be declared in the class
     _specific_settings = {
-        "preferred_primary_language": {
-            MediaType.ANIME.name: ["JP", "JAPANESE", ""]
+        "search_score": {
+            MediaType.ANIME.name: [["lang", ["jp", "japanese", ""], -1]]
         },
         "viewer": {
             MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
@@ -75,6 +76,7 @@ class Settings:
             MediaType.NOVEL.name: "zathura {media}"
         }
     }
+    search_score = [["official", True, -10], ["lang", ["en", "en-us", "english", ""], -1]]
 
     bundle_cmd = "zip {name} {files}"
     bundle_format = "{date}_{name}.cbz"
@@ -89,8 +91,6 @@ class Settings:
     post_download_torrent_file_cmd = ""
     keep_unavailable = False
     post_process_cmd = ""
-    text_languages = ["en", "en-US", "English"]
-    preferred_primary_language = ["EN", "EN-US", "ENGLISH", ""]
     threads = 8  # per server thread count
     viewer = ""
     tmp_dir = "/tmp/.amt"
@@ -295,14 +295,23 @@ class Settings:
             return False
         return server_id in self.enabled_servers + [self.tracker_id] if self.enabled_servers else server_id not in self.disabled_servers and server_id
 
-    def is_allowed_text_lang(self, lang, media_data):
-        return lang in self.get_field("text_languages", media_data)
-
     def get_prefered_lang_key(self, media_data, lang=None):
-        try:
-            return self.get_field("preferred_primary_language", media_data).index((lang or media_data.get("lang", "")).upper())
-        except ValueError:
-            return float("inf")
+        search_score = self.get_field("search_score", media_data)
+        lang = lang or media_data.get("lang", "")
+        lang = lang.lower()
+        for key, values, score in search_score:
+            if key == "lang":
+                if lang == values or lang in values:
+                    return score
+        return float("inf")
+
+    def get_search_score(self, media_data):
+        search_score = self.get_field("search_score", media_data)
+        score = 0
+        for key, values, delta in search_score:
+            if key in media_data and ((media_data.get(key, "") in values) if isinstance(values, list) else media_data.get(key, "") == values):
+                score += delta
+        return score
 
     def get_prompt_for_input(self, prompt):
         return input(prompt)

@@ -170,6 +170,7 @@ class RequestServer:
 
 
 class MediaServer(RequestServer):
+    remove_dub_regex = re.compile(r" \(.*Dub.*\)")
 
     def search(self, term, literal=False, limit=20):
         """
@@ -180,8 +181,9 @@ class MediaServer(RequestServer):
         media_list = self.search_helper(terms, limit)
 
         def score(x):
+            x = self.remove_dub_regex.sub("", x)
             return -(SequenceMatcher(None, term, x).ratio() + max([SequenceMatcher(None, t, x).ratio() for t in terms]))
-        return sorted(map(lambda x: (score(x["name"]), x), media_list), key=lambda x: x[0])[:limit]
+        return list(map(lambda x: (score(x["name"]), x), media_list))
 
     def search_helper(self, terms, limit):
         media_map = {}
@@ -202,7 +204,7 @@ class MediaServer(RequestServer):
                 match = re.search(r"\(Dub\)", name) or re.search(r"\(Dub\)", season_title)
                 lang = "dub" if match else ""
 
-        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_type=progress_type if progress_type is not None else self.progress_type, tags=[], lang=lang, nextTimeStamp=0, **kwargs))
+        return MediaData(dict(server_id=self.id, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=self.media_type.value, media_type_name=self.media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_type=progress_type if progress_type is not None else self.progress_type, tags=[], lang=lang, nextTimeStamp=0, official=self.official, **kwargs))
 
     def update_chapter_data(self, media_data, id, title, number, volume_number=None, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False, **kwargs):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():

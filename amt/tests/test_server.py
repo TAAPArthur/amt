@@ -72,7 +72,7 @@ class TestServer(Server):
     def get_media_list(self, limit=None):
         self.maybe_inject_error()
         if self.test_lang:
-            return [self.create_media_data(id=1, name=f"{self.media_type.name}1 Dub", lang="en"), self.create_media_data(id=2, name=f"{self.media_type.name}1", lang="jp")][:limit]
+            return [self.create_media_data(id=1, name=f"{self.media_type.name}1 (Dub)", lang="en"), self.create_media_data(id=2, name=f"{self.media_type.name}1", lang="jp")][:limit]
         return [self.create_media_data(id=1, name=f"{self.media_type.name}1", lang=None), self.create_media_data(id=2, name=f"{self.media_type.name}InProgress", lang=None), self.create_media_data(id=3, name="Untracked (Dub)", lang=None), self.create_media_data(id=4, name="!@#$%^&* 's\",.?)(]/[:;_-= (French Dub)"), self.create_media_data(id=5, name=f"{self.id} Unique Manga", alt_id="alt", unique=True)][:limit]
 
     def update_media_data(self, media_data):

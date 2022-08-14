@@ -409,9 +409,6 @@ class SettingsTest(BaseUnitTestClass):
         self.assertEqual(target_value_manga, self.settings.get_field("viewer", MediaType.MANGA.name))
         self.assertEqual(target_value_anime, self.settings.get_field("viewer", MediaType.ANIME.name))
 
-    def test_is_allowed_text_lang(self):
-        assert self.settings.is_allowed_text_lang("en", TestServer.id)
-
     def test_bundle(self):
         name = self.settings.bundle([])
         self.assertTrue(self.settings.open_bundle_viewer(name))
@@ -1371,9 +1368,9 @@ class ArgsTest(CliUnitTestClass):
             server.test_lang = True
             for lang in ("EN", "JP"):
                 self.media_reader.media.clear()
-                self.settings.preferred_primary_language = [lang, lang.upper()]
+                self.settings.search_score = [["lang", [lang, lang.lower()], -1]]
                 with self.subTest(lang=lang, server=server.id):
-                    parse_args(media_reader=self.media_reader, args=["--auto", "load", "--filter-by-preferred-lang", "--server", server.id, "test_user"])
+                    parse_args(media_reader=self.media_reader, args=["--auto", "load", "--media-type", server.media_type.name, "--server", server.id, "test_user"])
                     self.assertEqual(1, len(self.media_reader.get_media_ids()))
                     media_data = list(self.media_reader.get_media())[0]
                     self.assertEqual(media_data["lang"].upper(), lang)
