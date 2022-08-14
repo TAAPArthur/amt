@@ -19,10 +19,13 @@ class Mangadex(Server):
     manga_url = api_base_url + "/manga/{}"
     stream_url_regex = re.compile(r"mangadex.org/chapter/([^/]*)/")
 
-    def _get_media_list(self, data):
+    def _get_media_list(self, data, target_lang=None):
         results = []
         for result in data:
-            results.append(self.create_media_data(id=result["id"], name=list(result["attributes"]["title"].values())[0]))
+            attributes = result["attributes"]
+            for lang in attributes["availableTranslatedLanguages"]:
+                if not target_lang or target_lang == lang:
+                    results.append(self.create_media_data(id=result["id"], name=list(result["attributes"]["title"].values())[0], lang=lang))
         return results
 
     def get_media_list(self, limit=100):
@@ -35,12 +38,13 @@ class Mangadex(Server):
 
     def get_media_data_from_url(self, url):
         chapter_id = self.stream_url_regex.search(url).group(1)
-
-        relationships = self.session_get(self.chapter_url.format(chapter_id)).json()["data"]["relationships"]
+        chapter_data = self.session_get(self.chapter_url.format(chapter_id)).json()
+        relationships = chapter_data["data"]["relationships"]
+        lang = chapter_data["data"]["attributes"]["translatedLanguage"]
         for metadata in relationships:
             if metadata["type"] == "manga":
                 data = self.session_get(self.manga_url.format(metadata["id"])).json()
-                return self.create_media_data(id=data["data"]["id"], name=list(data["data"]["attributes"]["title"].values())[0])
+                return self._get_media_list((data["data"], ), target_lang=lang)[0]
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)
@@ -48,16 +52,14 @@ class Mangadex(Server):
     def update_media_data(self, media_data):
 
         offset = 0
-        visited_chapter_numbers = set()
         while True:
             r = self.session_get(self.manga_chapters_url.format(media_data["id"], offset))
             data = r.json()
 
             for chapter_data in sorted(data["data"], key=lambda x: x["attributes"]["publishAt"], reverse=True):
                 attr = chapter_data["attributes"]
-                if self.settings.is_allowed_text_lang(attr["translatedLanguage"], media_data):
-                    if attr["pages"] and attr["chapter"] not in visited_chapter_numbers:
-                        visited_chapter_numbers.add(attr["chapter"])
+                if attr["translatedLanguage"] == media_data["lang"]:
+                    if attr["pages"]:
                         self.update_chapter_data(media_data, id=chapter_data["id"], number=attr["chapter"], title=attr["title"])
             offset += data["limit"]
             if offset > data["total"]:
