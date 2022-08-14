@@ -175,7 +175,7 @@ class Vrv(Server):
                 if "drm" in name:
                     continue
                 for key in streams[name]:
-                    valid_lang = key == "" if soft_sub else self.settings.is_allowed_text_lang(key, self.id)
+                    valid_lang = (key == "") == soft_sub
                     if valid_lang and "url" in streams[name][key] and "manifest.mpd" not in streams[name][key]["url"]:
                         results.append(streams[name][key]["url"])
         return results
