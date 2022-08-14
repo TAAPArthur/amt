@@ -394,37 +394,36 @@ class GenericServer(MediaServer):
 
         subtitle_regex = re.compile(r"\w*-\w\d*_[2-9]\d*$")
         for lang, url, ext, flip, offset in self.get_subtitle_info(media_data, chapter_data):
-            if self.settings.is_allowed_text_lang(lang, media_data):
-                if not ext:
-                    ext = get_extension(url)
-                basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
-                path = os.path.join(dir_path, basename)
-                if not os.path.exists(path):
-                    delta = timedelta(seconds=offset)
-                    r = self.session_get(url)
-                    if flip:
-                        with open(path, 'w') as fp:
-                            iterable = iter(r.content.decode().splitlines())
-                            buffer = None
-                            for line in iterable:
-                                if subtitle_regex.match(line):
-                                    buffer = None  # ignore blank line
-                                    # don't output this line
-                                    next(iterable)  # skip line with timestamp
-                                else:
-                                    if buffer is not None:
-                                        fp.write(f"{buffer}\n")
-                                    # 00:02:04.583 --> 00:02:13.250 line:84%
-                                    if delta:
-                                        m = re.findall("(?:^| )(\d\d:\d\d:\d\d)", line)
-                                        for original_time in m:
-                                            corrected_time = (datetime.strptime(original_time, "%H:%M:%S") + delta).strftime("%H:%M:%S")
-                                            line = line.replace(original_time, corrected_time)
-                                    buffer = line
-                            fp.write(f"{buffer}\n")
-                    else:
-                        with open(path, "wb") as fp:
-                            fp.write(r.content)
+            if not ext:
+                ext = get_extension(url)
+            basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
+            path = os.path.join(dir_path, basename)
+            if not os.path.exists(path):
+                delta = timedelta(seconds=offset)
+                r = self.session_get(url)
+                if flip:
+                    with open(path, 'w') as fp:
+                        iterable = iter(r.content.decode().splitlines())
+                        buffer = None
+                        for line in iterable:
+                            if subtitle_regex.match(line):
+                                buffer = None  # ignore blank line
+                                # don't output this line
+                                next(iterable)  # skip line with timestamp
+                            else:
+                                if buffer is not None:
+                                    fp.write(f"{buffer}\n")
+                                # 00:02:04.583 --> 00:02:13.250 line:84%
+                                if delta:
+                                    m = re.findall("(?:^| )(\d\d:\d\d:\d\d)", line)
+                                    for original_time in m:
+                                        corrected_time = (datetime.strptime(original_time, "%H:%M:%S") + delta).strftime("%H:%M:%S")
+                                        line = line.replace(original_time, corrected_time)
+                                buffer = line
+                        fp.write(f"{buffer}\n")
+                else:
+                    with open(path, "wb") as fp:
+                        fp.write(r.content)
 
     def get_subtitle_info(self, media_data, chapter_data):   # pragma: no cover
         """
