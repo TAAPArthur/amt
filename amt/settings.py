@@ -135,6 +135,9 @@ class Settings:
         return os.path.join(self.config_dir, "remote_servers.conf")
 
     def get_settings_file(self):
+        return os.path.join(self.config_dir, "amt.json")
+
+    def get_legacy_settings_file(self):
         return os.path.join(self.config_dir, "amt.conf")
 
     def get_stats_file(self):
@@ -155,7 +158,29 @@ class Settings:
             key = key[len("get_"):]
             return lambda x: self.get_field(key, x)
 
-    def set_field(self, name, value, server_or_media_id=None):
+    def set_field(self, name, value, server_or_media_id=None, convert=False):
+        assert name in Settings.get_members()
+
+        if convert:
+            current_field = self.get_field(name, server_or_media_id)
+            if isinstance(value, str):
+                if isinstance(current_field, bool):
+                    value = value.lower() not in ["false", 0, ""]
+                elif isinstance(current_field, int) or isinstance(current_field, float):
+                    value = type(current_field)(value)
+                elif isinstance(current_field, list):
+                    value = value.split(",") if value else []
+                elif not isinstance(current_field, str):
+                    value = json.loads(value)
+
+        if server_or_media_id:
+            if not name in self._specific_settings:
+                self._specific_settings[name] = {}
+            self._specific_settings[name][server_or_media_id] = value
+        else:
+            setattr(self, name, value)
+
+    def set_field_legacy(self, name, value, server_or_media_id=None):
         assert value is not None
         assert name in Settings.get_members()
         current_field = self.get_field(name, server_or_media_id)
@@ -187,35 +212,52 @@ class Settings:
         return f if not isinstance(f, list) else ",".join(map(str, f))
 
     def save(self):
+        data = {}
+        for name in sorted(Settings.get_members()):
+            data[name] = self.get_field(name)
+            for slug in self._specific_settings.get(name, {}):
+                data[f"{name}.{slug}"] = self.get_field(name, slug)
+
         os.makedirs(self.config_dir, exist_ok=True)
         with open(self.get_settings_file(), "w") as f:
-            for name in sorted(Settings.get_members()):
-                f.write(f"{name}={self.get_field_as_string(name)}\n")
-                for slug in self._specific_settings.get(name, {}):
-                    f.write(f"{name}.{slug}={self.get_field_as_string(name, slug)}\n")
+            json.dump(data, f)
 
-    def load(self, skip_env_override=False):
+    def legacy_load(self, skip_env_override=False):
         try:
-            with open(self.get_settings_file(), "r") as f:
+            with open(self.get_legacy_settings_file(), "r") as f:
                 for line in filter(lambda x: x.strip() and x.strip()[0] != "#", f):
                     name, value = (line if not line.endswith("\n") else line[:-1]).split("=", 1)
                     attr, slug = name.split(".", 2) if "." in name else (name, None)
                     if attr not in Settings.get_members():
                         logging.warning("Unknown field %s; Skipping", attr)
                         continue
-                    self.set_field(attr, value, slug)
+                    self.set_field_legacy(attr, value, slug)
         except FileNotFoundError:
             pass
+
+    def load(self, skip_env_override=False):
+        try:
+            with open(self.get_settings_file(), "r") as f:
+                data = json.load(f)
+                for name, value in data.items():
+                    attr, slug = name.split(".", 2) if "." in name else (name, None)
+                    if attr not in Settings.get_members():
+                        logging.warning("Unknown field %s; Skipping", attr)
+                        continue
+                    self.set_field(attr, value, slug)
+        except FileNotFoundError:
+            self.legacy_load()
+
         if not skip_env_override and self.allow_env_override:
             for attr in Settings.get_members():
                 env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}")
                 if env_value is not None:
-                    self.set_field(attr, env_value)
+                    self.set_field(attr, env_value, convert=True)
                 if attr in self._specific_settings:
                     for key in self._specific_settings.get(attr):
                         env_value = os.getenv(f"{self.env_override_prefix}{attr.upper()}_{key}")
                         if env_value is not None:
-                            self.set_field(attr, env_value, key)
+                            self.set_field(attr, env_value, key, convert=True)
 
         os.environ["USER_AGENT"] = self.user_agent
 

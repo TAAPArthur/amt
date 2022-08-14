@@ -94,7 +94,7 @@ class BaseUnitTestClass(unittest.TestCase):
         if self.real:
             _servers = [s for s in SERVERS if s not in LOCAL_SERVERS]
             if ENABLED_SERVERS:
-                self.settings.set_field("enabled_servers", ENABLED_SERVERS)
+                self.settings.set_field("enabled_servers", ENABLED_SERVERS.split(","))
 
         state = State(self.settings)
         _servers.sort(key=lambda x: x.id)
@@ -379,8 +379,9 @@ class SettingsTest(BaseUnitTestClass):
 
         self.settings.save()
         future_key = "future_key"
+        data = {future_key: True}
         with open(self.settings.get_settings_file(), "w") as f:
-            f.write(f"{future_key}=True")
+            json.dump(data, f)
         self.reload()
         self.assertFalse(self.settings.get_field(future_key))
 
