@@ -16,25 +16,36 @@ class Webtoons(Server):
 
     url_split_regex = re.compile(r"title(?:_n|N)o=(\d*)")
 
-    def get_media_list_helper(self, element, media_id=None):
-        genre = element.find(class_="genre").getText().strip()
-        name = element.find(class_="subj").getText().strip()
+    def get_media_data_from_element(self, element, media_id=None):
+        genreElement = element.find(class_="genre")
+        nameElement = element.find(class_="subj")
+        if not genreElement or not nameElement:
+            assert not media_id
+            return None
         if not media_id:
             href = element.find("a").get("href")
             match = self.url_split_regex.search(href)
             media_id = match.group(1)
-        return self.create_media_data(id=media_id, name=name, genre=genre)
+        return self.create_media_data(id=media_id, name=nameElement.getText().strip(), genre=genreElement.getText().strip())
+
+    def get_media_list_helper(self, elements):
+        media_list = []
+        for element in elements:
+            media_data = self.get_media_data_from_element(element)
+            if media_data:
+                media_list.append(media_data)
+        return media_list
 
     def get_media_list(self, limit=None):
         r = self.session_get(self.list_series_url)
         soup = self.soupify(BeautifulSoup, r)
-        return [self.get_media_list_helper(element) for element in soup.find("ul", class_="lst_type1").find_all("li")]
+        return self.get_media_list_helper(soup.find("ul", class_="lst_type1").find_all("li"))
 
     def search_for_media(self, term, limit=None):
         r = self.session_get(self.search_url.format(term))
         soup = self.soupify(BeautifulSoup, r)
         element = soup.find("ul", class_="card_lst")
-        return [self.get_media_list_helper(element) for element in element.find_all("li")] if element else []
+        return self.get_media_list_helper(element.find_all("li")) if element else []
 
     def update_media_data(self, media_data):
         if not media_data.get("url"):
@@ -67,4 +78,4 @@ class Webtoons(Server):
         r = self.session_get(self.chapters_url.format(media_id))
         soup = self.soupify(BeautifulSoup, r)
         element = soup.find("div", {"class": "info"})
-        return self.get_media_list_helper(element, media_id=media_id)
+        return self.get_media_data_from_element(element, media_id=media_id)
