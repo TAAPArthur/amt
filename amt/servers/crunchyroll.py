@@ -1,5 +1,4 @@
 import json
-import logging
 import re
 
 from ..server import Server
@@ -29,14 +28,14 @@ class GenericCrunchyrollServer(Server):
     def session_get_json(self, url, **kwargs):
         data = self.session_get(url, **kwargs).json()
         if data is not None and data.get("error", False) and data["code"] == "bad_session":
-            logging.info("Failed request %s", data)
+            self.logger.info("Failed request %s", data)
             expired_session_id = self.get_session_id()
             new_session_id = self.get_session_id(force=True)
             assert expired_session_id != new_session_id
             new_url = url.replace(expired_session_id, new_session_id)
             data = self.session_get(new_url).json()
         if data.get("error", False):
-            logging.error("Failed request %s %s", url, data)
+            self.logger.error("Failed request %s %s", url, data)
         return data
 
     def _store_login_data(self, data):
@@ -51,7 +50,7 @@ class GenericCrunchyrollServer(Server):
             self._store_login_data(data)
             return False
         if not data or data.get("error", False):
-            logging.info("Error authenticating %s", data)
+            self.logger.info("Error authenticating %s", data)
         return True
 
     def login(self, username, password):
@@ -65,7 +64,7 @@ class GenericCrunchyrollServer(Server):
         if "data" in response:
             self._store_login_data(response)
             return True
-        logging.debug("Login failed; response: %s", response)
+        self.logger.debug("Login failed; response: %s", response)
         return False
 
 

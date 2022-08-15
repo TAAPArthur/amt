@@ -1,4 +1,3 @@
-import logging
 import re
 import time
 
@@ -64,7 +63,7 @@ class GenericVizManga(Server):
         data = r.json()
         if not data["ok"] or data["data"] == "no_auth":
             archive_info = self.get_limit_data(chapter_data["id"])
-            logging.debug("Failed to get page info %s", archive_info["err"]["msg"])
+            self.logger.debug("Failed to get page info %s", archive_info["err"]["msg"])
             raise ChapterLimitException(archive_info["next_reset_epoch"], archive_info["download_limit"])
         urls = data["data"]
         for num in range(num_pages):

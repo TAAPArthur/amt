@@ -8,6 +8,6 @@ import sys
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='[%(filename)s:%(lineno)s]%(levelname)s:%(message)s', level=logging.INFO)
+    logging.basicConfig(format="[%(name)s:%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
     signal(SIGPIPE, SIG_DFL)
     sys.exit(parse_args())

@@ -42,7 +42,7 @@ TEST_HOME = TEST_BASE + "test_home/"
 TEST_TEMP = TEST_BASE + "tmp/"
 
 
-logging.basicConfig(format="[%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
+logging.basicConfig(format="[%(name)s:%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
 
 TEST_SERVERS = import_sub_classes(tests, TestServer)
 TEST_TRACKERS = import_sub_classes(tests, TestTracker)

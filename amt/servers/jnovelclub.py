@@ -1,4 +1,3 @@
-import logging
 import os
 import re
 import shutil
@@ -230,5 +229,5 @@ class JNovelClubMangaParts(GenericJNovelClubParts):
         success = GenericDecoder.descramble_and_save_img(r.raw, path, key=page_data["encryption_key"], max_iters=max_iterations)
         if not success:
             page_data["retry"] = True
-            logging.debug("Failed to descramble %s", page_data["url"])
+            self.logger.debug("Failed to descramble %s", page_data["url"])
             raise RetryException(path)

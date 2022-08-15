@@ -1,4 +1,3 @@
-import logging
 import re
 
 from bs4 import BeautifulSoup
@@ -51,7 +50,7 @@ class GenericFunimation(Server):
             self.session.cookies.set("rlildup", data["rlildup_cookie"], domain=self.domain)
             return True
         except KeyError:
-            logging.info(data["error"])
+            self.logger.info(data["error"])
             return False
 
     def get_subtitle_info(self, media_data, chapter_data):

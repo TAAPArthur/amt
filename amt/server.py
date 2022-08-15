@@ -54,6 +54,7 @@ class RequestServer:
             self.session = session
         self._lock = Lock()
         self.mem_cache = {}
+        self.logger = logging.getLogger(self.id)
 
     def get_cloudscraper_session(self, session):
         import cloudscraper
@@ -76,12 +77,12 @@ class RequestServer:
 
     def backoff(self, c):
         b = self.settings.get_backoff_factor(self.id)
-        logging.info(f"Sleeping for {b**c} seconds after seeing {c} failures")
+        self.logger.info(f"Sleeping for {b**c} seconds after seeing {c} failures")
         time.sleep(b**c)
 
     def _request(self, post_request, url, force_cloud_scraper=False, **kwargs):
-        logging.info("Making %s request to %s ", "POST" if post_request else "GET", url)
-        logging.debug("Request args: %s ", kwargs)
+        self.logger.info("Making %s request to %s ", "POST" if post_request else "GET", url)
+        self.logger.debug("Request args: %s ", kwargs)
         if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
             kwargs["verify"] = False
         if self.implict_referer and "headers" not in kwargs:
@@ -96,20 +97,20 @@ class RequestServer:
             try:
                 r = session.post(url, **kwargs) if post_request else session.get(url, **kwargs)
                 if r.status_code != 200:
-                    logging.warning("HTTPError: %d; Session class %s; headers %s; %s", r.status_code, type(session), kwargs.get("headers", {}), r.text[:256])
+                    self.logger.warning("HTTPError: %d; Session class %s; headers %s; %s", r.status_code, type(session), kwargs.get("headers", {}), r.text[:256])
                 if not r.status_code in self.settings.status_to_retry:
                     break
                 self.backoff(i + 1)
             except SSLError:
                 if self.settings.get_fallback_to_insecure_connection(self.id):
-                    logging.warning("Retry request insecurely %s", url)
+                    self.logger.warning("Retry request insecurely %s", url)
                     if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:
-                        logging.warning("Using insecure connections and cloudscraper are not supported and may result in an error like 'ValueError: Cannot set verify_mode to CERT_NONE when check_hostname is enabled.'")
+                        self.logger.warning("Using insecure connections and cloudscraper are not supported and may result in an error like 'ValueError: Cannot set verify_mode to CERT_NONE when check_hostname is enabled.'")
                     kwargs["verify"] = False
                     return self._request(post_request, url, **kwargs)
                 raise
             except ConnectionError as e:
-                logging.warning("ConnectionError: %s Session class %s", str(e), type(session))
+                self.logger.warning("ConnectionError: %s Session class %s", str(e), type(session))
                 if i == self.settings.get_max_retries(self.id) - 1:
                     raise
                 continue
@@ -145,7 +146,7 @@ class RequestServer:
         try:
             if ttl < 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
                 with open(file, "r") as f:
-                    logging.debug("Returning cached value for %s", url)
+                    self.logger.debug("Returning cached value for %s", url)
                     return json.load(f) if use_json else f.read()
         except (json.decoder.JSONDecodeError, FileNotFoundError):
             pass
@@ -298,7 +299,7 @@ class GenericServer(MediaServer):
         last_err = None
         urls = self.maybe_login_and_get_stream_urls(media_data=media_data, chapter_data=chapter_data)
 
-        logging.debug("Stream urls %s", urls)
+        self.logger.debug("Stream urls %s", urls)
         if stream_index != 0:
             urls = urls[stream_index:] + urls[:stream_index]
 
@@ -495,9 +496,9 @@ class Server(GenericServer):
         except HTTPError:
             self._is_logged_in = False
         if not self._is_logged_in:
-            logging.warning("Could not login with username: %s", username)
+            self.logger.warning("Could not login with username: %s", username)
         else:
-            logging.info("Logged into %s; premium %s", self.id, self.is_premium)
+            self.logger.info("Logged into %s; premium %s", self.id, self.is_premium)
         return self._is_logged_in
 
     def is_fully_downloaded(self, media_data, chapter_data):
@@ -509,9 +510,9 @@ class Server(GenericServer):
 
     def download_if_missing(self, page_data, full_path):
         if os.path.exists(full_path):
-            logging.debug("Page %s already download", full_path)
+            self.logger.debug("Page %s already download", full_path)
         else:
-            logging.info("downloading %s", full_path)
+            self.logger.info("downloading %s", full_path)
             temp_path = os.path.join(os.path.dirname(full_path), ".tmp-" + os.path.basename(full_path))
             self.save_chapter_page(page_data, temp_path)
             os.rename(temp_path, full_path)
@@ -529,7 +530,7 @@ class Server(GenericServer):
             if self.needs_to_login():
                 self.relogin()
                 return func()
-            logging.error("Probably need to login to view the media: %s", str(e))
+            self.logger.error("Probably need to login to view the media: %s", str(e))
             raise
 
     def needs_to_login(self):
@@ -540,17 +541,17 @@ class Server(GenericServer):
 
     def pre_download(self, media_data, chapter_data):
         if chapter_data["inaccessible"]:
-            logging.info("Chapter is not accessible")
+            self.logger.info("Chapter is not accessible")
             raise ValueError("Cannot access chapter")
         if chapter_data["premium"] and not self.is_premium:
             if self.needs_to_login():
-                logging.info("Server is not authenticated; relogging in")
+                self.logger.info("Server is not authenticated; relogging in")
                 if not self.relogin():
-                    logging.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
+                    self.logger.info("Cannot access chapter %s #%s %s", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
             else:
                 self._is_logged_in = True
             if not self.is_premium:
-                logging.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
+                self.logger.info("Cannot access chapter %s #%s %s because account is not premium", media_data["name"], str(chapter_data["number"]), chapter_data["title"])
                 raise ValueError("Cannot access premium chapter")
 
         if self.media_type == MediaType.ANIME:
@@ -561,7 +562,7 @@ class Server(GenericServer):
 
     def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
         if self.is_fully_downloaded(media_data, chapter_data):
-            logging.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
+            self.logger.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
         try:
             if self.synchronize_chapter_downloads:
@@ -572,7 +573,7 @@ class Server(GenericServer):
                 self._lock.release()
 
     def _download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
-        logging.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
+        self.logger.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
         self.pre_download(media_data, chapter_data)
@@ -593,7 +594,7 @@ class Server(GenericServer):
         self.post_download(media_data, chapter_data, dir_path, list_of_pages)
         self.settings.post_process(media_data, (page_data["path"] for page_data in list_of_pages), dir_path)
         self.mark_download_complete(dir_path)
-        logging.info("%s %d %s is downloaded; Total pages %d", media_data["name"], chapter_data["number"], chapter_data["title"], len(list_of_pages))
+        self.logger.info("%s %d %s is downloaded; Total pages %d", media_data["name"], chapter_data["number"], chapter_data["title"], len(list_of_pages))
 
         return True
 
@@ -628,7 +629,7 @@ class TorrentHelper(MediaServer):
         Downloads the raw torrent file
         """
         path = self.settings.get_external_downloads_path(media_data)
-        logging.info("Downloading to %s", path)
+        self.logger.info("Downloading to %s", path)
         self.save_torrent_file(media_data, path)
 
     def save_torrent_file(self, media_data, path):  # pragma: no cover
