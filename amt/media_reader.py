@@ -436,6 +436,7 @@ class MediaReader:
                     server.pre_download(media_data, chapter)
             else:
                 server.download_chapter(media_data, chapter, supress_exeception=not force)
+            self.state.save_session_cookies()
             success = self.settings.open_viewer(
                 server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter, stream_index=stream_index),
                 media_data=media_data, chapter_data=chapter)
