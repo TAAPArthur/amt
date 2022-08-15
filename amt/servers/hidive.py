@@ -26,16 +26,16 @@ class Hidive(Server):
     add_series_url_regex = re.compile(f"(?:{domain}|^)/(?:tv|movies)/([^/]*)")
 
     def needs_authentication(self):
-        cached_id = self.session_get_cookie("CacheId")
-        if cached_id and cached_id.count("0") == len(cached_id.strip()):
-            return True
-        return self.session_get_cookie("UserStatus") is None
+        r = self.session_get(self.base_url)
+        soup = self.soupify(BeautifulSoup, r)
+        return soup.find("a", class_="user-label") is None
 
     @property
     def is_premium(self):
-        return True
-        # status = self.session_get_cookie("UserStatus")
-        # return status and status in ("Trial", "Active")
+        cached_id = self.session_get_cookie("CacheId")
+        if cached_id and cached_id.count("0") == len(cached_id.strip()):
+            return False
+        return self.session_get_cookie("UserStatus") is not None
 
     def login(self, username, password):
         r = self.session_get(self.login_url)
