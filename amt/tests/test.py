@@ -1764,9 +1764,9 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["stream", "--download", TestAnimeServer.get_streamable_url()])
         parse_args(media_reader=self.media_reader, args=["stream", TestAnimeServer.get_streamable_url()])
 
-    def test_add_from_url_stream_cont(self):
+    def test_add_from_url_stream_cont_record(self):
         parse_args(media_reader=self.media_reader, args=["add-from-url", TestAnimeServer.get_streamable_url()])
-        parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "--cont", "--record", TestAnimeServer.get_streamable_url()])
         self.verify_all_chapters_read(media_type=MediaType.ANIME)
 
     def test_add_from_url_bad(self):

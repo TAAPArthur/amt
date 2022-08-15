@@ -394,24 +394,16 @@ class MediaReader:
                 last_read = max(media_data.get_last_read_chapter_number(), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
-    def get_media_by_chapter_id(self, server_id, chapter_id):
-        for media in self.get_media():
-            if media["server_id"] == server_id:
-                if chapter_id in media["chapters"]:
-                    return media, media["chapters"][chapter_id]
-        return None, None
-
-    def stream(self, url, cont=False, download=False, stream_index=0, offset=0):
+    def stream(self, url, cont=False, download=False, stream_index=0, offset=0, record=False):
         for server in self.get_servers():
             if server.can_stream_url(url):
                 chapter_id = server.get_chapter_id_for_url(url)
-                media_data, chapter = self.get_media_by_chapter_id(server.id, chapter_id)
-                if not chapter:
-                    media_data = server.get_media_data_from_url(url)
-                    if not media_data["chapters"]:
-                        server.update_media_data(media_data)
-
-                    chapter = media_data["chapters"][chapter_id]
+                media_data = server.get_media_data_from_url(url)
+                if record and media_data.global_id in self.media:
+                    media_data = self.media[media_data.global_id]
+                if not media_data["chapters"]:
+                    server.update_media_data(media_data)
+                chapter = media_data["chapters"][chapter_id]
                 if download:
                     server.download_chapter(media_data, chapter)
                 else:
