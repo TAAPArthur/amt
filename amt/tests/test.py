@@ -125,6 +125,9 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.fallback_to_insecure_connection = True
         self.settings.always_use_cloudscraper = False
 
+        self.settings.max_retries = 2
+        self.settings.backoff_factor = 1
+
         self.settings.post_download_torrent_file_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.settings.suppress_cmd_output = True
         self.settings.viewer = "exit 0"
