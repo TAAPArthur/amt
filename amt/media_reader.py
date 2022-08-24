@@ -401,7 +401,9 @@ class MediaReader:
                 media_data = server.get_media_data_from_url(url)
                 if record and media_data.global_id in self.media:
                     media_data = self.media[media_data.global_id]
-                if not media_data["chapters"]:
+                    if chapter_id not in media_data["chapters"]:
+                        server.update_media_data(media_data)
+                elif not media_data["chapters"]:
                     server.update_media_data(media_data)
                 chapter = media_data["chapters"][chapter_id]
                 if download:
