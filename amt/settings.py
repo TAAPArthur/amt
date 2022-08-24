@@ -290,10 +290,12 @@ class Settings:
     def get_page_file_name(self, media_data, chapter_data, ext, page_number=0):
         return self.get_chapter_page_format(media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"], page_number=page_number, ext=ext)
 
-    def is_server_enabled(self, server_id, is_offical=True):
+    def is_server_enabled(self, server_id, alias=None, is_offical=True):
         if self.allow_only_official_servers and not is_offical:
             return False
-        return server_id in self.enabled_servers + [self.tracker_id] if self.enabled_servers else server_id not in self.disabled_servers and server_id
+        if self.enabled_servers:
+            return server_id in self.enabled_servers + [self.tracker_id] or alias and alias in self.enabled_servers
+        return server_id not in self.disabled_servers and server_id and (not alias or alias not in self.disabled_servers)
 
     def get_prefered_lang_key(self, media_data, lang=None):
         search_score = self.get_field("search_score", media_data)

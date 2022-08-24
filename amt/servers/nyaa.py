@@ -5,6 +5,7 @@ from ..util.media_type import MediaType
 
 
 class Nyaa(TorrentHelper):
+    alias = "nyaa"
     domain = "nyaa.si"
     base_url = f"https://{domain}"
     search_url = base_url + "/?s=downloads&o=desc&f=0&c={}&q={}"

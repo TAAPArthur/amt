@@ -54,7 +54,7 @@ class MediaReader:
             for cls in cls_list:
                 try:
                     for instance in cls.get_instances(self.session, self.settings):
-                        if self.settings.is_server_enabled(instance.id, instance.official):
+                        if self.settings.is_server_enabled(instance.id, instance.alias, instance.official):
                             assert instance.id not in instance_map, f"Duplicate server id: {instance.id}"
                             instance_map[instance.id] = instance
                 except ImportError:
@@ -572,7 +572,7 @@ class MediaReader:
     def login(self, server_ids=None, force=False):
         failures = False
         for server in self.get_servers():
-            if server.has_login() and (not server_ids or server.id in server_ids):
+            if server.has_login() and (not server_ids or server.id in server_ids or server.alias in server_ids):
                 if (force or server.needs_to_login()) and not server.relogin():
                     logging.error("Failed to login into %s", server.id)
                     failures = True

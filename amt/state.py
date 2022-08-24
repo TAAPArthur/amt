@@ -330,7 +330,7 @@ class MediaData(dict):
         return self.get_last_read_chapter().get("number", 0)
 
     def get_labels(self):
-        return [self.global_id, self["name"], self["server_id"], MediaType(self["media_type"]).name]
+        return [self.global_id, self["name"], self["server_id"], self["server_alias"], MediaType(self["media_type"]).name]
 
 
 class ChapterData(dict):
