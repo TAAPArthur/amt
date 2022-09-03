@@ -5,6 +5,7 @@ from ..server import Server
 from ..util.media_type import MediaType
 from ..util.name_parser import find_media_with_similar_name_in_list
 from requests.exceptions import HTTPError
+from threading import RLock
 
 
 class GenericCrunchyrollServer(Server):
@@ -18,25 +19,38 @@ class GenericCrunchyrollServer(Server):
     _access_token = "WveH9VkPLrXvuNm"
     _access_type = "com.crunchyroll.crunchyroid"
 
+    crunchyroll_lock = RLock()
+    session_id_may_be_invalid = True
+
     def get_session_id(self, force=False):
-        session_id = self.session_get_cookie("session_id")
-        if force or session_id is None:
-            self.session_get(f"https://{self.domain}/comics/manga")
+        with GenericCrunchyrollServer.crunchyroll_lock:
             session_id = self.session_get_cookie("session_id")
-        return session_id
+            if force or session_id is None:
+                self.session_get(f"https://{self.domain}/comics/manga")
+                session_id = self.session_get_cookie("session_id")
+            return session_id
 
     def session_get_json(self, url, **kwargs):
-        data = self.session_get(url, **kwargs).json()
-        if data is not None and data.get("error", False) and data["code"] == "bad_session":
-            self.logger.info("Failed request %s", data)
-            expired_session_id = self.get_session_id()
-            new_session_id = self.get_session_id(force=True)
-            assert expired_session_id != new_session_id
-            new_url = url.replace(expired_session_id, new_session_id)
-            data = self.session_get(new_url).json()
-        if data.get("error", False):
-            self.logger.error("Failed request %s %s", url, data)
-        return data
+        query_under_lock = GenericCrunchyrollServer.session_id_may_be_invalid and "session_id" in url
+        def make_request(url):
+            return self.session_get(url, **kwargs).json()
+        session_id_regex = re.compile(r"session_id=([^&]*)")
+        if query_under_lock:
+            original_session_id = session_id_regex.search(url).group(1)
+            with GenericCrunchyrollServer.crunchyroll_lock:
+                if GenericCrunchyrollServer.session_id_may_be_invalid:
+                    data = make_request(url)
+                    if data.get("error", False) and data["code"] == "bad_session":
+                        self.logger.error("Failed request %s %s; retrying", url, data)
+                        new_session_id = self.get_session_id(force=True)
+                        self.logger.info("New id %s vs %s", new_session_id, original_session_id)
+                        new_url = url.replace(original_session_id, new_session_id)
+                        data = make_request(new_url)
+                    GenericCrunchyrollServer.session_id_may_be_invalid = False
+                    return data
+                else:
+                    url = url.replace(original_session_id, self.get_session_id())
+        return make_request(url)
 
     def _store_login_data(self, data):
         Crunchyroll._api_auth_token = data["data"]["auth"]
