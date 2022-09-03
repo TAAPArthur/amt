@@ -20,6 +20,7 @@ def json_decoder(obj):
 
 class State:
     version = 1.4
+    cache_version = 1
 
     def __init__(self, settings, session=None):
         self.settings = settings
@@ -79,7 +80,7 @@ class State:
     def load(self):
         self.load_media()
         self.server_cache = self.read_file_as_dict(self.settings.get_server_cache_file())
-        if not self.server_cache:
+        if not self.server_cache or self.server_cache.get("version") != self.cache_version:
             self.update_server_cache()
         self.bundles = self.read_file_as_dict(self.settings.get_bundle_metadata_file())
 
@@ -172,13 +173,17 @@ class State:
         self.update_server_cache(server_list)
 
     def update_server_cache(self, server_list={}):
-        self.server_cache = {server.id: {"media_type": server.media_type.value, "has_login": server.has_login()} for server in server_list.values()}
+
+        self.server_cache = {"servers": {server.id: {"media_type": server.media_type.value, "has_login": server.has_login()} for server in server_list.values()}}
+        auth_servers = {server.id for server in server_list.values() if server.has_login()} | {server.alias for server in server_list.values() if server.has_login() and server.alias}
+        self.server_cache["auth_servers"] = sorted(list(auth_servers))
+        self.server_cache["version"] = self.cache_version
 
     def get_all_names(self, media_type=None, disallow_servers=False):
         names = set()
         if not disallow_servers:
-            for server_id in self.server_cache:
-                if not media_type or self.server_cache[server_id]["media_type"] & media_type:
+            for server_id in self.server_cache["servers"]:
+                if not media_type or self.server_cache["servers"][server_id]["media_type"] & media_type:
                     names.add(server_id)
         for media_id, media in self.media.items():
             if not media_type or media["media_type"] & media_type:
@@ -194,10 +199,10 @@ class State:
         return self.get_all_names(media_type=media_type, disallow_servers=True)
 
     def get_server_ids(self):
-        return self.server_cache.keys()
+        return self.server_cache["servers"].keys()
 
     def get_server_ids_with_logins(self):
-        return [k for k, v in self.server_cache.items() if v["has_login"]]
+        return self.server_cache["auth_servers"]
 
     def mark_bundle_as_read(self, bundle_name):
         bundled_data = self.bundles[bundle_name]

@@ -1062,7 +1062,7 @@ class GenericServerTest():
             finally:
                 assert server.needs_to_login()
 
-        unique_login_servers = {x.alias or x.id: x for x in map(self.media_reader.get_server, self.media_reader.state.get_server_ids_with_logins())}
+        unique_login_servers = {x.alias or x.id: x for x in map(self.media_reader.get_server, self.media_reader.state.get_server_ids_with_logins()) if x}
         self.for_each(func, unique_login_servers.values())
 
 
