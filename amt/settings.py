@@ -240,7 +240,7 @@ class Settings:
             with open(self.get_settings_file(), "r") as f:
                 data = json.load(f)
                 for name, value in data.items():
-                    attr, slug = name.split(".", 2) if "." in name else (name, None)
+                    attr, slug = name.split(".", 1) if "." in name else (name, None)
                     if attr not in Settings.get_members():
                         logging.warning("Unknown field %s; Skipping", attr)
                         continue
