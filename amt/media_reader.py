@@ -225,32 +225,37 @@ class MediaReader:
                     if os.path.isdir(torrent_dir) and (not files or f in files):
                         self.import_media([torrent_dir], media_type=media_type, **kwargs)
 
-    def import_media(self, files, media_type, link=False, name=None, skip_add=False, fallback_name=None):
+    def import_media(self, files, media_type, link=False, name=None, skip_add=False, fallback_name=None, dry_run=False):
         server = self.get_server(get_local_server_id(media_type))
         names = set()
+        print(dry_run)
         for file in files:
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             assert file != "/"
             media_name = name
 
+            file = os.path.realpath(file)
             if os.path.isdir(file):
                 media_name = get_media_name_from_file(file, fallback_name, is_dir=True)
-                self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=media_name, fallback_name=name, link=link, skip_add=skip_add)
+                logging.info("Detected name %s", media_name)
+                self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=media_name, fallback_name=name, link=link, skip_add=skip_add, dry_run=dry_run)
                 continue
             if not name:
                 media_name = get_media_name_from_file(file, fallback_name, is_dir=False)
                 logging.info("Detected name %s", media_name)
 
             assert not os.path.isdir(file)
+            assert media_name != "."
             dest = server.get_import_media_dest(media_name=media_name, file_name=os.path.basename(file))
             logging.info("Importing to %s", dest)
-            if link:
-                os.link(file, dest)
-            else:
-                shutil.move(file, dest)
+            if not dry_run:
+                if link:
+                    os.link(file, dest)
+                else:
+                    shutil.move(file, dest)
             names.add(media_name)
 
-        if not skip_add:
+        if not skip_add and not dry_run:
             for media_name in names:
                 if not any([x["name"] == media_name for x in self.get_media(name=server.id)]):
                     self.search_add(media_name, server_id=server.id, exact=True)

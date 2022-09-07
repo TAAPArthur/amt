@@ -138,6 +138,7 @@ def setup_subparsers(state, sub_parsers):
     auto_import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
 
     import_parser = add_parser_helper(sub_parsers, "import", func_str="import-media", help="Import local media into amt")
+    import_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually move/add media")
     import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
     import_parser.add_argument("--media-type", default="ANIME", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")

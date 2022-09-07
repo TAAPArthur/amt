@@ -1809,33 +1809,38 @@ class ArgsTest(CliUnitTestClass):
                 assert re.search(r"^\w+$", media_data["id"])
                 self.assertEqual(media_data["media_type"], media_type)
 
-    def test_import_directory(self):
+    def import_test_setup(self, parent_dir=""):
         media_name = "test dir"
-        chapter_title = "Anime1 - E10.jpg"
-        path = os.path.join(TEST_HOME, "[author] " + media_name)
-        os.mkdir(path)
-        path_file = os.path.join(path, chapter_title)
-        with open(path_file, "w") as f:
-            f.write("dummy_data")
-        parse_args(media_reader=self.media_reader, args=["import", "--link", path])
-        assert os.path.exists(path_file)
-        media_data = self.media_reader.get_single_media(name=media_name)
-        chapter_data = list(media_data.get_sorted_chapters())[0]
-        self.assertEqual(chapter_data["title"], chapter_title)
-
-    def test_import_nexted_directory(self):
-        parent_dir = "dir1"
-        media_name = "MediaName"
         chapter_title = "Anime1 - E10.jpg"
         path = os.path.join(TEST_HOME, parent_dir, "[author] " + media_name)
         os.makedirs(path)
         path_file = os.path.join(path, chapter_title)
         with open(path_file, "w") as f:
             f.write("dummy_data")
-        parse_args(media_reader=self.media_reader, args=["import", parent_dir])
+        return media_name, chapter_title, path, path_file
+
+    def verify_import_test(self, media_name, chapter_title):
         media_data = self.media_reader.get_single_media(name=media_name)
         chapter_data = list(media_data.get_sorted_chapters())[0]
         self.assertEqual(chapter_data["title"], chapter_title)
+
+    def test_import_directory(self):
+        media_name, chapter_title, path, path_file = self.import_test_setup()
+        parse_args(media_reader=self.media_reader, args=["import", "--link", path])
+        assert os.path.exists(path_file)
+        self.verify_import_test(media_name, chapter_title)
+
+    def test_import_directory_self(self):
+        media_name, chapter_title, path, _ = self.import_test_setup()
+        os.chdir(path)
+        parse_args(media_reader=self.media_reader, args=["import", "."])
+        self.verify_import_test(media_name, chapter_title)
+
+    def test_import_nested_directory(self):
+        parent_dir = "dir1"
+        media_name, chapter_title, path, _ = self.import_test_setup(parent_dir=parent_dir)
+        parse_args(media_reader=self.media_reader, args=["import", parent_dir])
+        self.verify_import_test(media_name, chapter_title)
 
     def _test_upgrade_helper(self, minor):
         self.add_test_media(self.test_anime_server)
