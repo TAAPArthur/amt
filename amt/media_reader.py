@@ -435,7 +435,7 @@ class MediaReader:
             if chapter["number"] in num_list:
                 yield server, media_data, chapter
 
-    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force=False):
+    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force=False, force_stream=False):
         num = 0
         for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread)):
             if media_data["media_type"] == MediaType.ANIME:
@@ -445,7 +445,7 @@ class MediaReader:
                 server.download_chapter(media_data, chapter, supress_exeception=not force)
             self.state.save_session_cookies()
             success = self.settings.open_viewer(
-                server.get_children(media_data, chapter)if server.is_fully_downloaded(media_data, chapter) else server.get_stream_url(media_data, chapter, stream_index=stream_index),
+                server.get_children(media_data, chapter) if server.is_fully_downloaded(media_data, chapter) and not force_stream else server.get_stream_url(media_data, chapter, stream_index=stream_index),
                 media_data=media_data, chapter_data=chapter)
             if success:
                 num += 1

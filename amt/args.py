@@ -100,6 +100,7 @@ def setup_subparsers(state, sub_parsers):
     view_parser.set_defaults(media_type=MediaType.MANGA | MediaType.NOVEL)
 
     play_parser = add_parser_helper(sub_parsers, "play", parents=[sub_consume_parsers], help="Either stream anime or directly play downloaded media")
+    play_parser.add_argument("--force-stream", default=False, action="store_const", const=True)
     play_parser.add_argument("name", choices=state.get_all_names(MediaType.ANIME), default=None, nargs="?")
     play_parser.add_argument("num_list", default=None, nargs="*", type=float)
     play_parser.set_defaults(media_type=MediaType.ANIME)
