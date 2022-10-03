@@ -14,7 +14,6 @@ class Vrv(Server):
     home = "https://vrv.co/"
     media_type = MediaType.ANIME
     stream_url_regex = re.compile(r"(?:beta.crunchyroll|vrv).\w+/watch/(\w*)/.+")
-    is_premium = True
 
     api_param_regex = re.compile(r"window.__APP_CONFIG__\s*=\s*(.*);")
     api_state_regex = re.compile(r"window.__INITIAL_STATE__\s*=\s*(.*);")
@@ -30,6 +29,10 @@ class Vrv(Server):
     _single_episode_api_url = None
     _apiParams = None
     key_pair = None
+
+    @property
+    def is_premium(self):
+        return self._is_logged_in
 
     def _load_urls(self):
         if not self.key_pair:
