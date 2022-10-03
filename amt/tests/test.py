@@ -54,6 +54,7 @@ SINGLE_THREADED = os.getenv("DEBUG")
 PREMIUM_TEST = os.getenv("PREMIUM_TEST")
 QUICK_TEST = os.getenv("QUICK")
 ENABLED_SERVERS = os.getenv("AMT_ENABLED_SERVERS")
+DISABLED_SERVERS = os.getenv("AMT_DISABLED_SERVERS")
 
 
 class BaseUnitTestClass(unittest.TestCase):
@@ -95,6 +96,8 @@ class BaseUnitTestClass(unittest.TestCase):
             _servers = [s for s in SERVERS if s not in LOCAL_SERVERS]
             if ENABLED_SERVERS:
                 self.settings.set_field("enabled_servers", ENABLED_SERVERS.split(","))
+            if DISABLED_SERVERS:
+                self.settings.set_field("disabled_servers", DISABLED_SERVERS.split(","))
 
         state = State(self.settings)
         _servers.sort(key=lambda x: x.id)
