@@ -12,6 +12,7 @@ class GenericFunimation(Server):
 
     CSRF_NAME = "csrfmiddlewaretoken"
     domain = "funimation.com"
+    base_url = f"https://{domain}"
     login_url = "https://www.funimation.com/log-in/"
     prod_api_base = "https://prod-api-funimationnow.dadcdigital.com"
     login_api_url = prod_api_base + "/api/auth/login/"
@@ -80,10 +81,10 @@ class Funimation(GenericFunimation):
     id = "funimation"
     multi_threaded = True
 
-    search_url = "https://api-funimation.dadcdigital.com/xml/longlist/content/page/?id=search&q={}"
+    search_url = "https://www.funimation.com/search/videos/{}/?q={}&cat=videos"
     list_url = "https://funimation.com"
-    new_api_episdoe_url = "https://title-api.prd.funimationsvc.com/v1/shows/{}/episodes/{}/?region=US&deviceType=web&locale=en"
-    stream_url_regex = re.compile("funimation.com/v/([^/]*)/([^/]*)")
+    new_api_episode_url = "https://title-api.prd.funimationsvc.com/v1/shows/{}/episodes/{}/?region=US&deviceType=web&locale=en"
+    stream_url_regex = re.compile("funimation.com/(?:v|en/shows)/([^/]*)/([^/]*)")
 
     def _get_media_list(self, ids, limit=None):
         media_data = []
@@ -111,13 +112,25 @@ class Funimation(GenericFunimation):
         return self._get_media_list(ids, limit=limit)
 
     def search_for_media(self, term, alt_id=None, limit=2):
-        soup = self.soupify(BeautifulSoup, self.session_get(self.search_url.format(term)))
-        ids = [(item.find("id").text, item.find("title").text) for item in soup.findAll("item")[:limit]]
-        return self._get_media_list(ids, limit=limit)
+        titles = set()
+        media_list = []
+        for i in range(1, 10):
+            soup = self.soupify(BeautifulSoup, self.session_get(self.search_url.format(str(i), term)))
+            items = soup.findAll("a", {"class": "show-title"})
+            for item in items:
+                title = item.text.strip()
+                if title not in titles:
+                    titles.add(title)
+                    for media_data in self.get_related_media_data_from_url(self.base_url + item["href"], multiple=True):
+                        media_list.append(media_data)
+            if not items or (limit and len(media_list) >= limit):
+                break
+
+        return media_list
 
     def _get_episode_id(self, url):
         match = self.stream_url_regex.search(url)
-        r = self.session_get(self.new_api_episdoe_url.format(match.group(1), match.group(2)))
+        r = self.session_get(self.new_api_episode_url.format(match.group(1), match.group(2)))
         video_info = []
         for video in r.json()["videoList"]:
             lang_code_score = [self.settings.get_prefered_lang_key(self, lang=lang["languageCode"]) for lang in video["spokenLanguages"]]
@@ -140,7 +153,7 @@ class Funimation(GenericFunimation):
                         special = chapter["mediaCategory"] != "episode"
                         self.update_chapter_data(media_data, id=alt_exp["experienceId"], number=chapter["episodeId"], title=chapter["episodeTitle"], premium=premium, special=special, alt_id=exp["experienceId"])
 
-    def get_media_data_from_url(self, url):
+    def get_related_media_data_from_url(self, url, multiple=False, update=False):
         chapter_id = self._get_episode_id(url)
         r = self.session_get(self.show_api_url.format(chapter_id))
         data = r.json()
@@ -152,10 +165,14 @@ class Funimation(GenericFunimation):
                         if typeKey not in video:
                             continue
                         exp = video[typeKey]
-                        if int(exp["experienceId"]) == int(chapter_id):
+                        if multiple or int(exp["experienceId"]) == int(chapter_id):
                             media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id, lang=lang.lower())
-                            self.update_media_data(media_data, r=r)
-                            return media_data
+                            if update:
+                                self.update_media_data(media_data, r=r)
+                            yield media_data
+
+    def get_media_data_from_url(self, url):
+        return next(self.get_related_media_data_from_url(url, update=True))
 
     def get_chapter_id_for_url(self, url):
         chapter_id = self._get_episode_id(url)
