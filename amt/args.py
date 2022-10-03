@@ -310,7 +310,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
             if ret is not None and not isinstance(ret, int):
                 if isinstance(ret, str) or isinstance(ret, tuple):
                     print(ret)
-                else:
+                elif not isinstance(ret, dict):
                     for obj in ret:
                         print("\t".join(map(str, obj)) if isinstance(obj, tuple) else obj)
             return 1 if ret is False else 0
