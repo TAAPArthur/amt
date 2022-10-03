@@ -19,7 +19,7 @@ def json_decoder(obj):
 
 
 class State:
-    version = 1.3
+    version = 1.4
 
     def __init__(self, settings, session=None):
         self.settings = settings
