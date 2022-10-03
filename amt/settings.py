@@ -180,7 +180,7 @@ class Settings:
         else:
             setattr(self, name, value)
 
-    def set_field_legacy(self, name, value, server_or_media_id=None):
+    def set_field_legacy(self, name, value, server_or_media_id=None):  # pragma: no cover
         assert value is not None
         assert name in Settings.get_members()
         current_field = self.get_field(name, server_or_media_id)
@@ -222,7 +222,7 @@ class Settings:
         with open(self.get_settings_file(), "w") as f:
             json.dump(data, f)
 
-    def legacy_load(self, skip_env_override=False):
+    def legacy_load(self, skip_env_override=False):  # pragma: no cover
         try:
             with open(self.get_legacy_settings_file(), "r") as f:
                 for line in filter(lambda x: x.strip() and x.strip()[0] != "#", f):

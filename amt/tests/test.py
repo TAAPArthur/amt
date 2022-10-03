@@ -389,14 +389,37 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.set_field("password_save_cmd", "dummy_cmd")
         self.settings.set_field("password_save_cmd", "dummy_cmd2", TestServer.id)
         self.settings.save()
-        self.assertEquals(Settings().get_field("password_save_cmd"), "dummy_cmd")
-        self.assertEquals(Settings().get_field("password_save_cmd", TestServer.id), "dummy_cmd2")
+        self.assertEqual(Settings().get_field("password_save_cmd"), "dummy_cmd")
+        self.assertEqual(Settings().get_field("password_save_cmd", TestServer.id), "dummy_cmd2")
 
     def test_settings_env_override(self):
-        os.environ["AMT_PASSWORD_LOAD_CMD"] = "1"
         self.settings.load()
-        self.assertEqual(self.settings.password_load_cmd, "1")
-        del os.environ["AMT_PASSWORD_LOAD_CMD"]
+        for zero in (False, True):
+            values = {}
+            env = set()
+            for key in Settings.get_members():
+                if key in ("env_override_prefix", "allow_env_override", "search_score"):
+                    continue
+                e_key = f"AMT_{key.upper()}"
+                if e_key not in os.environ and not isinstance(self.settings.get_field(key), list):
+                    env.add(e_key)
+                    os.environ[e_key] = str(self.settings.get_field(key)) if not zero else "0"
+                    values[key] = self.settings.get_field(key)
+
+            self.settings.load()
+            for key in Settings.get_members():
+                if key in values:
+                    if zero:
+                        self.assertFalse(self.settings.get_field(key))
+                    else:
+                        self.assertEqual(self.settings.get_field(key), values[key])
+            if key in e_key:
+                del os.environ[key]
+
+        key = "AMT_STATUS_TO_RETRY"
+        os.environ[key] = "1,2,3"
+        self.settings.load()
+        self.assertEqual(self.settings.status_to_retry, [1, 2, 3])
 
     def test_set_settings_server_specific_with_env_overload(self):
         self.settings.allow_env_override = True
@@ -432,7 +455,7 @@ class SettingsCredentialsTest(BaseUnitTestClass):
     def test_settings_env_override_ask_credentials(self, _username, _password):
         os.environ["AMT_PASSWORD_LOAD_CMD"] = ""
         self.settings.load()
-        self.assertEquals(("0", "1"), self.media_reader.settings.get_credentials(TestServerLogin.id))
+        self.assertEqual(("0", "1"), self.media_reader.settings.get_credentials(TestServerLogin.id))
 
     def test_credentials(self):
         server_id = "test"
@@ -586,7 +609,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             with self.subTest(server=server.id):
                 media_data = server.get_media_list()[0]
                 name = media_data["name"]
-                self.assertEquals(media_data, list(server.search(name))[0][1])
+                self.assertEqual(media_data, list(server.search(name))[0][1])
                 assert server.search(name[:3])
 
     def test_search_inexact(self):
@@ -635,7 +658,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
     @patch("builtins.input", return_value="0")
     def test_get_prompt_for_input(self, input):
-        self.assertEquals("0", self.settings.get_prompt_for_input("prompt"))
+        self.assertEqual("0", self.settings.get_prompt_for_input("prompt"))
 
     def test_unique_download_paths(self):
         self.add_test_media()
@@ -1284,7 +1307,7 @@ class ArgsTest(CliUnitTestClass):
         self.settings.password_load_cmd = f"cat {TEST_HOME}{{server_id}} 2>/dev/null"
         self.settings.password_save_cmd = f"( echo {{username}}; cat - ) > {TEST_HOME}{{server_id}}"
         parse_args(media_reader=self.media_reader, args=["set-password", TestServerLogin.id, "username"])
-        self.assertEquals(("username", "0"), self.media_reader.settings.get_credentials(TestServerLogin.id))
+        self.assertEqual(("username", "0"), self.media_reader.settings.get_credentials(TestServerLogin.id))
         parse_args(media_reader=self.media_reader, args=["get-password", TestServerLogin.id])
 
     def test_list_tag(self):
@@ -1364,11 +1387,13 @@ class ArgsTest(CliUnitTestClass):
                 self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
 
     def test_load_sort_by_lang(self):
+        self.assertEqual(float("inf"), self.settings.get_prefered_lang_key(None, "bad"))
         for server in (self.test_server, self.test_anime_server):
             server.test_lang = True
             for lang in ("EN", "JP"):
                 self.media_reader.media.clear()
                 self.settings.search_score = [["lang", [lang, lang.lower()], -1]]
+                self.assertNotEqual(float("inf"), self.settings.get_prefered_lang_key(None, lang))
                 with self.subTest(lang=lang, server=server.id):
                     parse_args(media_reader=self.media_reader, args=["--auto", "load", "--media-type", server.media_type.name, "--server", server.id, "test_user"])
                     self.assertEqual(1, len(self.media_reader.get_media_ids()))
@@ -1388,7 +1413,7 @@ class ArgsTest(CliUnitTestClass):
         assert self.media_reader.get_tracker_info(media_list[0])
         assert not self.media_reader.get_tracker_info(media_list[1])
         parse_args(media_reader=self.media_reader, args=["copy-tracker", media_list[0]["name"], media_list[1]["name"]])
-        self.assertEquals(self.media_reader.get_tracker_info(media_list[0]), self.media_reader.get_tracker_info(media_list[1]))
+        self.assertEqual(self.media_reader.get_tracker_info(media_list[0]), self.media_reader.get_tracker_info(media_list[1]))
 
     def test_stats(self):
         self.add_test_media()
@@ -1711,7 +1736,7 @@ class ArgsTest(CliUnitTestClass):
         media_data = self.add_test_media(self.test_anime_server)[0]
         parse_args(media_reader=self.media_reader, args=["play", media_data["name"], "1", "3"])
         for chapter in media_data.get_sorted_chapters():
-            self.assertEquals(chapter["read"], chapter["number"] in [1, 3])
+            self.assertEqual(chapter["read"], chapter["number"] in [1, 3])
 
     def test_play_relative(self):
         media_data = self.add_test_media(self.test_anime_server, limit=1)[0]
@@ -1725,7 +1750,7 @@ class ArgsTest(CliUnitTestClass):
         chapters = list(media_data.get_sorted_chapters())
         chapters[1]["read"] = True
         parse_args(media_reader=self.media_reader, args=["play", media_data["name"], "0"])
-        self.assertEquals(1, self.get_num_chapters_read(MediaType.ANIME))
+        self.assertEqual(1, self.get_num_chapters_read(MediaType.ANIME))
 
     def test_get_stream_url(self):
         self.add_test_media(self.test_anime_server)
@@ -1763,7 +1788,14 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["stream", TestAnimeServer.get_streamable_url()])
 
     def test_add_from_url_stream_cont_record(self):
+        parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url()])
+        self.verify_no_media()
         parse_args(media_reader=self.media_reader, args=["add-from-url", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url()])
+        self.assertEqual(0, self.get_num_chapters_read())
+        parse_args(media_reader=self.media_reader, args=["stream", "--cont", "--record", TestAnimeServer.get_streamable_url()])
+        self.verify_all_chapters_read(media_type=MediaType.ANIME)
+        self.media_reader.get_single_media()["chapters"].clear()
         parse_args(media_reader=self.media_reader, args=["stream", "--cont", "--record", TestAnimeServer.get_streamable_url()])
         self.verify_all_chapters_read(media_type=MediaType.ANIME)
 
@@ -1965,7 +1997,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 self.assertEqual(str(season_id), str(media_data["season_id"]))
             if chapter_id:
                 self.assertEqual(str(chapter_id), str(server.get_chapter_id_for_url(url)))
-                self.assertTrue(str(chapter_id) in map(str, media_data["chapters"].keys()))
+                self.assertTrue(media_data["chapters"])
+                self.assertIn(str(chapter_id), list(map(str, media_data["chapters"].keys())))
 
     def test_get_media_data_from_url(self):
         def func(url_data):
