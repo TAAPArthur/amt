@@ -170,8 +170,9 @@ class Settings:
                     value = type(current_field)(value)
                 elif isinstance(current_field, list):
                     value = value.split(",") if value else []
-                elif not isinstance(current_field, str):
-                    value = json.loads(value)
+                    current_value = getattr(self, name)
+                    if current_value and not isinstance(current_value[0], str):
+                        value = list(map(type(current_value[0]), value))
 
         if server_or_media_id:
             if not name in self._specific_settings:
