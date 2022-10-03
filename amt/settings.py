@@ -207,11 +207,7 @@ class Settings:
                 return self._specific_settings[name][key]
         return getattr(self, name)
 
-    def get_field_as_string(self, name, media_data=None):
-        f = self.get_field(name, media_data)
-        return f if not isinstance(f, list) else ",".join(map(str, f))
-
-    def save(self):
+    def save(self, keys=None):
         data = {}
         for name in sorted(Settings.get_members()):
             data[name] = self.get_field(name)
@@ -219,19 +215,26 @@ class Settings:
                 data[f"{name}.{slug}"] = self.get_field(name, slug)
 
         os.makedirs(self.config_dir, exist_ok=True)
+        if keys:
+            for key in keys:
+                data.pop(key)
         with open(self.get_settings_file(), "w") as f:
             json.dump(data, f)
 
     def legacy_load(self, skip_env_override=False):  # pragma: no cover
         try:
             with open(self.get_legacy_settings_file(), "r") as f:
+                keys = set()
                 for line in filter(lambda x: x.strip() and x.strip()[0] != "#", f):
                     name, value = (line if not line.endswith("\n") else line[:-1]).split("=", 1)
+                    keys.add(name)
                     attr, slug = name.split(".", 2) if "." in name else (name, None)
                     if attr not in Settings.get_members():
                         logging.warning("Unknown field %s; Skipping", attr)
                         continue
                     self.set_field_legacy(attr, value, slug)
+                print("Auto converted from legacy config file to new format")
+                self.save(keys)
         except FileNotFoundError:
             pass
 
