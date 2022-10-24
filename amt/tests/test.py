@@ -386,10 +386,10 @@ class SettingsTest(BaseUnitTestClass):
         self.assertEqual(self.settings.password_save_cmd, "0")
         with open(self.settings.get_legacy_settings_file(), "w") as f:
             f.write("password_save_cmd=1\n")
-        self.settings.load()
+        self.reload()
         self.assertEqual(self.settings.password_save_cmd, "0")
         os.unlink(self.settings.get_legacy_settings_file())
-        self.settings.load()
+        self.reload()
         self.assertEqual(self.settings.password_save_cmd, "0")
 
     def test_settings_load_unknown_value(self):

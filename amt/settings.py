@@ -217,10 +217,11 @@ class Settings:
 
         os.makedirs(self.config_dir, exist_ok=True)
         if keys:
-            for key in keys:
-                data.pop(key)
+            for key in list(data.keys()):
+                if key not in keys:
+                    data.pop(key)
         with open(self.get_settings_file(), "w") as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=4, sort_keys=True)
 
     def legacy_load(self, skip_env_override=False):  # pragma: no cover
         try:
