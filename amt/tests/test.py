@@ -2100,9 +2100,11 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         server = self.media_reader.get_server(JNovelClubParts.id)
         self.assert_server_enabled_or_skip_test(server)
         server.time_to_live_sec = 0
-        media_data = server.get_media_list()[0]
-        self.media_reader.add_media(media_data)
-        self.assertTrue(media_data["chapters"])
+        for media_data in server.get_media_list():
+            self.media_reader.add_media(media_data)
+            self.assertTrue(media_data["chapters"])
+            if media_data.get_last_chapter()["volume_number"] > 1:
+                break
         self.media_reader.download_unread_chapters(name=media_data.global_id, limit=1)
 
         self.assertTrue(media_data["chapters"])
