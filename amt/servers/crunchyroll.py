@@ -21,7 +21,7 @@ class GenericCrunchyrollServer(Server):
     def get_session_id(self, force=False):
         session_id = self.session_get_cookie("session_id")
         if force or session_id is None:
-            self.session_get(f"https://{self.domain}")
+            self.session_get(f"https://{self.domain}/comics/manga")
             session_id = self.session_get_cookie("session_id")
         return session_id
 
