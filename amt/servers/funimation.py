@@ -1,6 +1,7 @@
 import re
 
 from bs4 import BeautifulSoup
+from requests.exceptions import JSONDecodeError
 
 from ..server import Server
 from ..util.media_type import MediaType
@@ -75,6 +76,16 @@ class GenericFunimation(Server):
 
         return [item["src"] for item in r.json()["items"]]
 
+    def backoff(self, c, r):
+        try:
+            data = r.json()
+            if r.json()["status_code"] == "1-02-00-403":
+                self.logger.debug(data)
+                r.raise_for_status()
+        except JSONDecodeError:
+            pass
+        super().backoff(c, r)
+
 
 class Funimation(GenericFunimation):
     id = "funimation"
@@ -120,8 +131,11 @@ class Funimation(GenericFunimation):
                 title = item.text.strip()
                 if title not in titles:
                     titles.add(title)
-                    for media_data in self.get_related_media_data_from_url(self.base_url + item["href"], multiple=True):
-                        media_list.append(media_data)
+                    try:
+                        for media_data in self.get_related_media_data_from_url(self.base_url + item["href"], multiple=True):
+                            media_list.append(media_data)
+                    except:
+                        pass
             if not items or (limit and len(media_list) >= limit):
                 break
 
