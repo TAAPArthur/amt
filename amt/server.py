@@ -171,7 +171,7 @@ class RequestServer:
 
 
 class MediaServer(RequestServer):
-    remove_dub_regex = re.compile(r" \(.*Dub.*\)")
+    remove_lang_regex = re.compile(r" \([^)]*\)")
 
     def search(self, term, literal=False, limit=20):
         """
@@ -182,7 +182,7 @@ class MediaServer(RequestServer):
         media_list = self.search_helper(terms, limit)
 
         def score(x):
-            x = self.remove_dub_regex.sub("", x)
+            x = self.remove_lang_regex.sub("", x)
             return -(SequenceMatcher(None, term, x).ratio() + max([SequenceMatcher(None, t, x).ratio() for t in terms]))
         return list(map(lambda x: (score(x["name"]), x), media_list))
 
