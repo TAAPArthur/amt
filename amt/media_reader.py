@@ -398,22 +398,41 @@ class MediaReader:
                 last_read = max(media_data.get_last_read_chapter_number(), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
-    def stream(self, url, cont=False, download=False, stream_index=0, offset=0, record=False):
+    def search_for_chapter_on_different_server(self, ref_media_data, ref_chapter_data):
+        def func(x): return x.search(ref_media_data["name"])
+        results = self.for_each(func, filter(lambda x: x.id != ref_media_data["server_id"] and (ref_media_data["media_type"] & x.media_type), self.get_servers()))
+
+        results.sort(key=lambda x: (x[0], self.settings.get_search_score(x[1])))
+        results = list(map(lambda x: x[1], results))
+        self.for_each(self.update_media, [media_data for media_data in results if not media_data.chapters])
+
+        results = list(filter(lambda x: x[1] is not None, map(lambda media_data: (media_data, media_data["chapters"].get(media_data.get_chapter_number_to_id(ref_chapter_data["number"]))), results)))
+        ids = set((ref_media_data["id"], ref_media_data["alt_id"], ref_chapter_data["id"], ref_chapter_data["alt_id"]))
+        results.sort(key=lambda x: len(ids.intersection((x[0]["alt_id"], x[0]["id"], x[1]["id"], x[1]["alt_id"],))), reverse=True)
+        data = self.select_media(f"{ref_media_data}{ref_chapter_data}", results, "Select chapter: ", auto_select_if_single=True)
+        return data
+
+    def stream(self, url, cont=False, download=False, stream_index=0, offset=0, record=False, convert=False):
         for server in self.get_servers():
             if server.can_stream_url(url):
                 chapter_id = server.get_chapter_id_for_url(url)
                 media_data = server.get_media_data_from_url(url)
                 if record and media_data.global_id in self.media:
                     media_data = self.media[media_data.global_id]
-                    if chapter_id not in media_data["chapters"]:
-                        server.update_media_data(media_data)
-                elif not media_data["chapters"]:
+                if chapter_id not in media_data["chapters"]:
                     server.update_media_data(media_data)
-                chapter = media_data["chapters"][chapter_id]
+                chapter_data = media_data["chapters"][chapter_id]
+
+                if convert:
+                    media_data, chapter_data = self.search_for_chapter_on_different_server(media_data, chapter_data)
+
+                if record and media_data.global_id not in self.media:
+                    self.add_media(media_data, no_update=True)
+
                 if download:
-                    server.download_chapter(media_data, chapter)
+                    server.download_chapter(media_data, chapter_data)
                 else:
-                    min_chapter_num = media_data["chapters"][chapter_id]["number"] + offset
+                    min_chapter_num = chapter_data["number"] + offset
                     num_list = list(map(lambda x: x["number"], filter(lambda x: x["number"] >= min_chapter_num, media_data["chapters"].values())))
                     return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True) if num_list else False
                 return 1
