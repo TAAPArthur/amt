@@ -239,7 +239,7 @@ class BaseUnitTestClass(unittest.TestCase):
             if not server:
                 server = self.media_reader.get_server(media_list[0]["server_id"])
             assert all([x["server_id"] == server.id for x in media_list])
-            assert all([x["media_type"] == server.media_type for x in media_list])
+            assert all([x["media_type"] & server.media_type for x in media_list])
 
     def skip_if_all_servers_are_not_enabled(self):
         if self.settings.enabled_servers or self.settings.disabled_servers:
@@ -1384,7 +1384,7 @@ class ArgsTest(CliUnitTestClass):
         assert len(self.media_reader.get_media_ids())
 
     def test_load(self):
-        parse_args(media_reader=self.media_reader, args=["--auto", "search", "InProgress"])
+        parse_args(media_reader=self.media_reader, args=["--auto", "search", "--server", TestServer.id, "InProgress"])
         assert len(self.media_reader.get_media_ids()) == 1
         media_data = next(iter(self.media_reader.get_media()))
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
@@ -1739,17 +1739,22 @@ class ArgsTest(CliUnitTestClass):
 
     def test_consume(self):
         self.add_test_media(limit_per_server=1)
+        parse_args(media_reader=self.media_reader, args=["--auto", "consume"])
+        self.verify_all_chapters_read()
+
+    def test_consume_normal(self):
+        self.add_test_media(server=self.test_server, limit=1)
         parse_args(media_reader=self.media_reader, args=["consume"])
         self.verify_all_chapters_read()
 
     def test_view(self):
         self.add_test_media(media_type=MediaType.MANGA | MediaType.NOVEL, limit_per_server=2)
-        parse_args(media_reader=self.media_reader, args=["view"])
+        parse_args(media_reader=self.media_reader, args=["--auto", "view"])
         self.verify_all_chapters_read()
 
     def test_play(self):
         self.add_test_media(media_type=MediaType.ANIME, limit_per_server=2)
-        parse_args(media_reader=self.media_reader, args=["play"])
+        parse_args(media_reader=self.media_reader, args=["--auto", "play"])
         self.verify_all_chapters_read()
 
     def test_play_fail(self):

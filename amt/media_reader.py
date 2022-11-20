@@ -420,7 +420,7 @@ class MediaReader:
                 if record and media_data.global_id in self.media:
                     media_data = self.media[media_data.global_id]
                 if chapter_id not in media_data["chapters"]:
-                    server.update_media_data(media_data)
+                    self.update_media(media_data)
                 chapter_data = media_data["chapters"][chapter_id]
 
                 if convert:
@@ -453,9 +453,17 @@ class MediaReader:
             if chapter["number"] in num_list:
                 yield server, media_data, chapter
 
+    def maybe_resolve_media_type(self, media_data):
+        if bin(media_data["media_type"]).count('1') != 1:
+            types = [media_type for media_type in MediaType if media_type & media_data["media_type"]]
+            media_type = self.select_media("Select type", types, prompt=f"What type is {media_data['name']}")
+            media_data["media_type"] = media_type.value
+            media_data["media_type_name"] = media_type.name
+
     def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force=False, force_stream=False):
         num = 0
         for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread)):
+            self.maybe_resolve_media_type(media_data)
             if media_data["media_type"] == MediaType.ANIME:
                 if not server.is_fully_downloaded(media_data, chapter):
                     server.pre_download(media_data, chapter)

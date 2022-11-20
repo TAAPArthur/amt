@@ -150,11 +150,6 @@ class TestServerLogin(TestServer):
         self._is_logged_in = False
 
 
-class TestUnofficialServer(TestServer):
-    id = "test_unofficial_server_manga"
-    official = False
-
-
 class TestAnimeServer(TestServer):
     id = "test_server_anime"
     media_type = MediaType.ANIME
@@ -230,6 +225,12 @@ class TestServerLoginAnime(TestAnimeServer, TestServerLogin):
         if not self._is_logged_in:
             raise KeyError("missing key")
         return super().get_stream_urls(media_data, chapter_data)
+
+
+class TestUnofficialServer(TestAnimeServer):
+    id = "test_unofficial_server"
+    official = False
+    media_type = MediaType.ANIME | MediaType.NOVEL | MediaType.MANGA
 
 
 class TestNovel(TestServer):
