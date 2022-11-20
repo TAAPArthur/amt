@@ -147,13 +147,15 @@ class RequestServer:
                 with open(file, "r") as f:
                     self.logger.debug("Returning cached value for %s", url)
                     return json.load(f) if use_json else f.read()
+            else:
+                os.remove(file)
         except (json.decoder.JSONDecodeError, FileNotFoundError):
             pass
         r = self.session_get(url, **kwargs)
         text = output_format_func(r.text) if output_format_func else r.text
         data = json.loads(text) if use_json else text
 
-        for i in range(2):
+        for i in range(2 if ttl else 0):
             try:
                 with open(file, "w") as f:
                     f.write(text)

@@ -610,6 +610,10 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             json.dump(data, f)
         self.assertEqual(data, server.session_get_cache_json(url))
         self.assertEqual(json.dumps(data), server.session_get_cache(url))
+        self.assertEqual(json.dumps(data), server.session_get_cache(url))
+        server.session_get_cache(url, ttl=0)
+        self.assertFalse(os.path.exists(file))
+        self.assertNotEqual(json.dumps(data), server.session_get_cache(url))
 
     def test_skip_servers_that_cannot_be_imported(self):
         with patch.dict(sys.modules, {"amt.tests.test_server": None}):
