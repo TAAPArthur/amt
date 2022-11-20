@@ -425,6 +425,8 @@ class SettingsTest(BaseUnitTestClass):
 
             self.settings.load()
             for key in Settings.get_members():
+                if key == "env":
+                    continue
                 if key in values:
                     if zero:
                         self.assertFalse(self.settings.get_field(key))
@@ -437,6 +439,13 @@ class SettingsTest(BaseUnitTestClass):
         os.environ[key] = "1,2,3"
         self.settings.load()
         self.assertEqual(self.settings.status_to_retry, [1, 2, 3])
+
+    def test_settings_env_inject(self):
+        KEY, VALUE = "SOME_ARBITRARY_TEST_KEY", "123"
+        self.settings.env = {KEY: VALUE}
+        self.settings.save()
+        self.settings.load()
+        self.assertTrue(self.settings.run_cmd(f"[ ${KEY} -eq {VALUE} ]"))
 
     def test_set_settings_server_specific_with_env_overload(self):
         self.settings.allow_env_override = True

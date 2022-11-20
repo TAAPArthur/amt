@@ -22,6 +22,9 @@ class Settings:
     allow_env_override = True
     env_override_prefix = "AMT_"
 
+    # dictionary that will that the env will be updated with before spawning programs
+    env = {}
+
     # Password manager related settings
     password_manager_enabled = True
     # The format variables username and server_id can be used. The following
@@ -246,7 +249,9 @@ class Settings:
                 data = json.load(f)
                 for name, value in data.items():
                     attr, slug = name.split(".", 1) if "." in name else (name, None)
-                    if attr not in Settings.get_members():
+                    if attr == "env":
+                        os.environ.update(value)
+                    elif attr not in Settings.get_members():
                         logging.warning("Unknown field %s; Skipping", attr)
                         continue
                     self.set_field(attr, value, slug)
