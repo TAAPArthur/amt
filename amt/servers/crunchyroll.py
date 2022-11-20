@@ -206,7 +206,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
                 elif not chapter["episode_number"]:
                     number = 1 if len(data) == 1 else 0
 
-                self.update_chapter_data(media_data, id=chapter["media_id"], number=number, title=chapter["name"], premium=not chapter["free_available"], special=special)
+                self.update_chapter_data(media_data, id=chapter["media_id"], number=number, title=chapter["name"], premium=not chapter["free_available"], special=special, alt_id=chapter["etp_guid"])
 
     def get_media_data_from_url(self, url):
         match = self.stream_url_regex.search(url)
