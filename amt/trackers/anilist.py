@@ -163,3 +163,7 @@ class Anilist(Tracker):
 
     def get_auth_url(self):
         return self.auth_url.format(self.client_id)
+
+    def backoff(self, c, r):
+        self.logger.info(f"{r.headers} {r.text}")
+        super().backoff(c, r, int(r.headers.get("Retry-After", "0")))

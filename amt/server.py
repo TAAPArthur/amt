@@ -75,8 +75,8 @@ class RequestServer:
     def update_default_args(self, kwargs):
         pass
 
-    def backoff(self, c):
-        b = self.settings.get_backoff_factor(self.id)
+    def backoff(self, c, r, backfactor=None):
+        b = backfactor or self.settings.get_backoff_factor(self.id)
         self.logger.info(f"Sleeping for {b**c} seconds after seeing {c} failures")
         time.sleep(b**c)
 
@@ -100,7 +100,7 @@ class RequestServer:
                     self.logger.warning("HTTPError: %d; Session class %s; headers %s; %s", r.status_code, type(session), kwargs.get("headers", {}), r.text[:256])
                 if not r.status_code in self.settings.status_to_retry:
                     break
-                self.backoff(i + 1)
+                self.backoff(i + 1, r)
             except SSLError:
                 if self.settings.get_fallback_to_insecure_connection(self.id):
                     self.logger.warning("Retry request insecurely %s", url)
