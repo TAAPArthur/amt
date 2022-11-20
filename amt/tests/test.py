@@ -1962,11 +1962,9 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
         ("https://crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
-        ("https://crunchyroll.com/gintama/gintama-season-2-253-265-gintama-classic-it-takes-a-bit-of-courage-to-enter-a-street-vendors-stand-615207", "47620", "20725", "615207"),
         ("https://crunchyroll.com/manga/to-your-eternity/read/1", "499", None, "16329"),
         ("https://crunchyroll.com/one-piece/episode-1-im-luffy-the-man-whos-gonna-be-king-of-the-pirates-650673", "257631", "21685", "650673"),
         ("https://crunchyroll.com/rezero-starting-life-in-another-world-/episode-31-the-maidens-gospel-796209", "269787", "25186", "796209"),
-        ("https://crunchyroll.com/the-irregular-at-magic-high-school/episode-1-enrollment-part-i-652193", "260315", "21563", "652193"),
         ("https://dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
         ("https://dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
         ("https://freewebnovel.com/itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu/chapter-1.html", "itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", None, "chapter-1"),
