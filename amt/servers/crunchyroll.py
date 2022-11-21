@@ -180,7 +180,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_media_list(self, limit=4):
         return self.search_helper(None, limit=limit)
 
-    def search_helper(self, terms, limit):
+    def search_helper(self, terms, limit, **kwargs):
         try:
             data = self.session_get_cache_json(self.list_all_series, output_format_func=lambda text: text.splitlines()[1])["data"]
         except HTTPError:

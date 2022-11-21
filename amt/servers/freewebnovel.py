@@ -35,7 +35,7 @@ class Freewebnovel(Server):
     def get_media_list(self, limit=None):
         return self._get_media_helper(self.session_get(self.media_list_url))
 
-    def search_for_media(self, term, limit=None):
+    def search_for_media(self, term, limit=None, **kwargs):
         return self._get_media_helper(self.session_get(self.search_url.format(term)))
 
     def _update_media_data(self, media_data, soup):

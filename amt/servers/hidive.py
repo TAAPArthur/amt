@@ -72,7 +72,7 @@ class Hidive(Server):
     def get_media_list(self, limit=2):
         return self._get_media_list(self.list_url, self.stream_url_regex)[:limit]
 
-    def search_for_media(self, term, alt_id=None, limit=2):
+    def search_for_media(self, term, alt_id=None, limit=2, **kwargs):
         return self._get_media_list(self.search_url.format(term), self.add_series_url_regex)[:limit]
 
     def update_media_data(self, media_data: dict, r=None):

@@ -32,7 +32,7 @@ class Mangadex(Server):
         r = self.session_get(self.list_url.format(limit if limit else 0))
         return self._get_media_list(r.json()["data"])
 
-    def search_for_media(self, term, limit=100):
+    def search_for_media(self, term, limit=100, **kwargs):
         r = self.session_get(self.search_url.format(term, limit if limit else 0))
         return self._get_media_list(r.json()["data"])
 

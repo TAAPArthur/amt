@@ -147,7 +147,7 @@ class Vrv(Server):
     def get_media_list(self, limit=2):
         return self.get_media_list_helper(self.list_api_url.format(limit if limit is not None else 2), limit)
 
-    def search_for_media(self, term, limit=6):
+    def search_for_media(self, term, limit=6, **kwargs):
         return self.get_media_list_helper(self.search_api_url.format(term, limit), limit)
 
     def update_media_data(self, media_data: dict, r=None):
