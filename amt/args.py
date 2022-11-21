@@ -107,7 +107,7 @@ def setup_subparsers(state, sub_parsers):
 
     consume_parser = add_parser_helper(sub_parsers, "consume", func_str="play", parents=[sub_consume_parsers], help="Either view or play media depending on type")
     consume_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
-    consume_parser.add_argument("name", choices=state.get_all_names(MediaType.ANIME), default=None, nargs="?")
+    consume_parser.add_argument("name", choices=state.get_all_names(), default=None, nargs="?")
     consume_parser.add_argument("num_list", default=None, nargs="*", type=float)
 
     steam_parser = add_parser_helper(sub_parsers, "stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
