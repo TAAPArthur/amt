@@ -10,7 +10,7 @@ from requests import Session
 from . import servers, trackers
 from .job import Job
 from .server import Server, TorrentHelper, Tracker
-from .servers.local import get_local_server_id
+from .servers.local import LocalServer
 from .settings import Settings
 from .state import State
 from .util.media_type import MediaType
@@ -73,7 +73,7 @@ class MediaReader:
         self.bundles = self.state.bundles
 
     # Helper methods
-    def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):  # pragma: no cover
+    def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):
         return results[0] if results else None
 
     def for_each(self, func, media_list, raiseException=False):
@@ -229,9 +229,8 @@ class MediaReader:
                         self.import_media([torrent_dir], media_type=media_type, **kwargs)
 
     def import_media(self, files, media_type, link=False, name=None, skip_add=False, fallback_name=None, dry_run=False):
-        server = self.get_server(get_local_server_id(media_type))
+        server = self.get_server(LocalServer.id)
         names = set()
-        print(dry_run)
         for file in files:
             logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             assert file != "/"
@@ -261,7 +260,7 @@ class MediaReader:
         if not skip_add and not dry_run:
             for media_name in names:
                 if not any([x["name"] == media_name for x in self.get_media(name=server.id)]):
-                    self.search_add(media_name, server_id=server.id, exact=True)
+                    self.search_add(media_name, media_type=media_type, server_id=server.id, exact=True)
 
             for media_data in self.get_media(name=server.id):
                 self.update_media(media_data)
@@ -461,9 +460,10 @@ class MediaReader:
     def maybe_resolve_media_type(self, media_data, media_type_filter=None):
         if bin(media_data["media_type"]).count('1') != 1:
             types = [media_type for media_type in MediaType if media_type & media_data["media_type"] and (not media_type_filter or media_type & media_type_filter)]
-            media_type = self.select_media("Select type", types, prompt=f"What type is {media_data['name']}")
-            media_data["media_type"] = media_type.value
-            media_data["media_type_name"] = media_type.name
+            media_type = self.select_media("Select type", types, prompt=f"What type is {media_data['name']}", auto_select_if_single=True)
+            if media_type:
+                media_data["media_type"] = media_type.value
+                media_data["media_type_name"] = media_type.name
 
     def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force=False, force_stream=False):
         num = 0

@@ -21,7 +21,7 @@ from ..job import Job, RetryException
 from ..media_reader import SERVERS, MediaReader, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
 from ..server import RequestServer
-from ..servers.local import LocalServer, get_local_server_id
+from ..servers.local import LocalServer
 from ..servers.remote import RemoteServer
 from ..settings import Settings
 from ..state import ChapterData, MediaData, State
@@ -1084,9 +1084,7 @@ class LocalServerTest(GenericServerTest, BaseUnitTestClass):
         self.setup_customer_server_data()
 
     def setup_customer_server_data(self):
-        for media_type in list(MediaType):
-            server = self.media_reader.get_server(get_local_server_id(media_type))
-
+        for server in self.media_reader.get_servers():
             for media_data in (server.create_media_data("A", "A"), server.create_media_data("B", "B")):
                 for number, chapter_name in enumerate(["00", "01.", "2.0 Chapter Tile", "3 Chapter_Title", "4"]):
                     chapter_id = f"{chapter_name}_{number}"
@@ -1096,10 +1094,9 @@ class LocalServerTest(GenericServerTest, BaseUnitTestClass):
                 self.assertTrue(len(media_data["chapters"]) > 1, media_data["chapters"].keys())
 
     def test_detect_chapters(self):
-        for media_type in list(MediaType):
+        for server in self.media_reader.get_servers():
             self.media_reader.media.clear()
-            with self.subTest(media_type=media_type):
-                server = self.media_reader.get_server(get_local_server_id(media_type))
+            with self.subTest(server=server.id):
                 media_list = self.add_test_media(server_id=server.id)
                 for media_data in media_list:
                     self.assertTrue(media_data["chapters"], media_data["name"])

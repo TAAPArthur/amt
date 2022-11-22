@@ -6,16 +6,9 @@ from ..util import name_parser
 from ..util.media_type import MediaType
 
 
-def get_local_server_id(media_type):
-    if media_type == MediaType.ANIME:
-        return LocalAnimeServer.id
-    elif media_type == MediaType.MANGA:
-        return LocalMangaServer.id
-    elif media_type == MediaType.NOVEL:
-        return LocalLightNovelServer.id
-
-
 class LocalServer(Server):
+    id = "local"
+    media_type = MediaType.ANIME | MediaType.NOVEL | MediaType.MANGA
     id_formatter_regex = re.compile(r"\W+")
 
     def _create_media_data(self, file_name):
