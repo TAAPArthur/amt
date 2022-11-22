@@ -18,6 +18,12 @@ class TestTracker(Tracker):
                 [media_type, f"{media_type.name}2", 1.5, 9, tuple(), tuple(), None]
             ])
 
+        self.media_list.extend([
+            [MediaType.MANGA, "None1", 0, 0, tuple(), tuple(), None],
+            [MediaType.ANIME, "None2", 1.5, 9, tuple(), tuple(), None],
+            [MediaType.NOVEL, "NoneInProgress", 1, 9, tuple(), tuple(), 1e9],
+        ])
+
         self.media_list.append([MediaType.MANGA, "MediaWithSteamingLinks", 0, 0, tuple(), (TestServer.get_streamable_url(), TestUnofficialServer.get_streamable_url()), None])
         self.media_list.append([MediaType.MANGA, "MediaWithExternalLinks", 0, 0, [TestServer.get_addable_url(), TestUnofficialServer.get_addable_url()], tuple(), None])
 

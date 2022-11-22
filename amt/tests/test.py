@@ -26,7 +26,7 @@ from ..servers.remote import RemoteServer
 from ..settings import Settings
 from ..state import ChapterData, MediaData, State
 from ..util.media_type import MediaType
-from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestServerLogin, TestServerLoginAnime, TestTorrentHelper)
+from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestUnofficialServer, TestServerLogin, TestServerLoginAnime, TestTorrentHelper)
 from .test_tracker import TestTracker
 
 HAS_PIL = True
@@ -1389,6 +1389,15 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
         assert self.media_reader.get_tracker_info(media_data)
         self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
+
+    def test_load_resolve_media_type(self):
+        media_list = self.add_test_media(server_id=TestUnofficialServer.id)
+        self.assertFalse(any(media_data["media_type_name"] for media_data in media_list))
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
+        for media_data in media_list:
+            if self.media_reader.get_tracker_info(media_data):
+                self.assertTrue(media_data["media_type_name"])
+                self.assertTrue(MediaType(media_data["media_type"]).name)
 
     def test_load_filter_by_type(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", f"--media-type={MediaType.ANIME.name}", "test_user"])
