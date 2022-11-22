@@ -7,7 +7,7 @@ volume_regex = re.compile(r"(_|\s)?vol[ume-]*[\w\s]*(\d+)")
 base_media_regex = r"([\[(][\w ]*[\])]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*( - [A-Z][A-z]*\d*)?)"
 media_dir_regex = re.compile(base_media_regex)
 media_file_regex = re.compile(base_media_regex + "(.*\.\w+)$")
-number_regex = re.compile(r"(\d+\.?\d*)[ \.]")
+number_regex = re.compile(r"(\d+\.?\d*)(?:\s|\.|$)")
 
 id_formatter_regex = re.compile(r"\W+")
 
