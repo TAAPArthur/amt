@@ -10,8 +10,9 @@ from ..util.name_parser import (get_media_name_from_file,
 from ..util.progress_type import ProgressType
 
 
-class GenericHumbleBundle(Server):
-    alias = "humblebundle"
+class HumbleBundle(Server):
+    id = "humblebundle"
+    media_type = MediaType.MANGA | MediaType.NOVEL
     progress_type = ProgressType.VOLUME_ONLY
     official = True
     has_free_chapters = False
@@ -52,8 +53,9 @@ class GenericHumbleBundle(Server):
             maybe_manga = bool(list(filter(lambda x: x["name"] == "CBZ", download_struct)))
             media_name = get_media_name_from_file(name)
             media_slug = f"{key}_{media_name}"
-            if media_slug not in media_list and (self.media_type == MediaType.MANGA) == maybe_manga:
-                media_list[media_slug] = self.create_media_data(id=media_slug, name=media_name, key=key)
+            if media_slug not in media_list:
+                media_type = MediaType.MANGA if maybe_manga else MediaType.NOVEL
+                media_list[media_slug] = self.create_media_data(id=media_slug, name=media_name, key=key, media_type=media_type)
                 if len(media_list) == limit:
                     break
         return list(media_list.values())
@@ -103,13 +105,3 @@ class GenericHumbleBundle(Server):
             data["guard"] = code
             self.session_post(self.login_url, data=data, headers=headers)
         return True
-
-
-class HumbleBundleManga(GenericHumbleBundle):
-    id = "humblebundle_manga"
-    media_type = MediaType.MANGA
-
-
-class HumbleBundleNovel(GenericHumbleBundle):
-    id = "humblebundle_novels"
-    media_type = MediaType.NOVEL
