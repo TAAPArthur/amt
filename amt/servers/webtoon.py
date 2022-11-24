@@ -19,14 +19,14 @@ class Webtoons(Server):
     def get_media_data_from_element(self, element, media_id=None):
         genreElement = element.find(class_="genre")
         nameElement = element.find(class_="subj")
-        if not genreElement or not nameElement:
-            assert not media_id
-            return None
-        if not media_id:
-            href = element.find("a").get("href")
-            match = self.url_split_regex.search(href)
-            media_id = match.group(1)
-        return self.create_media_data(id=media_id, name=nameElement.getText().strip(), genre=genreElement.getText().strip())
+        media_data = None
+        if genreElement and nameElement:
+            if not media_id:
+                href = element.find("a").get("href")
+                match = self.url_split_regex.search(href)
+                media_id = match.group(1)
+            media_data = self.create_media_data(id=media_id, name=nameElement.getText().strip(), genre=genreElement.getText().strip())
+        return media_data
 
     def get_media_list_helper(self, elements):
         media_list = []
