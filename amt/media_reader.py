@@ -131,7 +131,7 @@ class MediaReader:
             self.update_media(media_data)
 
     def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], server_list=None, no_add=False, media_id=None, raiseException=False):
-        def func(x): return x.search(term, literal=exact, limit=limit)
+        def func(x): return x.search(term, literal=exact, limit=limit, media_type=media_type)
         if server_id:
             assert not server_list
             results = func(self.get_server(server_id))

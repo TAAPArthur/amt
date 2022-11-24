@@ -172,23 +172,23 @@ class RequestServer:
 class MediaServer(RequestServer):
     remove_lang_regex = re.compile(r" \([^)]*\)")
 
-    def search(self, term, literal=False, limit=20):
+    def search(self, term, media_type=None, literal=False, limit=20):
         """
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
         terms = get_alt_names(term) if not literal else [term]
-        media_list = self.search_helper(terms, limit)
+        media_list = self.search_helper(terms, limit, media_type=media_type)
 
         def score(x):
             x = self.remove_lang_regex.sub("", x)
             return -(SequenceMatcher(None, term, x).ratio() + max([SequenceMatcher(None, t, x).ratio() for t in terms]))
-        return list(map(lambda x: (score(x["name"]), x), media_list))
+        return list(map(lambda x: (score(x["name"]), x), filter(lambda x: not media_type or x["media_type"] & media_type, media_list)))
 
-    def search_helper(self, terms, limit):
+    def search_helper(self, terms, limit, media_type=None):
         media_map = {}
         for term in terms:
-            media_list = self.search_for_media(term, limit=limit)
+            media_list = self.search_for_media(term, limit=limit, media_type=media_type)
             for media_data in media_list:
                 media_map[media_data.global_id] = media_data
             if limit and len(media_map) >= limit:
@@ -279,7 +279,7 @@ class GenericServer(MediaServer):
         """
         raise NotImplementedError
 
-    def search_for_media(self, term, limit=None):
+    def search_for_media(self, term, limit=None, media_type=None, **kwargs):
         """
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
