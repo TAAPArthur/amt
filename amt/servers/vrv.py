@@ -186,8 +186,6 @@ class Vrv(Server):
     def get_subtitle_info(self, media_data, chapter_data):
         r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
         data = r.json()
-        if "playback" not in data:
-            self.raise_mature_content_exception(data)
         r = self.session_get_mem_cache(data["playback"])
         subtitle_data = r.json()["subtitles"]
         for lang, subtitles in subtitle_data.items():

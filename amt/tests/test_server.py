@@ -228,7 +228,7 @@ class TestServerLoginAnime(TestAnimeServer, TestServerLogin):
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
         if not self._is_logged_in:
-            self.raise_mature_content_exception({"msg": "Need to login"})
+            raise KeyError("missing key")
         return super().get_stream_urls(media_data, chapter_data)
 
 

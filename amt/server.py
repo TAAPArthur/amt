@@ -11,7 +11,6 @@ from threading import Lock
 
 from .job import Job
 from .state import ChapterData, MediaData
-from .util.exceptions import MatureContentException
 from .util.media_type import MediaType
 from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
 from .util.progress_type import ProgressType
@@ -375,7 +374,7 @@ class GenericServer(MediaServer):
 
     def maybe_login_and_get_stream_urls(self, media_data, chapter_data):
         def func(): return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))
-        return self.relogin_on_mature_content_exception(func)
+        return self.relogin_on_error(func)
 
     def get_stream_urls(self, media_data, chapter_data):  # pragma: no cover
         raise NotImplementedError
@@ -522,17 +521,15 @@ class Server(GenericServer):
     def get_children(self, media_data, chapter_data):
         return "{}/*".format(self.settings.get_chapter_dir(media_data, chapter_data))
 
-    def raise_mature_content_exception(self, msg):
-        raise MatureContentException(msg)
-
-    def relogin_on_mature_content_exception(self, func):
+    def relogin_on_error(self, func):
         try:
             return func()
-        except MatureContentException as e:
+        except KeyError as e:
             if self.needs_to_login():
+                self.logger.debug("Failed to get media info; relogging in and retrying", str(e))
                 self.relogin()
                 return func()
-            self.logger.error("Probably need to login to view the media: %s", str(e))
+            self.logger.error("Error %s: This could happen if you are trying to view mature account and are being blocked, or if you are trying to consume premium content without a premium account: %s", str(e))
             raise
 
     def needs_to_login(self):
@@ -560,7 +557,7 @@ class Server(GenericServer):
             sub_dir = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), self.settings.subtitles_dir)
             os.makedirs(sub_dir, exist_ok=True)
             def func(): self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
-            self.relogin_on_mature_content_exception(func)
+            self.relogin_on_error(func)
 
     def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
         if self.is_fully_downloaded(media_data, chapter_data):
