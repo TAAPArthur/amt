@@ -135,8 +135,6 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.suppress_cmd_output = True
         self.settings.viewer = "exit 0"
         self.settings._specific_settings = {}
-        self.settings.bundle_viewer = "[ -f {media} ]"
-        self.settings.bundle_cmd = "ls {files} >/dev/null; touch {name}"
         self.settings.post_process_cmd = ""
         self.settings.tmp_dir = TEST_HOME + ".tmp"
 
@@ -457,12 +455,6 @@ class SettingsTest(BaseUnitTestClass):
         self.settings.load()
         self.assertEqual(target_value_manga, self.settings.get_field("viewer", MediaType.MANGA.name))
         self.assertEqual(target_value_anime, self.settings.get_field("viewer", MediaType.ANIME.name))
-
-    def test_bundle(self):
-        name = self.settings.bundle([])
-        self.assertTrue(self.settings.open_bundle_viewer(name))
-        self.settings.bundle_viewer = "exit 1"
-        self.assertFalse(self.settings.open_bundle_viewer(name))
 
 
 class SettingsCredentialsTest(BaseUnitTestClass):
@@ -892,27 +884,6 @@ class MediaReaderTest(BaseUnitTestClass):
             chapter_list = media_data.get_sorted_chapters()
             assert all(map(lambda x: x["read"], chapter_list[:-1]))
             assert not chapter_list[-1]["read"]
-
-    def test_bundle_read(self):
-        media_list = self.add_test_media(media_type=MediaType.MANGA)
-        for media_data in media_list:
-            self.media_reader.bundle_unread_chapters(name=media_data.global_id)
-            assert self.media_reader.read_bundle()
-            self.verify_all_chapters_read(name=media_data)
-
-    def test_bundle_unique_name(self):
-        self.add_test_media(media_type=MediaType.MANGA, limit=1)
-        name = self.media_reader.bundle_unread_chapters()
-        self.assertNotEqual(name, self.media_reader.bundle_unread_chapters())
-
-    def test_bundle_empty(self):
-        assert not self.media_reader.bundle_unread_chapters()
-
-    def test_bundle_fail(self):
-        self.add_test_media(media_type=MediaType.MANGA, limit=1)
-        self.settings.bundle_viewer = "exit 1"
-        assert not self.media_reader.read_bundle("none")
-        assert not any([x["read"] for media_data in self.media_reader.get_media() for x in media_data["chapters"].values()])
 
     def test_stream_anime_bad_url(self):
         assert not self.media_reader.stream("bad_url")
@@ -1635,14 +1606,6 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["remove", media_id])
         self.verify_no_media()
 
-    def test_clean_bundle(self):
-        self.add_test_media(TestServer.id)
-        parse_args(media_reader=self.media_reader, args=["bundle"])
-        parse_args(media_reader=self.media_reader, args=["clean", "-b"])
-        self.assertEqual(0, len(self.media_reader.bundles))
-        self.assertFalse(os.listdir(self.settings.bundle_dir))
-        parse_args(media_reader=self.media_reader, args=["bundle"])
-
     def test_clean_removed(self):
         self.add_test_media(TestServer.id)
         self.media_reader.download_unread_chapters()
@@ -1694,53 +1657,6 @@ class ArgsTest(CliUnitTestClass):
             f.write("dummy_data")
         parse_args(media_reader=self.media_reader, args=["clean", "--url-cache"])
         self.assertFalse(os.path.exists(self.settings.get_web_cache_dir()))
-
-    def test_bundle_read(self):
-        self.add_test_media(TestServer.id)
-
-        self.media_reader.download_unread_chapters()
-        parse_args(media_reader=self.media_reader, args=["bundle"])
-        assert len(self.media_reader.bundles)
-        name, bundle_data = list(self.media_reader.bundles.items())[0]
-        self.assertEqual(len(bundle_data), self.get_num_chapters())
-        parse_args(media_reader=self.media_reader, args=["read", os.path.basename(name)])
-        self.verify_all_chapters_read()
-
-    def test_bundle_read_simple(self):
-        self.add_test_media(TestServer.id)
-        parse_args(media_reader=self.media_reader, args=["bundle"])
-        parse_args(media_reader=self.media_reader, args=["read"])
-        self.verify_all_chapters_read()
-
-    def test_bundle_download_error(self):
-        server = self.media_reader.get_server(TestServerLogin.id)
-        self.add_test_media(server.id)
-        server.error_login = True
-        self.assertRaises(ValueError, parse_args, media_reader=self.media_reader, args=["bundle", TestServerLogin.id])
-        assert not self.media_reader.bundles
-
-    def test_bundle_specific(self):
-        media_list = self.add_test_media(TestServer.id)
-        num_chapters = self.get_num_chapters()
-        self.media_reader.download_unread_chapters()
-        fake_data = self.test_server.create_media_data("-1", "Fake Data")
-        fake_data["server_id"] = "unique_id"
-        self.test_server.update_chapter_data(fake_data, 1, "Fake chapter", 1)
-        self.media_reader.add_media(fake_data, no_update=True)
-        parse_args(media_reader=self.media_reader, args=["bundle", self.test_server.id])
-        self.assertEqual(len(list(self.media_reader.bundles.values())[0]), num_chapters)
-        self.media_reader.bundles.clear()
-        media_data = media_list[0]
-        for name in (media_data["name"], media_data.global_id):
-            parse_args(media_reader=self.media_reader, args=["bundle", str(name)])
-            self.assertEqual(len(list(self.media_reader.bundles.values())[0]), len(media_data["chapters"]))
-            self.media_reader.bundles.clear()
-
-    def test_bundle_limit(self):
-        self.add_test_media(TestServer.id)
-        parse_args(media_reader=self.media_reader, args=["bundle", "--limit=2"])
-        bundle_data = list(self.media_reader.bundles.values())[0]
-        self.assertEqual(len(bundle_data), 2)
 
     def test_consume(self):
         self.add_test_media(limit_per_server=1)

@@ -81,9 +81,6 @@ class Settings:
     }
     search_score = [["official", True, -10], ["lang", ["en", "en-us", "english", ""], -1]]
 
-    bundle_cmd = "zip {name} {files}"
-    bundle_format = "{date}_{name}.cbz"
-    bundle_viewer = "zathura {media}"
     chapter_dir_name_format = "{chapter_number:07.2f}"
     chapter_page_format = "{page_number:04d}.{ext}"
     chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
@@ -114,12 +111,8 @@ class Settings:
         self.set_data_dirs(self.tmp_dir)
 
     def set_data_dirs(self, data_dir=None):
-        self.bundle_dir = os.path.join(data_dir, "Bundles")
         self.media_dir = os.path.join(data_dir, "Media")
         self.external_downloads_dir = os.path.join(data_dir, "Torrents")
-
-    def get_bundle_metadata_file(self):
-        return os.path.join(self.data_dir, "bundles.json")
 
     def get_server_cache_file(self):
         return os.path.join(self.cache_dir, "server_cache.json")
@@ -410,26 +403,6 @@ class Settings:
         if wd is None:
             wd = self.get_chapter_dir(media_data, chapter_data)
         return self._open_viewer(viewer, files, title=title, wd=wd)
-
-    def open_bundle_viewer(self, bundle_name, media_data=None):
-        viewer = self.get_field("bundle_viewer", media_data)
-        return self._open_viewer(viewer, os.path.join(self.bundle_dir, bundle_name), title=bundle_name)
-
-    def bundle(self, img_dirs, name=None, media_data=None):
-        from datetime import datetime
-        os.makedirs(self.bundle_dir, exist_ok=True)
-        arg = " ".join(map(Settings._smart_quote, img_dirs))
-        count = 0
-        name = name if name else "ALL"
-        while True:
-            bundle_name = self.get_bundle_format(media_data).format(date=datetime.now().strftime("%Y-%m-%d"), name=name + str(count) if count else name)
-            bundle_path = os.path.join(self.bundle_dir, bundle_name)
-            if os.path.exists(bundle_path):
-                count += 1
-                continue
-            cmd = self.bundle_cmd.format(files=arg, name=bundle_path)
-            self.run_cmd(cmd)
-            return bundle_name
 
     def post_process(self, media_data, file_paths, dir_path):
         cmd = self.get_field("post_process_cmd", media_data)

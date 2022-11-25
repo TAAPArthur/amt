@@ -25,7 +25,6 @@ class State:
     def __init__(self, settings, session=None):
         self.settings = settings
         self.session = session
-        self.bundles = {}
         self.media = {}
         self.all_media = {}
         self.hashes = {}
@@ -67,7 +66,6 @@ class State:
     def save(self):
         self.save_session_cookies()
         self.save_to_file(self.settings.get_metadata_file(), self.all_media)
-        self.save_to_file(self.settings.get_bundle_metadata_file(), self.bundles)
         self.save_to_file(self.settings.get_server_cache_file(), self.server_cache)
         for media_data in self.media.values():
             self.save_to_file(self.settings.get_chapter_metadata_file(media_data), media_data.chapters)
@@ -82,7 +80,6 @@ class State:
         self.server_cache = self.read_file_as_dict(self.settings.get_server_cache_file())
         if not self.server_cache or self.server_cache.get("version") != self.cache_version:
             self.update_server_cache()
-        self.bundles = self.read_file_as_dict(self.settings.get_bundle_metadata_file())
 
     def load_chapter_data(self, media_data):
         media_data.chapters = self.read_file_as_dict(self.settings.get_chapter_metadata_file(media_data))
@@ -203,16 +200,6 @@ class State:
 
     def get_server_ids_with_logins(self):
         return self.server_cache["auth_servers"]
-
-    def mark_bundle_as_read(self, bundle_name):
-        bundled_data = self.bundles[bundle_name]
-        for data in bundled_data:
-            self.media[data["media_id"]]["chapters"][data["chapter_id"]]["read"] = True
-
-    def get_lead_media_data(self, bundle):
-        bundled_data = self.bundles[bundle] if isinstance(bundle, str) else bundle
-        for data in bundled_data:
-            return self.media[data["media_id"]]
 
     def is_tracked(self, media_data):
         return bool(media_data["trackers"])

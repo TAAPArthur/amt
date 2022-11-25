@@ -70,7 +70,6 @@ class MediaReader:
         self.state.set_session(self.session)
         self.state.configure_media(self._servers)
         self.media = self.state.media
-        self.bundles = self.state.bundles
 
     # Helper methods
     def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):
@@ -351,30 +350,6 @@ class MediaReader:
             return sum([server.download_chapter(media_data, chapter, page_limit=page_limit, stream_index=stream_index, supress_exeception=force) for server, media_data, chapter in x])
         return sum(self.for_each(download_selected_chapters_for_server, unique_media.values(), raiseException=not ignore_errors))
 
-    def bundle_unread_chapters(self, name=None, shuffle=False, limit=None, ignore_errors=False):
-        paths = []
-        bundle_data = []
-        self.download_unread_chapters(name=name, media_type=MediaType.MANGA, limit=limit, ignore_errors=ignore_errors)
-        for server, media_data, chapter in self.get_unreads(name=name, media_type=MediaType.MANGA, shuffle=shuffle, limit=limit):
-            if server.is_fully_downloaded(media_data, chapter):
-                paths.append(server.get_children(media_data, chapter))
-                bundle_data.append(dict(media_id=media_data.global_id, chapter_id=chapter["id"]))
-        if not paths:
-            return None
-
-        logging.info("Bundling %s", paths)
-        bundle_name = self.settings.bundle(paths, name=name, media_data=self.state.get_lead_media_data(bundle_data))
-        self.state.bundles[bundle_name] = bundle_data
-        self.state.bundles[""] = bundle_name
-        return bundle_name
-
-    def read_bundle(self, name=None):
-        bundle_name = name if name else self.state.bundles.get("", max(self.state.bundles.keys()))
-        if bundle_name in self.bundles and self.settings.open_bundle_viewer(bundle_name, self.state.get_lead_media_data(bundle_name)):
-            self.state.mark_bundle_as_read(bundle_name)
-            return True
-        return False
-
     def get_remaining_chapters(self, name=None):
         for media_data in self.get_media(name):
             server = self.get_server(media_data["server_id"])
@@ -629,17 +604,12 @@ class MediaReader:
             if tag_name in media_data["tags"]:
                 media_data["tags"].remove(tag_name)
 
-    def clean(self, remove_disabled_servers=False, include_local_servers=False, remove_read=False, remove_not_on_disk=False, bundles=False, url_cache=False):
+    def clean(self, remove_disabled_servers=False, include_local_servers=False, remove_read=False, remove_not_on_disk=False, url_cache=False):
         if remove_not_on_disk:
             for media_data in [x for x in self.get_media() if not os.path.exists(self.settings.get_chapter_metadata_file(x))]:
                 logging.info("Removing metadata for %s because it doesn't exist on disk", media_data["name"])
                 self.remove_media(name=media_data)
         media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media()}
-        if bundles:
-            logging.info("Removing all bundles")
-            self.bundles.clear()
-            shutil.rmtree(self.settings.bundle_dir)
-            os.mkdir(self.settings.bundle_dir)
         if url_cache:
             if os.path.exists(self.settings.get_web_cache_dir()):
                 shutil.rmtree(self.settings.get_web_cache_dir())

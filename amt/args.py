@@ -77,15 +77,6 @@ def setup_subparsers(state, sub_parsers):
 
     # media consumption
 
-    bundle_parser = add_parser_helper(sub_parsers, "bundle-unread-chapters", aliases=["bundle"], help="Bundle individual manga pages into a single file")
-    bundle_parser.add_argument("--ignore-errors", "-i", default=False, action="store_const", const=True)
-    bundle_parser.add_argument("--limit", "-l", default=0, type=int)
-    bundle_parser.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
-    bundle_parser.add_argument("name", choices=state.get_all_names(MediaType.MANGA), default=None, nargs="?")
-
-    read_parser = add_parser_helper(sub_parsers, "read_bundle", aliases=["read"], help="Open a saved bundle for reading. If the command exits with status 0, then the container chapters will be marked read")
-    read_parser.add_argument("name", default=None, nargs="?", choices=state.bundles.keys(), help="Name of the bundle")
-
     sub_consume_parsers = argparse.ArgumentParser(add_help=False)
     sub_consume_parsers.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
     sub_consume_parsers.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
@@ -127,7 +118,6 @@ def setup_subparsers(state, sub_parsers):
 
     # clean
     clean_parser = add_parser_helper(sub_parsers, "clean", help="Removes unused media")
-    clean_parser.add_argument("--bundles", "-b", default=False, action="store_const", const=True, help="Removes bundle info")
     clean_parser.add_argument("--include-local-servers", default=False, action="store_const", const=True, help="Doesn't skip local servers")
     clean_parser.add_argument("--remove-disabled-servers", default=False, action="store_const", const=True, help="Removes all servers not belonging to the active list")
     clean_parser.add_argument("--remove-not-on-disk", default=False, action="store_const", const=True, help="Removes references where the backing directory is emtpy")
@@ -261,7 +251,6 @@ def setup_subparsers(state, sub_parsers):
 
 def parse_args(args=None, media_reader=None, already_upgraded=False):
     SPECIAL_PARAM_NAMES = {"auto", "clear_cookies", "log_level", "no_save", "type", "func", "readonly", "func_str", "tmp_dir"}
-
     state = State(Settings()) if not media_reader else media_reader.state
 
     parser = argparse.ArgumentParser()
