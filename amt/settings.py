@@ -73,8 +73,8 @@ class Settings:
             MediaType.ANIME.name: [["lang", ["jp", "japanese", ""], -1]]
         },
         "viewer": {
-            MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
-            "hidive": "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --http-header-fields='Referer: https://www.hidive.com/stream/' --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title={title} {media}",
+            MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title=\"$AMT_TITLE\" {media}",
+            "hidive": "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --http-header-fields='Referer: https://www.hidive.com/stream/' --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title=\"$AMT_TITLE\" {media}",
             MediaType.MANGA.name: "sxiv {media}",
             MediaType.NOVEL.name: "zathura {media}"
         }
@@ -394,7 +394,7 @@ class Settings:
     def _open_viewer(self, viewer, name, title, **kwargs):
         assert isinstance(name, str)
         name = Settings._smart_quote(name)
-        cmd = viewer.format(media=name, title=quote(title)) if title else viewer.format(name)
+        cmd = viewer.format(media=name) if title else viewer.format(name)
         return self.run_cmd(cmd, **kwargs)
 
     def open_viewer(self, files, media_data, chapter_data, wd=None):
@@ -402,7 +402,7 @@ class Settings:
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
         if wd is None:
             wd = self.get_chapter_dir(media_data, chapter_data)
-        return self._open_viewer(viewer, files, title=title, wd=wd)
+        return self._open_viewer(viewer, files, title=title, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra={"AMT_TITLE": title})
 
     def post_process(self, media_data, file_paths, dir_path):
         cmd = self.get_field("post_process_cmd", media_data)
