@@ -54,6 +54,9 @@ class Settings:
     # Cookies
     cookie_files = ["/tmp/cookies.txt"]  # Additional cookies files to read from (Read only)
 
+    # cache
+    search_cache_time_sec = 3600
+
     # Servers/Tracker
     enabled_servers = []  # empty means all servers all enabled
     disabled_servers = []  # empty means all servers all enabled
@@ -147,6 +150,9 @@ class Settings:
 
     def get_web_cache(self, url):
         return os.path.join(self.get_web_cache_dir(), url.replace("/", "_"))
+
+    def get_search_cache(self, server_id):
+        return os.path.join(self.cache_dir, f"{server_id}_search_cache")
 
     @classmethod
     def get_members(clazz):

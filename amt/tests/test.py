@@ -637,6 +637,12 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                 self.assertEqual(media_data, list(server.search(name))[0][1])
                 assert server.search(name[:3])
 
+    def test_search_media_cache(self):
+        media_list = self.test_server.search("manga")
+        self.test_server.inject_error()
+        for i in range(4):
+            self.assertEqual(media_list, self.test_server.search("manga"))
+
     def test_search_inexact(self):
         self.assertTrue(self.test_server.search("The Manga1"))
         self.assertTrue(self.test_server.search("Manga1: the second coming"))
