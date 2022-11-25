@@ -3,8 +3,8 @@ import json
 import logging
 import os
 import re
-import subprocess
 
+from .runner import Runner
 from shlex import quote
 from subprocess import CalledProcessError
 from threading import Lock
@@ -321,11 +321,23 @@ class Settings:
     def get_prompt_for_input(self, prompt):
         return input(prompt)
 
+    def get_runner(self):
+        if not self._runner:
+            self._runner = Runner()
+        return self._runner
+
+    def run_cmd_and_save_output(self, *args, **kwargs):
+        return self.get_runner().run_cmd_and_save_output(*args, shell=self.shell, **kwargs)
+
+    def run_cmd(self, *args, **kwargs):
+        return self.get_runner().run_cmd(*args, shell=self.shell, **kwargs)
+
     def _ask_for_credentials(self, server_id: str) -> (str, str):
         if self.password_manager_enabled and self.password_load_cmd:
             try:
-                logging.debug("Loading credentials for %s `%s`", server_id, self.password_load_cmd.format(server_id=server_id))
-                output = subprocess.check_output(self.password_load_cmd.format(server_id=server_id), shell=self.shell).decode("utf-8")
+                cmd = self.password_load_cmd.format(server_id=server_id)
+                logging.debug("Loading credentials for %s `%s`", server_id, cmd)
+                output = self.run_cmd_and_save_output(cmd)
                 login, password = re.split(self.credential_separator_regex, output)[:2]
                 return login, password
             except (CalledProcessError, ValueError):
@@ -340,7 +352,7 @@ class Settings:
             var = os.getenv(self.password_override_prefix + server_id) or os.getenv(self.password_override_prefix + server_id.upper())
             if var:
                 return re.split(self.credential_separator_regex, var)
-        with self._lock:
+        with self.get_runner().lock:
             return self._ask_for_credentials(server_id)
 
     def store_credentials(self, server_id, username, password=None):
@@ -350,7 +362,7 @@ class Settings:
         if self.password_manager_enabled and self.password_save_cmd:
             cmd = self.password_save_cmd.format(server_id=server_id, username=username)
             logging.debug("Storing credentials for %s; cmd %s", server_id, cmd)
-            subprocess.check_output(cmd, shell=self.shell, input=bytes(password, "utf8"))
+            self.run_cmd_and_save_output(cmd, input=bytes(password, "utf8"))
 
     def get_secret(self, server_id: str) -> (str, str):
         result = self.get_credentials(server_id)
@@ -359,50 +371,17 @@ class Settings:
     def store_secret(self, server_id, secret):
         self.store_credentials(server_id, "", secret)
 
-    def _create_env(self, env_extra={}, media_data=None, chapter_data=None):
-        media_keys = {"id", "name", "alt_id", "server_id"}
-        chapter_keys = {"id", "title", "number"}
-        env = dict(os.environ)
-        env.update(env_extra)
-        for d, prefix, keys in ((media_data, "MEDIA", media_keys), (chapter_data, "CHAPTER", chapter_keys)):
-            if d:
-                for key in keys:
-                    env[f"{prefix}_{key.upper()}"] = str(d[key])
-        return env
-
-    def _run_cmd(self, func, cmd, media_data=None, chapter_data=None, wd=None, env_extra={}, **kwargs):
-        logging.info("Running cmd %s: shell = %s, wd=%s", cmd, self.shell, wd)
-        env = self._create_env(env_extra=env_extra, media_data=media_data, chapter_data=chapter_data)
-        return func(cmd, shell=self.shell, cwd=wd, env=env, **kwargs) if isinstance(cmd, str) else cmd(cwd=wd, env=env, **kwargs)
-
-    def run_cmd_and_save_output(self, *args, **kwargs):
-        return self._run_cmd(subprocess.check_output, *args, **kwargs).decode("utf-8")
-
-    def run_cmd(self, *args, raiseException=False, **kwargs):
-        try:
-            self._run_cmd(subprocess.check_call, *args, **kwargs)
-            return True
-        except (CalledProcessError, KeyboardInterrupt):
-            if raiseException:
-                raise
-            return False
-
     @staticmethod
     def _smart_quote(name):
         return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
 
-    def _open_viewer(self, viewer, name, title, **kwargs):
-        assert isinstance(name, str)
-        name = Settings._smart_quote(name)
-        cmd = viewer.format(media=name) if title else viewer.format(name)
-        return self.run_cmd(cmd, **kwargs)
-
     def open_viewer(self, files, media_data, chapter_data, wd=None):
         viewer = self.get_field("viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
-        if wd is None:
-            wd = self.get_chapter_dir(media_data, chapter_data)
-        return self._open_viewer(viewer, files, title=title, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra={"AMT_TITLE": title})
+
+        name = Settings._smart_quote(files)
+        cmd = viewer.format(media=name) if title else viewer.format(name)
+        return self.run_cmd(cmd, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra={"AMT_TITLE": title})
 
     def post_process(self, media_data, file_paths, dir_path):
         cmd = self.get_field("post_process_cmd", media_data)
