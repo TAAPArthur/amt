@@ -25,6 +25,7 @@ from ..servers.local import LocalServer
 from ..servers.remote import RemoteServer
 from ..settings import Settings
 from ..state import ChapterData, MediaData, State
+from ..util.exceptions import ChapterLimitException
 from ..util.media_type import MediaType
 from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestUnofficialServer, TestServerLogin, TestServerLoginAnime)
 from .test_tracker import TestTracker
@@ -108,10 +109,7 @@ class BaseUnitTestClass(unittest.TestCase):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
 
     def for_each_server(self, func):
-        self.for_each(func, filter(lambda server: not server.multi_threaded, self.media_reader.get_servers()))
-        for server in self.media_reader.get_servers():
-            if server.multi_threaded:
-                func(server)
+        self.for_each(func, self.media_reader.get_servers())
 
     def setup_settings(self):
         self.settings.no_save_session = True
@@ -191,7 +189,8 @@ class BaseUnitTestClass(unittest.TestCase):
         server = self.media_reader.get_server(media_data["server_id"])
         self.assertTrue(server.is_fully_downloaded(media_data, chapter_data))
 
-        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
+        self.assertTrue(os.path.exists(dir_path))
         files = list(filter(lambda x: x[0] != ".", os.listdir(dir_path)))
         self.assertTrue(files)
         media_type = MediaType(media_data["media_type"])
@@ -568,6 +567,25 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         always_fail = True
         self.assertRaises(requests.exceptions.HTTPError, self.test_server.session_get, "some_url")
 
+    def test_session_maybe_need_cloud_scraper(self):
+        def return_403_response(*args, **kwargs):
+            r = requests.Response()
+            r.status_code = 403
+            return r
+
+        def return_200_response(*args, **kwargs):
+            r = requests.Response()
+            r.status_code = 200
+            return r
+        try:
+            self.test_server.session.get = return_403_response
+            RequestServer.cloudscraper = requests.Session()
+            RequestServer.cloudscraper.get = return_200_response
+            self.test_server.maybe_need_cloud_scraper = True
+            self.test_server.session_get("test")
+        except ImportError:
+            self.skipTest("cloudscraper not installed")
+
     def test_session_get_cache_json(self):
         server = self.media_reader.get_server(TestServer.id)
         assert server
@@ -588,8 +606,8 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def test_force_cloudfare(self):
         try:
             self.settings.set_field("always_use_cloudscraper", True, TestServer.id)
-            server = TestServer(self.media_reader.session, self.settings)
-            server2 = TestAnimeServer(self.media_reader.session, self.settings)
+            server = TestServer(self.media_reader.session, self.settings, no_fake_session=True)
+            server2 = TestAnimeServer(self.media_reader.session, self.settings, no_fake_session=True)
             self.assertNotEqual(server.session, self.media_reader.session)
             self.assertEqual(server2.session, self.media_reader.session)
         except ImportError:
@@ -618,11 +636,12 @@ class ServerWorkflowsTest(BaseUnitTestClass):
                         self.verify_download(media_data, chapter_data)
 
     def test_server_download_errors(self):
-        media_data = self.add_test_media(server_id=self.test_server.id, limit=1)[0]
-        self.test_server.inject_error(delay=1)
-        self.assertRaises(ValueError, self.media_reader.download_unread_chapters, media_data)
-        self.media_reader.download_unread_chapters(media_data)
-        self.verify_all_chapters_downloaded()
+        errors = (ChapterLimitException(time.time() * 3600, 100), ValueError())
+        for error, media_data in zip(errors, self.add_test_media(server_id=self.test_server.id, limit=2)):
+            self.test_server.inject_error(delay=1, error=error)
+            self.assertRaises(type(error), self.media_reader.download_unread_chapters, media_data)
+            self.media_reader.download_unread_chapters(media_data)
+            self.verify_all_chapters_downloaded(name=media_data)
 
     def test_server_download_post_process_fail(self):
         self.settings.post_process_cmd = "exit 1"
@@ -758,19 +777,23 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def test_load_cookies_session_cookies(self):
         self.media_reader.settings.no_load_session = False
-        name, value = "Test", "value"
-        name2, value2 = "Test2", "value2"
+        values = ["1", "too", "three"]
+        name, name2 = "Test", "Test2"
         self.settings.cookie_files = []
         os.makedirs(self.settings.cache_dir, exist_ok=True)
         with open(self.settings.get_cookie_file(), "w") as f:
-            f.write("\t".join([TestServer.domain, "TRUE", "/", "FALSE", "1640849596", name, value, "None"]))
-            f.write("\n#Comment\n")
-            f.write("\t".join([TestServer.domain, "TRUE", "/", "FALSE", "1640849596", name2, value2, "None"]))
+            f.write("\t".join([self.test_server.id, "TRUE", "/", "FALSE", "1640849596", name, values[0], "None"]))
+            f.write("\n")
+            f.write("#Comment\n")
+            f.write("\t".join([self.test_server.id, "TRUE", "/", "FALSE", "1640849596", name2, values[1], "None"]))
+            f.write("\n")
+            f.write("\t".join([self.test_anime_server.id, "TRUE", "/", "FALSE", "1640849596", name, values[2], "None"]))
 
         self.media_reader.state.load_session_cookies()
         assert self.media_reader.session.cookies
-        self.assertEqual(value, self.media_reader.session.cookies.get(name))
-        self.assertEqual(value2, self.media_reader.session.cookies.get(name2))
+        self.assertEqual(values[0], self.test_server.session_get_cookie(name))
+        self.assertEqual(values[1], self.test_server.session_get_cookie(name2))
+        self.assertEqual(values[2], self.test_anime_server.session_get_cookie(name))
 
     def test_save_load_cookies(self):
         self.media_reader.settings.no_load_session = False
@@ -1022,11 +1045,6 @@ class GenericServerTest():
                 assert search_media_list
                 self.verfiy_media_list(media_list, server=server)
         return media_list
-
-    def test_settings_always_use_cloudscraper(self):
-        self.settings.set_field("always_use_cloudscraper", True)
-        self.reload(keep_settings=True)
-        self.for_each_server(lambda x: self._test_list_and_search(x, test_just_list=True))
 
     def test_future_proof_get_media_list(self):
         def fake_request(*args, **kwargs):
@@ -1985,6 +2003,11 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
                     server.session.cookies.clear()
                     self.assertTrue(self.media_reader.state.save_session_cookies())
         self.assertEqual(min(2, len(self.media_reader.state.get_server_ids())), len(sessions))
+
+    def test_search(self):
+        for media_type in list(MediaType) + [None]:
+            with self.subTest(media_type=media_type):
+                self.assertTrue(self.media_reader.search_add("one", media_type=media_type, limit=1, no_add=True))
 
 
 class ServerStreamTest(RealBaseUnitTestClass):

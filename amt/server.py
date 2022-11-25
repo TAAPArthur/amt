@@ -103,7 +103,7 @@ class RequestServer:
             except SSLError:
                 if self.settings.get_fallback_to_insecure_connection(self.id):
                     self.logger.warning("Retry request insecurely %s", url)
-                    if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:
+                    if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:   # pragma: no cover
                         self.logger.warning("Using insecure connections and cloudscraper are not supported and may result in an error like 'ValueError: Cannot set verify_mode to CERT_NONE when check_hostname is enabled.'")
                     kwargs["verify"] = False
                     return self._request(post_request, url, **kwargs)
@@ -425,13 +425,13 @@ class GenericServer(MediaServer):
             if not os.path.exists(path):
                 delta = timedelta(seconds=offset)
                 r = self.session_get(url)
-                if flip or delta:
+                if flip or offset:
                     with open(path, 'w') as fp:
                         iterable = iter(r.content.decode().splitlines())
                         buffer = None
                         for line in iterable:
                             # 00:02:04.583 --> 00:02:13.250 line:84%
-                            if delta:
+                            if offset:
                                 m = re.findall("(?:^| )(\d\d:\d\d:\d\d)", line)
                                 for original_time in m:
                                     corrected_time = (datetime.strptime(original_time, "%H:%M:%S") + delta).strftime("%H:%M:%S")
@@ -554,8 +554,9 @@ class Server(GenericServer):
                 self.logger.debug("Failed to get media info; relogging in and retrying", str(e))
                 self.relogin()
                 return func()
-            self.logger.error("Error %s: This could happen if you are trying to view mature account and are being blocked, or if you are trying to consume premium content without a premium account: %s", str(e))
-            raise
+            else:  # pragma: no cover
+                self.logger.error("Error %s: This could happen if you are trying to view mature account and are being blocked, or if you are trying to consume premium content without a premium account: %s", str(e))
+                raise
 
     def needs_to_login(self):
         try:

@@ -3,6 +3,7 @@ import re
 
 from datetime import datetime
 from requests.exceptions import HTTPError
+import requests
 
 from ..server import Server
 from ..util.media_type import MediaType
@@ -11,23 +12,47 @@ from ..util.progress_type import ProgressType
 TEST_BASE = "/tmp/amt/"
 
 
+class FakeSession(requests.Session):
+    def __init__(self, session):
+        super().__init__()
+        self.response = requests.Response()
+        self.response.status_code = 200
+        self.cookies = session.cookies
+
+    def get(self, *args, **kwargs):
+        return self.response
+
+    def post(self, *args, **kwargs):
+        return self.response
+
+    def close(self, *args, **kwargs):
+        return self.response
+
+
 class TestServer(Server):
     id = "test_server_manga"
     error_to_inject = None
     time_to_error = 0
     error_count = 0
-    domain = "test.com"
     hide = False
     inaccessible = False
     error_delay = 0
     test_lang = False
     offset_chapter_num = 0
+    use_real_cloud_scraper = False
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, session, *args, no_fake_session=False, **kwargs):
+        super().__init__(FakeSession(session) if not no_fake_session else session, *args, **kwargs)
         self.stream_url_regex = re.compile(f"{self.id}/([0-9]*)/([0-9]*)")
         self.add_series_url_regex = re.compile(f"{self.id}/([0-9]*)")
         self.timestamp = datetime.now().timestamp()
+        self.domain = f"{self.id}.com"
+
+    def get_cloudscraper_session(self, *args, **kwargs):
+        return self.session if not self.maybe_need_cloud_scraper and isinstance(self.session, FakeSession) else super().get_cloudscraper_session(*args, **kwargs)
+
+    def backoff(self, *args, **kwargs):
+        pass
 
     @classmethod
     def get_streamable_url(clzz, media_id=4, chapter_id=1):
@@ -161,7 +186,7 @@ class TestAnimeServer(TestServer):
         return self.stream_urls or [f"https://{self.domain}/url.mp4?key=1&false", f"https://{self.domain}/url.ts?key=1&false"]
 
     def session_get(self, url, **kwargs):
-        if url.startswith("subtitles"):
+        if "subtitles" in url:
             return self.subtitle_response()
         return super().session_get(url, **kwargs)
 
@@ -171,12 +196,11 @@ class TestAnimeServer(TestServer):
         yield media_data["lang"], url, None, True, 0
         yield media_data["lang"], alt_url, None, True, 0
         yield media_data["lang"], url, "vtt", True, 0
-        yield "en", url, None, True, 0
-        yield "en", alt_url, None, True, -5
-        yield "en", url, None, True, +5
-        yield "en", url, None, False, +5
+        yield "en", url, "a", True, 0
+        yield "en", url, "b", True, +5
+        yield "en", url, "c", False, +5
         yield "en", url, "txt", False, 0
-        yield "unknown_lang", None, "txt", False, 0
+        yield "unknown_lang", url, "txt", False, 0
 
     def subtitle_response(self):
         class FakeRequest():
