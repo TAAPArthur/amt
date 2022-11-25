@@ -26,7 +26,7 @@ from ..servers.remote import RemoteServer
 from ..settings import Settings
 from ..state import ChapterData, MediaData, State
 from ..util.media_type import MediaType
-from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestUnofficialServer, TestServerLogin, TestServerLoginAnime, TestTorrentHelper)
+from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestUnofficialServer, TestServerLogin, TestServerLoginAnime)
 from .test_tracker import TestTracker
 
 HAS_PIL = True
@@ -46,7 +46,6 @@ logging.basicConfig(format="[%(name)s:%(filename)s:%(lineno)s]%(levelname)s:%(me
 
 TEST_SERVERS = import_sub_classes(tests, TestServer)
 TEST_TRACKERS = import_sub_classes(tests, TestTracker)
-TEST_TORRENT_HELPERS = import_sub_classes(tests, TestTorrentHelper)
 LOCAL_SERVERS = import_sub_classes(servers, LocalServer)
 
 SKIP_DOWNLOAD = os.getenv("SKIP_DOWNLOAD")
@@ -101,7 +100,7 @@ class BaseUnitTestClass(unittest.TestCase):
 
         state = State(self.settings)
         _servers.sort(key=lambda x: x.id)
-        self.media_reader = cls(state=state, server_list=_servers) if self.real else cls(state=state, server_list=_servers, tracker_list=TEST_TRACKERS, torrent_helpers_list=TEST_TORRENT_HELPERS)
+        self.media_reader = cls(state=state, server_list=_servers) if self.real else cls(state=state, server_list=_servers, tracker_list=TEST_TRACKERS)
         if not self.settings.disabled_servers and self.real:
             assert(self.media_reader.get_servers())
 
@@ -131,12 +130,16 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.max_retries = 2
         self.settings.backoff_factor = 1
 
-        self.settings.post_download_torrent_file_cmd = "mkdir {media_id}; touch {media_id}/file.test"
         self.settings.suppress_cmd_output = True
         self.settings.viewer = "exit 0"
         self.settings._specific_settings = {}
         self.settings.post_process_cmd = ""
         self.settings.tmp_dir = TEST_HOME + ".tmp"
+
+        self.settings.torrent_list_cmd = "exit 0"
+        self.settings.torrent_download_cmd = "exit 0"
+        self.settings.torrent_stream_cmd = "exit 0"
+        self.settings.torrent_info_cmd = "exit 0"
 
     def setUp(self):
         # Clear all env variables
@@ -196,7 +199,7 @@ class BaseUnitTestClass(unittest.TestCase):
         for file_name in files:
             self.assertEqual(2, len(file_name.split(".")), f"Problem with extension of {file_name}")
             path = os.path.join(dir_path, file_name)
-            if isinstance(server, TestServer) or server.is_local_server() or type(server).id is None:
+            if isinstance(server, TestServer) or server.is_local_server() or type(server).id is None or server.torrent:
                 continue
             if media_type == MediaType.MANGA:
                 with open(path, "rb") as img_file:
@@ -224,14 +227,17 @@ class BaseUnitTestClass(unittest.TestCase):
     def verify_media_len(self, target_len):
         self.assertEqual(target_len, len(self.media_reader.get_media_ids()))
 
+    def verfiy_media_chapter_data(self, media_data):
+        for chapter_data in media_data["chapters"].values():
+            self.assertTrue(isinstance(chapter_data, ChapterData), type(chapter_data))
+
     def verfiy_media_list(self, media_list=None, server=None):
         assert media_list is not None
         if media_list:
             assert isinstance(media_list, list)
             for media_data in media_list:
                 self.assertTrue(isinstance(media_data, MediaData), type(media_data))
-                for chapter_data in media_data["chapters"].values():
-                    self.assertTrue(isinstance(chapter_data, ChapterData), type(chapter_data))
+                self.verfiy_media_chapter_data(media_data)
                 assert "\n" not in media_data["name"]
 
             if not server:
@@ -998,7 +1004,7 @@ class GenericServerTest():
         media_list = None
         with self.subTest(server=server.id, list=True):
             media_list = server.get_media_list()
-            assert media_list or not server.has_free_chapters
+            assert media_list or not server.has_free_chapters or not server.domain
             self.verfiy_media_list(media_list, server=server)
 
         if media_list and not test_just_list:
@@ -1021,6 +1027,9 @@ class GenericServerTest():
             with self.subTest(server=server.id):
                 for media_data in self._test_list_and_search(server):
                     self.media_reader.add_media(media_data)
+                    self.verfiy_media_chapter_data(media_data)
+                    if server.torrent and not media_data["chapters"]:
+                        break
                     for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
                         if not SKIP_DOWNLOAD and not server.slow_download:
                             self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2))
@@ -1044,6 +1053,78 @@ class GenericServerTest():
 
         unique_login_servers = {x.alias or x.id: x for x in map(self.media_reader.get_server, self.media_reader.state.get_server_ids_with_logins()) if x}
         self.for_each(func, unique_login_servers.values())
+
+
+class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
+    torrents = ["TorrentA.torrent", "TorrentB.torrent", "TorrentC.torrent", "TorrentD.torrent"]
+    torrent_files = ["1.file", "2.file", "dir/3.file", "nested/dir/4.file"]
+
+    def setup_settings(self, **kwargs):
+        super().setup_settings(**kwargs)
+        self.settings.torrent_info_cmd = '[ -e "$TORRENT_FILE" ] && read -r name < "$TORRENT_FILE"; printf "Hash: %s\\nName: %s\\n" "$name" "$name"'
+        self.settings.torrent_list_cmd = '[ -e "$TORRENT_FILE" ] && printf "{}"'.format('\\n'.join(self.torrent_files))
+        self.settings.torrent_download_cmd = '[ -e "$TORRENT_FILE" ] && mkdir -p "$(dirname "$CHAPTER_ID")" && touch "$CHAPTER_ID"'
+        self.settings.torrent_stream_cmd = '[ -e "$TORRENT_FILE" ] && [ -n "$CHAPTER_ID" ] && echo 0'
+        self.settings.viewer = '[ -z "$STREAMING" ] || ( read -r value && [ "$value" -eq 0 ]; )'
+
+    def tearDown(self):
+        for x in self.torrents:
+            assert(os.path.exists(x))
+        super().tearDown()
+
+    def init(self):
+        self.default_server_list = [s for s in SERVERS if s.torrent and s.domain is None]
+        self.assertEqual(len(self.default_server_list), 1)
+
+    def reload(self, **kwargs):
+        super().reload(**kwargs)
+        for x in self.torrents:
+            with open(x, "w+") as f:
+                f.write(x.split(".")[0])
+
+        for server in self.media_reader.get_servers():
+            server.get_media_list = lambda **kwargs: [server.get_media_data_from_url(x) for x in self.torrents]
+
+    def test_media_type_selection(self):
+        def func(server):
+            with self.subTest(server=server.id):
+                for media_data in self._test_list_and_search(server):
+                    self.media_reader.add_media(media_data)
+                    self.assertTrue(media_data["chapters"])
+                    self.verfiy_media_chapter_data(media_data)
+        self.for_each_server(func)
+        self.media_reader.play()
+        self.verify_all_chapters_read()
+        self.verfiy_media_list(list(self.media_reader.get_media()))
+
+    def test_add_media_from_url(self):
+        for torrent in self.torrents:
+            assert(self.media_reader.add_from_url(torrent))
+            self.media_reader.media.clear()
+            assert(self.media_reader.add_from_url(os.path.abspath(torrent)))
+
+    def test_media_stream(self):
+        for torrent, media_type in zip(self.torrents, list(MediaType)):
+            with self.subTest(media_type=media_type):
+                for file in self.torrent_files:
+                    self.assertTrue(self.media_reader.stream(f"{torrent}?file={file}", media_type=media_type))
+                    self.assertTrue(self.media_reader.stream(f"{os.path.abspath(torrent)}?file={file}"))
+
+    def test_media_stream_torrent_cmd_early_exit(self):
+        self.settings.torrent_stream_cmd = '[ -e "$TORRENT_FILE" ] && [ -e "$CHAPTER_ID" ]'
+        for torrent in self.torrents:
+            for file in self.torrent_files:
+                self.assertFalse(self.media_reader.stream(f"{torrent}?file={file}", media_type=MediaType.ANIME))
+
+    def test_download_torrent_fail(self):
+        self.settings.torrent_download_cmd = 'exit 1'
+        media_data = self.media_reader.add_from_url(self.torrents[0])
+        self.assertTrue(media_data["chapters"])
+        try:
+            self.media_reader.download_unread_chapters(media_data)
+        except:
+            pass
+        self.verify_no_chapters_downloaded()
 
 
 class LocalServerTest(GenericServerTest, BaseUnitTestClass):
@@ -1555,12 +1636,6 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", media_data["name"]])
         self.assertEqual(1, len(self.media_reader.get_media_ids()))
 
-    def test_search_fallback_and_autoimport(self):
-        parse_args(media_reader=self.media_reader, args=["--auto", "search", "--exact", TestTorrentHelper.available_torrent_file])
-        parse_args(media_reader=self.media_reader, args=["--auto", "auto-import"])
-        self.assertTrue(self.media_reader.get_single_media(name=TestTorrentHelper.available_torrent_file))
-        self.verify_all_chapters_downloaded()
-
     def test_search_fail(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "__UnknownMedia__"])
 
@@ -1871,11 +1946,6 @@ class ArgsTest(CliUnitTestClass):
 
 
 class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
-    def test_torrent_helpers(self):
-        self.assert_server_enabled_or_skip_test(self.media_reader.get_torrent_helpers())
-        for server in self.media_reader.get_torrent_helpers():
-            media_data = self._test_list_and_search(server)[0]
-            server.download_torrent_file(media_data)
 
     def test_cookie_saving(self):
         sessions = []
@@ -1921,13 +1991,15 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.funimation.com/v/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
     ]
     addable_urls = [
-        ("https://www.crunchyroll.com/comics/manga/hoshi-no-samidare-the-lucifer-and-biscuit-hammer/volumes", 255),
         ("https://hidive.com/tv/legend-of-the-galactic-heroes-gaiden", "legend-of-the-galactic-heroes-gaiden"),
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
-        ("https://webtoons.com/en/drama/lookism/list?title_no=1049", 1049),
-        ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
         ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
+        ("https://nyaa.si/view/269191", "269191"),
+        ("https://nyaa.si/view/135283", "135283"),
+        ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
+        ("https://webtoons.com/en/drama/lookism/list?title_no=1049", 1049),
+        ("https://www.crunchyroll.com/comics/manga/hoshi-no-samidare-the-lucifer-and-biscuit-hammer/volumes", 255),
     ]
 
     def get_server_for_url(self, url, streamable=False):

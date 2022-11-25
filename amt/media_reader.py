@@ -9,7 +9,7 @@ from requests import Session
 
 from . import servers, trackers
 from .job import Job
-from .server import Server, TorrentHelper, Tracker
+from .server import Server, Tracker
 from .servers.local import LocalServer
 from .settings import Settings
 from .state import State
@@ -35,22 +35,21 @@ def import_sub_classes(m, clazz, *args):
     return result_sets if args else result_sets[0]
 
 
-SERVERS, TORRENT_HELPERS = import_sub_classes(servers, Server, TorrentHelper)
+SERVERS = import_sub_classes(servers, Server)
 TRACKERS = import_sub_classes(trackers, Tracker)
 
 
 class MediaReader:
 
-    def __init__(self, state=None, server_list=SERVERS, tracker_list=TRACKERS, torrent_helpers_list=TORRENT_HELPERS):
+    def __init__(self, state=None, server_list=SERVERS, tracker_list=TRACKERS):
         self.state = state if state else State(Settings())
         self.settings = state.settings
         self.session = Session()
         self._servers = {}
-        self._torrent_helpers = {}
         self._trackers = {}
         self.tracker = None
 
-        for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers), (torrent_helpers_list, self._torrent_helpers)):
+        for cls_list, instance_map in ((server_list, self._servers), (tracker_list, self._trackers)):
             for cls in cls_list:
                 try:
                     for instance in cls.get_instances(self.session, self.settings):
@@ -86,9 +85,6 @@ class MediaReader:
 
     def get_server(self, id):
         return self._servers.get(id, None)
-
-    def get_torrent_helpers(self):
-        return self._torrent_helpers.values()
 
     def get_media_ids(self):
         return self.media.keys()
@@ -189,17 +185,6 @@ class MediaReader:
 
         if not media_data and not skip_remote_search:
             media_data = self.search_add(name, media_type=media_type, exact=exact, server_id=server_id, **kwargs)
-            if not media_data:
-                logging.info("Checking to see if %s can be found with helpers", name)
-                kwargs["no_add"] = True
-                torrent_helpers = list(filter(lambda x: not server_id or x.id == server_id, self.get_torrent_helpers()))
-                media_data = self.search_add(name, media_type=media_type, exact=exact, server_list=torrent_helpers, **kwargs)
-                if media_data:
-                    logging.info("Found match; Downloading torrent file")
-                    self._torrent_helpers[media_data["server_id"]].download_torrent_file(media_data)
-                    logging.info("Starting torrent download")
-                    self.settings.post_torrent_download(media_data)
-                    return False
         if not media_data:
             logging.info("Could not find media %s", name)
             return False
@@ -217,15 +202,6 @@ class MediaReader:
     def remove_media(self, **kwargs):
         media_data = self.get_single_media(**kwargs)
         del self.media[media_data.global_id]
-
-    def auto_import_media(self, files=None, **kwargs):
-        for media_type in MediaType:
-            path = self.settings.get_external_downloads_dir(media_type, skip_auto_create=True)
-            if os.path.exists(path):
-                for f in os.listdir(path):
-                    torrent_dir = os.path.join(path, f)
-                    if os.path.isdir(torrent_dir) and (not files or f in files):
-                        self.import_media([torrent_dir], media_type=media_type, **kwargs)
 
     def import_media(self, files, media_type, link=False, name=None, skip_add=False, fallback_name=None, dry_run=False):
         server = self.get_server(LocalServer.id)

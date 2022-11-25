@@ -92,11 +92,11 @@ assimilate all unread chapters and then read them
 * [FreeWebNovel](https://freewebnovel.com) (unofficial)
 * [J Novel club](https://j-novel.club/)
 
+### Misc/Multi
+* [Nyaa](https://nyaa.si/) (unofficial)
+
 ### Trackers
 * [Anilist](https://anilist.co/home)
-
-### Helpers
-* [Nyaa](https://nyaa.si/) (unofficial)
 
 ### Media already owned
 * Local Server -- media already downloaded on the machine; see the import subcommand

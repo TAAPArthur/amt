@@ -252,6 +252,7 @@ class GenericServer(MediaServer):
     # If set this value will be used for credential lookup instead of id
     alias = None
     media_type = MediaType.MANGA
+    torrent = False
     # Regex to match to determine if this server can stream a given url.
     # It is also used to determine if server can add the media based on its chapter url
     stream_url_regex = None
@@ -625,26 +626,6 @@ class Server(GenericServer):
         This method should only be called if the user is logged in.
         """
         return float("inf"), 0
-
-
-class TorrentHelper(MediaServer):
-    id = None
-    media_type = MediaType.ANIME
-    official = False
-    progress_type = ProgressType.VOLUME_ONLY
-    alias = None
-
-    def download_torrent_file(self, media_data):
-        """
-        Downloads the raw torrent file
-        """
-        path = self.settings.get_external_downloads_path(media_data)
-        self.logger.info("Downloading to %s", path)
-        self.save_torrent_file(media_data, path)
-
-    def save_torrent_file(self, media_data, path):  # pragma: no cover
-        """Save the torrent file to disk"""
-        raise NotImplementedError
 
 
 class Tracker(RequestServer):

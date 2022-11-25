@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from requests.exceptions import HTTPError
 
-from ..server import Server, TorrentHelper
+from ..server import Server
 from ..util.media_type import MediaType
 from ..util.progress_type import ProgressType
 
@@ -240,17 +240,3 @@ class TestNovel(TestServer):
 
     def update_chapter_data(self, media_data, **kwargs):
         super().update_chapter_data(media_data, volume_number=1, **kwargs)
-
-
-class TestTorrentHelper(TorrentHelper):
-    id = "test_torrent_helper"
-    progress_type = ProgressType.VOLUME_ONLY
-
-    available_torrent_file = "TorrentableMedia"
-
-    def search_for_media(self, term, limit=None, **kwargs):
-        return [self.create_media_data(id=term, name=term)] if term == self.available_torrent_file else []
-
-    def save_torrent_file(self, media_data, path):
-        assert not os.path.exists(path)
-        open(path, "w").close()

@@ -66,6 +66,12 @@ class Settings:
     shell = True
     subtitles_dir = ".subtitles/"
 
+    # torrent cmd
+    torrent_list_cmd = ""
+    torrent_download_cmd = ""
+    torrent_stream_cmd = ""
+    torrent_info_cmd = ""
+
     # Server or media specific settings
     # Any keys defined in this dict should be declared in the class
     _specific_settings = {
@@ -87,8 +93,6 @@ class Settings:
     special_chapter_dir_name_format = "{chapter_id}"
     disable_ssl_verification = False
     fallback_to_insecure_connection = False
-    torrent_file_format = "{media_id}_{media_name}.torrent"
-    post_download_torrent_file_cmd = ""
     keep_unavailable = False
     post_process_cmd = ""
     threads = 8  # per server thread count
@@ -112,7 +116,6 @@ class Settings:
 
     def set_data_dirs(self, data_dir=None):
         self.media_dir = os.path.join(data_dir, "Media")
-        self.external_downloads_dir = os.path.join(data_dir, "Torrents")
 
     def get_server_cache_file(self):
         return os.path.join(self.cache_dir, "server_cache.json")
@@ -264,15 +267,6 @@ class Settings:
 
         os.environ["USER_AGENT"] = self.user_agent
 
-    def get_external_downloads_dir(self, mediaType, skip_auto_create=False):
-        path = os.path.join(self.external_downloads_dir, mediaType.name)
-        if not skip_auto_create:
-            os.makedirs(path, exist_ok=True)
-        return path
-
-    def get_external_downloads_path(self, media_data):
-        return os.path.join(self.get_external_downloads_dir(MediaType(media_data["media_type"])), self.torrent_file_format.format(media_id=media_data["id"], media_name=media_data["name"]))
-
     def get_chapter_metadata_file(self, media_data):
         return os.path.join(self.get_media_dir(media_data), "chapter_metadata.json")
 
@@ -378,18 +372,19 @@ class Settings:
     def open_viewer(self, files, media_data, chapter_data, wd=None):
         viewer = self.get_field("viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
+        env_extra = {"AMT_TITLE": title}
+        cmd_input = None
+        if files is None:
+            cmd_input = self.torrent_stream_cmd
+            env_extra["TORRENT_FILE"] = media_data["torrent_file"]
+            env_extra["STREAMING"] = "1"
+            files = "-"
 
         name = Settings._smart_quote(files)
         cmd = viewer.format(media=name) if title else viewer.format(name)
-        return self.run_cmd(cmd, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra={"AMT_TITLE": title})
+        return self.get_runner().run_cmd_pipe(cmd, cmd_input=cmd_input, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra=env_extra, shell=self.shell)
 
     def post_process(self, media_data, file_paths, dir_path):
         cmd = self.get_field("post_process_cmd", media_data)
         if cmd:
             self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths)), wd=dir_path, raiseException=True))
-
-    def post_torrent_download(self, media_data):
-        cmd = self.get_field("post_download_torrent_file_cmd", media_data)
-        file = self.get_external_downloads_path(media_data)
-        if cmd:
-            self.run_cmd(cmd.format(media_id=media_data["id"], torrent_file=file), wd=os.path.dirname(file))

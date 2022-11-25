@@ -126,9 +126,6 @@ def setup_subparsers(state, sub_parsers):
 
     # external
 
-    auto_import_parser = add_parser_helper(sub_parsers, "auto-import", func_str="auto-import-media", help="Import media already selected from torrents (WIP)")
-    auto_import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
-
     import_parser = add_parser_helper(sub_parsers, "import", func_str="import-media", help="Import local media into amt")
     import_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually move/add media")
     import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
