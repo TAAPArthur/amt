@@ -49,14 +49,14 @@ class GenericJNovelClub(Server):
     def _create_media_data_helper(self, data):
         return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", "")) for item in data if MediaType[item["type"]] == self.media_type]
 
-    def get_media_list(self, limit=None):
+    def get_media_list(self, **kwargs):
         data = self.session_get_cache_json(self.series_url)["series"]
-        return self._create_media_data_helper(data)[:limit]
+        return self._create_media_data_helper(data)
 
-    def search_for_media(self, term, limit=None, **kwargs):
+    def search_for_media(self, term, **kwargs):
         term = term.replace("'", "_")
         r = self.session_post(self.search_url, json={"query": term.replace(" (Manga)", ""), "type": 1 if self.media_type == MediaType.NOVEL else 2})
-        data = r.json()["series"][:limit]
+        data = r.json()["series"]
         return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", "")) for item in data]
 
     def update_timestamp(self, media_data):
@@ -86,11 +86,11 @@ class JNovelClub(GenericJNovelClub):
             media_ids = []
         return list(filter(lambda x: x["id"] in media_ids, media_list_func)) if media_ids else []
 
-    def get_media_list(self, limit=None):
-        return self.filter_owned_volumes(super().get_media_list)[:limit]
+    def get_media_list(self, **kwargs):
+        return self.filter_owned_volumes(super().get_media_list)
 
-    def search_for_media(self, term, limit=None, **kwargs):
-        return self.filter_owned_volumes(lambda: super().search(term=term))[:limit]
+    def search_for_media(self, term, **kwargs):
+        return self.filter_owned_volumes(lambda: super().search(term=term))
 
     def update_media_data(self, media_data: dict):
         r = self.session_get(self.chapters_url.format(media_data["id"]))

@@ -171,13 +171,13 @@ class VizManga(GenericVizManga):
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(2)
 
-    def get_media_list(self, limit=None):
+    def get_media_list(self, **kwargs):
         r = self.session_get(self.api_series_url)
 
         soup = self.soupify(BeautifulSoup, r)
         divs = soup.findAll("a", {"class": "o_chapters-link"})
         result = []
-        for div in divs[:limit]:
+        for div in divs:
             id = div["href"].split("/")[-1]
             name = div.find("div", {"class", "pad-x-rg pad-t-rg pad-b-sm type-sm type-rg--sm type-md--lg type-center line-solid"}).getText().strip()
             result.append(self.create_media_data(id=id, name=name))
@@ -264,8 +264,8 @@ class VizMangaLibrary(GenericVizManga):
                 else:
                     yield url
 
-    def get_media_list(self, limit=None):
-        return list(self._get_media_list_helper())[:limit]
+    def get_media_list(self, **kwargs):
+        return list(self._get_media_list_helper())
 
     def update_media_data(self, media_data):
         for url in self._get_media_list_helper(True, media_data["name"]):

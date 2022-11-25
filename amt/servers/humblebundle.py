@@ -45,7 +45,7 @@ class HumbleBundle(Server):
         for key in self.get_all_bundle_keys():
             yield from self.get_media_of_type(key, platform="ebook")
 
-    def _get_media_list_helper(self, media_metadata_tuples, chapter_id_filter=None, limit=None):
+    def _get_media_list_helper(self, media_metadata_tuples, chapter_id_filter=None):
         media_list = {}
         for key, chapter_id, name, download_struct in media_metadata_tuples:
             if chapter_id_filter and chapter_id != chapter_id_filter:
@@ -56,12 +56,10 @@ class HumbleBundle(Server):
             if media_slug not in media_list:
                 media_type = MediaType.MANGA if maybe_manga else MediaType.NOVEL
                 media_list[media_slug] = self.create_media_data(id=media_slug, name=media_name, key=key, media_type=media_type)
-                if len(media_list) == limit:
-                    break
         return list(media_list.values())
 
-    def get_media_list(self, limit=None):
-        return self._get_media_list_helper(self.get_all_media_of_type(), limit=limit)
+    def get_media_list(self, **kwargs):
+        return self._get_media_list_helper(self.get_all_media_of_type())
 
     def update_media_data(self, media_data):
         for key, media_id, name, download_struct in self.get_media_of_type(media_data["key"]):
@@ -77,7 +75,7 @@ class HumbleBundle(Server):
     def get_media_data_from_url(self, url):
         match = self.stream_url_regex.search(url)
         chapter_id, key = match.group(1), match.group(2)
-        return self._get_media_list_helper(self.get_media_of_type(key, chapter_id_filter=chapter_id))
+        return self._get_media_list_helper(self.get_media_of_type(key, chapter_id_filter=chapter_id))[0]
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)

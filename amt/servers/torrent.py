@@ -82,7 +82,7 @@ class Torrent(GenericTorrentServer):
     id = "torrent"
     stream_url_regex = re.compile(r".*torrent")
 
-    def get_media_list(self, limit=10):
+    def get_media_list(self, **kwargs):
         return []
 
     def get_media_data_from_url(self, url):

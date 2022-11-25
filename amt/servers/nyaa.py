@@ -31,10 +31,10 @@ class Nyaa(GenericTorrentServer):
     stream_url_regex = re.compile(r"nyaa.si/view/(\w*)")
     media_type = MediaType.ANIME | MediaType.NOVEL | MediaType.MANGA
 
-    def get_media_list(self, limit=10):
-        return self.search_for_media("", limit=limit)
+    def get_media_list(self, **kwargs):
+        return self.search_for_media("", **kwargs)
 
-    def search_for_media(self, term, limit=10, media_type=None):
+    def search_for_media(self, term, media_type=None, **kwargs):
         category = media_type_to_category(media_type)
         r = self.session_get(self.search_url.format(category, term))
         soup = self.soupify(BeautifulSoup, r)
@@ -50,8 +50,6 @@ class Nyaa(GenericTorrentServer):
                 label = " ".join(filter(lambda x: x, map(lambda x: x.getText().strip(), row.findAll("td", {"class": "text-center"}))))
                 media_type = row_num_to_media_type[row_num]
                 results.append(self.create_media_data(id=slug, name=title, label=label, torrent_file=self.torrent_url.format(slug), media_type=media_type))
-                if len(results) == limit:
-                    break
         return results
 
     def get_media_data_from_url(self, url):

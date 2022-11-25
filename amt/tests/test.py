@@ -1003,7 +1003,7 @@ class GenericServerTest():
     def _test_list_and_search(self, server, test_just_list=False):
         media_list = None
         with self.subTest(server=server.id, list=True):
-            media_list = server.get_media_list()
+            media_list = server.get_media_list(limit=4)
             assert media_list or not server.has_free_chapters or not server.domain
             self.verfiy_media_list(media_list, server=server)
 
@@ -1021,6 +1021,22 @@ class GenericServerTest():
         self.settings.set_field("always_use_cloudscraper", True)
         self.reload(keep_settings=True)
         self.for_each_server(lambda x: self._test_list_and_search(x, test_just_list=True))
+
+    def test_future_proof_get_media_list(self):
+        def fake_request(*args, **kwargs):
+            raise ValueError("Expected")
+        for server in self.media_reader.get_servers():
+            server._request = fake_request
+            with self.subTest(server=server.id):
+                try:
+                    server.get_media_list(unknown_kwargs=0)
+                except ValueError:
+                    pass
+                try:
+                    # Normally this method should be treated as private
+                    server.search_for_media("term", unknown_kwargs=0)
+                except ValueError:
+                    pass
 
     def test_workflow(self):
         def func(server):

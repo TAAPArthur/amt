@@ -69,11 +69,11 @@ class Hidive(Server):
                 seen_ids.add(media_id)
         return media_data
 
-    def get_media_list(self, limit=2):
-        return self._get_media_list(self.list_url, self.stream_url_regex)[:limit]
+    def get_media_list(self, **kwargs):
+        return self._get_media_list(self.list_url, self.stream_url_regex)
 
-    def search_for_media(self, term, alt_id=None, limit=2, **kwargs):
-        return self._get_media_list(self.search_url.format(term), self.add_series_url_regex)[:limit]
+    def search_for_media(self, term, alt_id=None, **kwargs):
+        return self._get_media_list(self.search_url.format(term), self.add_series_url_regex)
 
     def update_media_data(self, media_data: dict, r=None):
         regex = re.compile(self.episode_list_pattern.format(media_data["id"]))

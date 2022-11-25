@@ -93,8 +93,8 @@ class RemoteServer(Server):
         media_name = name_parser .get_media_name_from_file(requests.utils.unquote(link), is_dir=link[-1] == "/")
         return self.create_media_data(name_parser.get_media_id_from_name(link), media_name, alt_id=link)
 
-    def get_media_list(self, limit=None):
-        return [self._create_media_data(link) for _, link in self.list_files()][:limit]
+    def get_media_list(self, **kwargs):
+        return [self._create_media_data(link) for _, link in self.list_files()]
 
     def update_media_data(self, media_data):
         if media_data["alt_id"][-1] != "/":

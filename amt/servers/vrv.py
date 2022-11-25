@@ -144,7 +144,7 @@ class Vrv(Server):
                 media.append(self.create_media_data(series_id, item["title"], season_id=season["id"], season_title=season["title"], lang=None))
         return media
 
-    def get_media_list(self, limit=2):
+    def get_media_list(self, limit=2, **kwargs):
         return self.get_media_list_helper(self.list_api_url.format(limit if limit is not None else 2), limit)
 
     def search_for_media(self, term, limit=6, **kwargs):

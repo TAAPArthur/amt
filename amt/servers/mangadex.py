@@ -28,7 +28,7 @@ class Mangadex(Server):
                     results.append(self.create_media_data(id=result["id"], name=list(result["attributes"]["title"].values())[0], lang=lang))
         return results
 
-    def get_media_list(self, limit=100):
+    def get_media_list(self, limit=100, **kwargs):
         r = self.session_get(self.list_url.format(limit if limit else 0))
         return self._get_media_list(r.json()["data"])
 

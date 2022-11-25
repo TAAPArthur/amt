@@ -36,12 +36,12 @@ class Webtoons(Server):
                 media_list.append(media_data)
         return media_list
 
-    def get_media_list(self, limit=None):
+    def get_media_list(self, **kwargs):
         r = self.session_get(self.list_series_url)
         soup = self.soupify(BeautifulSoup, r)
         return self.get_media_list_helper(soup.find("ul", class_="lst_type1").find_all("li"))
 
-    def search_for_media(self, term, limit=None, **kwargs):
+    def search_for_media(self, term, **kwargs):
         r = self.session_get(self.search_url.format(term))
         soup = self.soupify(BeautifulSoup, r)
         element = soup.find("ul", class_="card_lst")

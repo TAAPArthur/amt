@@ -107,7 +107,7 @@ class Crunchyroll(GenericCrunchyrollServer):
         # Don't know why 66 is special
         return bytes(b ^ 66 for b in buffer)
 
-    def get_media_list(self, limit=None):
+    def get_media_list(self, **kwargs):
         media_name_ids = {}
         try:
             from bs4 import BeautifulSoup
@@ -177,10 +177,10 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_related_media_seasons(self, media_data):
         yield from self._create_media_data(media_data["id"], media_data["alt_id"])
 
-    def get_media_list(self, limit=4):
-        return self.search_helper(None, limit=limit)
+    def get_media_list(self, **kwargs):
+        return self.search_helper(None, **kwargs)
 
-    def search_helper(self, terms, limit, **kwargs):
+    def search_helper(self, terms, limit=None, **kwargs):
         try:
             data = self.session_get_cache_json(self.list_all_series, output_format_func=lambda text: text.splitlines()[1])["data"]
         except HTTPError:

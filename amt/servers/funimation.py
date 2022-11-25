@@ -110,7 +110,7 @@ class Funimation(GenericFunimation):
     def get_related_media_seasons(self, media_data):
         return self._get_media_list([(media_data["id"], media_data["title"])])
 
-    def get_media_list(self, limit=2):
+    def get_media_list(self, limit=2, **kwargs):
         soup = self.soupify(BeautifulSoup, self.session_get(self.list_url))
         ids = []
         for item in soup.findAll("div", {"class": "slide"})[:limit]:
@@ -207,7 +207,7 @@ class FunimationLibrary(GenericFunimation):
         t = self.session.cookies.get("src_token", domain=self.domain)
         return {"Authorization": "Token " + t}
 
-    def get_media_list(self, limit=None):
+    def get_media_list(self, limit=None, **kwargs):
         if self.needs_authentication():
             return []
         data = self.session.get(self.list_url, headers=self.get_auth_header()).json()

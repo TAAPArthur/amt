@@ -22,8 +22,8 @@ class LocalServer(Server):
         chapter_data = media_data["chapters"][file_name]
         return os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), file_name)
 
-    def get_media_list(self, limit=None):
-        return [self._create_media_data(file_name) for file_name in os.listdir(self.settings.get_server_dir(self.id))][:limit] if os.path.exists(self.settings.get_server_dir(self.id)) else []
+    def get_media_list(self, **kwargs):
+        return [self._create_media_data(file_name) for file_name in os.listdir(self.settings.get_server_dir(self.id))] if os.path.exists(self.settings.get_server_dir(self.id)) else []
 
     def update_media_data(self, media_data):
         media_dir = self.settings.get_media_dir(media_data)

@@ -32,10 +32,10 @@ class Freewebnovel(Server):
                 media_list.append(self.create_media_data(media_id, name))
         return media_list
 
-    def get_media_list(self, limit=None):
+    def get_media_list(self, **kwargs):
         return self._get_media_helper(self.session_get(self.media_list_url))
 
-    def search_for_media(self, term, limit=None, **kwargs):
+    def search_for_media(self, term, **kwargs):
         return self._get_media_helper(self.session_get(self.search_url.format(term)))
 
     def _update_media_data(self, media_data, soup):

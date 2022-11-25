@@ -37,9 +37,9 @@ class Mangasee(Server):
             if chapter_data["number"] == chapter_num:
                 return chapter_data["id"]
 
-    def get_media_list(self, limit=None):
+    def get_media_list(self, **kwargs):
         data = self.session_get_cache_json(self.media_list_url)
-        return [self.create_media_data(media_data["i"], media_data["s"]) for media_data in data[:limit]]
+        return [self.create_media_data(media_data["i"], media_data["s"]) for media_data in data]
 
     def update_media_data(self, media_data):
         r = self.session_get(self.manga_url.format(media_data["id"]))
