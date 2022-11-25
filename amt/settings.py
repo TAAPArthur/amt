@@ -366,23 +366,43 @@ class Settings:
     def store_secret(self, server_id, secret):
         self.store_credentials(server_id, "", secret)
 
-    def run_cmd(self, cmd, wd=None):
+    def _create_env(self, env_extra={}, media_data=None, chapter_data=None):
+        media_keys = {"id", "name", "alt_id", "server_id"}
+        chapter_keys = {"id", "title", "number"}
+        env = dict(os.environ)
+        env.update(env_extra)
+        for d, prefix, keys in ((media_data, "MEDIA", media_keys), (chapter_data, "CHAPTER", chapter_keys)):
+            if d:
+                for key in keys:
+                    env[f"{prefix}_{key.upper()}"] = str(d[key])
+        return env
+
+    def _run_cmd(self, func, cmd, media_data=None, chapter_data=None, wd=None, env_extra={}, **kwargs):
         logging.info("Running cmd %s: shell = %s, wd=%s", cmd, self.shell, wd)
-        subprocess.check_call(cmd, shell=self.shell, cwd=wd) if isinstance(cmd, str) else cmd()
+        env = self._create_env(env_extra=env_extra, media_data=media_data, chapter_data=chapter_data)
+        return func(cmd, shell=self.shell, cwd=wd, env=env, **kwargs) if isinstance(cmd, str) else cmd(cwd=wd, env=env, **kwargs)
+
+    def run_cmd_and_save_output(self, *args, **kwargs):
+        return self._run_cmd(subprocess.check_output, *args, **kwargs).decode("utf-8")
+
+    def run_cmd(self, *args, raiseException=False, **kwargs):
+        try:
+            self._run_cmd(subprocess.check_call, *args, **kwargs)
+            return True
+        except (CalledProcessError, KeyboardInterrupt):
+            if raiseException:
+                raise
+            return False
 
     @staticmethod
     def _smart_quote(name):
         return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
 
-    def _open_viewer(self, viewer, name, title, wd=None):
-        try:
-            assert isinstance(name, str)
-            name = Settings._smart_quote(name)
-            cmd = viewer.format(media=name, title=quote(title)) if title else viewer.format(name)
-            self.run_cmd(cmd, wd=wd)
-            return True
-        except (CalledProcessError, KeyboardInterrupt):
-            return False
+    def _open_viewer(self, viewer, name, title, **kwargs):
+        assert isinstance(name, str)
+        name = Settings._smart_quote(name)
+        cmd = viewer.format(media=name, title=quote(title)) if title else viewer.format(name)
+        return self.run_cmd(cmd, **kwargs)
 
     def open_viewer(self, files, media_data, chapter_data, wd=None):
         viewer = self.get_field("viewer", media_data)
@@ -414,7 +434,7 @@ class Settings:
     def post_process(self, media_data, file_paths, dir_path):
         cmd = self.get_field("post_process_cmd", media_data)
         if cmd:
-            self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths)), wd=dir_path))
+            self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths)), wd=dir_path, raiseException=True))
 
     def post_torrent_download(self, media_data):
         cmd = self.get_field("post_download_torrent_file_cmd", media_data)
