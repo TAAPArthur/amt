@@ -337,7 +337,7 @@ class Settings:
             try:
                 cmd = self.password_load_cmd.format(server_id=server_id)
                 logging.debug("Loading credentials for %s `%s`", server_id, cmd)
-                output = self.run_cmd_and_save_output(cmd)
+                output = self.run_cmd_and_save_output(cmd, env_extra={"SERVER_ID": server_id})
                 login, password = re.split(self.credential_separator_regex, output)[:2]
                 return login, password
             except (CalledProcessError, ValueError):
@@ -362,7 +362,7 @@ class Settings:
         if self.password_manager_enabled and self.password_save_cmd:
             cmd = self.password_save_cmd.format(server_id=server_id, username=username)
             logging.debug("Storing credentials for %s; cmd %s", server_id, cmd)
-            self.run_cmd_and_save_output(cmd, input=bytes(password, "utf8"))
+            self.run_cmd_and_save_output(cmd, input=bytes(password, "utf8"), env_extra={"USERNAME": username, "SERVER_ID": server_id})
 
     def get_secret(self, server_id: str) -> (str, str):
         result = self.get_credentials(server_id)
