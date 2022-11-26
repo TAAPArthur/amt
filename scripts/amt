@@ -1,6 +1,4 @@
 #! /usr/bin/python
-# PYTHON_ARGCOMPLETE_OK
-import logging
 from signal import SIG_DFL, SIGPIPE, signal
 
 from amt.args import parse_args
@@ -8,6 +6,5 @@ import sys
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format="[%(name)s:%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
     signal(SIGPIPE, SIG_DFL)
     sys.exit(parse_args())

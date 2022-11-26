@@ -1,13 +1,6 @@
-import getpass
 import json
-import logging
 import os
 import re
-
-from .runner import Runner
-from shlex import quote
-from subprocess import CalledProcessError
-from threading import Lock
 
 from .util.media_type import MediaType
 
@@ -15,8 +8,6 @@ APP_NAME = "amt"
 
 
 class Settings:
-
-    _lock = Lock()
 
     # env
     allow_env_override = True
@@ -237,7 +228,7 @@ class Settings:
                     keys.add(name)
                     attr, slug = name.split(".", 2) if "." in name else (name, None)
                     if attr not in Settings.get_members():
-                        logging.warning("Unknown field %s; Skipping", attr)
+                        self.get_logger().warning("Unknown field %s; Skipping", attr)
                         continue
                     self.set_field_legacy(attr, value, slug)
                 print("Auto converted from legacy config file to new format")
@@ -254,7 +245,7 @@ class Settings:
                     if attr == "env":
                         os.environ.update(value)
                     elif attr not in Settings.get_members():
-                        logging.warning("Unknown field %s; Skipping", attr)
+                        self.get_logger().warning("Unknown field %s; Skipping", attr)
                         continue
                     self.set_field(attr, value, slug)
         except FileNotFoundError:
@@ -321,8 +312,15 @@ class Settings:
     def get_prompt_for_input(self, prompt):
         return input(prompt)
 
+    def get_logger(self):
+        if not self._logger:
+            import logging
+            self.logger = logging.getLogger("settings")
+        return self.logger
+
     def get_runner(self):
         if not self._runner:
+            from .runner import Runner
             self._runner = Runner()
         return self._runner
 
@@ -336,14 +334,15 @@ class Settings:
         if self.password_manager_enabled and self.password_load_cmd:
             try:
                 cmd = self.password_load_cmd.format(server_id=server_id)
-                logging.debug("Loading credentials for %s `%s`", server_id, cmd)
+                self.get_logger().debug("Loading credentials for %s `%s`", server_id, cmd)
                 output = self.run_cmd_and_save_output(cmd, env_extra={"SERVER_ID": server_id})
                 login, password = re.split(self.credential_separator_regex, output)[:2]
                 return login, password
-            except (CalledProcessError, ValueError):
-                logging.error("Unable to load credentials for %s", server_id)
+            except:
+                self.get_logger().error("Unable to load credentials for %s", server_id)
                 raise
         else:
+            import getpass
             return input("Username: "), getpass.getpass()
 
     def get_credentials(self, server_id: str) -> (str, str):
@@ -358,10 +357,11 @@ class Settings:
     def store_credentials(self, server_id, username, password=None):
         """Stores the username, password for the given server_id"""
         if password is None:
+            import getpass
             password = getpass.getpass()
         if self.password_manager_enabled and self.password_save_cmd:
             cmd = self.password_save_cmd.format(server_id=server_id, username=username)
-            logging.debug("Storing credentials for %s; cmd %s", server_id, cmd)
+            self.get_logger().debug("Storing credentials for %s; cmd %s", server_id, cmd)
             self.run_cmd_and_save_output(cmd, input=bytes(password, "utf8"), env_extra={"USERNAME": username, "SERVER_ID": server_id})
 
     def get_secret(self, server_id: str) -> (str, str):
@@ -373,6 +373,7 @@ class Settings:
 
     @staticmethod
     def _smart_quote(name):
+        from shlex import quote
         return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
 
     def open_viewer(self, files, media_data, chapter_data, wd=None):

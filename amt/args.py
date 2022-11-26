@@ -1,5 +1,5 @@
 import argparse
-import logging
+import os
 import sys
 
 from .settings import Settings
@@ -8,19 +8,30 @@ from .stats import Details, SortIndex, StatGroup, TimeUnit
 from .util.media_type import MediaType
 
 
-def gen_auto_complete(parser):
+def init_logger(level):
+    import logging
+    logging.basicConfig(format="[%(name)s:%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=level)
+
+
+def get_log_level_name():
+    return ["ERROR", "WARNING", "INFO", "DEBUG"]
+
+
+def gen_auto_complete(parser):  # pragma: no cover
     """ Support autocomplete via argcomplete if installed"""
-    try:  # pragma: no cover
-        import argcomplete
-        argcomplete.autocomplete(parser, default_completer=None)
+    try:
+        if "_ARGCOMPLETE" in os.environ:
+            import argcomplete
+            argcomplete.autocomplete(parser, default_completer=None)
     except ImportError:
         pass
 
 
-def add_file_completion(parser):
-    try:  # pragma: no cover
-        import argcomplete
-        parser.completer = argcomplete.completers.FilesCompleter
+def add_file_completion(parser):  # pragma: no cover
+    try:
+        if "_ARGCOMPLETE" in os.environ:
+            import argcomplete
+            parser.completer = argcomplete.completers.FilesCompleter
     except ImportError:
         pass
 
@@ -253,7 +264,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     parser = argparse.ArgumentParser()
     parser.add_argument("--auto", action="store_const", const=True, default=False, help="Automatically select input instead of prompting")
     parser.add_argument("--clear-cookies", default=False, action="store_const", const=True, help="Clear all cached cookies")
-    parser.add_argument("--log-level", default="INFO", choices=logging._levelToName.values(), help="Controls verbosity of logs")
+    parser.add_argument("--log-level", default=None, choices=get_log_level_name(), help="Controls verbosity of logs")
     parser.add_argument("--no-save", default=False, action="store_const", const=True, help="Do not save state/cookies")
     parser.add_argument("--tmp-dir", default=False, action="store_const", const=True, help="Save state to tmp-dir")
 
@@ -270,7 +281,6 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     sub_parsers._choices_actions.sort(key=lambda x: x.dest)
 
     namespace = parser.parse_args(args)
-    logging.getLogger().setLevel(namespace.log_level)
     if namespace.tmp_dir:
         state.settings.set_tmp_dir()
         namespace.no_save = True
@@ -279,6 +289,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
     kwargs = {k: v for k, v in vars(namespace).items() if k not in SPECIAL_PARAM_NAMES}
     obj = state
     if not "readonly" in namespace:
+        init_logger(namespace.log_level or "INFO")
         # Import only when needed because the act of importing is slow
         from .media_reader_cli import MediaReaderCLI
         media_reader = media_reader if media_reader else MediaReaderCLI(state)

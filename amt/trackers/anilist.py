@@ -101,7 +101,7 @@ class Anilist(Tracker):
 
     def get_user_info(self):
         response = self.session_post(self.url, json={"query": self.viewer_query}, headers=self.get_auth_header())
-        logging.debug("UserInfo %s", response.text)
+        self.logger.debug("UserInfo %s", response.text)
         return response.json()["data"]["Viewer"]
 
     def _get_variables(self, user_name=None, id=None):
@@ -125,7 +125,7 @@ class Anilist(Tracker):
         # Make the HTTP Api request
         pageIndex = 1
         while True:
-            logging.info(f"Loading page {pageIndex}")
+            self.logger.info(f"Loading page {pageIndex}")
             variables["pageIndex"] = pageIndex
             response = self.session_post(self.url, json={"query": self.get_list_query, "variables": variables})
             data = response.json()

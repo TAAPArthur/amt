@@ -1,7 +1,5 @@
 import json
-import logging
 import os
-import random
 import time
 
 from . import stats
@@ -43,8 +41,6 @@ class State:
     def read_file_as_dict(self, file_name, object_hook=json_decoder):
         try:
             with open(file_name, "r") as jsonFile:
-                logging.debug("Loading file %s", file_name)
-
                 json_dict = json.load(jsonFile, object_hook=object_hook)
                 self.hashes[file_name] = State.get_hash(json_dict)[0]
                 return json_dict
@@ -59,6 +55,7 @@ class State:
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
         with open(file_name, "w") as jsonFile:
             jsonFile.write(json_str)
+        import logging
         logging.info("Persisting state to %s", file_name)
 
         return True
@@ -211,6 +208,7 @@ class State:
         media = self.media.values()
         if shuffle:
             media = list(media)
+            import random
             random.shuffle(media)
         for media_data in media:
             if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id, media_data.global_id_alt, str(media_data["id"]), media_data["dir_name"]):

@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import re
 import time
@@ -8,6 +7,7 @@ from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from requests.exceptions import ConnectionError, HTTPError, SSLError
 from threading import Lock
+import logging
 
 from .job import Job
 from .state import ChapterData, MediaData
