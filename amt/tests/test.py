@@ -1954,7 +1954,7 @@ class ArgsTest(CliUnitTestClass):
             (MediaType.ANIME, "Hidamari Sketch", 3, "(Hi10)_Hidamari_Sketch_-_03_(BD_720p)_(HT).mkv"),
             (MediaType.ANIME, "Love Hina - S1", 2, "[author] Love Hina - S1/Love Hina S1 - 02.mkv"),
             (MediaType.ANIME, "Love Hina - Specials", 3, "[author] Love Hina - Specials/Love Hina 03.mkv"),
-
+            (MediaType.ANIME, "Narutaru", 1, "[KnF~R-F] Narutaru - 01v2 [8F260930].avi"),
         ]
 
         for media_type, name, number, file_name in samples:
@@ -1963,14 +1963,14 @@ class ArgsTest(CliUnitTestClass):
                     os.makedirs(os.path.dirname(file_name), exist_ok=True)
                 with open(file_name, "w") as f:
                     f.write("dummy_data")
-                assert os.path.exists(file_name)
+                self.assertTrue(os.path.exists(file_name))
                 parse_args(media_reader=self.media_reader, args=["import", "--media-type", media_type.name, file_name.split("/")[0]])
-                assert not os.path.exists(file_name)
+                self.assertFalse(os.path.exists(file_name))
                 media_data = self.media_reader.get_single_media(name=name)
 
                 self.assertTrue(str(number) in media_data["chapters"], media_data["chapters"].keys())
                 self.assertEqual(media_data["chapters"][str(number)]["number"], number)
-                assert re.search(r"^\w+$", media_data["id"])
+                self.assertTrue(re.search(r"^\w+$", media_data["id"]))
                 self.assertEqual(media_data["media_type"], media_type)
 
     def import_test_setup(self, parent_dir=""):
