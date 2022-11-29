@@ -101,7 +101,7 @@ class RequestServer:
                     break
                 self.backoff(i + 1, r)
             except SSLError:
-                if self.settings.get_fallback_to_insecure_connection(self.id):
+                if self.settings.get_fallback_to_insecure_connection(self.id) and kwargs.get("verify", True):
                     self.logger.warning("Retry request insecurely %s", url)
                     if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:   # pragma: no cover
                         self.logger.warning("Using insecure connections and cloudscraper are not supported and may result in an error like 'ValueError: Cannot set verify_mode to CERT_NONE when check_hostname is enabled.'")

@@ -534,6 +534,13 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             self.assertTrue(self.test_server.session_post("some_url"))
             self.assertTrue(self.test_server.session_get_mem_cache("some_url"))
 
+    def test_session_permanent_ssl_error(self):
+        def fake_request(*args, **kwargs):
+            raise requests.exceptions.SSLError()
+        self.test_server.session.get = fake_request
+        self.settings.fallback_to_insecure_connection = True
+        self.assertRaises(requests.exceptions.SSLError, self.test_server.session_get, "some_url")
+
     def test_session_get_post_with_connection_error(self):
         self.counter = 0
 
