@@ -183,7 +183,8 @@ class TestAnimeServer(TestServer):
     def get_stream_urls(self, media_data=None, chapter_data=None):
         assert isinstance(media_data, dict) if media_data else True
         assert isinstance(chapter_data, dict) if chapter_data else True
-        return self.stream_urls or [f"https://{self.domain}/url.mp4?key=1&false", f"https://{self.domain}/url.ts?key=1&false"]
+        base_url = f"https://{self.domain}/{media_data['id']}/{chapter_data['id']}"
+        return self.stream_urls or [f"{base_url}/url.mp4?key=1&false", f"{base_url}/url.ts?key=1&false"]
 
     def session_get(self, url, **kwargs):
         if "subtitles" in url:

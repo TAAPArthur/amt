@@ -395,18 +395,23 @@ class MediaReader:
         return False
 
     def get_stream_url(self, name=None, num_list=None, shuffle=False, limit=None, force_abs=False):
-        for server, media_data, chapter in (self.get_chapters(name=name, media_type=MediaType.ANIME, num_list=num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=MediaType.ANIME, limit=limit, shuffle=shuffle)):
+        for server, media_data, chapter in self.get_chapters(name=name, media_type=MediaType.ANIME, num_list=num_list, force_abs=force_abs, limit=limit, shuffle=shuffle):
             for url in server.get_stream_urls(media_data, chapter):
                 yield chapter["number"], url
 
-    def get_chapters(self, media_type, name, num_list, force_abs=False):
+    def get_chapters(self, name, media_type, num_list, limit=None, shuffle=False, any_unread=False, force_abs=False, null_terminate=False):
         media_data = self.get_single_media(media_type=media_type, name=name)
         last_read = media_data.get_last_read_chapter_number()
-        num_list = list(map(lambda x: last_read + x if x <= 0 and not force_abs else x, num_list))
-        server = self.get_server(media_data["server_id"])
-        for chapter in media_data.get_sorted_chapters():
-            if chapter["number"] in num_list:
-                yield server, media_data, chapter
+        if num_list:
+            num_list = list(map(lambda x: last_read + x if x <= 0 and not force_abs else x, num_list))
+            server = self.get_server(media_data["server_id"])
+            for chapter in media_data.get_sorted_chapters():
+                if chapter["number"] in num_list:
+                    yield server, media_data, chapter
+        else:
+            yield from self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread)
+        if null_terminate:
+            yield None
 
     def maybe_resolve_media_type(self, media_data, media_type_filter=None):
         if bin(media_data["media_type"]).count('1') != 1:
@@ -416,22 +421,39 @@ class MediaReader:
                 media_data["media_type"] = media_type.value
                 media_data["media_type_name"] = media_type.name
 
-    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force=False, force_stream=False):
+    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force=False, force_stream=False, batch_size=1):
         num = 0
-        for server, media_data, chapter in (self.get_chapters(media_type, name, num_list, force_abs=force_abs) if num_list else self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread)):
-            self.maybe_resolve_media_type(media_data, media_type)
-            if media_data["media_type"] == MediaType.ANIME:
-                if not server.is_fully_downloaded(media_data, chapter):
-                    server.pre_download(media_data, chapter)
-            else:
-                server.download_chapter(media_data, chapter, supress_exeception=not force)
+        batch = []
+        media_chapters = []
+        for info in self.get_chapters(name, media_type=media_type, num_list=num_list, limit=limit, shuffle=shuffle, any_unread=any_unread, force_abs=force_abs, null_terminate=True):
+            if info:
+                server, media_data, chapter = info
+                self.maybe_resolve_media_type(media_data, media_type)
+                if media_data["media_type"] == MediaType.ANIME:
+                    if not server.is_fully_downloaded(media_data, chapter):
+                        server.pre_download(media_data, chapter)
+                else:
+                    server.download_chapter(media_data, chapter, supress_exeception=not force)
+
+                if server.is_fully_downloaded(media_data, chapter) and not force_stream:
+                    batch.extend(server.get_children(media_data, chapter))
+                else:
+                    batch.append(server.get_stream_url(media_data, chapter, stream_index=stream_index))
+                media_chapters.append((media_data, chapter))
+
+                if len(media_chapters) != batch_size:
+                    continue
+            elif not batch:
+                continue
+
             self.state.save_session_cookies()
-            success = self.settings.open_viewer(
-                server.get_children(media_data, chapter) if server.is_fully_downloaded(media_data, chapter) and not force_stream else server.get_stream_url(media_data, chapter, stream_index=stream_index),
-                media_data=media_data, chapter_data=chapter)
+            success = self.settings.open_viewer(batch, media_chapters)
+            batch = []
             if success:
-                num += 1
-                chapter["read"] = True
+                num += len(media_chapters)
+                for _, chapter in media_chapters:
+                    chapter["read"] = True
+                media_chapters.clear()
                 if num == limit:
                     break
             else:

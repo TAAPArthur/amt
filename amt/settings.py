@@ -73,8 +73,8 @@ class Settings:
             MediaType.ANIME.name: [["lang", ["jp", "japanese", ""], -1]]
         },
         "viewer": {
-            MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title=\"$AMT_TITLE\" {media}",
-            "hidive": "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --http-header-fields='Referer: https://www.hidive.com/stream/' --sub-file-paths=\"$PWD/.subtitles\" --sub-auto=all --title=\"$AMT_TITLE\" {media}",
+            MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$SUB_PATH\" --sub-auto=all --title=\"$AMT_TITLE\" {media}",
+            "hidive": "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --http-header-fields='Referer: https://www.hidive.com/stream/' --sub-file-paths=\"$SUB_PATH\" --sub-auto=all --title=\"$AMT_TITLE\" {media}",
             MediaType.MANGA.name: "sxiv {media}",
             MediaType.NOVEL.name: "zathura {media}"
         }
@@ -376,18 +376,31 @@ class Settings:
         from shlex import quote
         return quote(name) if name[-1] != "*" else quote(name[:-1]) + "*"
 
-    def open_viewer(self, files, media_data, chapter_data, wd=None):
+    def get_subtitles_dir(self, media_data, chapter_data):
+        sub_dir = os.path.join(self.get_chapter_dir(media_data, chapter_data), self.subtitles_dir)
+        os.makedirs(sub_dir, exist_ok=True)
+        return sub_dir
+
+    def open_viewer(self, raw_files, media_chapters):
+        sub_path = ":".join(map(lambda x: self.get_subtitles_dir(*x), filter(lambda x: x[0]["media_type"] & MediaType.ANIME, media_chapters)))
+
+        media_data, chapter_data = media_chapters[0]
         viewer = self.get_field("viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
-        env_extra = {"AMT_TITLE": title}
+        env_extra = {"AMT_TITLE": title, "SUB_PATH": sub_path}
         cmd_input = None
-        if files is None:
-            cmd_input = self.torrent_stream_cmd
-            env_extra["TORRENT_FILE"] = media_data["torrent_file"]
-            env_extra["STREAMING"] = "1"
-            files = "-"
+        files = []
+        from shlex import quote
+        for f in raw_files:
+            if f is None:
+                cmd_input = self.torrent_stream_cmd
+                env_extra["TORRENT_FILE"] = media_data["torrent_file"]
+                env_extra["STREAMING"] = "1"
+                f = "-"
+            files.append(quote(f))
 
-        name = Settings._smart_quote(files)
+        wd = self.get_chapter_dir(media_data, chapter_data, skip_create=True)
+        name = " ".join(files)
         cmd = viewer.format(media=name) if title else viewer.format(name)
         return self.get_runner().run_cmd_pipe(cmd, cmd_input=cmd_input, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra=env_extra, shell=self.shell)
 

@@ -544,7 +544,8 @@ class Server(GenericServer):
             os.rename(temp_path, full_path)
 
     def get_children(self, media_data, chapter_data):
-        return "{}/*".format(self.settings.get_chapter_dir(media_data, chapter_data))
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
+        return sorted(map(lambda x: os.path.join(dir_path, x), filter(lambda x: x[0] != ".", os.listdir(dir_path))))
 
     def relogin_on_error(self, func):
         try:

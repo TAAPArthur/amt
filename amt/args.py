@@ -91,6 +91,7 @@ def setup_subparsers(state, sub_parsers):
     sub_consume_parsers = argparse.ArgumentParser(add_help=False)
     sub_consume_parsers.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
     sub_consume_parsers.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
+    sub_consume_parsers.add_argument("--batch-size", "-b", default=1, type=int)
     sub_consume_parsers.add_argument("--force", "-f", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--limit", "-l", default=0, type=int)
     sub_consume_parsers.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)

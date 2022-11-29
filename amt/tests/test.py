@@ -129,7 +129,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.backoff_factor = 1
 
         self.settings.suppress_cmd_output = True
-        self.settings.viewer = "exit 0"
+        self.settings.viewer = "for m in {media}; do echo $m; done | sort | uniq -d | [ 0 -eq $(wc -l) ]"
         self.settings._specific_settings = {}
         self.settings.post_process_cmd = ""
         self.settings.tmp_dir = TEST_HOME + ".tmp"
@@ -205,6 +205,12 @@ class BaseUnitTestClass(unittest.TestCase):
                     Image.open(img_file)
             elif media_type == MediaType.ANIME:
                 subprocess.check_call(["ffprobe", "-loglevel", "quiet", path])
+
+        self.assertTrue(sorted(server.get_children(media_data, chapter_data)), server.get_children(media_data, chapter_data))
+        for file in server.get_children(media_data, chapter_data):
+            self.assertTrue(file)
+            self.assertTrue(os.path.exists(file))
+            self.assertFalse(os.path.basename(file)[0] == ".")
 
     def verify_all_chapters_downloaded(self, **kwargs):
         for _, media_data, chapter in self.get_all_chapters(**kwargs):
@@ -932,6 +938,36 @@ class MediaReaderTest(BaseUnitTestClass):
     def test_play_anime(self):
         self.add_test_media(media_type=MediaType.ANIME)
         self.assertTrue(self.media_reader.play(limit=None))
+        self.verify_all_chapters_read()
+
+    def test_play_anime_limit(self):
+        self.add_test_media(media_type=MediaType.ANIME)
+        self.assertTrue(self.media_reader.play(limit=1))
+        self.assertEqual(1, self.get_num_chapters_read())
+
+    def test_play_batch_size_use_first_chapter_for_env(self):
+        media_data = next(filter(lambda x: len(x["chapters"]) > 3,  self.add_test_media(media_type=MediaType.MANGA)))
+        chapters = media_data.get_sorted_chapters()
+        self.settings.viewer = f'[ "$CHAPTER_NUMBER" != {chapters[1]["number"]} ]'
+        self.assertTrue(self.media_reader.play(media_data, batch_size=2, limit=3))
+        self.assertEqual(self.get_num_chapters_read(), 3)
+
+    def test_play_no_batch_size(self):
+        self.add_test_media(media_type=MediaType.MANGA)
+        self.settings.viewer = 'for m in {media}; do dirname "$m"; done | sort | uniq | [ $(wc -l) -eq 1 ]'
+        self.media_reader.play()
+        self.verify_all_chapters_read()
+
+    def test_play_batch_size(self):
+        self.add_test_media(media_type=MediaType.MANGA)
+        self.settings.viewer = 'for m in {media}; do dirname "$m"; done | sort | uniq | [ $(wc -l) -le 2 ]'
+        self.media_reader.play(batch_size=2)
+        self.verify_all_chapters_read()
+
+    def test_play_verify_subtitles_batch_size(self):
+        self.add_test_media(TestAnimeServer.id)
+        self.settings.viewer = 'set -e; [ -n "$SUB_PATH" ]; IFS=:; for path in $SUB_PATH; do [ -d $path ]; done;'
+        self.assertTrue(self.media_reader.play(batch_size=2))
         self.verify_all_chapters_read()
 
     def test_play_offset_anime(self):
