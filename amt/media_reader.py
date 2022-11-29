@@ -353,7 +353,7 @@ class MediaReader:
 
     def search_for_chapter_on_different_server(self, ref_media_data, ref_chapter_data):
         def func(x): return x.search(ref_media_data["name"])
-        results = self.for_each(func, filter(lambda x: x.id != ref_media_data["server_id"] and (ref_media_data["media_type"] & x.media_type), self.get_servers()))
+        results = self.for_each(func, filter(lambda x: not x.torrent and x.id != ref_media_data["server_id"] and (ref_media_data["media_type"] & x.media_type), self.get_servers()))
 
         results.sort(key=lambda x: (x[0], self.settings.get_search_score(x[1])))
         results = list(map(lambda x: x[1], results))
