@@ -114,7 +114,8 @@ class RemoteServer(Server):
     def get_stream_urls(self, media_data, chapter_data):
         return list(map(lambda x: x["url"], self.get_media_chapter_data(media_data, chapter_data)))
 
-    def post_download(self, media_data, chapter_data, dir_path, pages):
+    def post_download(self, media_data, chapter_data, **kwargs):
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         chapter_url = media_data["alt_id"] + chapter_data["id"]
         if chapter_data["id"][-1] == "/":
             for _, f in self.list_files(chapter_url, is_hidden=True):

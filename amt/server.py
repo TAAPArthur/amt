@@ -463,7 +463,7 @@ class GenericServer(MediaServer):
 
     ################ OPTIONAL #####################
 
-    def post_download(self, media_data, chapter_data, dir_path, pages):
+    def post_download(self, media_data, chapter_data, page_paths):
         """ Runs after all pages have been downloaded
         """
         pass
@@ -502,12 +502,15 @@ class Server(GenericServer):
             self.logger.info("Logged into %s; premium %s", self.id, self.is_premium)
         return self._is_logged_in
 
-    def is_fully_downloaded(self, media_data, chapter_data):
+    def get_download_marker(self, media_data, chapter_data):
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
-        return os.path.exists(os.path.join(dir_path, self.DOWNLOAD_MARKER))
+        return os.path.join(dir_path, self.DOWNLOAD_MARKER)
 
-    def mark_download_complete(self, dir_path):
-        open(os.path.join(dir_path, self.DOWNLOAD_MARKER), 'w').close()
+    def is_fully_downloaded(self, media_data, chapter_data):
+        return os.path.exists(self.get_download_marker(media_data, chapter_data))
+
+    def mark_download_complete(self, media_data, chapter_data):
+        open(self.get_download_marker(media_data, chapter_data), 'w').close()
 
     def download_if_missing(self, page_data, full_path):
         if os.path.exists(full_path):
@@ -559,25 +562,37 @@ class Server(GenericServer):
             def func(): self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
             self.relogin_on_error(func)
 
-    def download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
+    def download_chapter(self, media_data, chapter_data, **kwargs):
         if self.is_fully_downloaded(media_data, chapter_data):
             self.logger.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
         try:
             if self.synchronize_chapter_downloads:
                 self._lock.acquire()
-            return self._download_chapter(media_data, chapter_data, page_limit, offset, stream_index, supress_exeception=supress_exeception)
+            return self._download_chapter(media_data, chapter_data, **kwargs)
         finally:
             if self.synchronize_chapter_downloads:
                 self._lock.release()
 
-    def _download_chapter(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
+    def _download_chapter(self, media_data, chapter_data, **kwargs):
         self.logger.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
         self.pre_download(media_data, chapter_data)
-        list_of_pages = []
+        page_paths = self.download_pages(media_data, chapter_data, **kwargs)
 
+        self.post_download(media_data, chapter_data, page_paths=page_paths)
+
+        self.settings.post_process(media_data, page_paths, self.settings.get_media_dir(media_data))
+
+        self.mark_download_complete(media_data, chapter_data)
+        self.logger.info("%s %d %s is downloaded; Total pages %d", media_data["name"], chapter_data["number"], chapter_data["title"], len(page_paths))
+
+        return True
+
+    def download_pages(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
+        list_of_pages = []
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         # download pages
         job = Job(self.settings.get_threads(media_data), raiseException=not supress_exeception)
         for i, page_data in enumerate(self.get_media_chapter_data(media_data, chapter_data, stream_index=stream_index)):
@@ -589,13 +604,7 @@ class Server(GenericServer):
                 job.add(lambda page_data=page_data: self.download_if_missing(page_data, page_data["path"]))
         job.run()
         assert list_of_pages
-
-        self.post_download(media_data, chapter_data, dir_path, list_of_pages)
-        self.settings.post_process(media_data, (page_data["path"] for page_data in list_of_pages), dir_path)
-        self.mark_download_complete(dir_path)
-        self.logger.info("%s %d %s is downloaded; Total pages %d", media_data["name"], chapter_data["number"], chapter_data["title"], len(list_of_pages))
-
-        return True
+        return [page_data["path"] for page_data in list_of_pages]
 
     def run_in_parallel(self, items, func=None):
         assert self.multi_threaded
