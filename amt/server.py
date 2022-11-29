@@ -79,9 +79,10 @@ class RequestServer:
         self.logger.info(f"Sleeping for {b**c} seconds after seeing {c} failures")
         time.sleep(b**c)
 
-    def _request(self, post_request, url, force_cloud_scraper=False, **kwargs):
+    def _request(self, post_request, url, force_cloud_scraper=False, start=0, **kwargs):
         self.logger.info("Making %s request to %s ", "POST" if post_request else "GET", url)
         self.logger.debug("Request args: %s ", kwargs)
+        start = start or time.time()
         if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
             kwargs["verify"] = False
         if self.implict_referer and "headers" not in kwargs:
@@ -117,6 +118,10 @@ class RequestServer:
             if session == self._normal_session:
                 return self._request(post_request, url, force_cloud_scraper=True, **kwargs)
         r.raise_for_status()
+        end = time.time()
+
+        if end - start > 1:
+            self.logger.info("Took %ds to make request to %s", end - start, url)
         return r
 
     def session_get(self, url, post=False, **kwargs):
