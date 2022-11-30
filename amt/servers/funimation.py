@@ -87,55 +87,62 @@ class Funimation(GenericFunimation):
     id = "funimation"
     multi_threaded = True
 
-    search_url = "https://www.funimation.com/search/videos/{}/?q={}&cat=videos"
+    search_url = "https://www.funimation.com/search/videos/{}/?q={}&cat=shows"
     list_url = "https://funimation.com"
     new_api_episode_url = "https://title-api.prd.funimationsvc.com/v1/shows/{}/episodes/{}/?region=US&deviceType=web&locale=en"
     stream_url_regex = re.compile("funimation.com/(?:v|en/shows)/([^/]*)/([^/]*)")
+    watch_next_url = "https://www.funimation.com/api/episodes/watchnext/?title_id={}&sort=order&sort_direction=ASC"
 
     def _get_media_list(self, ids, limit=None):
         media_data = []
-        items = [lambda id=id, title=title: (self.session_get(self.episode_url.format(id)), id, title) for id, title in ids[:limit]]
+        items = [lambda id=id: self.session_get(self.episode_url.format(id)) for id in ids[:limit]]
 
-        for r, id, title in self.run_in_parallel(items):
+        for r in self.run_in_parallel(items):
             data = r.json()
-            season_data = {(item["item"]["seasonId"], item["item"]["seasonTitle"], audio) for item in data["items"] for audio in item["audio"]}
+            if not data["count"]:
+                continue
+            season_data = {(item["item"]["titleId"], item["item"]["titleName"], item["item"]["seasonId"], item["item"]["seasonTitle"], audio) for item in data["items"] for audio in item["audio"]}
             experiences = {item["item"]["seasonId"]: item["mostRecentSvod"]["experience"] for item in data["items"]}
 
-            for seasonId, seasonTitle, lang in season_data:
+            for media_id, media_title, seasonId, seasonTitle, lang in season_data:
                 experience = experiences[seasonId]
-                media_data.append(self.create_media_data(id=id, name=title, season_id=seasonId, season_title=seasonTitle, alt_id=experience, lang=lang.lower()))
+                media_data.append(self.create_media_data(id=media_id, name=media_title, season_id=seasonId, season_title=seasonTitle, alt_id=experience, lang=lang.lower()))
 
         return media_data
 
     def get_related_media_seasons(self, media_data):
-        return self._get_media_list([(media_data["id"], media_data["title"])])
+        return self._get_media_list([media_data["id"]])
 
     def get_media_list(self, limit=2, **kwargs):
         soup = self.soupify(BeautifulSoup, self.session_get(self.list_url))
         ids = []
         for item in soup.findAll("div", {"class": "slide"})[:limit]:
-            ids.append((item["data-id"], item["data-title"]))
+            ids.append(item["data-id"])
         return self._get_media_list(ids, limit=limit)
 
     def search_for_media(self, term, alt_id=None, limit=2, **kwargs):
-        titles = set()
-        media_list = []
+        soup = self.soupify(BeautifulSoup, self.session_get(self.search_url.format(str(1), term)))
+        show_url_regex = re.compile("/shows/([^/]*)/")
+
+        chapter_ids = []
         for i in range(1, 10):
+            starting_len = len(chapter_ids)
             soup = self.soupify(BeautifulSoup, self.session_get(self.search_url.format(str(i), term)))
-            items = soup.findAll("a", {"class": "show-title"})
-            for item in items:
-                title = item.text.strip()
-                if title not in titles:
-                    titles.add(title)
-                    try:
-                        for media_data in self.get_related_media_data_from_url(self.base_url + item["href"], multiple=True):
-                            media_list.append(media_data)
-                    except:
-                        pass
-            if not items or (limit and len(media_list) >= limit):
+            for div in soup.findAll("div", {"class": "product-results"}):
+                title_id = div["data-id"]
+                item = div.find("a", {"class": "show-title"})
+                url = item["href"]
+                match = show_url_regex.search(url)
+                slug = match.group(1) if match else None
+                if not slug or term.lower() not in slug.lower():
+                    continue
+                chapter_ids.append(title_id)
+                continue
+
+            if starting_len == len(chapter_ids) or (limit and len(chapter_ids) >= limit):
                 break
 
-        return media_list
+        return self._get_media_list(chapter_ids)
 
     def _get_episode_id(self, url):
         match = self.stream_url_regex.search(url)
