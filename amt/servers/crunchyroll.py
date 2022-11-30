@@ -30,10 +30,10 @@ class GenericCrunchyrollServer(Server):
                 session_id = self.session_get_cookie("session_id")
             return session_id
 
-    def session_get_json(self, url, **kwargs):
+    def session_get_json(self, url, cache=False, **kwargs):
         query_under_lock = GenericCrunchyrollServer.session_id_may_be_invalid and "session_id" in url
         def make_request(url):
-            return self.session_get(url, **kwargs).json()
+            return self.session_get_mem_cache(url, **kwargs).json() if cache else self.session_get(url, **kwargs).json()
         session_id_regex = re.compile(r"session_id=([^&]*)")
         if query_under_lock:
             original_session_id = session_id_regex.search(url).group(1)
@@ -182,9 +182,9 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/[^/]*-(\d+)$")
 
-    def _create_media_data(self, series_id, item_alt_id, season_id=None, limit=None):
-        season_data = self.session_get_json(self.series_url.format(self.get_session_id(), series_id))["data"]
-        for season in season_data[:limit]:
+    def _create_media_data(self, series_id, item_alt_id, season_id=None):
+        season_data = self.session_get_json(self.series_url.format(self.get_session_id(), series_id), cache=True)["data"]
+        for season in season_data:
             if not season_id or season["collection_id"] == season_id:
                 yield self.create_media_data(id=series_id, alt_id=item_alt_id, name=season["name"], season_id=season["collection_id"], lang=None)
 
@@ -192,17 +192,17 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         yield from self._create_media_data(media_data["id"], media_data["alt_id"])
 
     def get_media_list(self, **kwargs):
-        return self.search_helper(None, **kwargs)
+        return self.search_for_media(None, **kwargs)
 
-    def search_helper(self, terms, limit=None, **kwargs):
+    def search_for_media(self, term, limit=None, **kwargs):
         try:
             data = self.session_get_cache_json(self.list_all_series, output_format_func=lambda text: text.splitlines()[1])["data"]
         except HTTPError:
             self.get_session_id(force=True)
             data = self.session_get_cache_json(self.list_all_series, output_format_func=lambda text: text.splitlines()[1])["data"]
 
-        if terms:
-            data = list(find_media_with_similar_name_in_list(terms, data))
+        if term:
+            data = list(find_media_with_similar_name_in_list([term], data))
 
         def get_all_seasons(item):
             return [media for media in self._create_media_data(item["id"], item["etp_guid"])]
