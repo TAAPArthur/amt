@@ -85,7 +85,6 @@ class GenericFunimation(Server):
 
 class Funimation(GenericFunimation):
     id = "funimation"
-    multi_threaded = True
 
     search_url = "https://www.funimation.com/search/videos/{}/?q={}&cat=shows"
     list_url = "https://funimation.com"
@@ -95,9 +94,8 @@ class Funimation(GenericFunimation):
 
     def _get_media_list(self, ids, limit=None):
         media_data = []
-        items = [lambda id=id: self.session_get(self.episode_url.format(id)) for id in ids[:limit]]
-
-        for r in self.run_in_parallel(items):
+        for id in ids[:limit]:
+            r = self.session_get(self.episode_url.format(id))
             data = r.json()
             if not data["count"]:
                 continue

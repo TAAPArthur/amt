@@ -297,8 +297,6 @@ class GenericServer(MediaServer):
     is_premium = False
     # Used to indicate that the download feature for the server is slow (for testing)
     slow_download = False
-    # Used to indicate that the server may use multiple threads to complete ops (for testing)
-    multi_threaded = False
 
     def get_media_list(self, limit=None):  # pragma: no cover
         """
@@ -636,11 +634,6 @@ class Server(GenericServer):
         job.run()
         assert list_of_pages
         return [page_data["path"] for page_data in list_of_pages]
-
-    def run_in_parallel(self, items, func=None):
-        assert self.multi_threaded
-        job = Job(self.settings.get_threads(self.id), items, func, raiseException=True)
-        return job.run()
 
     def has_chapter_limit(self):
         return self.get_remaining_chapters.__func__ is not Server.get_remaining_chapters

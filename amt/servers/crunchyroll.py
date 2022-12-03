@@ -169,7 +169,6 @@ class Crunchyroll(GenericCrunchyrollServer):
 
 class CrunchyrollAnime(GenericCrunchyrollServer):
     id = "crunchyroll_anime"
-    multi_threaded = True
     need_cloud_scraper = True
 
     api_base_url = "http://api.crunchyroll.com"
@@ -204,9 +203,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         if term:
             data = list(find_media_with_similar_name_in_list([term], data))
 
-        def get_all_seasons(item):
-            return [media for media in self._create_media_data(item["id"], item["etp_guid"])]
-        return self.run_in_parallel(data[:limit], func=get_all_seasons)
+        return [media for item in data[:limit] for media in self._create_media_data(item["id"], item["etp_guid"])]
 
     def update_media_data(self, media_data: dict):
         data = self.session_get_json(self.list_season_url.format(self.get_session_id(), media_data["season_id"]))["data"]
