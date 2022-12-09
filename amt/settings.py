@@ -388,21 +388,24 @@ class Settings:
         viewer = self.get_field("viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
         env_extra = {"AMT_TITLE": title, "SUB_PATH": sub_path}
-        cmd_input = None
         files = []
+        torrent = False
         from shlex import quote
         for f in raw_files:
             if f is None:
-                cmd_input = self.torrent_stream_cmd
                 env_extra["TORRENT_FILE"] = media_data["torrent_file"]
                 env_extra["STREAMING"] = "1"
+                torrent = True
                 f = "-"
             files.append(quote(f))
 
         wd = self.get_chapter_dir(media_data, chapter_data, skip_create=True)
         name = " ".join(files)
         cmd = viewer.format(media=name) if title else viewer.format(name)
-        return self.get_runner().run_cmd_pipe(cmd, cmd_input=cmd_input, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra=env_extra, shell=self.shell)
+        if torrent:
+            env_extra["VIEWER_CMD"] = cmd
+            cmd = self.torrent_stream_cmd
+        return self.get_runner().run_cmd(cmd, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra=env_extra, shell=self.shell)
 
     def post_process(self, media_data, file_paths, dir_path):
         cmd = self.get_field("post_process_cmd", media_data)

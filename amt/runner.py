@@ -25,17 +25,6 @@ class Runner:
         assert isinstance(cmd, str)
         return func(cmd, shell=shell, cwd=wd, env=env, **kwargs)
 
-    def run_cmd_pipe(self, cmd, cmd_input, **kwargs):
-        if cmd_input:
-            p1 = self._run_cmd(subprocess.Popen, cmd_input, stdout=subprocess.PIPE, **kwargs)
-        p2 = self._run_cmd(subprocess.Popen, cmd, stdin=p1.stdout if cmd_input else None, **kwargs)
-        if cmd_input:
-            p1.stdout.close()
-        p2.wait()
-        if cmd_input:
-            p1.wait()
-        return p2.returncode == 0
-
     def run_cmd_and_save_output(self, *args, **kwargs):
         return self._run_cmd(subprocess.check_output, *args, **kwargs).decode("utf-8")
 

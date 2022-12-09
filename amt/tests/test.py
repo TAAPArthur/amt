@@ -1151,7 +1151,7 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
         self.settings.torrent_info_cmd = '[ -e "$TORRENT_FILE" ] && read -r name < "$TORRENT_FILE"; printf "Hash: %s\\nName: %s\\n" "$name" "$name"'
         self.settings.torrent_list_cmd = '[ -e "$TORRENT_FILE" ] && printf "{}"'.format('\\n'.join(self.torrent_files))
         self.settings.torrent_download_cmd = '[ -e "$TORRENT_FILE" ] && mkdir -p "$(dirname "$CHAPTER_ID")" && touch "$CHAPTER_ID"'
-        self.settings.torrent_stream_cmd = '[ -e "$TORRENT_FILE" ] && [ -n "$CHAPTER_ID" ] && echo 0'
+        self.settings.torrent_stream_cmd = '[ -e "$TORRENT_FILE" ] && [ -n "$VIEWER_CMD" ] && [ -n "$CHAPTER_ID" ] && echo 0 | sh -c "$VIEWER_CMD"'
         self.settings.viewer = '[ -z "$STREAMING" ] || ( read -r value && [ "$value" -eq 0 ]; )'
 
     def tearDown(self):
@@ -1197,11 +1197,12 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
                     self.assertTrue(self.media_reader.stream(f"{torrent}?file={file}", media_type=media_type))
                     self.assertTrue(self.media_reader.stream(f"{os.path.abspath(torrent)}?file={file}"))
 
-    def test_media_stream_torrent_cmd_early_exit(self):
-        self.settings.torrent_stream_cmd = '[ -e "$TORRENT_FILE" ] && [ -e "$CHAPTER_ID" ]'
+    def test_media_stream_torrent_dont_use_viewer_directly(self):
+        self.settings.torrent_stream_cmd = '[ -e "$TORRENT_FILE" ]'
+        self.settings.viewer = 'exit 1'
         for torrent in self.torrents:
             for file in self.torrent_files:
-                self.assertFalse(self.media_reader.stream(f"{torrent}?file={file}", media_type=MediaType.ANIME))
+                self.assertTrue(self.media_reader.stream(f"{torrent}?file={file}", media_type=MediaType.ANIME))
 
     def test_download_torrent_fail(self):
         self.settings.torrent_download_cmd = 'exit 1'
