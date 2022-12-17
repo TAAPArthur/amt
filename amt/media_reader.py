@@ -517,7 +517,9 @@ class MediaReader:
             if last_read_chapter and (force or media_data["progress"] < last_read_chapter["number"]):
                 media_to_sync.append((media_data, last_read_chapter["number"]))
                 if tracker_info:
-                    if media_data["progress_type"] != ProgressType.CHAPTER_VOLUME:
+                    if media_data["media_type"] == MediaType.ANIME:
+                        data.append((tracker_info[0], last_read_chapter["number"], False))
+                    elif media_data["progress_type"] != ProgressType.CHAPTER_VOLUME:
                         data.append((tracker_info[0], last_read_chapter["number"], media_data["progress_type"] == ProgressType.VOLUME_ONLY))
                     else:
                         data.append((tracker_info[0], last_read_chapter["number"], False))
@@ -561,7 +563,7 @@ class MediaReader:
 
             tracked_media.extend(map(lambda x: x.global_id, media_data_list))
             for media_data in media_data_list:
-                progress = entry["progress"] if media_data["progress_type"] != ProgressType.VOLUME_ONLY else entry["progress_volumes"]
+                progress = entry["progress"] if media_data["progress_type"] != ProgressType.VOLUME_ONLY or entry["progress_volumes"] is None else entry["progress_volumes"]
                 self.mark_chapters_until_n_as_read(media_data, progress, force=force)
                 media_data["progress"] = progress
                 media_data["nextTimeStampTracker"] = entry["nextTimeStamp"]
