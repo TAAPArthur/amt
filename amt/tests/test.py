@@ -1868,6 +1868,14 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["play", media_data["name"], "0"])
         self.assertEqual(1, self.get_num_chapters_read(MediaType.ANIME))
 
+    def test_play_extra_args(self):
+        self.add_test_media(TestAnimeServer.id, limit=1)[0]
+        self.settings.viewer = '[ -z "$AMT_USER_ARGS" ]'
+        self.assertEqual(0, parse_args(media_reader=self.media_reader, args=["play"]))
+        self.settings.viewer = '[ "$AMT_USER_ARGS" = --extra ]'
+        os.environ["AMT_USER_ARGS"] = "--extra"
+        self.assertEqual(0, parse_args(media_reader=self.media_reader, args=["play"]))
+
     def test_get_stream_url(self):
         self.add_test_media(TestAnimeServer.id)
         parse_args(media_reader=self.media_reader, args=["get-stream-url"])
