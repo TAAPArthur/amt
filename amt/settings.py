@@ -46,7 +46,7 @@ class Settings:
     cookie_files = ["/tmp/cookies.txt"]  # Additional cookies files to read from (Read only)
 
     # cache
-    search_cache_time_sec = 3600
+    search_cache_time_sec = 14 * 24 * 3600
     # If the available date of the last chapter of the last chapter is over this many seconds old, assume the season has been completed
     # and cache queries. Servers may ignore this value if they have better ways to detect completed seasons and/or requests are fast
     assume_season_completed_after_n_sec = 3600 * 24 * 7 * 2
@@ -150,7 +150,9 @@ class Settings:
         return os.path.join(self.get_web_cache_dir(), url.replace("/", "_"))
 
     def get_search_cache(self, server_id):
-        return os.path.join(self.cache_dir, f"{server_id}_search_cache")
+        dir_path = os.path.join(self.cache_dir, "search_cache")
+        os.makedirs(dir_path, exist_ok=True)
+        return os.path.join(dir_path, f"{server_id}.json")
 
     @classmethod
     def get_members(clazz):

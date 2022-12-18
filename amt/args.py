@@ -48,7 +48,7 @@ def setup_subparsers(state, sub_parsers):
 
     sub_search_parsers = argparse.ArgumentParser(add_help=False)
     sub_search_parsers.add_argument("--exact", action="store_const", const=True, default=False, help="Only show exact matches")
-    sub_search_parsers.add_argument("--limit", type=int, default=10, help="How many chapters will be downloaded per series")
+    sub_search_parsers.add_argument("--limit", type=int, default=30, help="How many chapters will be downloaded per series")
     sub_search_parsers.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
     sub_search_parsers.add_argument("--server", choices=state.get_server_ids(), dest="server_id")
 
