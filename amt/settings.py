@@ -87,7 +87,7 @@ class Settings:
 
     chapter_dir_name_format = "{chapter_number:07.2f}"
     chapter_page_format = "{page_number:04d}.{ext}"
-    chapter_title_format = "{media_name}: #{chapter_number} {chapter_title}"
+    chapter_title_format = "#{chapter_number} {chapter_title}: {media_name}"
     special_chapter_dir_name_format = "{chapter_id}"
     disable_ssl_verification = False
     fallback_to_insecure_connection = False
