@@ -9,6 +9,8 @@ media_dir_regex = re.compile(base_media_regex)
 media_file_regex = re.compile(base_media_regex + "(.*\.\w+)$")
 number_regex = re.compile(r"(\d+\.?\d*)(?:\s|\.|v\d|$)")
 
+remove_brackets_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\])")
+
 id_formatter_regex = re.compile(r"\W+")
 
 
@@ -23,7 +25,7 @@ def get_media_id_from_name(media_name):
 
 
 def get_number_from_file_name(file_name, media_name="", default_num=0):
-    matches = number_regex.findall(file_name.replace(media_name, "").replace("_", " "))
+    matches = number_regex.findall(remove_brackets_regex.sub("", file_name.replace(media_name, "").replace("_", " ")))
     return float(max(matches, key=len)) if matches else default_num
 
 
