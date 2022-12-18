@@ -2053,6 +2053,8 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 
     def test_search(self):
         for media_type in list(MediaType) + [None]:
+            if media_type and not list(filter(lambda x: media_type & x.media_type, self.media_reader.get_servers())):
+                self.skipTest("Server not enabled")
             with self.subTest(media_type=media_type):
                 self.assertTrue(self.media_reader.search_add("one", media_type=media_type, limit=1, no_add=True))
 
