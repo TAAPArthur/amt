@@ -131,7 +131,7 @@ class GenericJNovelClubParts(GenericJNovelClub):
         last_chapter = media_data.get_last_chapter()
         for chapter_data in media_data["chapters"].values():
             chapter_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
-            if (not last_chapter or last_chapter["volume_number"] % 1 == 0 and last_chapter["volume_number"] != chapter_data["volume_number"]) and os.path.exists(chapter_path) and (time.time() - os.path.getmtime(chapter_path)) > self.time_to_live_sec:
+            if (not last_chapter or last_chapter["volume_number"] % 1 == 0 or last_chapter["volume_number"] != chapter_data["volume_number"]) and os.path.exists(chapter_path) and (time.time() - os.path.getmtime(chapter_path)) >= self.time_to_live_sec:
                 shutil.rmtree(chapter_path)
         volumes = r.json()["volumes"]
         for i, volume in enumerate(volumes):
