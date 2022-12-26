@@ -175,6 +175,11 @@ class TestServerLogin(TestServer):
         self._is_logged_in = False
 
 
+class TestServerLoginAlias(TestServerLogin):
+    id = "test_server_login2"
+    alias = "test_server_login_alias"
+
+
 class TestAnimeServer(TestServer):
     id = "test_server_anime"
     media_type = MediaType.ANIME
