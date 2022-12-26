@@ -47,6 +47,9 @@ class Settings:
 
     # cache
     search_cache_time_sec = 3600
+    # If the available date of the last chapter of the last chapter is over this many seconds old, assume the season has been completed
+    # and cache queries. Servers may ignore this value if they have better ways to detect completed seasons and/or requests are fast
+    assume_season_completed_after_n_sec = 3600 * 24 * 7 * 2
 
     # Servers/Tracker
     enabled_servers = []  # empty means all servers all enabled
