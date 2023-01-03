@@ -251,30 +251,50 @@ class VizMangaLibrary(GenericVizManga):
     volume_number_regex = re.compile(r"var volumeNumber\s*=\s*(\d*)\s*;")
     page_regex = re.compile(r" (\d+) pages")
 
-    def _get_media_list_helper(self, volumes=False, media_name=None, media_id=None):
-        r = self.session_get(self.list_series_url)
-        soup = self.soupify(BeautifulSoup, r)
-        for table in soup.findAll("table", {"class": "product-table"}):
-            td = table.findAll("td", {"class": "product-table--primary"})
-            name, url = td[0].getText(), td[1].find("a")["href"]
-            slug = self.stream_url_regex.search(self.base_url + url).group(2)
-            if (media_name == None and media_id == None) or media_name == name or media_id == slug:
-                if not volumes:
-                    yield self.create_media_data(id=slug, name=name)
-                else:
-                    yield url
+    add_series_url_regex = re.compile(GenericVizManga.domain + "/account/library/gn/([^/]*)/([^/]*)")
+    series_url = base_url + "/account/library/gn/{}/{}"
 
     def get_media_list(self, **kwargs):
-        return list(self._get_media_list_helper())
+        r = self.session_get(self.list_series_url)
+        soup = self.soupify(BeautifulSoup, r)
+        table = soup.find("table", {"class": "purchase-table"})
+        results = []
+        if table:
+            for link in table.findAll("a"):
+                url = self.base_url + link["href"]
+                match = self.add_series_url_regex.search(url)
+                if match:
+                    results.append(self.create_media_data(id=match.group(1), alt_id=match.group(2), name=link.getText()))
+        else:
+            # Special case if there is only one volume/series
+            table = soup.find("table", {"class": "product-table"})
+            if table:
+                for td in table.findAll("td", {"class": "product-table--primary"}):
+                    name, url = td[0].getText(), td[1].find("a")["href"]
+                    slug = self.stream_url_regex.search(self.base_url + url).group(2)
+                    results.append(self.create_media_data(id=slug, name=name))
+        return results
+
+    def _update_media_data(self, url, media_id=None):
+        r = self.session_get(url)
+        soup = self.soupify(BeautifulSoup, r)
+        table = soup.find("table", {"class": "product-table"})
+        for link in table.findAll("a"):
+            url = link["href"]
+            match = self.stream_url_regex.search(self.base_url + url)
+            if match:
+                if media_id is None or media_id == match.group(2):
+                    yield url
 
     def update_media_data(self, media_data):
-        for url in self._get_media_list_helper(True, media_data["name"]):
-            r = self.session_get(self.base_url + url)
-            match = self.volume_id_regex.search(r.text)
+        url = self.series_url.format(media_data["id"], media_data["alt_id"])
+        for volume_url in self._update_media_data(url, media_data["id"]):
+            text = self.session_get_cache(self.base_url + volume_url)
+            match = self.volume_id_regex.search(text)
             volume_id = match.group(1)
-            match = self.volume_number_regex.search(r.text)
+            match = self.volume_number_regex.search(text)
             volume_number = match.group(1)
-            match = self.page_regex.search(r.text)
+            match = self.page_regex.search(text)
             num_pages = int(match.group(1)) + 1
             self.update_chapter_data(media_data, id=volume_id, title=str(volume_number), number=volume_number, premium=True, num_pages=num_pages)
 
@@ -282,7 +302,15 @@ class VizMangaLibrary(GenericVizManga):
         return self.get_media_chapter_data_helper(chapter_data, chapter_data["num_pages"])
 
     def get_media_data_from_url(self, url):
-        return next(self._get_media_list_helper(media_id=self.stream_url_regex.search(url).group(1)))
+        match = self.add_series_url_regex.search(url)
+        if match:
+            media_id = match.group(1)
+        else:
+            request_text = self.session_get_cache(url)
+            media_id = re.search("/read/manga/([^/]*)/all", request_text).group(1)
+        for media_data in self.get_media_list():
+            if media_data["id"] == media_id:
+                return media_data
 
     def get_chapter_id_for_url(self, url):
         return self.volume_id_regex.search(self.session_get(url).text).group(1)
