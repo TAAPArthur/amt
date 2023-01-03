@@ -25,6 +25,8 @@ class GenericFunimation(Server):
     media_type = MediaType.ANIME
     slow_download = True
 
+    fuzzy_search = True
+
     def _get_csrf(self):
         r = self.session_get(self.login_url)
         soup = self.soupify(BeautifulSoup, r)

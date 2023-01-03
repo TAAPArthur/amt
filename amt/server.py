@@ -181,12 +181,15 @@ class RequestServer:
 class MediaServer(RequestServer):
     remove_lang_regex = re.compile(r" \([^)]*\)")
 
+    # If true, always just search the literal title instead of also searching subsections
+    fuzzy_search = False
+
     def search(self, term, media_type=None, literal=False, limit=20):
         """
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
-        terms = get_alt_names(term) if not literal else [term]
+        terms = get_alt_names(term) if not literal and not self.fuzzy_search else [term]
         media_list = self.search_helper(terms, limit, media_type=media_type)
 
         def score(x):
@@ -312,6 +315,10 @@ class GenericServer(MediaServer):
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
         return find_media_with_similar_name_in_list(get_alt_names(term), self.get_media_list())
+
+    @property
+    def fuzzy_search(self):
+        return self.search_for_media == GenericServer.search_for_media
 
     def update_media_data(self, media_data):  # pragma: no cover
         """
