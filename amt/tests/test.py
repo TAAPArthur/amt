@@ -16,7 +16,7 @@ from subprocess import CalledProcessError
 from unittest.mock import patch
 
 from .. import servers, tests
-from ..args import parse_args, setup_subparsers
+from ..args import parse_args, setup_subparsers, init_logger
 from ..job import Job, RetryException
 from ..media_reader import SERVERS, MediaReader, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
@@ -42,8 +42,6 @@ except:
 TEST_HOME = TEST_BASE + "test_home/"
 TEST_TEMP = TEST_BASE + "tmp/"
 
-
-logging.basicConfig(format="[%(name)s:%(filename)s:%(lineno)s]%(levelname)s:%(message)s", level=logging.INFO)
 
 TEST_SERVERS = import_sub_classes(tests, TestServer)
 TEST_TRACKERS = import_sub_classes(tests, TestTracker)
@@ -146,10 +144,7 @@ class BaseUnitTestClass(unittest.TestCase):
             del os.environ[k]
 
         os.environ["AMT_HOME"] = TEST_HOME
-        self.stream_handler = logging.StreamHandler(sys.stdout)
-        logger = logging.getLogger()
-        logger.handlers = []
-        logger.addHandler(self.stream_handler)
+        init_logger(logging.INFO)
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         os.makedirs(TEST_HOME)
         os.chdir(TEST_HOME)
@@ -161,7 +156,6 @@ class BaseUnitTestClass(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         self.close_sessions()
-        logging.getLogger().removeHandler(self.stream_handler)
 
     def add_test_media(self, server_id=None, media_type=None, no_update=False, limit=None, limit_per_server=None):
         media_list = self.media_reader.get_server(server_id).get_media_list() if server_id else [x for server in self.media_reader.get_servers() if not media_type or server.media_type & media_type for x in server.get_media_list()[:limit_per_server]]
