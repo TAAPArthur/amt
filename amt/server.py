@@ -6,7 +6,9 @@ import time
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from requests.exceptions import ConnectionError, HTTPError, SSLError
+from requests.packages import urllib3
 from threading import Lock
+from urllib3.exceptions import InsecureRequestWarning
 import logging
 
 from .job import Job
@@ -14,6 +16,8 @@ from .state import ChapterData, MediaData
 from .util.media_type import MediaType
 from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
 from .util.progress_type import ProgressType
+
+urllib3.disable_warnings(category=InsecureRequestWarning)
 
 
 def get_extension(url):
