@@ -2078,7 +2078,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
         ("https://freewebnovel.com/itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu/chapter-1.html", "itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", None, "chapter-1"),
         ("https://funimation.com/v/one-piece/im-luffy-the-man-whos-gonna-be-king-of-the-pirates", "20224", "20227", "22338"),
-        ("https://hidive.com/stream/legend-of-the-galactic-heroes-gaiden/s02e001", "legend-of-the-galactic-heroes-gaiden", None, "s02e001"),
+        ("https://www.hidive.com/stream/o-maidens-in-your-savage-season/s01e001", "o-maidens-in-your-savage-season", None, "s01e001"),
         ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),
         ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1", "seirei-gensouki-spirit-chronicles-manga", None, "seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1"),
         ("https://mangadex.org/chapter/ea697e18-470c-4e80-baf0-a3972720178f/1", "8a3d319d-2d10-4364-928c-0f30fd367c24", None, "ea697e18-470c-4e80-baf0-a3972720178f"),
@@ -2094,7 +2094,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.funimation.com/v/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
     ]
     addable_urls = [
-        ("https://hidive.com/tv/legend-of-the-galactic-heroes-gaiden", "legend-of-the-galactic-heroes-gaiden"),
+        ("https://www.hidive.com/tv/o-maidens-in-your-savage-season", "o-maidens-in-your-savage-season"),
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
         ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
