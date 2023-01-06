@@ -391,20 +391,6 @@ class SettingsTest(BaseUnitTestClass):
             for field in Settings.get_members():
                 self.assertEqual(self.settings.get_field(field), getattr(Settings, field), field)
 
-    def test_settings_save_load_legacy(self):
-        os.makedirs(self.settings.config_dir, exist_ok=True)
-        with open(self.settings.get_legacy_settings_file(), "w") as f:
-            f.write("password_save_cmd=0\n")
-        self.settings.load()
-        self.assertEqual(self.settings.password_save_cmd, "0")
-        with open(self.settings.get_legacy_settings_file(), "w") as f:
-            f.write("password_save_cmd=1\n")
-        self.reload()
-        self.assertEqual(self.settings.password_save_cmd, "0")
-        os.unlink(self.settings.get_legacy_settings_file())
-        self.reload()
-        self.assertEqual(self.settings.password_save_cmd, "0")
-
     def test_settings_load_unknown_value(self):
 
         self.settings.save()

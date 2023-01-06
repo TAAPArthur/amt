@@ -139,9 +139,6 @@ class Settings:
     def get_settings_file(self):
         return os.path.join(self.config_dir, "amt.json")
 
-    def get_legacy_settings_file(self):
-        return os.path.join(self.config_dir, "amt.conf")
-
     def get_stats_file(self):
         return os.path.join(self.cache_dir, "stats.json")
 
@@ -183,27 +180,6 @@ class Settings:
         else:
             setattr(self, name, value)
 
-    def set_field_legacy(self, name, value, server_or_media_id=None):  # pragma: no cover
-        assert value is not None
-        assert name in Settings.get_members()
-        current_field = self.get_field(name, server_or_media_id)
-        if isinstance(current_field, bool) and isinstance(value, str):
-            value = value.lower() not in ["false", 0, ""]
-        if isinstance(current_field, list) and isinstance(value, str):
-            value = value.split(",") if value else []
-            if current_field:
-                value = list(map(lambda x: type(current_field[0])(x.strip()), value))
-
-        if value and isinstance(value, str) and ((isinstance(current_field, int) or isinstance(current_field, float))):
-            value = type(current_field)(value)
-        if server_or_media_id:
-            if not name in self._specific_settings:
-                self._specific_settings[name] = {}
-            self._specific_settings[name][server_or_media_id] = value
-        else:
-            setattr(self, name, value)
-        return value
-
     def get_field_values(self, name, media_data=None):
         for key in media_data.get_labels() if isinstance(media_data, dict) else [media_data] if isinstance(media_data, (str, int)) or not media_data else [media_data.id, media_data.media_type.name]:
             if name in self._specific_settings and key in self._specific_settings[name]:
@@ -213,7 +189,7 @@ class Settings:
     def get_field(self, name, media_data=None):
         return next(self.get_field_values(name, media_data=media_data))
 
-    def save(self, keys=None):
+    def save(self):
         data = {}
         for name in sorted(Settings.get_members()):
             data[name] = self.get_field(name)
@@ -221,29 +197,8 @@ class Settings:
                 data[f"{name}.{slug}"] = self.get_field(name, slug)
 
         os.makedirs(self.config_dir, exist_ok=True)
-        if keys:
-            for key in list(data.keys()):
-                if key not in keys:
-                    data.pop(key)
         with open(self.get_settings_file(), "w") as f:
             json.dump(data, f, indent=4, sort_keys=True)
-
-    def legacy_load(self, skip_env_override=False):  # pragma: no cover
-        try:
-            with open(self.get_legacy_settings_file(), "r") as f:
-                keys = set()
-                for line in filter(lambda x: x.strip() and x.strip()[0] != "#", f):
-                    name, value = (line if not line.endswith("\n") else line[:-1]).split("=", 1)
-                    keys.add(name)
-                    attr, slug = name.split(".", 2) if "." in name else (name, None)
-                    if attr not in Settings.get_members():
-                        self.get_logger().warning("Unknown field %s; Skipping", attr)
-                        continue
-                    self.set_field_legacy(attr, value, slug)
-                print("Auto converted from legacy config file to new format")
-                self.save(keys)
-        except FileNotFoundError:
-            pass
 
     def load(self, skip_env_override=False):
         try:
@@ -258,7 +213,7 @@ class Settings:
                         continue
                     self.set_field(attr, value, slug)
         except FileNotFoundError:
-            self.legacy_load()
+            pass
 
         if not skip_env_override and self.allow_env_override:
             for attr in Settings.get_members():
