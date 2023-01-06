@@ -132,7 +132,7 @@ class Settings:
         return os.path.join(self.data_dir, "metadata.json")
 
     def get_remote_servers_config_file(self):
-        return os.path.join(self.config_dir, "remote_servers.conf")
+        return os.path.join(self.config_dir, "remote_servers.json")
 
     def get_settings_file(self):
         return os.path.join(self.config_dir, "amt.json")

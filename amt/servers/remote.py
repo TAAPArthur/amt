@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 
@@ -21,17 +22,15 @@ class RemoteServer(Server):
         servers = []
         try:
             with open(settings.get_remote_servers_config_file(), "r") as f:
-                for line in f:
-                    if line.startswith("#") or not line.strip():
-                        continue
-                    key, value = line.strip().split("=", 2)
-                    if key == "id":
-                        servers.append(clazz(session, settings))
-                    if key == "media_type":
-                        value = MediaType.get(value.upper())
-                        assert value, line
-                    setattr(servers[-1], key, value)
-        except (ImportError, FileNotFoundError):
+                for server_id, data in json.load(f).items():
+                    server = clazz(session, settings)
+                    server.id = server_id
+                    for key, value in data.items():
+                        if key == "media_type":
+                            value = MediaType.get(value.upper())
+                        setattr(server, key, value)
+                    servers.append(server)
+        except FileNotFoundError:
             pass
         return servers
 
@@ -42,7 +41,7 @@ class RemoteServer(Server):
             with self._lock:
                 saved_err = None
                 if not self.domain:
-                    for d in self.domain_list.split(";"):
+                    for d in self.domain_list:
                         try:
                             self.session_get(d)
                             self.domain = d if d[-1] == "/" else d + "/"
@@ -63,11 +62,11 @@ class RemoteServer(Server):
 
     def get_credentials(self):
         if self.username is None or self.password is None:
-            u, p = super().get_credentials()
+            credentials = super().get_credentials()
             if self.username is None:
-                self.username = u
+                self.username = credentials[0]
             if self.password is None:
-                self.password = p
+                self.password = credentials[-1]
         return (self.username, self.password)
 
     def session_get(self, url, **kwargs):
@@ -130,7 +129,7 @@ class RemoteServer(Server):
         parts = url.split(self.path, 2)
         if len(parts) != 2:
             return False
-        for d in self.domain_list.split(";"):
+        for d in self.domain_list:
             if parts[0].endswith(d) or parts[0].endswith(d + "/"):
                 return parts[1]
 

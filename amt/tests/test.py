@@ -1295,6 +1295,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
         super().setUp()
         path = "Media"
         os.makedirs(self.settings.config_dir)
+        conf = {}
         for media_type in list(MediaType):
             for p in (f"Test{media_type.name}2/1/file.test", f"Test{media_type.name}/file2.test", f"{media_type.name} file.test"):
                 relative_path = os.path.join(TEST_TEMP, path, media_type.name, p)
@@ -1304,21 +1305,22 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
                     os.makedirs(resource_path, exist_ok=True)
                     open(os.path.join(resource_path, "some_resource"), "w").close()
                 open(relative_path, "w").close()
-            with open(self.settings.get_remote_servers_config_file(), "a") as f:
-                f.write(f"""
-id=remote_test_{media_type.name}
-domain_list=http://localhost:-1{self.port};__bad_domain__;http://localhost:{self.port}
-path={path}/{media_type.name}/
-media_type={media_type.name}
+            conf[f"remote_test_{media_type.name}"] = {
+                "domain_list": [f"http://localhost:-1{self.port}", "__bad_domain__", f"http://localhost:{self.port}"],
+                "path": f"{path}/{media_type.name}/",
+                "media_type": media_type.name,
+            }
+            conf[f"remote_test_{media_type.name}_auth"] = {
+                "domain_list": [f"http://localhost:-1{self.port}", "__bad_domain__", f"http://localhost:{self.port}"],
+                "path": f"{path}/{media_type.name}/",
+                "media_type": media_type.name,
+                "auth": True,
+                "username": "admin",
+                "password": "root",
+            }
+        with open(self.settings.get_remote_servers_config_file(), "w") as f:
+            json.dump(conf, f)
 
-id=remote_test_{media_type.name}_auth
-domain_list=http://localhost:-1{self.port};__bad_domain__;http://localhost:{self.port}
-path={path}/{media_type.name}/
-media_type={media_type.name}
-auth=True
-username=admin
-password=root
-""")
         self.reload(True)
         if ENABLED_SERVERS and not self.media_reader.get_servers():
             self.skipTest("Server not enabled")
@@ -1331,31 +1333,36 @@ password=root
         server.session_get_cache(f"http://localhost:{self.port}")
 
     def test_no_valid_domains(self):
+        conf = {"remote_test_bad": {
+            "domain_list": ["__bad_domain__"],
+            "path": "/",
+            "media_type": "ANIME",
+        }}
+
         with open(self.settings.get_remote_servers_config_file(), "w") as f:
-            f.write("""
-id=remote_test_bad
-domain_list=__bad_domain__;
-path=/
-media_type=ANIME
-""")
+            json.dump(conf, f)
         self.reload(True)
         self.assertRaises(Exception, self.add_test_media)
 
     def test_load_credentials(self):
+        conf = {
+            "remote_test_load_credentials": {
+                "domain_list": [f"http://localhost:{self.port}"],
+                "auth": True
+            },
+            "remote_test_load_credentials_missing_password": {
+                "domain_list": [f"http://localhost:{self.port}"],
+                "auth": True,
+                "username": "A",
+            },
+            "remote_test_load_credentials_missing_username": {
+                "domain_list": [f"http://localhost:{self.port}"],
+                "auth": True,
+                "password": "A",
+            }
+        }
         with open(self.settings.get_remote_servers_config_file(), "w") as f:
-            f.write(f"""
-id=remote_test_load_credentials
-domain_list=http://localhost:{self.port}
-auth=True
-id=remote_test_load_credentials_missing_password
-domain_list=http://localhost:{self.port}
-auth=True
-username=A
-id=remote_test_load_credentials_missing_username
-domain_list=http://localhost:{self.port}
-auth=True
-password=A
-""")
+            json.dump(conf, f)
         self.reload(True)
         self.assertEqual(3, len(self.media_reader.state.get_server_ids()))
         self.test_workflow()
