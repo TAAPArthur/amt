@@ -3,7 +3,6 @@ import os
 import re
 import time
 
-from difflib import SequenceMatcher
 from requests.exceptions import ConnectionError, HTTPError, SSLError
 from requests.packages import urllib3
 from threading import Lock
@@ -178,6 +177,9 @@ class RequestServer:
         return ext
 
 
+non_word_char_regex = re.compile(r"\W+")
+
+
 class MediaServer(RequestServer):
     remove_lang_regex = re.compile(r" \([^)]*\)")
 
@@ -192,9 +194,12 @@ class MediaServer(RequestServer):
         terms = get_alt_names(term) if not literal and not self.fuzzy_search else [term]
         media_list = self.search_helper(terms, limit, media_type=media_type)
 
+        term_parts = set(non_word_char_regex.split(term.lower()))
+
         def score(x):
             x = self.remove_lang_regex.sub("", x)
-            return -(SequenceMatcher(None, term, x).ratio() + max([SequenceMatcher(None, t, x).ratio() for t in terms]))
+            parts = set(non_word_char_regex.split(x.lower()))
+            return -2 * len(parts.intersection(term_parts)) / (len(parts) + len(term_parts))
         return list(map(lambda x: (score(x["name"]), x), filter(lambda x: not media_type or x["media_type"] & media_type, media_list)))
 
     def search_helper(self, terms, limit=None, media_type=None, **kwargs):
