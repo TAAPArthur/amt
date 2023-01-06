@@ -710,10 +710,10 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         server = self.media_reader.get_server(TestAnimeServer.id)
         self.add_test_media(server.id, media_type=MediaType.ANIME, limit=1)
         with patch.dict(sys.modules, {"m3u8": None}):
-            server.stream_urls = ["dummy.m3u8"]
+            server.stream_urls = [["dummy.m3u8"]]
             self.assertRaises(ImportError, self.media_reader.download_unread_chapters)
             self.verify_no_chapters_downloaded()
-            server.stream_urls = ["dummy.m3u8", "dummy.mp4"]
+            server.stream_urls = [["dummy.m3u8", "dummy.mp4"]]
             self.media_reader.download_unread_chapters()
             self.verify_all_chapters_downloaded()
 
@@ -1378,10 +1378,14 @@ password=A
                 assert media_data["name"]
                 server = self.media_reader.get_server(media_data["server_id"])
                 assert media_data.get_sorted_chapters()
-                url = server.get_stream_urls(media_data, media_data.get_sorted_chapters()[0])[0]
-                self.assertTrue(self.media_reader.stream(url))
+                urls = []
+                for stream_urls in server.get_stream_urls(media_data, media_data.get_sorted_chapters()[0]):
+                    urls.extend(stream_urls)
+                for url in urls:
+                    self.assertTrue(self.media_reader.stream(url))
                 self.media_reader.remove_media(name=media_data)
-                self.assertTrue(self.media_reader.stream(url))
+                for url in urls:
+                    self.assertTrue(self.media_reader.stream(url))
 
     def test_download_resources(self):
         media_list = self.add_test_media()

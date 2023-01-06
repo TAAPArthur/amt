@@ -180,7 +180,7 @@ class Vrv(Server):
                 for key in streams[name]:
                     valid_lang = (key == "") == soft_sub
                     if valid_lang and "url" in streams[name][key] and "manifest.mpd" not in streams[name][key]["url"]:
-                        results.append(streams[name][key]["url"])
+                        results.append([streams[name][key]["url"]])
         return results
 
     def get_subtitle_info(self, media_data, chapter_data):

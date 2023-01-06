@@ -98,7 +98,7 @@ class Hidive(Server):
         data = self.get_episode_info(media_data, chapter_data)
         urls = []
         for stream_data in data["renditions"].values():
-            urls.append(stream_data["bitrates"]["hls"])
+            urls.append([stream_data["bitrates"]["hls"]])
         return urls
 
     def get_subtitle_info(self, media_data, chapter_data):

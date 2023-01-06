@@ -70,7 +70,7 @@ class HumbleBundle(Server):
     def get_stream_urls(self, media_data, chapter_data):
         for key, media_id, name, download_struct in self.get_media_of_type(media_data["key"]):
             if media_id == chapter_data["id"]:
-                return list(map(lambda x: x["url"]["web"], download_struct))
+                return list(map(lambda x: [x["url"]["web"]], download_struct))
 
     def get_media_data_from_url(self, url):
         match = self.stream_url_regex.search(url)

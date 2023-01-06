@@ -333,16 +333,21 @@ class GenericServer(MediaServer):
         if stream_index != 0:
             urls = urls[stream_index:] + urls[:stream_index]
 
-        for url in urls:
-            ext = get_extension(url)
-            try:
-                if ext == "m3u8":
-                    segments = self.get_m3u8_segments(url)
-                    return [self.create_page_data(url=segment.uri, encryption_key=segment.key, ext="ts") for segment in segments]
-                else:
-                    return [self.create_page_data(url=url, ext=ext)]
-            except ImportError as e:
-                last_err = e
+        for stream_url in urls:
+            page_data = []
+            for url in stream_url:
+                ext = self.get_extension(url)
+                try:
+                    if ext == "m3u8":
+                        segments = self.get_m3u8_segments(url)
+                        page_data.extend([self.create_page_data(url=segment.uri, encryption_key=segment.key, ext="ts") for segment in segments])
+                    else:
+                        page_data.extend([self.create_page_data(url=url, ext=ext)])
+                except ImportError as e:
+                    last_err = e
+            if page_data:
+                return page_data
+
         raise last_err
 
     def save_chapter_page(self, page_data, path):
@@ -401,7 +406,11 @@ class GenericServer(MediaServer):
         Override get_stream_urls instead
         """
 
-        return list(self.maybe_login_and_get_stream_urls(media_data=media_data, chapter_data=chapter_data))[stream_index]
+        return self.prepare_stream(media_data=media_data, chapter_data=chapter_data,
+                                   urls=self.maybe_login_and_get_stream_urls(media_data=media_data, chapter_data=chapter_data)[stream_index])
+
+    def prepare_stream(self, media_data, chapter_data, urls):
+        return urls
 
     def maybe_login_and_get_stream_urls(self, media_data, chapter_data):
         def func(): return list(self.get_stream_urls(media_data=media_data, chapter_data=chapter_data))

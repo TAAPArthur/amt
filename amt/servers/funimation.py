@@ -64,13 +64,13 @@ class GenericFunimation(Server):
                     exp = video["simulcast"] if "simulcast" in video else video["uncut"]
                     if exp["experienceId"] == int(chapter_data["alt_id"]) and "textTracks" in exp["sources"][0]:
                         for track in exp["sources"][0]["textTracks"]:
-                            yield track["language"], track["src"], None, False, 0
+                            yield track["language"], track["src"], None, False
                         break
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
         chapter_id = chapter_data["alt_id"]
         r = self.session_get(self.sources_api_url.format(chapter_id))
-        return [item["src"] for item in r.json()["items"]]
+        return [[item["src"]] for item in r.json()["items"]]
 
     def backoff(self, c, r):
         try:

@@ -438,7 +438,7 @@ class MediaReader:
                 if server.is_fully_downloaded(media_data, chapter) and not force_stream:
                     batch.extend(server.get_children(media_data, chapter))
                 else:
-                    batch.append(server.get_stream_url(media_data, chapter, stream_index=stream_index))
+                    batch.extend(server.get_stream_url(media_data, chapter, stream_index=stream_index))
                 media_chapters.append((media_data, chapter))
 
                 if len(media_chapters) != batch_size:

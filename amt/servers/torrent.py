@@ -44,7 +44,7 @@ class GenericTorrentServer(Server):
         os.symlink(src, dest)
 
     def get_stream_url(self, media_data, chapter_data, stream_index=0):
-        return None
+        return [None]
 
     def download_torrent_file(self, media_data):
         """

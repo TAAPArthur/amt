@@ -112,7 +112,7 @@ class RemoteServer(Server):
         return [self.create_page_data(url=self.get_base_url() + chapter_url + file_name) for _, file_name in entires]
 
     def get_stream_urls(self, media_data, chapter_data):
-        return list(map(lambda x: x["url"], self.get_media_chapter_data(media_data, chapter_data)))
+        return list(map(lambda x: [x["url"]], self.get_media_chapter_data(media_data, chapter_data)))
 
     def post_download(self, media_data, chapter_data, **kwargs):
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
