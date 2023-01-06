@@ -194,14 +194,12 @@ class TestAnimeServer(TestServer):
     def get_subtitle_info(self, media_data, chapter_data):
         url = "subtitles.vtt"
         alt_url = "subtitles"
-        yield media_data["lang"], url, None, True, 0
-        yield media_data["lang"], alt_url, None, True, 0
-        yield media_data["lang"], url, "vtt", True, 0
-        yield "en", url, "a", True, 0
-        yield "en", url, "b", True, +5
-        yield "en", url, "c", False, +5
-        yield "en", url, "txt", False, 0
-        yield "unknown_lang", url, "txt", False, 0
+        yield media_data["lang"], url, None, True
+        yield media_data["lang"], alt_url, None, True
+        yield media_data["lang"], url, "vtt", True
+        yield "en", url, "a", True
+        yield "en", url, "txt", False
+        yield "unknown_lang", url, "txt", False
 
     def subtitle_response(self):
         class FakeRequest():

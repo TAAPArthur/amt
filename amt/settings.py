@@ -82,7 +82,7 @@ class Settings:
         },
         "env": {
             "hidive": {
-                "AMT_EXTRA_ARG": '--http-header-fields=Referer:https://www.hidive.com/stream/'
+                "AMT_EXTRA_ARG": '--http-header-fields=Referer:https://www.hidive.com/stream/ --demuxer-lavf-o=protocol_whitelist=[crypto,data,file,hls,http,https,tcp,tls] '
             }
         }
     }

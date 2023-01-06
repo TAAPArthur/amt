@@ -1,3 +1,5 @@
+import atexit
+import os
 import re
 
 from bs4 import BeautifulSoup
@@ -101,11 +103,31 @@ class Hidive(Server):
             urls.append([stream_data["bitrates"]["hls"]])
         return urls
 
+    def prepare_stream(self, media_data, chapter_data, urls):
+        urls_to_stream = []
+        logo_url = "https://static.hidive.com/bumpers/hidive/subscriber/HIDIVE_Bumper11_LogoIntroPremium_480p.ts"
+        for url in urls:
+            ext = self.get_extension(url)
+            if ext != "m3u8":
+                return url
+            dir_path = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), ".tmp")
+            os.makedirs(dir_path, exist_ok=True)
+            m = self.get_m3u8_info(url)
+            playlist = sorted(m.playlists, key=lambda x: x.stream_info.bandwidth, reverse=True)
+            r = self.session_get(playlist[0].uri)
+            name = os.path.join(dir_path, chapter_data["id"])
+            atexit.register(lambda: os.unlink(name))
+            assert logo_url in r.text, r.text[:255]
+            with open(name, 'w') as fp:
+                fp.write(r.text.replace(logo_url, ""))
+            urls_to_stream.append(name)
+        return urls if not urls_to_stream else [logo_url] + urls_to_stream
+
     def get_subtitle_info(self, media_data, chapter_data):
         data = self.get_episode_info(media_data, chapter_data)
         for stream_data in data["renditions"].values():
             for lang, _, url, _ in stream_data["ccFiles"]:
-                yield lang, url, None, True, -5
+                yield lang, url, None, True
 
     def get_media_data_from_url(self, url):
         media_id = self._get_media_id_from_url(url)

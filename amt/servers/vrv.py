@@ -189,4 +189,4 @@ class Vrv(Server):
         r = self.session_get_mem_cache(data["playback"])
         subtitle_data = r.json()["subtitles"]
         for lang, subtitles in subtitle_data.items():
-            yield lang, subtitles["url"], subtitles["format"], True, 0
+            yield lang, subtitles["url"], subtitles["format"], True

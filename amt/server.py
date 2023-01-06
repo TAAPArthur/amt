@@ -3,7 +3,6 @@ import os
 import re
 import time
 
-from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from requests.exceptions import ConnectionError, HTTPError, SSLError
 from requests.packages import urllib3
@@ -18,13 +17,6 @@ from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_nam
 from .util.progress_type import ProgressType
 
 urllib3.disable_warnings(category=InsecureRequestWarning)
-
-
-def get_extension(url):
-    _, ext = os.path.splitext(url.split("?")[0])
-    if ext and ext[0] == ".":
-        ext = ext[1:]
-    return ext
 
 
 class RequestsClient():
@@ -179,6 +171,12 @@ class RequestServer:
     def soupify(self, BeautifulSoup, r):
         return BeautifulSoup(r if isinstance(r, str) else r.text, self.settings.bs4_parser)
 
+    def get_extension(self, url):
+        _, ext = os.path.splitext(url.split("?")[0])
+        if ext and ext[0] == ".":
+            ext = ext[1:]
+        return ext
+
 
 class MediaServer(RequestServer):
     remove_lang_regex = re.compile(r" \([^)]*\)")
@@ -264,7 +262,7 @@ class MediaServer(RequestServer):
 
     def create_page_data(self, url, id=None, encryption_key=None, ext=None, headers={}):
         if not ext:
-            ext = get_extension(url)
+            ext = self.get_extension(url)
         assert ext, url
         return dict(url=url, id=id, encryption_key=encryption_key, ext=ext, headers=headers)
 
@@ -419,12 +417,15 @@ class GenericServer(MediaServer):
     def get_stream_urls(self, media_data, chapter_data):  # pragma: no cover
         raise NotImplementedError
 
-    def get_m3u8_segments(self, url):
+    def get_m3u8_info(self, url):
         import m3u8
-        m = m3u8.load(url, http_client=RequestsClient(self.session))
+        return m3u8.load(url, http_client=RequestsClient(self.session))
+
+    def get_m3u8_segments(self, url):
+        m = self.get_m3u8_info(url)
         if not m.segments:
             playlist = sorted(m.playlists, key=lambda x: x.stream_info.bandwidth, reverse=True)
-            m = m3u8.load(playlist[0].uri, http_client=RequestsClient(self.session))
+            m = self.get_m3u8_info(playlist[0].uri)
         assert m.segments
         return m.segments
 
@@ -435,28 +436,20 @@ class GenericServer(MediaServer):
         """
 
         subtitle_regex = re.compile(r"\w*-\w\d*_[2-9]\d*$")
-        for lang, url, ext, flip, offset in self.get_subtitle_info(media_data, chapter_data):
+        for lang, url, ext, flip in self.get_subtitle_info(media_data, chapter_data):
             if not ext:
-                ext = get_extension(url)
+                ext = self.get_extension(url)
             basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
             path = os.path.join(dir_path, basename)
             if not os.path.exists(path):
-                delta = timedelta(seconds=offset)
                 r = self.session_get(url)
-                if flip or offset:
+                if flip:
                     with open(path, 'w') as fp:
                         iterable = iter(r.content.decode().splitlines())
                         buffer = None
                         for line in iterable:
                             # 00:02:04.583 --> 00:02:13.250 line:84%
-                            if offset:
-                                m = re.findall("(?:^| )(\d\d:\d\d:\d\d)", line)
-                                for original_time in m:
-                                    corrected_time = (datetime.strptime(original_time, "%H:%M:%S") + delta).strftime("%H:%M:%S")
-                                    line = line.replace(original_time, corrected_time)
-                            if not flip:
-                                fp.write(f"{line}\n")
-                            elif subtitle_regex.match(line):
+                            if subtitle_regex.match(line):
                                 buffer = None  # ignore blank line
                                 # don't output this line
                                 next(iterable)  # skip line with timestamp
