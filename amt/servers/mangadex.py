@@ -3,6 +3,11 @@ import re
 from ..server import Server
 
 
+class SafeDict(dict):
+    def __missing__(self, key):
+        return '{' + key + '}'
+
+
 class Mangadex(Server):
     id = "mangadex"
     official = False
@@ -10,8 +15,8 @@ class Mangadex(Server):
     api_base_url = "https://api.mangadex.org"
     domain = "mangadex.org"
 
-    list_url = api_base_url + "/manga?limit={}"
-    search_url = api_base_url + "/manga?title={}&limit={}"
+    list_url = api_base_url + "/manga?limit={limit}&offset={offset}"
+    search_url = api_base_url + "/manga?title={title}&limit={limit}&offset={offset}"
     manga_chapters_url = api_base_url + "/chapter?manga={}&limit=100&offset={}"
     server_url = api_base_url + "/at-home/server/{}"
     chapter_url = api_base_url + "/chapter/{}"
@@ -28,13 +33,21 @@ class Mangadex(Server):
                     results.append(self.create_media_data(id=result["id"], name=list(result["attributes"]["title"].values())[0], lang=lang))
         return results
 
+    def _list_or_search_get_media_list(self, url, limit=100):
+        offset = 0
+        while True:
+            r = self.session_get(url.format(limit=min(limit or 100, 100), offset=offset))
+            data = r.json()
+            yield from self._get_media_list(data["data"])
+            offset += data["limit"]
+            if offset >= data["total"] or (limit and offset > limit):
+                break
+
     def get_media_list(self, limit=100, **kwargs):
-        r = self.session_get(self.list_url.format(limit if limit else 0))
-        return self._get_media_list(r.json()["data"])
+        return list(self._list_or_search_get_media_list(self.list_url, limit))
 
     def search_for_media(self, term, limit=100, **kwargs):
-        r = self.session_get(self.search_url.format(term, limit if limit else 0))
-        return self._get_media_list(r.json()["data"])
+        return list(self._list_or_search_get_media_list(self.search_url.format_map(SafeDict(title=term)), limit))
 
     def get_media_data_from_url(self, url):
         chapter_id = self.stream_url_regex.search(url).group(1)
