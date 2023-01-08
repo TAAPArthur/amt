@@ -14,8 +14,7 @@ from .servers.local import LocalServer
 from .settings import Settings
 from .state import State
 from .util.media_type import MediaType
-from .util.name_parser import (find_media_with_similar_name_in_list,
-                               get_alt_names, get_media_name_from_file)
+from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
 from .util.progress_type import ProgressType
 
 
@@ -203,42 +202,42 @@ class MediaReader:
         media_data = self.get_single_media(**kwargs)
         del self.media[media_data.global_id]
 
-    def import_media(self, files, media_type, link=False, name=None, skip_add=False, fallback_name=None, dry_run=False):
+    def import_media(self, files, media_type, link=False, name=None, skip_add=False, dry_run=False):
         server = self.get_server(LocalServer.id)
         names = set()
+        no_errors = True
         for file in files:
-            logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
-            assert file != "/"
-            media_name = name
-
             file = os.path.realpath(file)
+            logging.info("Trying to import %s (dir: %s)", file, os.path.isdir(file))
             if os.path.isdir(file):
-                media_name = get_media_name_from_file(file, fallback_name, is_dir=True)
-                logging.info("Detected name %s", media_name)
-                self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type, name=media_name, fallback_name=name, link=link, skip_add=skip_add, dry_run=dry_run)
+                self.import_media(map(lambda x: os.path.join(file, x), os.listdir(file)), media_type=media_type, link=link, name=name or os.path.basename(file), skip_add=skip_add, dry_run=dry_run)
                 continue
             if not name:
-                media_name = get_media_name_from_file(file, fallback_name, is_dir=False)
-                logging.info("Detected name %s", media_name)
+                logging.info("Name needs to be specified for %s", file)
+                no_errors = False
+                continue
 
             assert not os.path.isdir(file)
-            assert media_name != "."
-            dest = server.get_import_media_dest(media_name=media_name, file_name=os.path.basename(file))
-            logging.info("Importing to %s", dest)
+            dest = server.get_import_media_dest(media_name=name, file_name=os.path.basename(file))
+            logging.info("Importing to %s under media %s", dest, name)
             if not dry_run:
                 if link:
+                    print("link")
                     os.link(file, dest)
                 else:
                     shutil.move(file, dest)
-            names.add(media_name)
+            names.add(name)
 
         if not skip_add and not dry_run:
+            media_list = list(self.get_media(name=server.id))
             for media_name in names:
-                if not any([x["name"] == media_name for x in self.get_media(name=server.id)]):
+                for media_data in media_list:
+                    if media_data["name"] == media_name:
+                        self.update_media(media_data)
+                        break
+                else:
                     self.search_add(media_name, media_type=media_type, server_id=server.id, exact=True)
-
-            for media_data in self.get_media(name=server.id):
-                self.update_media(media_data)
+        return no_errors
 
     ############# Upgrade and migration
 

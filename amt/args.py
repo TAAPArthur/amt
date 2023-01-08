@@ -142,7 +142,7 @@ def setup_subparsers(state, sub_parsers):
     import_parser.add_argument("--dry-run", action="store_const", const=True, default=False, help="Don't actually move/add media")
     import_parser.add_argument("--link", action="store_const", const=True, default=False, help="Hard links instead of just moving the file")
     import_parser.add_argument("--media-type", default="ANIME", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")
-    import_parser.add_argument("--name", default=None, nargs="?", help="Name Media")
+    import_parser.add_argument("--name", default=None, nargs="?", help="Media name; needed if all files aren't directories")
     import_parser.add_argument("--skip-add", action="store_const", const=True, default=False, help="Don't auto add media")
     add_file_completion(import_parser.add_argument("files", nargs="+"))
 

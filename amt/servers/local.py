@@ -13,8 +13,7 @@ class LocalServer(Server):
 
     def _create_media_data(self, file_name):
         assert "/" not in file_name
-        media_name = name_parser.get_media_name_from_file(file_name)
-        return self.create_media_data(id=name_parser.get_media_id_from_name(media_name), name=media_name, dir_name=file_name)
+        return self.create_media_data(id=name_parser.get_media_id_from_name(file_name), name=file_name, dir_name=file_name)
 
     def get_import_media_dest(self, media_name, file_name):
         media_data = self._create_media_data(media_name)

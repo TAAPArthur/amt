@@ -2,7 +2,6 @@ import inspect
 import json
 import logging
 import os
-import re
 import requests
 import shutil
 import subprocess
@@ -2011,63 +2010,40 @@ class ArgsTest(CliUnitTestClass):
         assert parse_args(media_reader=self.media_reader, args=["add-from-url", "bad-url"])
         self.verify_no_media()
 
-    def test_import_auto_detect_name(self):
-        samples = [
-            (MediaType.ANIME, "Banner of the Stars", 1, "01. Banner of the Stars (Seikai no Senki) [480p][author].mkv"),
-            (MediaType.ANIME, "Magical Girl Lyrical Nanoha", 13, "[author] Magical Girl Lyrical Nanoha - 13 (type) [deadbeef].mkv"),
-            (MediaType.ANIME, "Magical Girl Lyrical Nanoha A's", 999, "[author] Magical Girl Lyrical Nanoha A's - 999.mkv"),
-            (MediaType.ANIME, "Steins;Gate", 1, "01 - Steins;Gate.mkv"),
-            (MediaType.ANIME, "Kaguya-sama", 1, "Kaguya-sama - 01.mkv"),
-            (MediaType.ANIME, "ViVid Strike!", 1, "[First Name] ViVid Strike! - 01 [BD 1080p][247EFC8F].mkv"),
-            (MediaType.ANIME, "Specials", 5.5, "[First Name] Specials - 05.5 [BD 1080p][247EFC8F].mkv"),
-            (MediaType.ANIME, "Ending - ED", 0, "[First Name] Ending - ED [BD 1080p][247EFC8F].mkv"),
-            (MediaType.ANIME, "Attack No. 1", 2, "Attack No. 1 - 02.mkv"),
-            (MediaType.ANIME, "Alien 9 - OVA", 1, "[author] Alien 9 - OVA 01 [English Sub] [Dual-Audio] [480p].mkv"),
-            (MediaType.MANGA, "shamanking0", 1, "shamanking0_vol1.pdf"),
-            (MediaType.NOVEL, "i-refuse-to-be-your-enemy", 5, "i-refuse-to-be-your-enemy-volume-5.epub"),
-            (MediaType.ANIME, "Minami-ke - S01", 2, "Minami-ke - S01E02.mkv"),
-            (MediaType.ANIME, "Minami-ke - S01", 3, "Minami-ke - S01E03.mkv"),
-            (MediaType.ANIME, "Hidamari Sketch", 3, "(Hi10)_Hidamari_Sketch_-_03_(BD_720p)_(HT).mkv"),
-            (MediaType.ANIME, "Love Hina - S1", 2, "[author] Love Hina - S1/Love Hina S1 - 02.mkv"),
-            (MediaType.ANIME, "Love Hina - Specials", 3, "[author] Love Hina - Specials/Love Hina 03.mkv"),
-            (MediaType.ANIME, "Narutaru", 1, "[KnF~R-F] Narutaru - 01v2 [8F260930].avi"),
-        ]
-
-        for media_type, name, number, file_name in samples:
-            with self.subTest(file_name=file_name):
-                if os.path.dirname(file_name):
-                    os.makedirs(os.path.dirname(file_name), exist_ok=True)
-                with open(file_name, "w") as f:
-                    f.write("dummy_data")
-                self.assertTrue(os.path.exists(file_name))
-                parse_args(media_reader=self.media_reader, args=["import", "--media-type", media_type.name, file_name.split("/")[0]])
-                self.assertFalse(os.path.exists(file_name))
-                media_data = self.media_reader.get_single_media(name=name)
-
-                self.assertTrue(str(number) in media_data["chapters"], media_data["chapters"].keys())
-                self.assertEqual(media_data["chapters"][str(number)]["number"], number)
-                self.assertTrue(re.search(r"^\w+$", media_data["id"]))
-                self.assertEqual(media_data["media_type"], media_type)
-
-    def import_test_setup(self, parent_dir=""):
-        media_name = "test dir"
-        chapter_title = "Anime1 - E10.jpg"
-        path = os.path.join(TEST_HOME, parent_dir, "[author] " + media_name)
-        os.makedirs(path)
-        path_file = os.path.join(path, chapter_title)
-        with open(path_file, "w") as f:
-            f.write("dummy_data")
-        return media_name, chapter_title, path, path_file
+    def import_test_setup(self, parent_dir="", file_name="Anime1 - E10.jpg"):
+        media_name = "[author] test dir"
+        path = os.path.join(TEST_HOME, parent_dir, media_name)
+        os.makedirs(path, exist_ok=True)
+        path_file = os.path.join(path, file_name)
+        open(path_file, "w").close()
+        return media_name, file_name, path, path_file
 
     def verify_import_test(self, media_name, chapter_title):
         media_data = self.media_reader.get_single_media(name=media_name)
-        chapter_data = list(media_data.get_sorted_chapters())[0]
-        self.assertEqual(chapter_data["title"], chapter_title)
+        self.assertTrue(any(map(lambda x: x["title"] == chapter_title, media_data.get_sorted_chapters())))
+
+    def test_import(self):
+        media_name, chapter_title, path, path_file = self.import_test_setup()
+        parse_args(media_reader=self.media_reader, args=["import", "--name", media_name, path_file])
+        self.verify_import_test(media_name, chapter_title)
+
+    def test_import_bad(self):
+        media_name, chapter_title, path, path_file = self.import_test_setup()
+        parse_args(media_reader=self.media_reader, args=["import", path_file])
+        self.verify_no_media()
+
+    def test_import_update(self):
+        media_name, chapter_title, path, path_file = self.import_test_setup(file_name="A 01.txt")
+        parse_args(media_reader=self.media_reader, args=["import", "--name", media_name, path_file])
+        media_name, chapter_title, path, path_file = self.import_test_setup(file_name="A 02.txt")
+        parse_args(media_reader=self.media_reader, args=["import", "--name", media_name, path_file])
+        self.verify_import_test(media_name, chapter_title)
 
     def test_import_directory(self):
         media_name, chapter_title, path, path_file = self.import_test_setup()
+        self.assertTrue(os.path.exists(path_file))
         parse_args(media_reader=self.media_reader, args=["import", "--link", path])
-        assert os.path.exists(path_file)
+        self.assertTrue(os.path.exists(path_file))
         self.verify_import_test(media_name, chapter_title)
 
     def test_import_directory_self(self):
@@ -2079,7 +2055,7 @@ class ArgsTest(CliUnitTestClass):
     def test_import_nested_directory(self):
         parent_dir = "dir1"
         media_name, chapter_title, path, _ = self.import_test_setup(parent_dir=parent_dir)
-        parse_args(media_reader=self.media_reader, args=["import", parent_dir])
+        parse_args(media_reader=self.media_reader, args=["import", "--name", media_name, parent_dir])
         self.verify_import_test(media_name, chapter_title)
 
     def _test_upgrade_helper(self, minor):
