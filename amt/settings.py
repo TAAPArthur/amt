@@ -273,8 +273,11 @@ class Settings:
 
         os.environ["USER_AGENT"] = self.user_agent
 
+    def get_chapter_metadata_file_basename(self):
+        return "chapter_metadata.json"
+
     def get_chapter_metadata_file(self, media_data):
-        return os.path.join(self.get_media_dir(media_data), "chapter_metadata.json")
+        return os.path.join(self.get_media_dir(media_data), self.get_chapter_metadata_file_basename())
 
     def get_server_dir(self, server_id):
         return os.path.join(self.media_dir, server_id)

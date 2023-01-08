@@ -277,7 +277,6 @@ class MediaServer(RequestServer):
     def create_page_data(self, url, id=None, encryption_key=None, ext=None, headers={}):
         if not ext:
             ext = self.get_extension(url)
-        assert ext, url
         return dict(url=url, id=id, encryption_key=encryption_key, ext=ext, headers=headers)
 
 

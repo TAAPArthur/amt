@@ -99,7 +99,7 @@ class BaseUnitTestClass(unittest.TestCase):
                 self.settings.set_field("disabled_servers", DISABLED_SERVERS.split(","))
 
         state = State(self.settings)
-        _servers.sort(key=lambda x: x.id)
+        _servers.sort(key=lambda x: x.id or "")
         self.media_reader = cls(state=state, server_list=_servers) if self.real else cls(state=state, server_list=_servers, tracker_list=TEST_TRACKERS)
         if not self.settings.disabled_servers and self.real:
             assert(self.media_reader.get_servers())
@@ -1269,6 +1269,7 @@ class LocalServerTest(GenericServerTest, BaseUnitTestClass):
 class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
     port = 8888
     resources_dir_name = ".resources"
+    valid_domain = f"http://localhost:{port}"
 
     def init(self):
         self.default_server_list = [RemoteServer]
@@ -1291,46 +1292,94 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
         cls.web_server.wait()
         shutil.rmtree(TEST_TEMP)
 
+    file_info = (
+        ("A", ["Test1/media/1/file.test", "Test1/media/2/file.test"], MediaType.ANIME, False, 1, 2),
+        ("B", ["Test2/file2.test"], MediaType.MANGA, False, 1, 1),
+        ("C", ["Test3 file.test"], MediaType.NOVEL, False, 1, 1),
+        ("D", ["file.test"], MediaType.ANIME, True, 1, 1),
+        ("E", ["TestAuth/media/1/file.test"], MediaType.ANIME, True, 1, 1),
+    )
+
     def setUp(self):
         super().setUp()
-        path = "Media"
+        for path in os.listdir(TEST_TEMP):
+            abs_path = os.path.join(TEST_TEMP, path)
+            if os.path.isdir(abs_path):
+                shutil.rmtree(os.path.join(TEST_TEMP, path))
+            else:
+                os.unlink(abs_path)
         os.makedirs(self.settings.config_dir)
         conf = {}
-        for media_type in list(MediaType):
-            for p in (f"Test{media_type.name}2/1/file.test", f"Test{media_type.name}/file2.test", f"{media_type.name} file.test"):
-                relative_path = os.path.join(TEST_TEMP, path, media_type.name, p)
-                os.makedirs(os.path.dirname(relative_path), exist_ok=True)
-                if "/" in p:
-                    resource_path = os.path.join(os.path.dirname(relative_path), self.resources_dir_name, "nested")
+        for server_dir, relative_paths, media_type, auth, _, _ in self.file_info:
+            server_id = f"{server_dir}_remote_test_{media_type.name}" + (" _auth" if auth else "")
+            for path in relative_paths:
+                abs_path = os.path.join(TEST_TEMP, server_dir, path)
+                os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+                if path.count("/") > 1:
+                    parent = os.path.dirname(abs_path)
+                    grand_parent = os.path.dirname(parent)
+                    open(os.path.join(grand_parent, self.settings.get_chapter_metadata_file_basename()), "w").close()
+                    resource_path = os.path.join(parent, self.resources_dir_name, "nested")
                     os.makedirs(resource_path, exist_ok=True)
                     open(os.path.join(resource_path, "some_resource"), "w").close()
-                open(relative_path, "w").close()
-            conf[f"remote_test_{media_type.name}"] = {
-                "domain_list": [f"http://localhost:-1{self.port}", "__bad_domain__", f"http://localhost:{self.port}"],
-                "path": f"{path}/{media_type.name}/",
-                "media_type": media_type.name,
+                open(abs_path, "w").close()
+            conf[server_id] = {
+                "domain_list": [f"http://localhost:-1{self.port}", "__bad_domain__", self.valid_domain],
+                "path": server_dir
             }
-            conf[f"remote_test_{media_type.name}_auth"] = {
-                "domain_list": [f"http://localhost:-1{self.port}", "__bad_domain__", f"http://localhost:{self.port}"],
-                "path": f"{path}/{media_type.name}/",
-                "media_type": media_type.name,
-                "auth": True,
-                "username": "admin",
-                "password": "root",
-            }
+            if media_type:
+                conf[server_id]["media_type"] = media_type.name
+            if auth:
+                conf[server_id]["auth"] = True
+                conf[server_id]["username"] = "admin"
+                conf[server_id]["password"] = "root"
         with open(self.settings.get_remote_servers_config_file(), "w") as f:
             json.dump(conf, f)
 
         self.reload(True)
         if ENABLED_SERVERS and not self.media_reader.get_servers():
             self.skipTest("Server not enabled")
-        self.assertEqual(len(self.media_reader.get_servers()), len(list(MediaType)) * 2)
+        self.assertEqual(len(self.media_reader.get_servers()), len(self.file_info))
 
-    def test_cache(self):
-        media_data = self.add_test_media(limit=1)[0]
-        server = self.media_reader.get_server(media_data["server_id"])
-        server.session_get_cache(f"http://localhost:{self.port}")
-        server.session_get_cache(f"http://localhost:{self.port}")
+    def test_add_media(self):
+        media_list = self.add_test_media()
+        self.assertEqual(len(media_list), sum(map(lambda x: x[-2], self.file_info)))
+        self.assertEqual(self.get_num_chapters(), sum(map(lambda x: x[-1], self.file_info)))
+
+    def test_remote_local_server(self):
+        original_default = list(self.default_server_list)
+        self.default_server_list.extend(filter(lambda x: x.id == LocalServer.id, LOCAL_SERVERS))
+        os.unlink(self.settings.get_remote_servers_config_file())
+        self.reload(True)
+        local_server = self.media_reader.get_server(LocalServer.id)
+        media_files = [("A", "file1"), ("A", "file2"), ("B", "file1")]
+        for media_name, file_name in media_files:
+            open(local_server.get_import_media_dest(media_name, file_name), "w").close()
+        media_list = self.add_test_media()
+        self.assertEqual(2, len(media_list))
+        self.media_reader.state.save()
+
+        remote_server_id = "remote"
+        path = "path"
+        with open(self.settings.get_remote_servers_config_file(), "w") as f:
+            conf = {remote_server_id: {
+                    "domain_list": [f"http://localhost:{self.port}"],
+                    "path": path
+                    }
+                    }
+            json.dump(conf, f)
+        os.symlink(os.path.join(TEST_HOME, self.settings.data_dir), os.path.join(TEST_TEMP, path))
+
+        self.default_server_list = original_default
+        self.reload(True)
+        self.assertEqual(len(self.media_reader.get_servers()), 1)
+
+        media_list = self.add_test_media(server_id=remote_server_id)
+        self.assertEqual(2, len(media_list))
+        self.assertEqual(set(map(lambda x: x["name"], media_list)), set(("A", "B",)))
+
+        self.media_reader.download_unread_chapters()
+        self.verify_all_chapters_downloaded()
 
     def test_no_valid_domains(self):
         conf = {"remote_test_bad": {
@@ -1367,10 +1416,6 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
         self.assertEqual(3, len(self.media_reader.state.get_server_ids()))
         self.test_workflow()
 
-    def test_media_num(self):
-        self.add_test_media()
-        self.assertEqual(3 * len(self.media_reader.state.get_server_ids()), len(self.media_reader.get_media_ids()))
-
     def test_validate_media(self):
         media_list = self.add_test_media()
         for media_data in media_list:
@@ -1380,30 +1425,39 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
             self.assertTrue(media_data["chapters"])
 
     def test_stream(self):
-        for media_data in self.add_test_media(media_type=MediaType.ANIME):
-            with self.subTest(media_name=media_data["name"]):
-                assert media_data["name"]
-                server = self.media_reader.get_server(media_data["server_id"])
-                assert media_data.get_sorted_chapters()
-                urls = []
-                for stream_urls in server.get_stream_urls(media_data, media_data.get_sorted_chapters()[0]):
-                    urls.extend(stream_urls)
-                for url in urls:
-                    self.assertTrue(self.media_reader.stream(url))
-                self.media_reader.remove_media(name=media_data)
-                for url in urls:
-                    self.assertTrue(self.media_reader.stream(url))
+        self.settings.viewer = "curl -f {media}"
+        for file_info_data in self.file_info:
+            if file_info_data[2] & MediaType.ANIME:
+                for file_path in file_info_data[1]:
+                    url = self.valid_domain + "/" + file_info_data[0] + "/" + file_path
+                    with self.subTest(url=url):
+                        self.assertTrue(self.media_reader.stream(url))
 
-    def test_download_resources(self):
+    def test_add_from_url(self):
+        for i, file_info_data in enumerate(self.file_info):
+            url = self.valid_domain + "/" + file_info_data[0] + "/" + file_info_data[1][0]
+            with self.subTest(url=url):
+                self.media_reader.add_from_url(url)
+                self.verify_media_len(i + 1)
+
+    def test_verify_download_resources(self):
         media_list = self.add_test_media()
         self.media_reader.download_unread_chapters()
         num_files = 0
+        self.assertTrue(media_list)
         for media_data in media_list:
+            self.assertTrue(media_data.get_sorted_chapters())
             for chapter_data in media_data.get_sorted_chapters():
-                dir_path = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), self.resources_dir_name)
+                chapter_dir = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
+                self.assertTrue(os.path.exists(chapter_dir))
+                dir_path = os.path.join(chapter_dir, self.resources_dir_name)
                 if os.path.exists(dir_path):
+                    self.assertTrue(os.listdir(dir_path))
                     num_files += 1
-        self.assertEqual(len(self.media_reader.state.get_server_ids()), num_files)
+        expected_num_files = 0
+        for root, dirs, files in os.walk(TEST_TEMP):
+            expected_num_files += self.resources_dir_name in dirs
+        self.assertEqual(expected_num_files, num_files)
 
 
 class ArgsTest(CliUnitTestClass):
