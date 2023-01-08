@@ -1,4 +1,3 @@
-import json
 import re
 
 from ..server import Server
@@ -95,7 +94,6 @@ class Crunchyroll(GenericCrunchyrollServer):
 
     alpha_list_url = base_url + "/comics/manga/alpha?group=all"
     popular_list_url = base_url + "/comics/manga"
-    popular_media_regex = re.compile(r"#media_group_(\d*).*bubble_data., (.*)\);")
 
     api_base_url = "https://api-manga.crunchyroll.com"
     api_chapter_url = api_base_url + "/list_chapter?session_id={}&chapter_id={}&auth={}"
@@ -110,7 +108,9 @@ class Crunchyroll(GenericCrunchyrollServer):
 
     def get_media_data_from_url(self, url):
         name_slug = self._get_media_id_from_url(url)
-        return sorted(self.search(name_slug))[0][1]
+        for media_data in self.get_media_list():
+            if media_data["alt_id"] == name_slug:
+                return media_data
 
     def get_chapter_id_for_url(self, url):
         number = self.stream_url_regex.search(url).group(2)
@@ -126,20 +126,21 @@ class Crunchyroll(GenericCrunchyrollServer):
         return bytes(b ^ 66 for b in buffer)
 
     def get_media_list(self, **kwargs):
-        media_name_ids = {}
+        media_data_map = {}
         try:
             from bs4 import BeautifulSoup
-            soup = self.soupify(BeautifulSoup, self.session_get_cache(self.alpha_list_url))
-            for group_item in soup.findAll("li", {"class": "group-item"}):
-                media_name_ids[group_item["group_id"]] = group_item.find("a")["title"]
-        except (HTTPError, ImportError):
+            for url in (self.alpha_list_url, self.popular_list_url):
+                soup = self.soupify(BeautifulSoup, self.session_get_cache(url))
+                for group_item in soup.findAll("li", {"class": "group-item"}):
+                    media_id = group_item["group_id"]
+                    if media_id not in media_data_map:
+                        link = group_item.find("a")
+                        match = self.add_series_url_regex.search(self.domain + link["href"])
+                        media_data_map[media_id] = self.create_media_data(id=media_id, name=link["title"], alt_id=match.group(1), locale="enUS")
+        except ImportError:
             pass
-        text = self.session_get_cache(self.popular_list_url)
-        match = self.popular_media_regex.findall(text)
-        for media_id, data in match:
-            media_name_ids[media_id] = json.loads(data)["name"]
 
-        return list(map(lambda media_id: self.create_media_data(id=media_id, name=media_name_ids[media_id], locale="enUS"), media_name_ids))
+        return list(media_data_map.values())
 
     def update_media_data(self, media_data: dict):
         json_data = self.session_get_json(self.api_chapters_url.format(media_data["id"]))
