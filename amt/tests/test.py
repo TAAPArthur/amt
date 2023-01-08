@@ -951,7 +951,7 @@ class MediaReaderTest(BaseUnitTestClass):
         self.assertEqual(1, self.get_num_chapters_read())
 
     def test_play_batch_size_use_first_chapter_for_env(self):
-        media_data = next(filter(lambda x: len(x["chapters"]) > 3,  self.add_test_media(media_type=MediaType.MANGA)))
+        media_data = next(filter(lambda x: len(x["chapters"]) > 3, self.add_test_media(media_type=MediaType.MANGA)))
         chapters = media_data.get_sorted_chapters()
         self.settings.viewer = f'[ "$CHAPTER_NUMBER" != {chapters[1]["number"]} ]'
         self.assertTrue(self.media_reader.play(media_data, batch_size=2, limit=3))

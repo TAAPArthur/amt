@@ -92,7 +92,8 @@ class RequestServer:
             try:
                 r = session.post(url, **kwargs) if post_request else session.get(url, **kwargs)
                 if r.status_code != 200:
-                    self.logger.warning("HTTPError: %d; Session class %s; headers %s; %s", r.status_code, type(session), kwargs.get("headers", {}), r.text[:256])
+                    self.logger.warning("HTTPError: %d; Session class %s; headers %s;", r.status_code, type(session), kwargs.get("headers", {}))
+                    self.logger.debug("HTTPError: %d; %s", r.status_code, r.text[:256])
                 if not r.status_code in self.settings.status_to_retry:
                     break
                 self.backoff(i + 1, r)
@@ -458,7 +459,7 @@ class GenericServer(MediaServer):
             if not ext:
                 ext = self.get_extension(url)
             basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
-            if not sub_dir :
+            if not sub_dir:
                 sub_dir = self.settings.get_subtitles_dir(media_data, chapter_data)
                 os.makedirs(sub_dir, exist_ok=True)
             path = os.path.join(sub_dir, basename)
@@ -588,7 +589,7 @@ class Server(GenericServer):
                 self.relogin()
                 return func()
             else:  # pragma: no cover
-                self.logger.error("Error %s: This could happen if you are trying to view mature account and are being blocked, or if you are trying to consume premium content without a premium account: %s", str(e))
+                self.logger.error("Error %s: This could happen if you are trying to view mature account and are being blocked, or if you are trying to consume premium content without a premium account", str(e))
                 raise
 
     def needs_to_login(self):
