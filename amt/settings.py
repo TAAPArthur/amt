@@ -387,7 +387,6 @@ class Settings:
 
     def get_subtitles_dir(self, media_data, chapter_data):
         sub_dir = os.path.join(self.get_chapter_dir(media_data, chapter_data), self.subtitles_dir)
-        os.makedirs(sub_dir, exist_ok=True)
         return sub_dir
 
     def open_viewer(self, raw_files, media_chapters):

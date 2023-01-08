@@ -441,18 +441,22 @@ class GenericServer(MediaServer):
         assert m.segments
         return m.segments
 
-    def download_subtitles(self, media_data, chapter_data, dir_path):
+    def download_subtitles(self, media_data, chapter_data):
         """ Only for ANIME, Download subtitles to dir_path
         By default does nothing. Subtitles should generally have the same name
         as the final media
         """
 
+        sub_dir = None
         subtitle_regex = re.compile(r"\w*-\w\d*_[2-9]\d*$")
         for lang, url, ext, flip in self.get_subtitle_info(media_data, chapter_data):
             if not ext:
                 ext = self.get_extension(url)
             basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
-            path = os.path.join(dir_path, basename)
+            if not sub_dir :
+                sub_dir = self.settings.get_subtitles_dir(media_data, chapter_data)
+                os.makedirs(sub_dir, exist_ok=True)
+            path = os.path.join(sub_dir, basename)
             if not os.path.exists(path):
                 r = self.session_get(url)
                 if flip:
@@ -604,9 +608,7 @@ class Server(GenericServer):
                 raise ValueError("Cannot access premium chapter")
 
         if self.media_type == MediaType.ANIME:
-            sub_dir = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), self.settings.subtitles_dir)
-            os.makedirs(sub_dir, exist_ok=True)
-            def func(): self.download_subtitles(media_data, chapter_data, dir_path=sub_dir)
+            def func(): self.download_subtitles(media_data, chapter_data)
             self.relogin_on_error(func)
 
     def download_chapter(self, media_data, chapter_data, **kwargs):
