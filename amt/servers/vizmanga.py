@@ -176,13 +176,10 @@ class VizManga(GenericVizManga):
 
         soup = self.soupify(BeautifulSoup, r)
         divs = soup.findAll("a", {"class": "o_chapters-link"})
-        result = []
         for div in divs:
             id = div["href"].split("/")[-1]
             name = div.find("div", {"class", "pad-x-rg pad-t-rg pad-b-sm type-sm type-rg--sm type-md--lg type-center line-solid"}).getText().strip()
-            result.append(self.create_media_data(id=id, name=name))
-
-        return result
+            yield self.create_media_data(id=id, name=name)
 
     def update_media_data(self, media_data):
         r = self.session_get(self.api_chapters_url.format(media_data["id"]))
@@ -240,6 +237,7 @@ class VizManga(GenericVizManga):
 class VizMangaLibrary(GenericVizManga):
     id = "vizmanga_lib"
     alias = "vizmanga"
+    need_to_login_to_list = True
     progress_type = ProgressType.VOLUME_ONLY
     has_free_chapters = False
 
@@ -258,13 +256,12 @@ class VizMangaLibrary(GenericVizManga):
         r = self.session_get(self.list_series_url)
         soup = self.soupify(BeautifulSoup, r)
         table = soup.find("table", {"class": "purchase-table"})
-        results = []
         if table:
             for link in table.findAll("a"):
                 url = self.base_url + link["href"]
                 match = self.add_series_url_regex.search(url)
                 if match:
-                    results.append(self.create_media_data(id=match.group(1), alt_id=match.group(2), name=link.getText()))
+                    yield self.create_media_data(id=match.group(1), alt_id=match.group(2), name=link.getText())
         else:
             # Special case if there is only one volume/series
             table = soup.find("table", {"class": "product-table"})
@@ -272,8 +269,7 @@ class VizMangaLibrary(GenericVizManga):
                 for td in table.findAll("td", {"class": "product-table--primary"}):
                     name, url = td[0].getText(), td[1].find("a")["href"]
                     slug = self.stream_url_regex.search(self.base_url + url).group(2)
-                    results.append(self.create_media_data(id=slug, name=name))
-        return results
+                    yield self.create_media_data(id=slug, name=name)
 
     def _update_media_data(self, url, media_id=None):
         r = self.session_get(url)

@@ -74,6 +74,7 @@ class GenericJNovelClub(Server):
 class JNovelClub(GenericJNovelClub):
     id = "j_novel_club"
     media_type = MediaType.NOVEL
+    need_to_login_to_list = True
     owned_url = "https://api.j-novel.club/api/users/me?filter={'include':[{'ownedBooks':'serie'}]}"
     has_free_chapters = False
 

@@ -179,6 +179,15 @@ class TestServerLoginAlias(TestServerLogin):
     alias = "test_server_login_alias"
 
 
+class TestServerLib(TestServerLogin):
+    id = "test_server_lib"
+    need_to_login_to_list = True
+
+    def get_media_list(self, **kwargs):
+        assert not self.needs_authentication()
+        return super().get_media_list(**kwargs)
+
+
 class TestAnimeServer(TestServer):
     id = "test_server_anime"
     media_type = MediaType.ANIME

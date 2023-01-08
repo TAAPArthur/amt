@@ -110,7 +110,7 @@ class MediaReader:
     # Method related to adding/removing media and searching for media
 
     def list_some_media_from_server(self, server_id, limit=None):
-        return self.get_server(server_id).get_media_list(limit=limit)[:limit]
+        return self.get_server(server_id).list_media(limit=limit)[:limit]
 
     def add_media(self, media_data, no_update=None):
         global_id = media_data.global_id
@@ -289,7 +289,7 @@ class MediaReader:
         """
         server = self.get_server(media_data["server_id"])
         chapter_ids = set(media_data["chapters"].keys())
-        server.update_media_data(media_data)
+        server.update(media_data)
 
         if not self.settings.get_keep_unavailable(media_data):
             for chapter_id in chapter_ids:

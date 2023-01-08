@@ -44,7 +44,7 @@ class Mangadex(Server):
                 break
 
     def get_media_list(self, limit=100, **kwargs):
-        return list(self._list_or_search_get_media_list(self.list_url, limit))
+        yield from self._list_or_search_get_media_list(self.list_url, limit)
 
     def search_for_media(self, term, limit=100, **kwargs):
         return list(self._list_or_search_get_media_list(self.search_url.format_map(SafeDict(title=term)), limit))

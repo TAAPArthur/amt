@@ -198,6 +198,7 @@ class Funimation(GenericFunimation):
 class FunimationLibrary(GenericFunimation):
     id = "funimationlib"
     has_free_chapters = False
+    need_to_login_to_list = True
 
     list_url = GenericFunimation.prod_api_base + "/api/funimation/library/"
     search_url = GenericFunimation.prod_api_base + "/api/funimation/library/?search={}"
@@ -215,16 +216,12 @@ class FunimationLibrary(GenericFunimation):
         return {"Authorization": "Token " + t}
 
     def get_media_list(self, limit=None, **kwargs):
-        if self.needs_authentication():
-            return []
         data = self.session.get(self.list_url, headers=self.get_auth_header()).json()
-        return list(self._get_media_list_helper(data))[:limit]
+        yield from self._get_media_list_helper(data)
 
     def search_for_media(self, term, limit=None, **kwargs):
-        if self.needs_authentication():
-            return []
         data = self.session.get(self.search_url.format(term), headers=self.get_auth_header()).json()
-        return list(self._get_media_list_helper(data))[:limit]
+        yield from self._get_media_list_helper(data)
 
     def update_media_data(self, media_data):
         data = self.session.get(self.episode_url.format(media_data["alt_id"], media_data["season_number"]), headers=self.get_auth_header()).json()

@@ -114,15 +114,12 @@ class RemoteServer(Server):
         try:
             metadata_file_name = os.path.basename(self.settings.get_metadata_file())
             url = self.get_base_url()
-            results = []
             media_metadata = self.session_get_cache_json(os.path.join(url, metadata_file_name))
             for media_data in media_metadata["media"].values():
                 alt_id = os.path.join("Media", media_data["server_id"], media_data["dir_name"]) + "/"
-                results.append(self._create_media_data(alt_id, media_data["name"]))
-            return results
+                yield self._create_media_data(alt_id, media_data["name"])
         except RequestException:
-            pass
-        return [self._create_media_data(link) for link in self.list_files()]
+            yield from (self._create_media_data(link) for link in self.list_files())
 
     def update_media_data(self, media_data):
         if media_data["alt_id"][-1] != "/":

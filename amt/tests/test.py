@@ -157,7 +157,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.close_sessions()
 
     def add_test_media(self, server_id=None, media_type=None, no_update=False, limit=None, limit_per_server=None):
-        media_list = self.media_reader.get_server(server_id).get_media_list() if server_id else [x for server in self.media_reader.get_servers() if not media_type or server.media_type & media_type for x in server.get_media_list()[:limit_per_server]]
+        media_list = self.media_reader.get_server(server_id).list_media() if server_id else [x for server in self.media_reader.get_servers() if not media_type or server.media_type & media_type for x in server.list_media()[:limit_per_server]]
         for media_data in media_list[:limit]:
             self.media_reader.add_media(media_data, no_update=no_update)
         assert media_list
@@ -627,7 +627,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def test_media_reader_add_remove_media(self):
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id):
-                media_list = server.get_media_list()
+                media_list = server.list_media()
                 assert media_list
                 selected_media = media_list[0]
                 self.media_reader.add_media(selected_media)
@@ -639,7 +639,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
 
     def test_server_download(self):
         for server in self.media_reader.get_servers():
-            for media_data in server.get_media_list():
+            for media_data in server.list_media():
                 with self.subTest(server=server.id, media_data=media_data["name"]):
                     server.update_media_data(media_data)
                     for stream_index, chapter_data in zip((0, -1), media_data.get_sorted_chapters()[0:2]):
@@ -662,7 +662,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def test_search_media(self):
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id):
-                media_data = server.get_media_list()[0]
+                media_data = server.list_media()[0]
                 name = media_data["name"]
                 self.assertEqual(media_data, list(server.search(name))[0][1])
                 assert server.search(name[:3])
@@ -1073,7 +1073,7 @@ class GenericServerTest():
     def _test_list_and_search(self, server, test_just_list=False):
         media_list = None
         with self.subTest(server=server.id, list=True):
-            media_list = server.get_media_list(limit=4)
+            media_list = server.list_media(limit=4)
             assert media_list or not server.has_free_chapters or not server.domain
             self.verfiy_media_list(media_list, server=server)
 
@@ -1106,6 +1106,8 @@ class GenericServerTest():
     def test_workflow(self):
         def func(server):
             with self.subTest(server=server.id):
+                if server.need_to_login_to_list:
+                    return
                 for media_data in self._test_list_and_search(server):
                     self.media_reader.add_media(media_data)
                     self.verfiy_media_chapter_data(media_data)
@@ -2255,7 +2257,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         GenericDecoder.PENDING_CACHE_NUM = 1
         server = self.media_reader.get_server(JNovelClubMangaParts.id)
         self.assert_server_enabled_or_skip_test(server)
-        media_data = server.get_media_list()[0]
+        media_data = server.list_media()[0]
         self.media_reader.add_media(media_data)
         chapter_data = media_data.get_sorted_chapters()[0]
         self.assertFalse(chapter_data["premium"])
@@ -2270,7 +2272,7 @@ class ServerSpecificTest(RealBaseUnitTestClass):
         server = self.media_reader.get_server(JNovelClubParts.id)
         self.assert_server_enabled_or_skip_test(server)
         server.time_to_live_sec = 0
-        for media_data in server.get_media_list():
+        for media_data in server.list_media():
             self.media_reader.add_media(media_data)
             if media_data["chapters"] and media_data.get_last_chapter()["volume_number"] > 1:
                 break

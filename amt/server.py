@@ -187,6 +187,24 @@ class MediaServer(RequestServer):
     # If true, always just search the literal title instead of also searching subsections
     fuzzy_search = False
 
+    need_to_login_to_list = False
+
+    def maybe_relogin(self):
+        with self._lock:
+            if self.need_to_login_to_list and self.needs_to_login():
+                self.logger.info("Server is not authenticated; relogging in")
+                if not self.relogin():
+                    raise ValueError("Failed to login")
+
+    def list_media(self, limit=None):
+        self.maybe_relogin()
+
+        return list(self.get_media_list(limit=limit))
+
+    def update(self, media_data):
+        self.maybe_relogin()
+        self.update_media_data(media_data)
+
     def search(self, term, media_type=None, literal=False, limit=20):
         """
         Searches for a media containing term
@@ -214,11 +232,15 @@ class MediaServer(RequestServer):
             pass
         now = time.time()
         media_map = {}
+        made_query = False
         for term in terms:
             if term in cache_data and (not cache_data[term]["media_type"] or media_type == cache_data[term]["media_type"]):
                 media_list = map(MediaData, cache_data[term]["media_list"])
                 cache_data[term]["time"] = now
             else:
+                if not made_query:
+                    self.maybe_relogin()
+                    made_query = True
                 media_list = list(self.search_for_media(term, limit=limit, media_type=media_type, **kwargs))
                 cache_data[term] = {"media_list": media_list, "media_type": media_type if media_type else 0, "time": now}
             for media_data in media_list:

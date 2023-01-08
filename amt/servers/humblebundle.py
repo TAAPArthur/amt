@@ -12,6 +12,7 @@ from ..util.progress_type import ProgressType
 
 class HumbleBundle(Server):
     id = "humblebundle"
+    need_to_login_to_list = True
     media_type = MediaType.MANGA | MediaType.NOVEL
     progress_type = ProgressType.VOLUME_ONLY
     official = True
