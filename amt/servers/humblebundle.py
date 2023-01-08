@@ -5,7 +5,7 @@ from requests.exceptions import HTTPError
 
 from ..server import Server
 from ..util.media_type import MediaType
-from ..util.name_parser import (get_media_name_from_file,
+from ..util.name_parser import (get_media_id_from_name,
                                 get_number_from_file_name)
 from ..util.progress_type import ProgressType
 
@@ -27,9 +27,10 @@ class HumbleBundle(Server):
 
     stream_url_regex = re.compile(r"dl.humble.com/(\w*).\s*?gamekey=(\w*)")
 
+    media_name_regex = re.compile("(Vol\.|volume|Volume|Part|) \d+\.?\d*$")
+
     def get_all_bundle_keys(self):
-        r = self.session_get(self.base_url)
-        match = self.game_key_regex.search(r.text)
+        match = self.game_key_regex.search(self.session_get_cache(self.base_url))
         return json.loads(match.group(1)) if match else []
 
     def get_media_of_type(self, key, platform="ebook"):
@@ -39,7 +40,9 @@ class HumbleBundle(Server):
             name = product["human_name"]
             for downloads in filter(lambda x: x["platform"] == platform, product["downloads"]):
                 download_struct = downloads["download_struct"]
-                yield key, id, name, download_struct
+                media_name = self.media_name_regex.split(name)[0].strip()
+                media_id = get_media_id_from_name(media_name)
+                yield key, media_id, media_name, id, name, download_struct
 
     def get_all_media_of_type(self, platform="ebook"):
         for key in self.get_all_bundle_keys():
@@ -47,25 +50,22 @@ class HumbleBundle(Server):
 
     def _get_media_list_helper(self, media_metadata_tuples, chapter_id_filter=None):
         media_list = {}
-        for key, chapter_id, name, download_struct in media_metadata_tuples:
+        for key, media_id, media_name, chapter_id, name, download_struct in media_metadata_tuples:
             if chapter_id_filter and chapter_id != chapter_id_filter:
                 continue
             maybe_manga = bool(list(filter(lambda x: x["name"] == "CBZ", download_struct)))
-            media_name = get_media_name_from_file(name)
-            media_slug = f"{key}_{media_name}"
-            if media_slug not in media_list:
+            if media_id not in media_list:
                 media_type = MediaType.MANGA if maybe_manga else MediaType.NOVEL
-                media_list[media_slug] = self.create_media_data(id=media_slug, name=media_name, key=key, media_type=media_type)
+                media_list[media_id] = self.create_media_data(id=media_id, name=media_name, key=key, media_type=media_type)
         return list(media_list.values())
 
     def get_media_list(self, **kwargs):
         return self._get_media_list_helper(self.get_all_media_of_type())
 
     def update_media_data(self, media_data):
-        for key, media_id, name, download_struct in self.get_media_of_type(media_data["key"]):
-            media_name = get_media_name_from_file(name)
-            if media_name == media_data["name"]:
-                self.update_chapter(media_data, media_id, title=name, number=get_number_from_file_name(name, media_name=media_name, default_num=1))
+        for key, media_id, _, chapter_id, name, _ in self.get_media_of_type(media_data["key"]):
+            if media_id == media_data["id"]:
+                self.update_chapter(media_data, chapter_id, title=name, number=get_number_from_file_name(name, media_name=media_data["name"], default_num=1))
 
     def get_stream_urls(self, media_data, chapter_data):
         for key, media_id, name, download_struct in self.get_media_of_type(media_data["key"]):
