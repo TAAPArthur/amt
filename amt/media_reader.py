@@ -609,39 +609,41 @@ class MediaReader:
             for media_data in [x for x in self.get_media() if not os.path.exists(self.settings.get_chapter_metadata_file(x))]:
                 logging.info("Removing metadata for %s because it doesn't exist on disk", media_data["name"])
                 self.remove_media(name=media_data)
-        media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media()}
         if url_cache:
             if os.path.exists(self.settings.get_web_cache_dir()):
                 shutil.rmtree(self.settings.get_web_cache_dir())
-
         if not os.path.exists(self.settings.media_dir):
             return
+        media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media()}
         for server_dir in os.listdir(self.settings.media_dir):
             server = self.get_server(server_dir)
             server_path = os.path.join(self.settings.media_dir, server_dir)
-            if server:
-                if include_local_servers or not server.is_local_server():
-                    for media_dir in os.listdir(server_path):
-                        media_path = os.path.join(server_path, media_dir)
-                        if media_path not in media_dirs:
-                            logging.info("Removing %s because it has been removed", media_path)
-                            shutil.rmtree(media_path)
+            if not server:
+                if remove_disabled_servers:
+                    logging.info("Removing %s because it is not enabled", server_path)
+                    shutil.rmtree(server_path)
+            elif include_local_servers or not server.is_local_server():
+                for media_dir in os.listdir(server_path):
+                    media_path = os.path.join(server_path, media_dir)
+                    if media_path not in media_dirs:
+                        logging.info("Removing %s because it has been removed", media_path)
+                        shutil.rmtree(media_path)
+                        continue
+                    media_data = media_dirs[media_path]
+                    for chapter_data in media_data.get_sorted_chapters():
+                        chapter_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
+                        if not os.path.exists(chapter_path):
                             continue
-                        media_data = media_dirs[media_path]
-                        if remove_read:
-                            for chapter_data in media_data.get_sorted_chapters():
-                                chapter_path = self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)
-                                if chapter_data["read"] and os.path.exists(chapter_path):
-                                    logging.info("Removing %s because it has been read", chapter_path)
-                                    shutil.rmtree(chapter_path)
+                        if remove_read and chapter_data["read"]:
+                            logging.info("Removing %s because it has been read", chapter_path)
+                            shutil.rmtree(chapter_path)
+                        elif not server.is_fully_downloaded(media_data, chapter_data):
+                            logging.info("Removing %s because it hasn't been fully downloaded", chapter_path)
+                            shutil.rmtree(chapter_path)
 
-                        chapter_dirs = {self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True): chapter_data for chapter_data in media_data.get_sorted_chapters()}
-                        for chapter_dir in os.listdir(media_path):
-                            chapter_path = os.path.join(media_path, chapter_dir)
-                            if chapter_path not in chapter_dirs and os.path.isdir(chapter_path):
-                                logging.info("Removing %s because chapter info has been removed", chapter_path)
-                                shutil.rmtree(chapter_path)
-
-            elif remove_disabled_servers:
-                logging.info("Removing %s because it is not enabled", server_path)
-                shutil.rmtree(server_path)
+                    chapter_dirs = {self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True): chapter_data for chapter_data in media_data.get_sorted_chapters()}
+                    for chapter_dir in os.listdir(media_path):
+                        chapter_path = os.path.join(media_path, chapter_dir)
+                        if chapter_path not in chapter_dirs and os.path.isdir(chapter_path):
+                            logging.info("Removing %s because chapter info has been removed", chapter_path)
+                            shutil.rmtree(chapter_path)

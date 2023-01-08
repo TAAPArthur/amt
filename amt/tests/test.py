@@ -1786,9 +1786,23 @@ class ArgsTest(CliUnitTestClass):
     def test_clean_read(self):
         self.add_test_media(TestServer.id)
         self.media_reader.download_unread_chapters()
+        parse_args(media_reader=self.media_reader, args=["clean"])
+        self.verify_all_chapters_downloaded()
         self.media_reader.mark_read()
+        parse_args(media_reader=self.media_reader, args=["clean"])
+        self.verify_all_chapters_downloaded()
+
         parse_args(media_reader=self.media_reader, args=["clean", "--remove-read"])
         self.verify_no_chapters_downloaded()
+
+    def test_clean_stream(self):
+        media_data = self.add_test_media(media_type=MediaType.ANIME, limit=1)[0]
+        parse_args(media_reader=self.media_reader, args=["play"])
+        self.verify_no_chapters_downloaded()
+        parse_args(media_reader=self.media_reader, args=["clean"])
+
+        for chapter_data in media_data.get_sorted_chapters():
+            self.assertFalse(os.path.exists(self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)))
 
     def test_clean_read_already_removed(self):
         media_data = self.add_test_media(TestServer.id, limit=1)[0]
