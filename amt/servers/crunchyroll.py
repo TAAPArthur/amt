@@ -1,10 +1,10 @@
+import json
 import re
 
 from ..server import Server
 from ..util.media_type import MediaType
 from ..util.name_parser import find_media_with_similar_name_in_list
 from datetime import datetime
-from requests.exceptions import HTTPError
 from threading import RLock
 
 
@@ -15,7 +15,6 @@ class GenericCrunchyrollServer(Server):
     api_auth_url = "https://api-manga.crunchyroll.com/cr_authenticate?session_id={}&version=0&format=json"
     base_url = "https://api.crunchyroll.com"
     login_url = base_url + "/login.1.json"
-
 
     _access_token = "WveH9VkPLrXvuNm"
     _access_type = "com.crunchyroll.crunchyroid"
@@ -180,7 +179,9 @@ class Crunchyroll(GenericCrunchyrollServer):
 
 class CrunchyrollAnime(GenericCrunchyrollServer):
     id = "crunchyroll_anime"
+    media_type = MediaType.ANIME
     need_cloud_scraper = True
+    fuzzy_search = True
 
     api_base_url = "http://api.crunchyroll.com"
     list_all_series = "https://www.crunchyroll.com/ajax/?req=RpcApiSearch_GetSearchCandidates"
@@ -188,14 +189,16 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     stream_url = api_base_url + "/info.0.json?fields=media.stream_data&locale=enUS&session_id={}&media_id={}"
     episode_url = api_base_url + "/info.0.json?session_id={}&media_id={}"
     series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
-    media_type = MediaType.ANIME
 
-    stream_url_regex = re.compile(r"crunchyroll.com/([^/]*)/[^/]*-(\d+)$")
+    stream_url_regex = re.compile(r"crunchyroll.\w+/watch/(\w*)/.+")
+    add_series_url_regex = re.compile(r"crunchyroll.\w+/series/(\w*)")
+
+    version = 1
 
     def _create_media_data(self, series_id, item_alt_id, season_id=None):
         season_data = self.session_get_json(self.series_url.format(self.get_session_id(), series_id), mem_cache=True)["data"]
         for season in season_data:
-            if not season_id or season["collection_id"] == season_id:
+            if not season_id or season["collection_id"] == season_id or season["etp_guid"] == season_id:
                 yield self.create_media_data(id=series_id, alt_id=item_alt_id, name=season["name"], season_id=season["collection_id"], lang=None)
 
     def get_related_media_seasons(self, media_data):
@@ -204,13 +207,11 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_media_list(self, **kwargs):
         return self.search_for_media(None, **kwargs)
 
-    def search_for_media(self, term, limit=None, **kwargs):
-        try:
-            data = self.session_get_cache_json(self.list_all_series, output_format_func=lambda text: text.splitlines()[1])["data"]
-        except HTTPError:
-            self.get_session_id(force=True)
-            data = self.session_get_cache_json(self.list_all_series, output_format_func=lambda text: text.splitlines()[1])["data"]
+    def get_media_metadata(self):
+        return self.session_get_json(self.list_all_series, skip_cache=False, output_format_func=lambda text: text.splitlines()[1])["data"]
 
+    def search_for_media(self, term, limit=None, **kwargs):
+        data = self.get_media_metadata()
         if term:
             data = list(find_media_with_similar_name_in_list([term], data))
 
@@ -235,23 +236,30 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
                 except:
                     avaliable_date = None
 
-                self.update_chapter_data(media_data, id=chapter["media_id"], number=number, title=chapter["name"], premium=not chapter["free_available"], special=special, alt_id=chapter["etp_guid"], date=avaliable_date)
+                self.update_chapter_data(media_data, id=chapter["etp_guid"], number=number, title=chapter["name"], premium=not chapter["free_available"], special=special, alt_id=chapter["media_id"], date=avaliable_date)
 
     def get_media_data_from_url(self, url):
-        match = self.stream_url_regex.search(url)
-        chapter_id = match.group(2)
-        data = self.session_get_json(self.episode_url.format(self.get_session_id(), chapter_id))["data"]
-        media_data = next(self._create_media_data(data["series_id"], data["series_etp_guid"], season_id=data["collection_id"]))
-        return media_data
+        match = self.add_series_url_regex.search(url)
+        if match:
+            media_id = match.group(1)
+            for item in self.get_media_metadata():
+                if item["etp_guid"] == media_id:
+                    return next(self._create_media_data(item["id"], media_id))
+        text = self.session_get(url).text
+        text = text.split("window.__INITIAL_STATE__ = ")[1]
+        text = text.splitlines()[0][:-1]
+        data = json.loads(text)
+        media_metadata = list(data["content"]["media"]["byId"].values())[0]
+
+        for item in self.get_media_metadata():
+            if item["etp_guid"] == media_metadata["parentId"]:
+                return next(self._create_media_data(item["id"], media_metadata["parentId"], season_id=media_metadata["seasonId"]))
 
     def get_chapter_id_for_url(self, url):
-        chapter_id = url.split("-")[-1]
-        return chapter_id
+        return self.stream_url_regex.search(url).group(1)
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
-        chapter_id = chapter_data["id"]
-
-        data = self.session_get_json(self.stream_url.format(self.get_session_id(), chapter_id))
+        data = self.session_get_json(self.stream_url.format(self.get_session_id(), chapter_data["alt_id"]))
 
         streams = data["data"]["stream_data"]["streams"]
         return [[stream["url"]] for stream in streams]

@@ -2143,9 +2143,8 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
-        ("https://crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
+        ("https://crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "257631", "21685", "GR3VWXP96"),
         ("https://crunchyroll.com/manga/to-your-eternity/read/1", "499", None, "16329"),
-        ("https://crunchyroll.com/one-piece/episode-1-im-luffy-the-man-whos-gonna-be-king-of-the-pirates-650673", "257631", "21685", "650673"),
         ("https://dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
         ("https://dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
         ("https://freewebnovel.com/itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu/chapter-1.html", "itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", None, "chapter-1"),
@@ -2166,15 +2165,16 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.funimation.com/v/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
     ]
     addable_urls = [
-        ("https://www.hidive.com/tv/o-maidens-in-your-savage-season", "o-maidens-in-your-savage-season"),
+        ("https://crunchyroll.com/series/GRMG8ZQZR/", "257631"),
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
         ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
-        ("https://nyaa.si/view/269191", "269191"),
         ("https://nyaa.si/view/135283", "135283"),
+        ("https://nyaa.si/view/269191", "269191"),
         ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
         ("https://webtoons.com/en/drama/lookism/list?title_no=1049", 1049),
         ("https://www.crunchyroll.com/comics/manga/hoshi-no-samidare-the-lucifer-and-biscuit-hammer/volumes", 255),
+        ("https://www.hidive.com/tv/o-maidens-in-your-savage-season", "o-maidens-in-your-savage-season"),
     ]
 
     def get_server_for_url(self, url, streamable=False):
