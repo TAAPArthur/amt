@@ -26,6 +26,7 @@ class Hidive(Server):
 
     stream_url_regex = re.compile(domain + r"/stream/([^/]*)/([^/]*)")
     add_series_url_regex = re.compile(f"(?:{domain}|^)/(?:tv|movies)/([^/]*)")
+    logo_regex = re.compile(r"https://static.hidive.com/bumpers/hidive/subscriber/HIDIVE_Bumper11_LogoIntroPremium_\d*p.ts")
 
     def needs_authentication(self):
         r = self.session_get(self.base_url)
@@ -105,7 +106,6 @@ class Hidive(Server):
 
     def prepare_stream(self, media_data, chapter_data, urls):
         urls_to_stream = []
-        logo_url = "https://static.hidive.com/bumpers/hidive/subscriber/HIDIVE_Bumper11_LogoIntroPremium_480p.ts"
         for url in urls:
             ext = self.get_extension(url)
             if ext != "m3u8":
@@ -117,6 +117,8 @@ class Hidive(Server):
             r = self.session_get(playlist[0].uri)
             name = os.path.join(dir_path, chapter_data["id"])
             atexit.register(lambda: os.unlink(name))
+            match = self.logo_regex.search(r.text)
+            logo_url = match.group(0)
             assert logo_url in r.text, r.text[:255]
             with open(name, 'w') as fp:
                 fp.write(r.text.replace(logo_url, ""))
