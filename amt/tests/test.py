@@ -2096,6 +2096,23 @@ class ArgsTest(CliUnitTestClass):
         self.assertFalse(self.media_reader.state.is_out_of_date_minor())
         self.assertFalse(self.media_reader.state.is_out_of_date())
 
+    def test_upgrade_server_version(self):
+        media_data = self.add_test_media(TestServer.id, limit=1)[0]
+        del media_data["version"]
+        self.media_reader.mark_read()
+        self.test_server.version = 1
+
+        ids = set(media_data["chapters"].keys())
+        for chapter_id in ids:
+            new_chapter_id = f"{chapter_id}_new"
+            media_data["chapters"][new_chapter_id] = media_data["chapters"][chapter_id]
+            media_data["chapters"][new_chapter_id]["id"] = new_chapter_id
+            del media_data["chapters"][chapter_id]
+
+        self.media_reader.upgrade_state_if_server_version_changed()
+        self.assertEquals(ids, set(media_data["chapters"].keys()))
+        self.verify_all_chapters_read(media_data)
+
 
 class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 

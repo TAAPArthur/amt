@@ -296,6 +296,8 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
         media_reader = media_reader if media_reader else MediaReaderCLI(state)
         if state.is_out_of_date_minor():
             media_reader.upgrade_state()
+        media_reader.upgrade_state_if_server_version_changed()
+
         if namespace.clear_cookies:
             media_reader.session.cookies.clear()
         obj = media_reader

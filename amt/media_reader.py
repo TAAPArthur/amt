@@ -265,6 +265,13 @@ class MediaReader:
             self.mark_chapters_until_n_as_read(media_data, last_read)
         return failures
 
+    def upgrade_state_if_server_version_changed(self):
+        for media_data in self.get_media():
+            server = self.get_server(media_data["server_id"])
+            if server and media_data.get("version", 0) != server.version:
+                self.update(media_data)
+                media_data["version"] = server.version
+
     def upgrade_state(self):
         if self.state.is_out_of_date():
             if self.state.is_out_of_date_minor():
@@ -295,7 +302,12 @@ class MediaReader:
             for chapter_id in chapter_ids:
                 if chapter_id in media_data["chapters"] and not media_data["chapters"][chapter_id].check_if_updated_and_clear():
                     if not server.is_fully_downloaded(media_data, media_data["chapters"][chapter_id]):
+                        read = media_data["chapters"][chapter_id]["read"]
+                        number = media_data["chapters"][chapter_id]["number"]
                         del media_data["chapters"][chapter_id]
+                        new_chapter_id = media_data.get_chapter_number_to_id(number)
+                        if new_chapter_id:
+                            media_data["chapters"][new_chapter_id]["read"] = read
 
         return len(media_data["chapters"].keys() - chapter_ids)
 
