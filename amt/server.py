@@ -224,36 +224,13 @@ class MediaServer(RequestServer):
         return list(map(lambda x: (score(x["name"]), x), filter(lambda x: not media_type or x["media_type"] & media_type, media_list)))
 
     def search_helper(self, terms, limit=None, media_type=None, **kwargs):
-        cache_data = {}
-        cache_file = self.settings.get_search_cache(self.id)
-        try:
-            with open(cache_file, "r") as f:
-                self.logger.debug("Loading search cache")
-                cache_data = json.load(f)
-        except (json.decoder.JSONDecodeError, FileNotFoundError):
-            pass
-        now = time.time()
+        self.maybe_relogin()
         media_map = {}
-        made_query = False
         for term in terms:
-            if term in cache_data and (not cache_data[term]["media_type"] or media_type == cache_data[term]["media_type"]):
-                media_list = map(MediaData, cache_data[term]["media_list"])
-                cache_data[term]["time"] = now
-            else:
-                if not made_query:
-                    self.maybe_relogin()
-                    made_query = True
-                media_list = list(self.search_for_media(term, limit=limit, media_type=media_type, **kwargs))
-                cache_data[term] = {"media_list": media_list, "media_type": media_type if media_type else 0, "time": now}
-            for media_data in media_list:
+            for media_data in self.search_for_media(term, limit=limit, media_type=media_type, **kwargs):
                 media_map[media_data.global_id] = media_data
             if limit and len(media_map) >= limit:
                 break
-
-        if cache_data:
-            os.makedirs(self.settings.cache_dir, exist_ok=True)
-            with open(cache_file, "w") as f:
-                json.dump({k: v for k, v in cache_data.items() if (now - v["time"]) <= self.settings.search_cache_time_sec}, f)
         return media_map.values()
 
     def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_type=None, lang="", media_type=None, **kwargs):

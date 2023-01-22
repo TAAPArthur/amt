@@ -149,11 +149,6 @@ class Settings:
     def get_web_cache(self, url):
         return os.path.join(self.get_web_cache_dir(), url.replace("/", "_"))
 
-    def get_search_cache(self, server_id):
-        dir_path = os.path.join(self.cache_dir, "search_cache")
-        os.makedirs(dir_path, exist_ok=True)
-        return os.path.join(dir_path, f"{server_id}.json")
-
     @classmethod
     def get_members(clazz):
         return [attr for attr in dir(clazz) if not callable(getattr(clazz, attr)) and not attr.startswith("_")]
