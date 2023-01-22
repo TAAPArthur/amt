@@ -178,11 +178,9 @@ class RequestServer:
         return ext
 
 
-non_word_char_regex = re.compile(r"\W+")
-
-
 class MediaServer(RequestServer):
     remove_lang_regex = re.compile(r" \([^)]*\)")
+    non_word_char_regex = re.compile(r"\W+")
 
     # If true, always just search the literal title instead of also searching subsections
     fuzzy_search = False
@@ -207,6 +205,11 @@ class MediaServer(RequestServer):
         self.maybe_relogin()
         self.update_media_data(media_data)
 
+    def score_results(self, term_parts, media_name):
+        media_name = self.remove_lang_regex.sub("", media_name)
+        parts = set(self.non_word_char_regex.split(media_name.lower()))
+        return -2 * len(parts.intersection(term_parts)) / (len(parts) + len(term_parts))
+
     def search(self, term, media_type=None, literal=False, limit=20):
         """
         Searches for a media containing term
@@ -215,13 +218,8 @@ class MediaServer(RequestServer):
         terms = get_alt_names(term) if not literal and not self.fuzzy_search else [term]
         media_list = self.search_helper(terms, limit, media_type=media_type)
 
-        term_parts = set(non_word_char_regex.split(term.lower()))
-
-        def score(x):
-            x = self.remove_lang_regex.sub("", x)
-            parts = set(non_word_char_regex.split(x.lower()))
-            return -2 * len(parts.intersection(term_parts)) / (len(parts) + len(term_parts))
-        return list(map(lambda x: (score(x["name"]), x), filter(lambda x: not media_type or x["media_type"] & media_type, media_list)))
+        term_parts = set(self.non_word_char_regex.split(term.lower()))
+        return list(map(lambda x: (self.score_results(term_parts=term_parts, media_name=x["name"]), x), filter(lambda x: not media_type or x["media_type"] & media_type, media_list)))
 
     def search_helper(self, terms, limit=None, media_type=None, **kwargs):
         self.maybe_relogin()

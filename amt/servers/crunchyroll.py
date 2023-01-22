@@ -213,7 +213,13 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def search_for_media(self, term, limit=None, **kwargs):
         data = self.get_media_metadata()
         if term:
-            data = list(find_media_with_similar_name_in_list([term], data))
+            term_parts = set(self.non_word_char_regex.split(term.lower()))
+            data = find_media_with_similar_name_in_list(term_parts, data)
+
+            data = list(map(lambda x: (self.score_results(term_parts=term_parts, media_name=x["name"]), x), data))
+
+            data.sort(key=lambda x: x[0])
+            data = list(map(lambda x: x[1], data[:limit]))
 
         return [media for item in data[:limit] for media in self._create_media_data(item["id"], item["etp_guid"])]
 
