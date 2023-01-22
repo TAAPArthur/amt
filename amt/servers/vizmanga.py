@@ -289,7 +289,7 @@ class VizMangaLibrary(GenericVizManga):
     def update_media_data(self, media_data):
         url = self.series_url.format(media_data["id"], media_data["alt_id"])
         for volume_url in self._update_media_data(url, media_data["id"]):
-            text = self.session_get_cache(self.base_url + volume_url)
+            text = self.session_get_cache(self.base_url + volume_url, ttl=-1)
             match = self.volume_id_regex.search(text)
             volume_id = match.group(1)
             match = self.volume_number_regex.search(text)

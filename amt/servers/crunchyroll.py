@@ -46,7 +46,8 @@ class GenericCrunchyrollServer(Server):
                         new_session_id = self.get_session_id(force=True)
                         self.logger.info("New id %s vs %s", new_session_id, original_session_id)
                         new_url = url.replace(original_session_id, new_session_id)
-                        kwargs["ttl"] = 0
+                        if not mem_cache:
+                            kwargs["ttl"] = 0
                         data = make_request(new_url)
                     if skip_cache:
                         GenericCrunchyrollServer.session_id_may_be_invalid = False
