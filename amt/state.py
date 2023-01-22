@@ -184,9 +184,10 @@ class State:
                 names.add(media_id)
                 if media.global_id_alt:
                     names.add(media.global_id_alt)
-                names.add(media["name"])
                 names.add(media["dir_name"])
-                names.add(str(media["id"]))
+                if not "_ARGCOMPLETE" in os.environ:
+                    names.add(media["name"])
+                    names.add(str(media["id"]))
         return names
 
     def get_all_single_names(self, media_type=None):
