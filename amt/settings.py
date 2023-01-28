@@ -282,10 +282,13 @@ class Settings:
     def get_media_dir(self, media_data):
         return os.path.join(self.get_server_dir(media_data["server_id"]), media_data["dir_name"])
 
-    def get_chapter_dir(self, media_data, chapter_data, skip_create=False):
+    def get_chapter_dir_name(self, media_data, chapter_data):
         fmt_str = (self.get_special_chapter_dir_name_format if chapter_data["special"] else self.get_chapter_dir_name_format)(media_data)
         chapter_dir_name = fmt_str.format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"], chapter_id=chapter_data["id"])
-        chapter_path = os.path.join(self.get_media_dir(media_data), chapter_dir_name)
+        return chapter_dir_name
+
+    def get_chapter_dir(self, media_data, chapter_data, skip_create=False):
+        chapter_path = os.path.join(self.get_media_dir(media_data), chapter_data.get("dir_name") or self.get_chapter_dir_name(media_data, chapter_data))
         if not skip_create:
             os.makedirs(chapter_path, exist_ok=True)
         return chapter_path

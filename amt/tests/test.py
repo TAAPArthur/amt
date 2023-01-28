@@ -1648,6 +1648,8 @@ class ArgsTest(CliUnitTestClass):
         self.add_test_media(limit=1)
         parse_args(media_reader=self.media_reader, args=["download-unread"])
         self.verify_all_chapters_downloaded()
+        self.settings.chapter_dir_name_format = "{chapter_title} {chapter_number:07.2f}"
+        self.verify_all_chapters_downloaded()
 
     def test_download_specific(self):
         media_list = self.add_test_media()

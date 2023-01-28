@@ -266,6 +266,12 @@ class MediaServer(RequestServer):
         else:
             media_data["chapters"][id] = ChapterData(new_values)
             media_data["chapters"][id]["read"] = False
+
+        chapter_data = media_data["chapters"][id]
+        chapter_dir_name = self.settings.get_chapter_dir_name(media_data, chapter_data)
+        if not chapter_data.get("dir_name") or chapter_dir_name != chapter_data.get("dir_name") and not os.path.exists(self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True)):
+            chapter_data["dir_name"] = chapter_dir_name
+
         return True
 
     def create_page_data(self, url, id=None, encryption_key=None, ext=None, headers={}):
