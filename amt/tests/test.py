@@ -1994,16 +1994,18 @@ class ArgsTest(CliUnitTestClass):
     def test_add_from_url_stream_convert(self, _input):
         parse_args(media_reader=self.media_reader, args=["stream", "-C", TestAnimeServer.get_streamable_url()])
         self.verify_no_media()
-        parse_args(media_reader=self.media_reader, args=["stream", "-r", "-C", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "-r", "-C", "-c", TestAnimeServer.get_streamable_url()])
         assert(self.media_reader.get_single_media())
         self.verify_all_chapters_read(media_type=MediaType.ANIME)
 
     def test_add_from_url_stream_cont_record(self):
         parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url()])
         self.verify_no_media()
-        parse_args(media_reader=self.media_reader, args=["add-from-url", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "--record", TestAnimeServer.get_streamable_url()])
+        self.assertTrue(self.media_reader.get_single_media())
+        self.assertEqual(1, self.get_num_chapters_read())
         parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url()])
-        self.assertEqual(0, self.get_num_chapters_read())
+        self.assertEqual(1, self.get_num_chapters_read())
         parse_args(media_reader=self.media_reader, args=["stream", "--cont", "--record", TestAnimeServer.get_streamable_url()])
         self.verify_all_chapters_read(media_type=MediaType.ANIME)
         self.media_reader.get_single_media()["chapters"].clear()
