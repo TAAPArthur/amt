@@ -28,7 +28,6 @@ class GenericJNovelClub(Server):
     search_url = api_base_url + "/series?format=json"
     chapters_url = api_base_url + "/series/{}/volumes?format=json"
     pages_url = api_base_url + "/me/library/volume/{}?format=json"
-    synchronize_chapter_downloads = True
 
     def needs_authentication(self):
         # will return 401 for invalid session and 410 for expired session

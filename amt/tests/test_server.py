@@ -156,7 +156,6 @@ class TestServerLogin(TestServer):
     counter = 0
     premium_account = True
     error_login = False
-    synchronize_chapter_downloads = True
 
     def needs_authentication(self):
         if self.error_login:

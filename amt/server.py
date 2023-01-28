@@ -305,8 +305,6 @@ class GenericServer(MediaServer):
     progress_type = ProgressType.CHAPTER_ONLY
     # True if the server only provides properly licensed media
     official = True
-    # Download a single page from this server at a time
-    synchronize_chapter_downloads = False
     # If the server has some free media (used for testing)
     has_free_chapters = True
     # Used to determine if the account can access premium content
@@ -621,22 +619,14 @@ class Server(GenericServer):
         if self.is_fully_downloaded(media_data, chapter_data):
             self.logger.info("Already downloaded %s %s", media_data["name"], chapter_data["title"])
             return False
-        try:
-            if self.synchronize_chapter_downloads:
-                self._lock.acquire()
-            return self._download_chapter(media_data, chapter_data, **kwargs)
-        finally:
-            if self.synchronize_chapter_downloads:
-                self._lock.release()
 
-    def _download_chapter(self, media_data, chapter_data, **kwargs):
-        self.logger.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
-        self.pre_download(media_data, chapter_data)
-        page_paths = self.download_pages(media_data, chapter_data, **kwargs)
-
-        self.post_download(media_data, chapter_data, page_paths=page_paths)
+        with self._lock:
+            self.logger.info("Starting download of %s %s", media_data["name"], chapter_data["title"])
+            self.pre_download(media_data, chapter_data)
+            page_paths = self.download_pages(media_data, chapter_data, **kwargs)
+            self.post_download(media_data, chapter_data, page_paths=page_paths)
 
         self.settings.post_process(media_data, page_paths, self.settings.get_media_dir(media_data))
 
