@@ -577,8 +577,11 @@ class MediaReader:
 
     def login(self, server_ids=None, force=False):
         failures = False
+        used_alias = set()
         for server in self.get_servers():
-            if server.has_login() and (not server_ids or server.id in server_ids or server.alias in server_ids):
+            if server.alias not in used_alias and server.has_login() and (not server_ids or server.id in server_ids or server.alias in server_ids):
+                if server.alias:
+                    used_alias.add(server.alias)
                 if (force or server.needs_to_login()) and not server.relogin():
                     logging.error("Failed to login into %s", server.id)
                     failures = True
