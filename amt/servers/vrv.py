@@ -10,7 +10,7 @@ from ..util.media_type import MediaType
 
 
 class Vrv(Server):
-    id = "vrv"
+    #id = "vrv"
     home = "https://vrv.co/"
     media_type = MediaType.ANIME
     stream_url_regex = re.compile(r"vrv.\w+/watch/(\w*)/.+")
