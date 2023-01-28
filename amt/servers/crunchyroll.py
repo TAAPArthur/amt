@@ -14,7 +14,8 @@ class GenericCrunchyrollServer(Server):
     domain = "crunchyroll.com"
     api_auth_url = "https://api-manga.crunchyroll.com/cr_authenticate?session_id={}&version=0&format=json"
     base_url = "https://api.crunchyroll.com"
-    login_url = base_url + "/login.0.json"
+    login_url = base_url + "/login.1.json"
+
 
     _access_token = "WveH9VkPLrXvuNm"
     _access_type = "com.crunchyroll.crunchyroid"
@@ -75,9 +76,13 @@ class GenericCrunchyrollServer(Server):
         response = self.session_get_json(self.login_url,
                                          post=True,
                                          data={
-                                             "session_id": self.get_session_id(),
+                                             "session_id": self.get_session_id(force=True),
                                              "account": username,
                                              "password": password
+                                         },
+                                         headers={
+                                             "referer": f"https://{self.domain}/",
+                                             "origin": f"https://{self.domain}/"
                                          })
         if "data" in response:
             self._store_login_data(response)
