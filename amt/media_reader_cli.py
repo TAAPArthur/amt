@@ -8,8 +8,6 @@ class MediaReaderCLI(MediaReader):
 
     def print_results(self, results):
         for i, data in enumerate(results):
-            if isinstance(data, tuple):
-                data = "\t".join(map(str, data))
             print("{:4}| {}".format(i, str(data)))
 
     def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):

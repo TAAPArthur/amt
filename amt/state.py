@@ -341,6 +341,3 @@ class ChapterData(dict):
         updated = self.update_state
         self.update_state = False
         return updated
-
-    def __str__(self):
-        return "{}\t{}".format(self["title"], self["number"])

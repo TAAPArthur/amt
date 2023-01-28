@@ -1990,14 +1990,6 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["stream", "--download", TestAnimeServer.get_streamable_url()])
         parse_args(media_reader=self.media_reader, args=["stream", TestAnimeServer.get_streamable_url()])
 
-    @patch("builtins.input", return_value="0")
-    def test_add_from_url_stream_convert(self, _input):
-        parse_args(media_reader=self.media_reader, args=["stream", "-C", TestAnimeServer.get_streamable_url()])
-        self.verify_no_media()
-        parse_args(media_reader=self.media_reader, args=["stream", "-r", "-C", "-c", TestAnimeServer.get_streamable_url()])
-        assert(self.media_reader.get_single_media())
-        self.verify_all_chapters_read(media_type=MediaType.ANIME)
-
     def test_add_from_url_stream_cont_record(self):
         parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url()])
         self.verify_no_media()

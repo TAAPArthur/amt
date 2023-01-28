@@ -363,20 +363,6 @@ class MediaReader:
                 last_read = max(media_data.get_last_read_chapter_number(), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
-    def search_for_chapter_on_different_server(self, ref_media_data, ref_chapter_data):
-        def func(x): return x.search(ref_media_data["name"])
-        results = self.for_each(func, filter(lambda x: not x.torrent and x.id != ref_media_data["server_id"] and (ref_media_data["media_type"] & x.media_type), self.get_servers()))
-
-        results.sort(key=lambda x: (x[0], self.settings.get_search_score(x[1])))
-        results = list(map(lambda x: x[1], results))
-        self.for_each(self.update_media, [media_data for media_data in results if not media_data.chapters])
-
-        results = list(filter(lambda x: x[1] is not None, map(lambda media_data: (media_data, media_data["chapters"].get(media_data.get_chapter_number_to_id(ref_chapter_data["number"]))), results)))
-        ids = set((ref_media_data["id"], ref_media_data["alt_id"], ref_chapter_data["id"], ref_chapter_data["alt_id"]))
-        results.sort(key=lambda x: len(ids.intersection((x[0]["alt_id"], x[0]["id"], x[1]["id"], x[1]["alt_id"],))), reverse=True)
-        data = self.select_media(f"{ref_media_data}{ref_chapter_data}", results, "Select chapter: ", auto_select_if_single=True)
-        return data
-
     def stream(self, url, cont=False, media_type=None, download=False, stream_index=0, offset=0, record=False, convert=False):
         for server in self.get_servers():
             if server.can_stream_url(url):
@@ -389,9 +375,6 @@ class MediaReader:
                 chapter_data = media_data["chapters"][chapter_id]
 
                 self.maybe_resolve_media_type(media_data, media_type)
-
-                if convert:
-                    media_data, chapter_data = self.search_for_chapter_on_different_server(media_data, chapter_data)
 
                 if record and media_data.global_id not in self.media:
                     self.add_media(media_data, no_update=True)
