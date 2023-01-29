@@ -440,15 +440,17 @@ class GenericServer(MediaServer):
     def get_stream_urls(self, media_data, chapter_data):  # pragma: no cover
         raise NotImplementedError
 
-    def get_m3u8_info(self, url):
+    def get_m3u8_info(self, url, original_url=None):
         import m3u8
+        if "://" not in url and original_url:
+            url = os.path.dirname(original_url) + "/" + url
         return m3u8.load(url, http_client=RequestsClient(self.session))
 
     def get_m3u8_segments(self, url):
         m = self.get_m3u8_info(url)
         if not m.segments:
             playlist = sorted(m.playlists, key=lambda x: x.stream_info.bandwidth, reverse=True)
-            m = self.get_m3u8_info(playlist[0].uri)
+            m = self.get_m3u8_info(playlist[0].uri, original_url=url)
         assert m.segments
         return m.segments
 
