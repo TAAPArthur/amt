@@ -2392,6 +2392,9 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://mangasee123.com/read-online/Berserk-chapter-1-page-1.html", "Berserk", None, "100010"),
         ("https://mangasee123.com/read-online/Bobobo-Bo-Bo-Bobo-chapter-214-page-1.html", "Bobobo-Bo-Bo-Bobo", None, "102140"),
         ("https://mangasee123.com/read-online/Onepunch-Man-chapter-147-index-2-page-1.html", "Onepunch-Man", None, "201470"),
+        ("https://tubitv.com/movies/667951/gintama-the-very-final-subbed?start=true", "667951", None, "667951"),
+        ("https://tubitv.com/tv-shows/318565/s04-e01-run-the-curry-of-life?start=true", "1622", "4", "318565"),
+        ("https://tubitv.com/tv-shows/624483/s01-e01-sakura-and-the-strange-magical-book?start=true", "300007490", None, "624483"),
         ("https://viz.com/shonenjump/one-piece-chapter-1/chapter/5090?action=read", "one-piece", None, "5090"),
         ("https://webtoons.com/en/drama/lookism/ep-283-hostel-epilogue/viewer?title_no=1049&episode_no=283", "1049", None, "283"),
     ]
@@ -2409,6 +2412,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://nyaa.si/view/1047104", "1047104"),
         ("https://nyaa.si/view/135283", "135283"),
         ("https://nyaa.si/view/269191", "269191"),
+        ("https://tubitv.com/series/300007490/cardcaptor-sakura?start=true", "300007490"),
         ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
         ("https://webtoons.com/en/drama/lookism/list?title_no=1049", 1049),
     ]

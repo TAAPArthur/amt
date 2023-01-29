@@ -88,6 +88,7 @@ assimilate all unread chapters and then read them
 * [Crunchyroll](https://crunchyroll.com)
 * [Funimation](https://funimation.com)
 * [HiDive](https://hidive.com/)
+* [Tubi](https://tubitv.com/category/anime)\*^
 
 ### Light novels
 * [FreeWebNovel](https://freewebnovel.com) (unofficial)
@@ -104,10 +105,14 @@ assimilate all unread chapters and then read them
 * Local Server -- media already downloaded on the machine; see the import subcommand
 * Remove Server -- media hosted on some simple webserver (like darkhttpd)
 
+^  - Login isn't fully supported (Note we don't support logging into unofficial servers due to lack of utility)
+
+\* - Search isn't fully operation and only a subset of possible shows will be returned
+
 Optional dependency breakdown
 * PIL:                 required to download manga for Viz and JNovelClub
 * beautifulsoup4:      required to download images for JNovelClub (only for light novel parts)
-* beautifulsoup4:      required to enable DB multiverse, FreeWebNovel, Funimation, Nyaa, RemoteServer and Webtoons
+* beautifulsoup4:      required to enable DB multiverse, FreeWebNovel, Funimation, Nyaa, RemoteServer, Tubi and Webtoons
 * beautifulsoup4 :     required to search for Crunchyroll (manga)
 * cloudscraper:        required to enable MangaSee and HumbleBundle
 * cloudscraper:        potentially required to access all features of Crunchyroll (manga and anime)
