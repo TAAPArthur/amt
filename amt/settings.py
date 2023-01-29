@@ -15,6 +15,8 @@ class Settings:
 
     # dictionary that will that the env will be updated with before spawning programs
     env = {}
+    # like env but duplicate keys are concatenated
+    env_list = {}
 
     # Password manager related settings
     password_manager_enabled = True
@@ -77,10 +79,10 @@ class Settings:
         },
         "viewer": {
             MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$SUB_PATH\" --sub-auto=all --title=\"$AMT_TITLE\" $AMT_EXTRA_ARG $AMT_USER_ARGS {media}",
-            MediaType.MANGA.name: "sxiv $AMT_USER_ARGS {media}",
-            MediaType.NOVEL.name: "zathura $AMT_USER_ARGS {media}"
+            MediaType.MANGA.name: "sxiv $AMT_EXTRA_ARG $AMT_USER_ARGS {media}",
+            MediaType.NOVEL.name: "zathura $AMT_EXTRA_ARG $AMT_USER_ARGS {media}"
         },
-        "env": {
+        "env_list": {
             "hidive": {
                 "AMT_EXTRA_ARG": '--http-header-fields=Referer:https://www.hidive.com/stream/ --demuxer-lavf-o=protocol_whitelist=[crypto,data,file,hls,http,https,tcp,tls] '
             }
@@ -202,11 +204,14 @@ class Settings:
             setattr(self, name, value)
         return value
 
-    def get_field(self, name, media_data=None, default=None):
+    def get_field_values(self, name, media_data=None):
         for key in media_data.get_labels() if isinstance(media_data, dict) else [media_data] if isinstance(media_data, (str, int)) or not media_data else [media_data.id, media_data.media_type.name]:
             if name in self._specific_settings and key in self._specific_settings[name]:
-                return self._specific_settings[name][key]
-        return getattr(self, name) if default is None else default
+                yield self._specific_settings[name][key]
+        yield getattr(self, name)
+
+    def get_field(self, name, media_data=None):
+        return next(self.get_field_values(name, media_data=media_data))
 
     def save(self, keys=None):
         data = {}
@@ -397,7 +402,11 @@ class Settings:
         viewer = self.get_field("viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
         env_extra = {"AMT_TITLE": title, "SUB_PATH": sub_path}
-        env_extra.update(self.get_field("env", media_data, default={}))
+        for d in self.get_field_values("env_list", media_data):
+            for key, value in d.items():
+                env_extra[key] = env_extra[key] + " " + value if key in env_extra else value
+
+        env_extra.update(self.get_field("env", media_data))
         files = []
         torrent = False
         from shlex import quote

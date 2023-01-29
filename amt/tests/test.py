@@ -428,7 +428,7 @@ class SettingsTest(BaseUnitTestClass):
 
             self.settings.load()
             for key in Settings.get_members():
-                if key == "env":
+                if key in ("env", "env_list"):
                     continue
                 if key in values:
                     if zero:
@@ -1016,6 +1016,20 @@ class MediaReaderTest(BaseUnitTestClass):
         self.assertTrue(n)
         self.assertEqual(n, len(self.media_reader.get_media_ids()))
         self.assertEqual(0, self.media_reader.load_from_tracker(1))
+
+    def test_play_with_env_list(self):
+        self.add_test_media(server_id=TestServer.id, limit=1)
+
+        KEY, VALUE1, VALUE2 = "SOME_ARBITRARY_TEST_KEY", "1", "2"
+        self.settings.set_field("env_list", {KEY: VALUE2})
+        self.settings.set_field("env_list", {KEY: VALUE1}, TestServer.id)
+        self.settings.viewer = f'[ "${KEY}" = "{VALUE1} {VALUE2}" ]'
+        self.assertTrue(self.media_reader.play(limit=1))
+
+        VALUE3 = "3"
+        self.settings.set_field("env", {KEY: VALUE3})
+        self.settings.viewer = f'[ "${KEY}" = "{VALUE3}" ]'
+        self.assertTrue(self.media_reader.play())
 
 
 class ApplicationTestWithErrors(CliUnitTestClass):
