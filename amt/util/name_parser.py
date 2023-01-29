@@ -30,6 +30,7 @@ def get_number_from_file_name(file_name, media_name="", default_num=0):
 
 
 def get_alt_names(media_name):
+    media_name = re.sub("\([^)]*\)", "", media_name).strip()
     return list(filter(lambda x: len(x) > min(2, len(media_name)) or x == media_name, dict.fromkeys([media_name, media_name.split(" Season")[0], re.sub(r"\W*$", "", media_name), re.sub(r"[^\w\s]", "", media_name).split()[-1], re.sub(r"\s*[^\w\d\s]+.*$", "", media_name), re.sub(r"(The |A |That |\W.*$)", "", media_name), get_media_name_from_file(media_name, is_dir=True)])))
 
 

@@ -272,11 +272,21 @@ class UtilTest(BaseUnitTestClass):
             self.assertEqual(media_type, MediaType.get(media_type.name))
         self.assertEqual(MediaType.MANGA, MediaType.get("bad_name", MediaType.MANGA))
 
-    def test_get_alt_names(self):
+    def test_get_alt_names_ignore_common_prefix(self):
         from ..util.name_parser import get_alt_names
         name_base = "Brown Fox"
         for common_prefix in ("A", "The", "That"):
             self.assertFalse(common_prefix in get_alt_names(f"{common_prefix} {name_base}"), common_prefix)
+
+    def test_get_alt_names_remove_dub(self):
+        from ..util.name_parser import get_alt_names
+        suffixes = ["(Dub)", "(Dubbed)", "(English Dub)", "(Spanish Dub)"]
+        for suffix in suffixes:
+            name = "Media"
+            title = name + " " + suffix
+            self.assertEqual(list(get_alt_names(title)), [name])
+            self.assertEqual(list(get_alt_names(title.lower())), [name.lower()])
+            self.assertEqual(list(get_alt_names(title.upper())), [name.upper()])
 
 
 @unittest.skipIf(not HAS_PIL, "PIL is needed to test")
