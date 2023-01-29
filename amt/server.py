@@ -232,6 +232,7 @@ class MediaServer(RequestServer):
         return media_map.values()
 
     def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_type=None, lang="", media_type=None, **kwargs):
+        season_title = season_title or ""
         if not lang:
             match = re.search(r"\((\w*) Dub\)", name) or re.search(r"\((\w*) Dub\)", season_title)
             if match:
