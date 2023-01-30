@@ -1116,6 +1116,7 @@ class GenericServerTest():
                 if not server.torrent:
                     self.assertTrue(server.id in self.media_reader.state.get_server_ids_with_logins())
         self.for_each_server(func)
+        self.media_reader.state.save()
 
     def test_login_fail(self):
         self.media_reader.settings.password_manager_enabled = True

@@ -58,7 +58,7 @@ class Webtoons(Server):
         element = soup.find("div", {"class": "episode_lst"})
         for li in element.findAll("li"):
             chapter_number = li.get("data-episode-no")
-            chapter_title = li.find("span", {"class": "subj"})
+            chapter_title = li.find("span", {"class": "subj"}).getText()
             self.update_chapter_data(media_data, id=chapter_number, number=chapter_number, title=chapter_title)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
