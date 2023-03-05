@@ -324,9 +324,6 @@ class Settings:
                 score += delta
         return score
 
-    def get_prompt_for_input(self, prompt):
-        return input(prompt)
-
     def get_logger(self):
         if not self._logger:
             import logging

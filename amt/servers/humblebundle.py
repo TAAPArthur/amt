@@ -100,7 +100,9 @@ class HumbleBundle(Server):
             r = e.response
             if r.status_code != 401 or "humble_guard_required" not in r.json():
                 raise
-            code = self.settings.get_prompt_for_input("Please enter coded that should have been emailed to you: ")
-            data["guard"] = code
-            self.session_post(self.login_url, data=data, headers=headers)
+            self.logger.error("Failed to login to {self.id} although credentials may have been correct. We recommend manually logging in with a browser and copying your cookies over")
+            # code = self.settings.get_prompt_for_input("Please enter coded that should have been emailed to you: ")
+            # data["guard"] = code
+            # self.session_post(self.login_url, data=data, headers=headers)
+            raise
         return True

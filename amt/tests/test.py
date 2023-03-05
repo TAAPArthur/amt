@@ -710,10 +710,6 @@ class ServerWorkflowsTest(BaseUnitTestClass):
             self.media_reader.download_unread_chapters()
             self.verify_all_chapters_downloaded()
 
-    @patch("builtins.input", return_value="0")
-    def test_get_prompt_for_input(self, input):
-        self.assertEqual("0", self.settings.get_prompt_for_input("prompt"))
-
     def test_unique_download_paths(self):
         self.add_test_media()
         paths = {self.settings.get_chapter_dir(media_data, chapter_data) for _, media_data, chapter_data in self.get_all_chapters()}
