@@ -123,6 +123,9 @@ class RequestServer:
     def session_get(self, url, post=False, **kwargs):
         return self._request(post, url, **kwargs)
 
+    def get_redirect_url(self, url, post=False, **kwargs):
+        return self._request(post, url, **kwargs).url
+
     def session_post(self, url, **kwargs):
         return self._request(True, url, **kwargs)
 

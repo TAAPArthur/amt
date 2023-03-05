@@ -40,11 +40,12 @@ class TestServer(Server):
     test_lang = False
     offset_chapter_num = 0
     use_real_cloud_scraper = False
+    redirect_suffix = "/redirect"
 
     def __init__(self, session, *args, no_fake_session=False, **kwargs):
         super().__init__(FakeSession(session) if not no_fake_session else session, *args, **kwargs)
-        self.stream_url_regex = re.compile(f"{self.id}/([0-9]*)/([0-9]*)")
-        self.add_series_url_regex = re.compile(f"{self.id}/([0-9]*)")
+        self.stream_url_regex = re.compile(f"{self.id}.com/([0-9]*)/([0-9]*)$")
+        self.add_series_url_regex = re.compile(f"{self.id}.com/([0-9]*)$")
         self.timestamp = datetime.now().timestamp()
         self.domain = f"{self.id}.com"
 
@@ -55,12 +56,19 @@ class TestServer(Server):
         pass
 
     @classmethod
+    def get_addable_url(clzz, media_id=5):
+        return f"https://{clzz.id}.com/{media_id}"
+
+    @classmethod
     def get_streamable_url(clzz, media_id=4, chapter_id=1):
         return clzz.get_addable_url(media_id=media_id) + f"/{chapter_id}"
 
     @classmethod
-    def get_addable_url(clzz, media_id=5):
-        return f"https://{clzz.id}/{media_id}"
+    def get_redirectable_url(clzz, *args, **kwargs):
+        return clzz.get_streamable_url(*args, **kwargs) + clzz.redirect_suffix
+
+    def get_redirect_url(self, url, post=False, **kwargs):
+        return url[:-len(self.redirect_suffix)] if url.endswith(self.redirect_suffix) else url
 
     def get_chapter_id_for_url(self, url):
         assert self.can_stream_url(url)
@@ -192,6 +200,7 @@ class TestAnimeServer(TestServer):
     id = "test_server_anime"
     media_type = MediaType.ANIME
     stream_urls = None
+    force_redirects = False
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
         assert isinstance(media_data, dict) if media_data else True

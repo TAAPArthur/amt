@@ -22,7 +22,7 @@ class Mangadex(Server):
     chapter_url = api_base_url + "/chapter/{}"
 
     manga_url = api_base_url + "/manga/{}"
-    stream_url_regex = re.compile(r"mangadex.org/chapter/([^/]*)/")
+    stream_url_regex = re.compile(r"mangadex.org/chapter/([^/]*)")
 
     def _get_media_list(self, data, target_lang=None):
         results = []

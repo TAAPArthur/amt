@@ -109,7 +109,7 @@ class Crunchyroll(GenericCrunchyrollServer):
     page_url_key = possible_page_url_keys[0]
 
     stream_url_regex = re.compile(r"crunchyroll.com/manga/([\w-]*)/read/(\d*\.?\d*)")
-    add_series_url_regex = re.compile(r"crunchyroll.com/comics/manga/([\w-]*)/")
+    add_series_url_regex = re.compile(r"crunchyroll.com/comics/manga/([\w-]*)")
 
     def get_media_data_from_url(self, url):
         name_slug = self._get_media_id_from_url(url)

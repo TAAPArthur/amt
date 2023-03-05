@@ -190,13 +190,25 @@ class MediaReader:
             return False
         return media_data
 
-    def add_from_url(self, url, skip_add=False, server_id=None, **kwargs):
+    def get_server_for_url(self, url, streamable=False, server_id=None):
         for server in self.get_servers():
-            if server_id in (None, server.id) and server.can_add_media_from_url(url):
-                media_data = server.get_media_data_from_url(url)
-                if not skip_add:
-                    self.add_media(media_data)
-                return media_data
+            func = server.can_stream_url if streamable else server.can_add_media_from_url
+            if server_id in (None, server.id):
+                if func(url):
+                    return url, server
+                elif server.domain and server.domain in url:
+                    new_url = server.get_redirect_url(url)
+                    if func(new_url):
+                        return new_url, server
+        return url, None
+
+    def add_from_url(self, url, skip_add=False, server_id=None, **kwargs):
+        url, server = self.get_server_for_url(url, streamable=False, server_id=server_id)
+        if server:
+            media_data = server.get_media_data_from_url(url)
+            if not skip_add:
+                self.add_media(media_data)
+            return media_data
         return False
 
     def remove_media(self, **kwargs):
@@ -364,30 +376,30 @@ class MediaReader:
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
     def stream(self, url, cont=False, media_type=None, download=False, stream_index=0, offset=0, record=False, convert=False):
-        for server in self.get_servers():
-            if server.can_stream_url(url):
-                chapter_id = server.get_chapter_id_for_url(url)
-                media_data = server.get_media_data_from_url(url)
-                if record and media_data.global_id in self.media:
-                    media_data = self.media[media_data.global_id]
-                if chapter_id not in media_data["chapters"]:
-                    self.update_media(media_data)
-                chapter_data = media_data["chapters"][chapter_id]
+        url, server = self.get_server_for_url(url, streamable=True)
+        if not server:
+            logging.error("Could not find any matching server")
+            return False
+        chapter_id = server.get_chapter_id_for_url(url)
+        media_data = server.get_media_data_from_url(url)
+        if record and media_data.global_id in self.media:
+            media_data = self.media[media_data.global_id]
+        if chapter_id not in media_data["chapters"]:
+            self.update_media(media_data)
+        chapter_data = media_data["chapters"][chapter_id]
 
-                self.maybe_resolve_media_type(media_data, media_type)
+        self.maybe_resolve_media_type(media_data, media_type)
 
-                if record and media_data.global_id not in self.media:
-                    self.add_media(media_data, no_update=True)
+        if record and media_data.global_id not in self.media:
+            self.add_media(media_data, no_update=True)
 
-                if download:
-                    server.download_chapter(media_data, chapter_data)
-                else:
-                    min_chapter_num = chapter_data["number"] + offset
-                    num_list = list(map(lambda x: x["number"], filter(lambda x: x["number"] >= min_chapter_num, media_data["chapters"].values())))
-                    return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True) if num_list else False
-                return 1
-        logging.error("Could not find any matching server")
-        return False
+        if download:
+            server.download_chapter(media_data, chapter_data)
+        else:
+            min_chapter_num = chapter_data["number"] + offset
+            num_list = list(map(lambda x: x["number"], filter(lambda x: x["number"] >= min_chapter_num, media_data["chapters"].values())))
+            return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True) if num_list else False
+        return 1
 
     def get_stream_url(self, name=None, num_list=None, shuffle=False, limit=None, force_abs=False):
         for server, media_data, chapter in self.get_chapters(name=name, media_type=MediaType.ANIME, num_list=num_list, force_abs=force_abs, limit=limit, shuffle=shuffle):
