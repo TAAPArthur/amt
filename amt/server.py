@@ -53,13 +53,11 @@ class RequestServer:
     def get_cloudscraper_session(self, session):
         import cloudscraper
         if getattr(RequestServer, "cloudscraper", None) is None:
-            RequestServer.cloudscraper = cloudscraper.create_scraper(browser={
+            RequestServer.cloudscraper = cloudscraper.create_scraper(session, browser={
                 'browser': 'firefox',
                 'platform': 'linux',
                 'desktop': True
             })
-            # TODO remove on new cloudscraper release
-            RequestServer.cloudscraper.cookies = session.cookies
         return RequestServer.cloudscraper
 
     @classmethod

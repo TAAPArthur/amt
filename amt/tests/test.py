@@ -2142,7 +2142,7 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
                 with self.subTest(server=server.id):
                     sessions.append(server.session)
                     self.assertFalse(server.session.cookies)
-                    r = server.session.get("https://www.crunchyroll.com")
+                    r = server.session_get("https://github.com")
                     self.assertTrue(r.cookies)
                     self.assertEqual(server.session.cookies, self.media_reader.session.cookies)
                     self.assertTrue(server.session.cookies is self.media_reader.session.cookies)
