@@ -45,7 +45,6 @@ class Settings:
     user_agent = "Mozilla/5.0"
 
     # Cookies
-    cookie_files = ["/tmp/cookies.txt"]  # Additional cookies files to read from (Read only)
 
     # cache
     search_cache_time_sec = 14 * 24 * 3600
@@ -125,10 +124,6 @@ class Settings:
 
     def get_cookie_file(self):
         return os.path.join(self.cache_dir, "cookies.txt")
-
-    def get_cookie_files(self):
-        yield self.get_cookie_file()
-        yield from map(os.path.expanduser, self.cookie_files)
 
     def get_metadata_file(self):
         return os.path.join(self.data_dir, "metadata.json")

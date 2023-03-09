@@ -1637,9 +1637,32 @@ class ArgsTest(CliUnitTestClass):
 
     def test_cookies(self):
         key, value = "Key", "value"
-        self.media_reader.session.cookies.set(key, value)
+        self.test_server.session_set_cookie(key, value)
         parse_args(media_reader=self.media_reader, args=["--clear-cookies"])
         self.assertNotEqual(self.media_reader.session.cookies.get(key), value)
+
+    def test_import_cookies(self):
+        key, value = "Key", "value"
+        self.settings.no_save_session = False
+        self.test_server.session_set_cookie(key, value)
+        self.media_reader.state.save()
+        self.test_server.session_set_cookie(key, "junk")
+        self.assertNotEqual(self.test_server.session_get_cookie(key), value)
+        parse_args(media_reader=self.media_reader, args=["--no-save", "import-cookies", "--server", TestServerLogin.id, self.settings.get_cookie_file()])
+        self.assertNotEqual(self.test_server.session_get_cookie(key), value)
+
+        parse_args(media_reader=self.media_reader, args=["--no-save", "import-cookies", "--server", TestServer.id, self.settings.get_cookie_file()])
+        self.assertEqual(self.test_server.session_get_cookie(key), value)
+
+    def test_import_cookies_corrupt_file(self):
+
+        file_name = "temp_file"
+        with open(file_name, "w") as f:
+            f.write("invalid\tcookie\tfile")
+        ret = 0
+        ret |= parse_args(media_reader=self.media_reader, args=["import-cookies", "--server", TestServer.id, file_name])
+        ret |= parse_args(media_reader=self.media_reader, args=["import-cookies", file_name])
+        self.assertEqual(ret, 0)
 
     @patch("getpass.getpass", return_value="0")
     def test_set_password(self, input):

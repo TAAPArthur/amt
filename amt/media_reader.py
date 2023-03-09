@@ -215,6 +215,11 @@ class MediaReader:
         media_data = self.get_single_media(**kwargs)
         del self.media[media_data.global_id]
 
+    def import_cookies(self, files, server_id=None):
+        domains = {self.get_server(server_id).domain} if server_id else {server.domain for server in self.get_servers()}
+        for file in files:
+            self.state.load_session_cookies(file, domains)
+
     def import_media(self, files, media_type, link=False, name=None, skip_add=False, dry_run=False):
         server = self.get_server(LocalServer.id)
         names = set()

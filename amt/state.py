@@ -69,8 +69,9 @@ class State:
 
     def set_session(self, session, no_load=False):
         self.session = session
-        if not no_load:
+        if not no_load and not self.settings.no_load_session:
             self.load_session_cookies()
+        self._set_session_hash()
 
     def load(self):
         self.load_media()
@@ -107,25 +108,24 @@ class State:
             return True
         return False
 
-    def load_session_cookies(self):
+    def load_session_cookies(self, file=None, domains=None):
         """ Load session from disk """
-
-        if self.settings.no_load_session:
-            return
-
-        for path in self.settings.get_cookie_files():
-            try:
-                with open(path, "r") as f:
-                    for line in f:
-                        line = line.rstrip()
-                        if not line or line[0].startswith("#"):
+        try:
+            with open(file or self.settings.get_cookie_file(), "r") as f:
+                for i, line in enumerate(f):
+                    line = line.rstrip()
+                    if not line or line[0].startswith("#"):
+                        continue
+                    try:
+                        domain, domain_specified, path, secure, expires, name, value, _ = (line + "\t" * 2).split("\t", 7)
+                        if domains is not None and not any(map(lambda x: domain.endswith(x), domains)):
                             continue
-                        domain, domain_specified, path, secure, expires, name, value, _ = \
-                            (line + "\t").split("\t", 7)
                         self.session.cookies.set(name, value, path=path, domain=domain, secure=secure == "TRUE", expires=expires if expires else None)
-            except FileNotFoundError:
-                pass
-        self._set_session_hash()
+                    except ValueError:
+                        import logging
+                        logging.info(f"Error on line {i + 1}: {line}")
+        except FileNotFoundError:
+            pass
 
     def save_session_cookies(self, force=False):
         """ Save session to disk """

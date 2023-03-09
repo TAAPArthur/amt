@@ -145,6 +145,10 @@ def setup_subparsers(state, sub_parsers):
     import_parser.add_argument("--skip-add", action="store_const", const=True, default=False, help="Don't auto add media")
     add_file_completion(import_parser.add_argument("files", nargs="+"))
 
+    import_cookies = add_parser_helper(sub_parsers, "import-cookies", help="Import cookies from file")
+    import_cookies.add_argument("--server", choices=state.get_server_ids(), dest="server_id")
+    add_file_completion(import_cookies.add_argument("files", nargs="+"))
+
     # info
     list_parser = add_parser_helper(sub_parsers, "list", func_str="list-media", parents=[readonly_parsers], help="List added media")
     list_parser.add_argument("--csv", action="store_const", const=True, default=False, help="List in a script friendly format")
