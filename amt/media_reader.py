@@ -337,7 +337,7 @@ class MediaReader:
                 if end == start:
                     break
 
-    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False, any_unread=False, page_limit=None, stream_index=0, force=False):
+    def download_unread_chapters(self, name=None, media_type=None, limit=0, ignore_errors=False, any_unread=False, page_limit=None, stream_index=0):
         """Downloads all chapters that are not read"""
 
         unique_media = {}
@@ -347,7 +347,7 @@ class MediaReader:
             unique_media[media_data.global_id].append((server, media_data, chapter))
 
         def download_selected_chapters_for_server(x):
-            return sum([server.download_chapter(media_data, chapter, page_limit=page_limit, stream_index=stream_index, supress_exeception=force) for server, media_data, chapter in x])
+            return sum([server.download_chapter(media_data, chapter, page_limit=page_limit, stream_index=stream_index) for server, media_data, chapter in x])
         return sum(self.for_each(download_selected_chapters_for_server, unique_media.values(), raiseException=not ignore_errors))
 
     def get_remaining_chapters(self, name=None):
@@ -428,7 +428,7 @@ class MediaReader:
                 media_data["media_type"] = media_type.value
                 media_data["media_type_name"] = media_type.name
 
-    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force=False, force_stream=False, batch_size=1):
+    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force_stream=False, batch_size=1):
         num = 0
         batch = []
         media_chapters = []
@@ -440,7 +440,7 @@ class MediaReader:
                     if not server.is_fully_downloaded(media_data, chapter):
                         server.pre_download(media_data, chapter)
                 else:
-                    server.download_chapter(media_data, chapter, supress_exeception=not force)
+                    server.download_chapter(media_data, chapter)
 
                 if server.is_fully_downloaded(media_data, chapter) and not force_stream:
                     batch.extend(server.get_children(media_data, chapter))

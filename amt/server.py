@@ -638,11 +638,11 @@ class Server(GenericServer):
 
         return True
 
-    def download_pages(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0, supress_exeception=False):
+    def download_pages(self, media_data, chapter_data, page_limit=None, offset=0, stream_index=0):
         list_of_pages = []
         dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         # download pages
-        job = Job(self.settings.get_threads(media_data), raiseException=not supress_exeception)
+        job = Job(self.settings.get_threads(media_data), raiseException=True)
         for i, page_data in enumerate(self.get_media_chapter_data(media_data, chapter_data, stream_index=stream_index)):
             if page_limit is not None and i == page_limit:
                 break
