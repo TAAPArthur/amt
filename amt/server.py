@@ -137,6 +137,13 @@ class RequestServer:
                 return cookie.value
         return None
 
+    def session_set_cookie(self, name, value, **kwargs):
+        self.session.cookies.set(name, value, domain=self.domain, **kwargs)
+
+    def session_set_cookies(self, cookies_map, **kwargs):
+        for key, value in cookies_map.items():
+            self.session.cookies.set(key, value, domain=self.domain, **kwargs)
+
     def session_get_cache(self, url, key=None, mem_cache=False, skip_cache=False, ttl=7, use_json=False, output_format_func=None, **kwargs):
         if skip_cache:
             return self.session_get(url, **kwargs).json()

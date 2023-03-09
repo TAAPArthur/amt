@@ -632,6 +632,12 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         except ImportError:
             self.skipTest("cloudscraper not installed")
 
+    def test_session_get_set_cookies(self):
+        cookies = {"k1": "v1", "k2": "v2"}
+        self.test_server.session_set_cookies(cookies)
+        for k, v in cookies.items():
+            self.assertEqual(v, self.test_server.session_get_cookie(k))
+
     def test_session_get_cache_json(self):
         server = self.media_reader.get_server(TestServer.id)
         assert server

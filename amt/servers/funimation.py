@@ -48,9 +48,9 @@ class GenericFunimation(Server):
 
         data = r.json()
         try:
-            self.session.cookies.set("src_token", data["token"], domain=self.domain)
-            self.session.cookies.set("src_user_id", str(data["user"]["id"]), domain=self.domain)
-            self.session.cookies.set("rlildup", data["rlildup_cookie"], domain=self.domain)
+            self.session_set_cookie("src_token", data["token"])
+            self.session_set_cookie("src_user_id", str(data["user"]["id"]))
+            self.session_set_cookie("rlildup", data["rlildup_cookie"])
             return True
         except KeyError:
             self.logger.info(data["error"])
