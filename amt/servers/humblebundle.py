@@ -5,8 +5,7 @@ from requests.exceptions import HTTPError
 
 from ..server import Server
 from ..util.media_type import MediaType
-from ..util.name_parser import (get_media_id_from_name,
-                                get_number_from_file_name)
+from ..util.name_parser import (get_media_name_from_volume_name, get_number_from_file_name)
 from ..util.progress_type import ProgressType
 
 
@@ -28,8 +27,6 @@ class HumbleBundle(Server):
 
     stream_url_regex = re.compile(r"dl.humble.com/(\w*).\s*?gamekey=(\w*)")
 
-    media_name_regex = re.compile("(Vol\.|volume|Volume|Part|) \d+\.?\d*$")
-
     def get_all_bundle_keys(self):
         match = self.game_key_regex.search(self.session_get_cache(self.base_url))
         return json.loads(match.group(1)) if match else []
@@ -41,8 +38,7 @@ class HumbleBundle(Server):
             name = product["human_name"]
             for downloads in filter(lambda x: x["platform"] == platform, product["downloads"]):
                 download_struct = downloads["download_struct"]
-                media_name = self.media_name_regex.split(name)[0].strip()
-                media_id = get_media_id_from_name(media_name)
+                media_name, media_id = get_media_name_from_volume_name(name)
                 yield key, media_id, media_name, id, name, download_struct
 
     def get_all_media_of_type(self, platform="ebook"):

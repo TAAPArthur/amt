@@ -81,11 +81,9 @@ class RemoteServer(Server):
 
         return super().session_get(url, **kwargs)
 
-    def _create_media_data(self, link, media_name=None):
-        if not media_name:
-            link = requests.utils.unquote(link)
-            media_name = os.path.splitext(os.path.basename(link if link[-1] != "/" else link[:-1]))[0]
-        return self.create_media_data(name_parser.get_media_id_from_name(link), media_name, alt_id=link)
+    def _create_media_data(self, link, force_media_name=None):
+        media_id, media_name = name_parser.get_media_name_from_volume_name(link)
+        return self.create_media_data(media_id, force_media_name or media_name, alt_id=link)
 
     def list_files(self, base_path="", path="", depth=None, is_hidden=False, in_media_dir=False):
         url = self.get_base_url() + base_path + path
@@ -119,7 +117,7 @@ class RemoteServer(Server):
                 alt_id = os.path.join("Media", media_data["server_id"], media_data["dir_name"]) + "/"
                 yield self._create_media_data(alt_id, media_data["name"])
         except RequestException:
-            yield from (self._create_media_data(link) for link in self.list_files())
+            yield from (self._create_media_data(requests.utils.unquote(link)) for link in self.list_files())
 
     def update_media_data(self, media_data):
         if media_data["alt_id"][-1] != "/":

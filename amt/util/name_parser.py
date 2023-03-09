@@ -1,27 +1,30 @@
 import os
 import re
 
-volume_regex = re.compile(r"(_|\s)?vol[ume-]*[\w\s]*(\d+)")
-
-
-base_media_regex = r"(\([^\)]+\)|\[[^\]]+\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*( - [A-Z][A-z]*\d*)?)"
-media_dir_regex = re.compile(base_media_regex)
-media_file_regex = re.compile(base_media_regex + "(.*\.\w+)$")
+media_dir_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*( - [A-Z][A-z]*\d*)?)")
 number_regex = re.compile(r"(\d+\.?\d*)(?:\s|\.|v\d|$)")
 
 remove_brackets_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\])")
 
 id_formatter_regex = re.compile(r"\W+")
 
+media_name_regex = re.compile("(Vol\.|volume|Volume|Part|) \d+\.?\d*$")
 
-def get_media_name_from_file(file_name, fallback_name=None, is_dir=True):
-    base_name = os.path.basename(file_name if file_name[-1] != "/" else file_name[:-1])
-    match = (media_dir_regex if is_dir else media_file_regex).search(volume_regex.sub("", base_name.replace("_", " ")))
-    return match.group(2) if match else fallback_name if fallback_name else base_name
+
+def get_media_name_from_file(base_name, is_dir=True):
+    match = media_dir_regex.search(base_name)
+    return match.group(2) if match else base_name
 
 
 def get_media_id_from_name(media_name):
     return id_formatter_regex.sub("_", media_name)
+
+
+def get_media_name_from_volume_name(name):
+    name = os.path.splitext(os.path.basename(name if name[-1] != "/" else name[:-1]))[0]
+    media_name = media_name_regex.split(name)[0].strip()
+    media_id = get_media_id_from_name(media_name)
+    return media_name, media_id
 
 
 def get_number_from_file_name(file_name, media_name="", default_num=0):
