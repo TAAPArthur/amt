@@ -76,6 +76,7 @@ assimilate all unread chapters and then read them
 * [Crunchyroll](https://crunchyroll.com)
 * [DB multiverse](https://www.dragonball-multiverse.com)
 * [J Novel club](https://j-novel.club/)
+* [Kobo](https://www.kobo.com/)
 * [MangaDex](https://mangadex.org/) (unofficial)
 * [MangaPlus](https://mangaplus.shueisha.co.jp)
 * [MangaSee](https://mangasee123.com/) (unofficial)
@@ -90,6 +91,7 @@ assimilate all unread chapters and then read them
 ### Light novels
 * [FreeWebNovel](https://freewebnovel.com) (unofficial)
 * [J Novel club](https://j-novel.club/)
+* [Kobo](https://www.kobo.com/)^
 
 ### Misc/Multi
 * [Nyaa](https://nyaa.si/) (unofficial)

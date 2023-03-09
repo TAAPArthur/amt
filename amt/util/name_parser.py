@@ -8,7 +8,7 @@ remove_brackets_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\])")
 
 id_formatter_regex = re.compile(r"\W+")
 
-media_name_regex = re.compile("(Vol\.|volume|Volume|Part|) \d+\.?\d*$")
+media_name_regex = re.compile("(, )?(Vol\.|volume|Volume|Part|) \d+\.?\d*$")
 
 
 def get_media_name_from_file(base_name, is_dir=True):
@@ -21,8 +21,8 @@ def get_media_id_from_name(media_name):
 
 
 def get_media_name_from_volume_name(name):
-    name = os.path.splitext(os.path.basename(name if name[-1] != "/" else name[:-1]))[0]
-    media_name = media_name_regex.split(name)[0].strip()
+    name = remove_brackets_regex.sub("", os.path.basename(name if name[-1] != "/" else name[:-1]))
+    media_name = os.path.splitext(media_name_regex.split(name)[0].strip())[0]
     media_id = get_media_id_from_name(media_name)
     return media_name, media_id
 
