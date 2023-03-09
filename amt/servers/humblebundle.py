@@ -66,7 +66,7 @@ class HumbleBundle(Server):
     def update_media_data(self, media_data):
         for key, media_id, _, chapter_id, name, _ in self.get_media_of_type(media_data["key"]):
             if media_id == media_data["id"]:
-                self.update_chapter(media_data, chapter_id, title=name, number=get_number_from_file_name(name, media_name=media_data["name"], default_num=1))
+                self.update_chapter_data(media_data, chapter_id, title=name, number=get_number_from_file_name(name, media_name=media_data["name"], default_num=1))
 
     def get_stream_urls(self, media_data, chapter_data):
         for key, media_id, name, download_struct in self.get_media_of_type(media_data["key"]):
