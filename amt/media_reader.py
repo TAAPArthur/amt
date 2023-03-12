@@ -578,7 +578,7 @@ class MediaReader:
             logging.info("Could not find any of %s", unknown_media)
         if remove:
             for media_data in list(self.get_media(media_type=media_type)):
-                if media_data.global_id not in tracked_media:
+                if self.has_tracker_info(media_data) and media_data.global_id not in tracked_media:
                     logging.info("Removing %s because it is no longer present on tracker", media_data.global_id)
                     self.remove_media(name=media_data)
         return new_count
