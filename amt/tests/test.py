@@ -656,6 +656,19 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         for k, v in cookies.items():
             self.assertEqual(v, self.test_server.session_get_cookie(k))
 
+    def test_session_inject_cookies(self):
+        cookie_json = ["cookies.json", "cookies2.json"]
+        cookies = [{"k1": "v1", "k2": "v2"}, {"k1": "v2", "k3": "v3"}]
+        for i in range(len(cookie_json)):
+            with open(cookie_json[i], "w") as f:
+                json.dump(cookies[i], f)
+        self.settings.cookies = [cookie_json[0]]
+        self.settings.set_field("cookies", ["_bad_file", cookie_json[1]], self.test_server.id)
+        self.reload(save_settings=True)
+        for server in self.media_reader.get_servers():
+            for k, v in cookies[server.id == TestServer.id].items():
+                self.assertEqual(v, server.session_get_cookie(k))
+
     def test_session_get_cache_json(self):
         server = self.media_reader.get_server(TestServer.id)
         assert server

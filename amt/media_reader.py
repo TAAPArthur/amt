@@ -68,6 +68,9 @@ class MediaReader:
         self.state.set_session(self.session)
         self.state.configure_media(self._servers)
         self.media = self.state.media
+        for server in self.get_servers():
+            for data in self.settings.get_cookies_to_inject(server):
+                server.session_set_cookies(data)
 
     # Helper methods
     def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):

@@ -45,6 +45,7 @@ class Settings:
     user_agent = "Mozilla/5.0"
 
     # Cookies
+    cookies = []
 
     # cache
     search_cache_time_sec = 14 * 24 * 3600
@@ -124,6 +125,14 @@ class Settings:
 
     def get_cookie_file(self):
         return os.path.join(self.cache_dir, "cookies.txt")
+
+    def get_cookies_to_inject(self, server):
+        for file in self.get_cookies(server):
+            try:
+                with open(file, "r") as f:
+                    yield json.load(f)
+            except (json.decoder.JSONDecodeError, FileNotFoundError):
+                pass
 
     def get_metadata_file(self):
         return os.path.join(self.data_dir, "metadata.json")
