@@ -134,36 +134,38 @@ class RequestServer:
                 return cookie.value
         return None
 
-    def session_get_mem_cache(self, url, post=False, **kwargs):
-        key = url + (json.dumps(kwargs["data"], sort_keys=True) if "data" in kwargs else "")
-        if key not in self.mem_cache:
-            self.mem_cache[key] = self.session_post(url, **kwargs) if post else self.session_get(url, **kwargs)
-        return self.mem_cache[key]
-
-    def session_get_cache(self, url, key=None, skip_cache=False, ttl=7, use_json=False, output_format_func=None, **kwargs):
+    def session_get_cache(self, url, key=None, mem_cache=False, skip_cache=False, ttl=7, use_json=False, output_format_func=None, **kwargs):
         if skip_cache:
             return self.session_get(url, **kwargs).json()
-        file = self.settings.get_web_cache(key or url)
-        try:
-            if ttl < 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
-                with open(file, "r") as f:
-                    self.logger.debug("Returning cached value for %s", url)
-                    return json.load(f) if use_json else f.read()
-            else:
-                os.remove(file)
-        except (json.decoder.JSONDecodeError, FileNotFoundError):
-            pass
+        _data = kwargs.get("data", kwargs.get("json", ""))
+        key = (key or url) + (str(hash(json.dumps(_data))) if _data else "")
+        file = self.settings.get_web_cache(key)
+        if key in self.mem_cache:
+            return self.mem_cache[key]
+        if not mem_cache:
+            try:
+                if ttl < 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
+                    with open(file, "r") as f:
+                        self.logger.debug("Returning cached value for %s", url)
+                        return json.load(f) if use_json else f.read()
+                else:
+                    os.remove(file)
+            except (json.decoder.JSONDecodeError, FileNotFoundError):
+                pass
         r = self.session_get(url, **kwargs)
         text = output_format_func(r.text) if output_format_func else r.text
         data = json.loads(text) if use_json else text
 
-        for i in range(2 if ttl else 0):
-            try:
-                with open(file, "w") as f:
-                    f.write(text)
-                    break
-            except FileNotFoundError:
-                os.makedirs(self.settings.get_web_cache_dir(), exist_ok=True)
+        if mem_cache:
+            self.mem_cache[key] = data
+        elif ttl:
+            for i in range(2):
+                try:
+                    with open(file, "w") as f:
+                        f.write(text)
+                        break
+                except FileNotFoundError:
+                    os.makedirs(self.settings.get_web_cache_dir(), exist_ok=True)
         return data
 
     def session_get_cache_json(self, url, **kwargs):
@@ -375,7 +377,7 @@ class GenericServer(MediaServer):
         key = page_data["encryption_key"]
         if key:
             from Crypto.Cipher import AES
-            key_bytes = self.session_get_mem_cache(key.uri, headers=page_data["headers"]).content
+            key_bytes = self.session_get(key.uri, headers=page_data["headers"]).content
             iv = int(key.iv, 16).to_bytes(16, "big") if key.iv else None
             content = AES.new(key_bytes, AES.MODE_CBC, iv).decrypt(content)
         with open(path, 'wb') as fp:

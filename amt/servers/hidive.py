@@ -95,7 +95,7 @@ class Hidive(Server):
         return page_data
 
     def get_episode_info(self, media_data, chapter_data):
-        return self.session_get_mem_cache(self.episode_data_url, post=True, data={"Title": media_data["id"], "Key": chapter_data["id"], "PlayerId": "f4f895ce1ca713ba263b91caeb1daa2d08904783"}).json()
+        return self.session_get_cache_json(self.episode_data_url, mem_cache=True, post=True, data={"Title": media_data["id"], "Key": chapter_data["id"], "PlayerId": "f4f895ce1ca713ba263b91caeb1daa2d08904783"})
 
     def get_stream_urls(self, media_data, chapter_data):
         data = self.get_episode_info(media_data, chapter_data)

@@ -516,13 +516,28 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         self.settings.disable_ssl_verification = False
         self.assertRaises(requests.exceptions.SSLError, self.test_server.session_get, "some_url")
         self.assertRaises(requests.exceptions.SSLError, self.test_server.session_post, "some_url")
-        self.assertRaises(requests.exceptions.SSLError, self.test_server.session_get_mem_cache, "some_url")
         for fallback, disable in ((True, False), (False, True)):
             self.settings.fallback_to_insecure_connection = fallback
             self.settings.disable_ssl_verification = disable
             self.assertTrue(self.test_server.session_get("some_url"))
             self.assertTrue(self.test_server.session_post("some_url"))
-            self.assertTrue(self.test_server.session_get_mem_cache("some_url"))
+
+    def test_session_cache(self):
+        def fake_request(*args, **kwargs):
+            r = requests.Response()
+            r.status_code = 200
+            return r
+
+        get = self.test_server.session.get
+        self.test_server.session.get = self.test_anime_server.session.get = fake_request
+
+        self.test_server.session_get_cache("some_url", mem_cache=False)
+        self.test_anime_server.session_get_cache("some_url", mem_cache=True)
+
+        self.test_server.session.get = self.test_anime_server.session.get = get
+
+        self.test_server.session_get_cache("some_url", mem_cache=False)
+        self.test_anime_server.session_get_cache("some_url", mem_cache=True)
 
     def test_session_permanent_ssl_error(self):
         def fake_request(*args, **kwargs):

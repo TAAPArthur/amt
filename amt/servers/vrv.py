@@ -43,16 +43,14 @@ class Vrv(Server):
                 d[item["path"]][item["name"]] = item["value"]
             self.key_pair = {path.replace("*", ".*"): "&".join([f"{k}={v}" for k, v in d[path].items()]) for path in d}
             url_ptr = data["__links__"]["cms_index.v2"]["href"]
-            r = self.session_get_with_key_pair(self.api_base + url_ptr + "?")
-            links = r.json()["__links__"]
+            links = self.session_get_with_key_pair(self.api_base + url_ptr + "?")["__links__"]
             self._single_episode_api_url = self.api_base + links["episode"]["href"] + "?"
             self._season_api_url = self.api_base + links["episodes"]["href"].replace("{?", "?season_id={")
             self._seasons_api_url = self.api_base + links["seasons"]["href"].replace("{?", "?series_id={")
             self._search_api_url = self.api_base + links["search_results"]["href"] + "?q={}&n={}"
 
             url_ptr_v1 = data["__links__"]["disc_index"]["href"]
-            r = self.session_get_with_key_pair(url_ptr_v1 + "?")
-            links = r.json()["__links__"]
+            links = self.session_get_with_key_pair(url_ptr_v1 + "?")["__links__"]
             self._list_api_url = self.api_base + links["browse"]["href"] + "?sort_by=popularity&start=0&n={}"
 
     @property
@@ -85,9 +83,9 @@ class Vrv(Server):
         for path in self.key_pair:
             if re.search(path, url):
                 url += "&" + self.key_pair[path]
-                return self.session_get_mem_cache(url)
+                return self.session_get_cache_json(url, mem_cache=True)
         assert False
-        return self.session_get_mem_cache(url)
+        return self.session_get_cache_json(url, mem_cache=True)
 
     @property
     def apiParams(self):
@@ -134,12 +132,12 @@ class Vrv(Server):
         return True
 
     def get_media_list_helper(self, url, limit):
-        r = self.session_get_with_key_pair(url)
+        item_data = self.session_get_with_key_pair(url)
         media = []
-        items = list(filter(lambda item: item["type"] == "series", r.json()["items"]))
+        items = list(filter(lambda item: item["type"] == "series", item_data["items"]))
         for item in items[:limit]:
             series_id = item["id"]
-            data = self.session_get_with_key_pair(self.seasons_api_url.format(series_id=series_id)).json()
+            data = self.session_get_with_key_pair(self.seasons_api_url.format(series_id=series_id))
             for season in data["items"]:
                 media.append(self.create_media_data(series_id, item["title"], season_id=season["id"], season_title=season["title"], lang=None))
         return media
@@ -151,8 +149,8 @@ class Vrv(Server):
         return self.get_media_list_helper(self.search_api_url.format(term, limit), limit)
 
     def update_media_data(self, media_data: dict, r=None):
-        r = self.session_get_with_key_pair(self.season_api_url.format(season_id=media_data["season_id"]))
-        for episode in r.json()["items"]:
+        data = self.session_get_with_key_pair(self.season_api_url.format(season_id=media_data["season_id"]))
+        for episode in data["items"]:
             if episode["season_id"] == media_data["season_id"]:
                 self.update_chapter_data(media_data, episode["id"], episode["title"], episode["episode_number"], premium=episode["is_premium_only"], special=episode["is_clip"], date=episode["episode_air_date"])
 
@@ -160,8 +158,7 @@ class Vrv(Server):
         match = self.stream_url_regex.search(url)
         if match:
             episode_id = match.group(1)
-            r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=episode_id))
-            data = r.json()
+            data = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=episode_id))
             media_data = self.create_media_data(data["series_id"], data["series_title"], season_id=data["season_id"], season_title=data["season_title"])
             return media_data
 
@@ -169,9 +166,8 @@ class Vrv(Server):
         return self.stream_url_regex.search(url).group(1)
 
     def get_stream_urls(self, media_data, chapter_data):
-        r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
-        r = self.session_get_mem_cache(r.json()["playback"])
-        streams = r.json()["streams"]
+        data = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
+        streams = self.session_get_cache_json(data["playback"], mem_cache=True)["streams"]
         results = []
         for soft_sub in (True, False):
             for name in streams:
@@ -184,9 +180,7 @@ class Vrv(Server):
         return results
 
     def get_subtitle_info(self, media_data, chapter_data):
-        r = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
-        data = r.json()
-        r = self.session_get_mem_cache(data["playback"])
-        subtitle_data = r.json()["subtitles"]
+        data = self.session_get_with_key_pair(self.single_episode_api_url.format(episode_id=chapter_data["id"]))
+        subtitle_data = self.session_get_cache_json(data["playback"], mem_cache=True)["subtitles"]
         for lang, subtitles in subtitle_data.items():
             yield lang, subtitles["url"], subtitles["format"], True

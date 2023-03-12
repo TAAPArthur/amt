@@ -34,7 +34,7 @@ class GenericCrunchyrollServer(Server):
         query_under_lock = GenericCrunchyrollServer.session_id_may_be_invalid and "session_id" in url
 
         def make_request(url):
-            return self.session_get_mem_cache(url, **kwargs).json() if mem_cache else self.session_get_cache_json(url, skip_cache=skip_cache, **kwargs)
+            return self.session_get_cache_json(url, mem_cache=mem_cache, skip_cache=skip_cache, **kwargs)
         session_id_regex = re.compile(r"session_id=([^&]*)")
         if query_under_lock:
             original_session_id = session_id_regex.search(url).group(1)
