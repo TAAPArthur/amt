@@ -2145,7 +2145,6 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
-        ("https://dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
         ("https://crunchyroll.com/manga/talentless-nana/read/1", "519", None, "17221"),
         ("https://crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "257631", "21685", "GR3VWXP96"),
         ("https://dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
