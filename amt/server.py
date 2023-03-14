@@ -278,10 +278,10 @@ class MediaServer(RequestServer):
 
         return True
 
-    def create_page_data(self, url, id=None, encryption_key=None, ext=None, headers={}):
+    def create_page_data(self, url, id=None, encryption_key=None, ext=None, headers={}, stream=False):
         if not ext:
             ext = self.get_extension(url)
-        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext, headers=headers)
+        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext, headers=headers, stream=False)
 
 
 class GenericServer(MediaServer):
@@ -372,7 +372,7 @@ class GenericServer(MediaServer):
         By default it blindly writes the specified url to disk, decrypting it
         if needed.
         """
-        r = self.session_get(page_data["url"], headers=page_data["headers"])
+        r = self.session_get(page_data["url"], headers=page_data["headers"], stream=page_data["stream"])
         content = r.content
         key = page_data["encryption_key"]
         if key:

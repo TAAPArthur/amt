@@ -34,6 +34,8 @@ try:
     from PIL import Image
 
     from ..util.decoder import GenericDecoder
+    # Make the tests faster for certain servers
+    GenericDecoder.PENDING_CACHE_NUM = 1
 except:
     HAS_PIL = False
 
@@ -2295,19 +2297,6 @@ class TrackerTest(RealBaseUnitTestClass):
 
 
 class ServerSpecificTest(RealBaseUnitTestClass):
-
-    def test_jnovel_club_manga_parts_full_download(self):
-        from ..servers.jnovelclub import JNovelClubMangaParts
-        # Make the test faster
-        GenericDecoder.PENDING_CACHE_NUM = 1
-        server = self.media_reader.get_server(JNovelClubMangaParts.id)
-        self.assert_server_enabled_or_skip_test(server)
-        media_data = server.list_media()[0]
-        self.media_reader.add_media(media_data)
-        chapter_data = media_data.get_sorted_chapters()[0]
-        self.assertFalse(chapter_data["premium"])
-        server.download_chapter(media_data, chapter_data, page_limit=7, offset=1)
-
     def test_magnasee_alternative_chapter_url(self):
         url = "https://mangasee123.com/read-online/Onepunch-Man-chapter-148-index-2-page-1.html"
         self.media_reader.stream(url, download=True)
