@@ -35,7 +35,6 @@ class TestServer(Server):
     time_to_error = 0
     error_count = 0
     hide = False
-    inaccessible = False
     error_delay = 0
     test_lang = False
     offset_chapter_num = 0
@@ -141,7 +140,7 @@ class TestServer(Server):
             self.update_chapter_data(media_data, id=2, title="Chapter1", number="1b", date="1998-08-10"),
             self.update_chapter_data(media_data, id=26, title="ChapterSpecial", number=None, date="1998-08-10"),
             self.update_chapter_data(media_data, id=27, title="Chapter0.5", number=0.5, date="1998-08-10", special=True),
-            self.update_chapter_data(media_data, id=28, title="Chapter4", number=4, date="1998-08-10", inaccessible=self.inaccessible),
+            self.update_chapter_data(media_data, id=28, title="Chapter4", number=4, date="1998-08-10"),
         else:
             self.update_chapter_data(media_data, id=1, title="Chapter1", number=1)
         for chapter_data in media_data["chapters"].values():

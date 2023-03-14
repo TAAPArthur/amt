@@ -701,10 +701,6 @@ class ServerWorkflowsTest(BaseUnitTestClass):
         self.settings.password_load_cmd = "exit 1"
         self.login_test_helper(CalledProcessError)
 
-    def test_server_download_inaccessiable(self):
-        self.media_reader.get_server(TestServerLogin.id).inaccessible = True
-        self.login_test_helper()
-
     def test_relogin_on_mature_content(self):
         server = self.media_reader.get_server(TestServerLoginAnime.id)
         media_list = self.add_test_media(server.id)
@@ -1138,7 +1134,7 @@ class GenericServerTest():
                 self.verfiy_media_chapter_data(media_data)
                 if server.torrent and not media_data["chapters"]:
                     break
-                for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
+                for chapter_data in filter(lambda x: not x["premium"], media_data.get_sorted_chapters()):
                     if not SKIP_DOWNLOAD and not server.slow_download:
                         self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2))
                         self.verify_download(media_data, chapter_data)

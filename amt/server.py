@@ -248,7 +248,7 @@ class MediaServer(RequestServer):
 
         return MediaData(dict(server_id=self.id, server_alias=self.alias, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", name.replace(" ", "_")), name=name, media_type=media_type.value, media_type_name=media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_type=progress_type if progress_type is not None else self.progress_type, tags=[], lang=lang, nextTimeStamp=0, official=self.official, version=self.version, **kwargs))
 
-    def update_chapter_data(self, media_data, id, title, number, volume_number=None, premium=False, alt_id=None, special=False, date=None, subtitles=None, inaccessible=False, **kwargs):
+    def update_chapter_data(self, media_data, id, title, number, volume_number=None, premium=False, alt_id=None, special=False, date=None, subtitles=None, **kwargs):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():
             number = 0
             special = True
@@ -264,7 +264,7 @@ class MediaServer(RequestServer):
         if number % 1 == 0:
             number = int(number)
 
-        new_values = dict(id=id, title=title, number=number, volume_number=volume_number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, inaccessible=inaccessible, **kwargs)
+        new_values = dict(id=id, title=title, number=number, volume_number=volume_number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, **kwargs)
         if id in media_data["chapters"]:
             media_data["chapters"][id].update(new_values)
         else:
@@ -600,9 +600,6 @@ class Server(GenericServer):
             return True
 
     def pre_download(self, media_data, chapter_data):
-        if chapter_data["inaccessible"]:
-            self.logger.info("Chapter is not accessible")
-            raise ValueError("Cannot access chapter")
         if chapter_data["premium"] and not self.is_premium:
             if self.needs_to_login():
                 self.logger.info("Server is not authenticated; relogging in")
