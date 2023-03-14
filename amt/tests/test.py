@@ -1094,17 +1094,17 @@ class ApplicationTestWithErrors(CliUnitTestClass):
 
 
 class GenericServerTest():
-    def _test_list_and_search(self, server, test_just_list=False):
+    def _test_list_and_search(self, server, test_just_list=False, media_type=None):
         media_list = None
         with self.subTest(server=server.id, list=True):
-            media_list = server.list_media(limit=4)
+            media_list = server.list_media(limit=4, media_type=media_type)
             assert media_list or not server.has_free_chapters or not server.domain
             self.verfiy_media_list(media_list, server=server)
 
         if media_list and not test_just_list:
             with self.subTest(server=server.id, list=False):
                 for N in (1, 10):
-                    search_media_list = server.search(media_list[0]["name"], limit=N) or server.search(media_list[0]["name"].split()[0], limit=N)
+                    search_media_list = server.search(media_list[0]["name"], limit=N, media_type=media_type) or server.search(media_list[0]["name"].split()[0], limit=N, media_type=media_type)
                     if search_media_list:
                         break
                 assert search_media_list
@@ -1128,23 +1128,32 @@ class GenericServerTest():
                     pass
 
     def test_workflow(self):
+        def test_list_search_download(server, media_type):
+            for media_data in self._test_list_and_search(server, media_type=media_type):
+                if media_type and server.official:
+                    self.assertTrue(media_data["media_type"] & media_type)
+                elif media_data.global_id in self.media_reader.get_media_ids():
+                    continue
+                self.media_reader.add_media(media_data)
+                self.verfiy_media_chapter_data(media_data)
+                if server.torrent and not media_data["chapters"]:
+                    break
+                for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
+                    if not SKIP_DOWNLOAD and not server.slow_download:
+                        self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2))
+                        self.verify_download(media_data, chapter_data)
+                        assert not server.download_chapter(media_data, chapter_data, page_limit=1)
+                    return True
+                if not server.torrent:
+                    self.assertTrue(server.id in self.media_reader.state.get_server_ids_with_logins())
+
         def func(server):
             with self.subTest(server=server.id):
                 if server.need_to_login_to_list:
                     return
-                for media_data in self._test_list_and_search(server):
-                    self.media_reader.add_media(media_data)
-                    self.verfiy_media_chapter_data(media_data)
-                    if server.torrent and not media_data["chapters"]:
-                        break
-                    for chapter_data in filter(lambda x: not x["premium"] and not x["inaccessible"], media_data.get_sorted_chapters()):
-                        if not SKIP_DOWNLOAD and not server.slow_download:
-                            self.assertNotEqual(server.is_local_server(), server.download_chapter(media_data, chapter_data, page_limit=2))
-                            self.verify_download(media_data, chapter_data)
-                            assert not server.download_chapter(media_data, chapter_data, page_limit=1)
-                        return True
-                if not server.torrent:
-                    self.assertTrue(server.id in self.media_reader.state.get_server_ids_with_logins())
+                for media_type in list(MediaType):
+                    if server.media_type & media_type:
+                        test_list_search_download(server, media_type)
         self.for_each_server(func)
         self.media_reader.state.save()
 

@@ -199,10 +199,10 @@ class MediaServer(RequestServer):
                 if not self.relogin():
                     raise ValueError("Failed to login")
 
-    def list_media(self, limit=None):
+    def list_media(self, limit=None, media_type=None):
         self.maybe_relogin()
 
-        return list(self.get_media_list(limit=limit))
+        return list(filter(lambda x: media_type is None or x["media_type"] & media_type, self.get_media_list(limit=limit, media_type=media_type)))
 
     def update(self, media_data):
         self.maybe_relogin()
@@ -315,7 +315,7 @@ class GenericServer(MediaServer):
     # Used to indicate that the download feature for the server is slow (for testing)
     slow_download = False
 
-    def get_media_list(self, limit=None):  # pragma: no cover
+    def get_media_list(self, limit=None, media_type=None):  # pragma: no cover
         """
         Returns an arbitrary selection of media.
         """
