@@ -8,6 +8,7 @@ from ..util.media_type import MediaType
 
 class LocalServer(Server):
     id = "local"
+    official = False
     media_type = MediaType.ANIME | MediaType.NOVEL | MediaType.MANGA
     id_formatter_regex = re.compile(r"\W+")
 

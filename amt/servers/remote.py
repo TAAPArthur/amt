@@ -11,6 +11,7 @@ from requests.exceptions import RequestException
 
 class RemoteServer(Server):
     id = None
+    official = False
     domain_list = None
     domain = None
     path = "/"
