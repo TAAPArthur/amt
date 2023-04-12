@@ -572,7 +572,8 @@ class MediaReader:
             for media_data in media_data_list:
                 progress = entry["progress"] if media_data["progress_type"] != ProgressType.VOLUME_ONLY or entry["progress_volumes"] is None else entry["progress_volumes"]
                 self.mark_chapters_until_n_as_read(media_data, progress, force=force)
-                media_data["progress"] = progress
+                if force or progress > media_data["progress"]:
+                    media_data["progress"] = progress
                 media_data["nextTimeStampTracker"] = entry["nextTimeStamp"]
         if unknown_media:
             logging.info("Could not find any of %s", unknown_media)
