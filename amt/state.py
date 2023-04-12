@@ -163,6 +163,7 @@ class State:
         for key in list(self.disabled_media.keys()):
             if self.disabled_media[key]["server_id"] in server_list:
                 self.media[key] = self.disabled_media[key]
+                self.load_chapter_data(self.media[key])
                 del self.disabled_media[key]
         self.update_server_cache(server_list)
 

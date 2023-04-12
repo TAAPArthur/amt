@@ -74,13 +74,15 @@ class BaseUnitTestClass(unittest.TestCase):
             if server.session != self.media_reader.session:
                 server.session.close()
 
-    def reload(self, set_settings=False, save_settings=False, keep_settings=False):
+    def reload(self, set_settings=False, save_settings=False, keep_settings=False, save_state=False):
         if self.media_reader:
             self.close_sessions()
 
         RequestServer.cloudscraper = None
 
         cls = MediaReaderCLI if self.cli else MediaReader
+        if save_state:
+            self.media_reader.state.save()
         if save_settings:
             self.settings.save()
 
@@ -776,16 +778,20 @@ class MediaReaderTest(BaseUnitTestClass):
 
         for i in range(2):
             self.assertFalse(all(map(lambda x: self.media_reader.get_server(x["server_id"]).official, self.media_reader.get_media())))
-            self.media_reader.state.save()
             self.media_reader.settings.allow_only_official_servers = True
-            self.media_reader.settings.save()
-            self.reload()
+            self.media_reader.mark_read()
+            self.verify_all_chapters_read()
+
+            self.reload(save_settings=True, save_state=True)
             self.assertTrue(self.media_reader.settings.allow_only_official_servers)
             self.assertTrue(self.media_reader.get_media_ids())
             self.assertTrue(all(map(lambda x: self.media_reader.get_server(x["server_id"]).official, self.media_reader.get_media())))
             self.media_reader.settings.allow_only_official_servers = False
-            self.media_reader.settings.save()
-            self.reload()
+            self.verify_all_chapters_read()
+
+            self.reload(save_settings=True, save_state=True)
+            self.media_reader.update()
+            self.verify_all_chapters_read()
 
     def test_load_cookies_session_cookies(self):
         self.media_reader.settings.no_load_session = False
