@@ -2,6 +2,7 @@ import json
 import re
 
 from ..server import Server
+from ..util.progress_type import ProgressType
 
 
 class Mangasee(Server):
@@ -49,6 +50,8 @@ class Mangasee(Server):
         for chapter in chapter_list:
             id = chapter["Chapter"]
             number = float(id[1:-1] + "." + id[-1])
+            if media_data["progress_type"] == ProgressType.CHAPTER_ONLY and chapter["Type"] == "Volume":
+                media_data["progress_type"] = ProgressType.VOLUME_ONLY
             self.update_chapter_data(media_data, id, str(number), number)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):

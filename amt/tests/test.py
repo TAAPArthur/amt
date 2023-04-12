@@ -2191,6 +2191,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
         ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
+        ("https://mangasee123.com/manga/Gunslinger-Girl", "Gunslinger-Girl"),
         ("https://nyaa.si/view/135283", "135283"),
         ("https://nyaa.si/view/269191", "269191"),
         ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
