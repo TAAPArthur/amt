@@ -13,6 +13,3 @@ pycryptodome
 
 # Needed mangasee
 cloudscraper
-
-# Needed for Vrv
-requests_oauthlib
