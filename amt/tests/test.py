@@ -282,6 +282,20 @@ class UtilTest(BaseUnitTestClass):
         for common_prefix in ("A", "The", "That"):
             self.assertFalse(common_prefix in get_alt_names(f"{common_prefix} {name_base}"), common_prefix)
 
+    def test_get_number_from_file_name(self):
+        from ..util.name_parser import get_number_from_file_name
+        name_chapter_number_pairs = [
+            ("A.B.C.S01E00.1080p.BluRay.AAC2.0.x264-DEADBEEF.mkv", 0),
+            ("A.B.C.S01E01.1080p.BluRay.AAC2.0.x264-DEADBEEF.mkv", 1),
+            ("A B C S01E02 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 2),
+            ("A B C 03 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 3),
+            ("04. A B C 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 4),
+            ("A B C 1080p BluRay.AAC2.0.x264-DEADBEEF - 05.mkv", 5),
+        ]
+        for name, chapter_number in name_chapter_number_pairs:
+            with self.subTest(name=name):
+                self.assertEqual(get_number_from_file_name(name), chapter_number)
+
     def test_get_alt_names_remove_dub(self):
         from ..util.name_parser import get_alt_names
         suffixes = ["(Dub)", "(Dubbed)", "(English Dub)", "(Spanish Dub)"]

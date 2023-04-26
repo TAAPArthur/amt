@@ -2,7 +2,7 @@ import os
 import re
 
 media_dir_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*( - [A-Z][A-z]*\d*)?)")
-number_regex = re.compile(r"(\d+\.?\d*)(?:\s|\.|v\d|$)")
+number_regex = re.compile(r"(?:\s|E|^|/)(\d+\.?\d*)(?:\s|\.|v\d|$)", re.IGNORECASE)
 
 remove_brackets_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\])")
 
