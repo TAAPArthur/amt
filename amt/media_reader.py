@@ -522,8 +522,8 @@ class MediaReader:
             tracker_info = self.get_tracker_info(media_data=media_data, tracker_id=self.get_tracker().id)
             last_read_chapter = media_data.get_last_read_chapter()
             if last_read_chapter and (force or media_data["progress"] < last_read_chapter["number"]):
-                media_to_sync.append((media_data, last_read_chapter["number"]))
                 if tracker_info:
+                    media_to_sync.append((media_data, last_read_chapter["number"]))
                     if media_data["media_type"] == MediaType.ANIME:
                         data.append((tracker_info[0], last_read_chapter["number"], False))
                     elif media_data["progress_type"] != ProgressType.CHAPTER_VOLUME:

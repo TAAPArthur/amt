@@ -933,6 +933,12 @@ class MediaReaderTest(BaseUnitTestClass):
         self.add_test_media(TestServer.id, no_update=True)
         self.media_reader.sync_progress()
 
+    def test_sync_untracked(self):
+        media_list = self.add_test_media(TestServer.id)
+        self.media_reader.mark_read()
+        self.media_reader.sync_progress()
+        self.assertFalse(any(map(lambda x: x["progress"], media_list)))
+
     def test_mark_read(self):
         media_list = self.add_test_media(TestServer.id, no_update=True)
         self.media_reader.mark_read(self.test_server.id)
@@ -1733,8 +1739,8 @@ class ArgsTest(CliUnitTestClass):
         assert not any(map(lambda x: x["read"], media_data["chapters"].values()))
 
     def test_mark_read_progress(self):
-        media_list = self.add_test_media(TestServer.id)
-        media_data = media_list[0]
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--server", TestServer.id])
+        media_data = next(self.media_reader.get_media())
         parse_args(media_reader=self.media_reader, args=["mark-read", self.test_server.id])
         parse_args(media_reader=self.media_reader, args=["sync"])
         self.assertEqual(media_data["progress"], media_data.get_last_read_chapter_number())
