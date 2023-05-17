@@ -2235,7 +2235,7 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
 class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
         ("https://crunchyroll.com/manga/talentless-nana/read/1", "519", None, "17221"),
-        ("https://crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "257631", "21685", "GR3VWXP96"),
+        ("https://crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
         ("https://dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
         ("https://dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
         ("https://freewebnovel.com/itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu/chapter-1.html", "itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", None, "chapter-1"),
@@ -2256,8 +2256,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
     ]
     addable_urls = [
         ("https://crunchyroll.com/comics/manga/hoshi-no-samidare-the-lucifer-and-biscuit-hammer/volumes", 255),
-        ("https://crunchyroll.com/lycoris-recoil", "282895"),
-        ("https://crunchyroll.com/series/GRMG8ZQZR/", "257631"),
+        ("https://crunchyroll.com/lycoris-recoil", "G1XHJV2X9"),
+        ("https://crunchyroll.com/series/GRMG8ZQZR/", "GRMG8ZQZR"),
         ("https://hidive.com/tv/o-maidens-in-your-savage-season", "o-maidens-in-your-savage-season"),
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),

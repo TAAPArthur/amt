@@ -1,11 +1,12 @@
+import base64
 import json
 import re
 
 from ..server import Server
 from ..util.media_type import MediaType
-from ..util.name_parser import find_media_with_similar_name_in_list
-from datetime import datetime
 from threading import RLock
+
+from urllib.parse import urlencode
 
 
 class GenericCrunchyrollServer(Server):
@@ -181,91 +182,139 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     id = "crunchyroll_anime"
     media_type = MediaType.ANIME
     need_cloud_scraper = True
-    fuzzy_search = True
-
-    api_base_url = "http://api.crunchyroll.com"
-    list_all_series = "https://www.crunchyroll.com/ajax/?req=RpcApiSearch_GetSearchCandidates"
-    list_season_url = api_base_url + "/list_media.0.json?limit=200&media_type=anime&session_id={}&collection_id={}"
-    stream_url = api_base_url + "/info.0.json?fields=media.stream_data&locale=enUS&session_id={}&media_id={}"
-    episode_url = api_base_url + "/info.0.json?session_id={}&media_id={}"
-    series_url = api_base_url + "/list_collections.0.json?media_type=anime&session_id={}&series_id={}"
 
     stream_url_regex = re.compile(r"crunchyroll.\w+/watch/(\w*)/.+")
-    add_series_url_regex = re.compile(r"crunchyroll.\w+/series/(\w*)")
+    add_series_url_regex = re.compile(r"crunchyroll.\w+/series/(\w*)/([A-z-]*)")
 
-    version = 1
+    version = 2
 
-    def _create_media_data(self, series_id, item_alt_id, season_id=None):
-        season_data = self.session_get_json(self.series_url.format(self.get_session_id(), series_id), mem_cache=True)["data"]
-        for season in season_data:
-            if not season_id or season["collection_id"] == season_id or season["etp_guid"] == season_id:
-                yield self.create_media_data(id=series_id, alt_id=item_alt_id, name=season["name"], season_id=season["collection_id"], lang=None)
+    auth_header = None
+    params = None
 
-    def get_related_media_seasons(self, media_data):
-        yield from self._create_media_data(media_data["id"], media_data["alt_id"])
+    def media_data_id_is_stale(self, media_data):
+        if media_data.get("version", 0) == 1:
+            return media_data["alt_id"]
+
+    def get_config(self):
+        text = self.session_get_cache("https://www.crunchyroll.com/")
+        assert "window.__APP_CONFIG__" in text, text
+        return json.loads(text.split("window.__APP_CONFIG__ = ")[1].splitlines()[0][:-1])
+
+    def get_api_domain(self):
+        return self.get_config()['cxApiParams']['apiDomain']
+
+    def init_auth_headers(self):
+        if self.session_get_cookie("etp_rt"):
+            grant_type, key = 'etp_rt_cookie', 'accountAuthClientId'
+        else:
+            grant_type, key = 'client_id', 'anonClientId'
+
+        config = self.get_config()
+        auth_token = 'Basic ' + str(base64.b64encode(('%s:' % config['cxApiParams'][key]).encode('ascii')), 'ascii')
+        headers = {'Authorization': auth_token, "Content-Type": "application/x-www-form-urlencoded"}
+
+        auth_response = self.session_get_json(f'{self.get_api_domain()}/auth/v1/token', post=True, headers=headers, data=f'grant_type={grant_type}'.encode('ascii'))
+        return {'Authorization': auth_response['token_type'] + ' ' + auth_response['access_token']}
+
+    def get_auth_headers(self):
+        if not self.auth_header:
+            self.auth_header = self.init_auth_headers()
+        return self.auth_header
+
+    def _get_params(self):
+        policy_response = self.session_get_json(f'{self.get_api_domain()}/index/v2', headers=self.get_auth_headers())
+        cms = policy_response.get('cms_web')
+        bucket = cms['bucket']
+        params = {
+            'Policy': cms['policy'],
+            'Signature': cms['signature'],
+            'Key-Pair-Id': cms['key_pair_id']
+        }
+        return (bucket, params)
+
+    def get_params(self):
+        if not self.params:
+            self.params = self._get_params()
+        return self.params
 
     def get_media_list(self, **kwargs):
         return self.search_for_media(None, **kwargs)
 
-    def get_media_metadata(self):
-        return self.session_get_json(self.list_all_series, skip_cache=False, output_format_func=lambda text: text.splitlines()[1])["data"]
+    def get_media_data_for_series(self, media_id, media_title):
+        season_url = f"{self.get_api_domain()}/content/v2/cms/series/{media_id}/seasons"
+        season_data = self.session_get_cache_json(f"{season_url}", key=season_url, need_auth_headers=True)
+        media_list = []
+        for season_info in season_data["data"]:
+            for version_info in (season_info.get("versions") or [{"audio_locale": season_info["audio_locale"]}]):
+                media_list.append(self.create_media_data(id=media_id, name=season_info["title"], season_id=season_info["id"], lang=version_info["audio_locale"]))
+        return media_list
 
     def search_for_media(self, term, limit=None, **kwargs):
-        data = self.get_media_metadata()
-        if term:
-            term_parts = set(self.non_word_char_regex.split(term.lower()))
-            data = find_media_with_similar_name_in_list(term_parts, data)
-
-            data = list(map(lambda x: (self.score_results(term_parts=term_parts, media_name=x["name"]), x), data))
-
-            data.sort(key=lambda x: x[0])
-            data = list(map(lambda x: x[1], data[:limit]))
-
-        return [media for item in data[:limit] for media in self._create_media_data(item["id"], item["etp_guid"])]
-
-    def update_media_data(self, media_data: dict):
-        skip_cache = datetime.now().timestamp() - max(map(lambda x: x.get("date") or 0, media_data["chapters"].values()), default=0) < self.settings.assume_season_completed_after_n_sec
-        url = self.list_season_url.format(self.get_session_id(), media_data["season_id"])
-        data = self.session_get_json(url, skip_cache=skip_cache, key=media_data["season_id"])["data"]
-        for chapter in data:
-            if chapter["collection_id"] == media_data["season_id"] and not chapter["clip"]:
-                special = False
-                number = chapter["episode_number"]
-                if chapter["episode_number"] and chapter["episode_number"][-1].isalpha():
-                    special = True
-                    number = chapter["episode_number"][:-1]
-                elif not chapter["episode_number"]:
-                    number = 1 if len(data) == 1 else 0
-
-                try:
-                    avaliable_date = datetime.strptime(chapter["premium_available_time"], "%Y-%m-%dT%H:%M:%S%z").timestamp()
-                except:
-                    avaliable_date = None
-
-                self.update_chapter_data(media_data, id=chapter["etp_guid"], number=number, title=chapter["name"], premium=not chapter["free_available"], special=special, alt_id=chapter["media_id"], date=avaliable_date)
+        url = f"{self.get_api_domain()}/content/v2/discover/search?q={term}&n=6&type=series,movie_listing"
+        data = self.session_get_cache_json(f"{url}", key=url, need_auth_headers=True)
+        count = 0
+        for media_info in data["data"]:
+            if media_info["type"] != "series":
+                continue
+            for media_item in media_info["items"]:
+                for media_data in self.get_media_data_for_series(media_item['id'], media_item["title"]):
+                    yield media_data
+                    count += 1
+                if limit and count > limit:
+                    break
 
     def get_media_data_from_url(self, url):
         match = self.add_series_url_regex.search(url)
         if match:
-            media_id = match.group(1)
-            for item in self.get_media_metadata():
-                if item["etp_guid"] == media_id:
-                    return next(self._create_media_data(item["id"], media_id))
-        text = self.session_get(url).text
-        text = text.split("window.__INITIAL_STATE__ = ")[1]
-        text = text.splitlines()[0][:-1]
-        data = json.loads(text)
-        media_metadata = list(data["content"]["media"]["byId"].values())[0]
+            for media_data in self.get_media_data_for_series(match.group(1), match.group(2)):
+                return media_data
+        media_id = self.get_chapter_id_for_url(url)
+        bucket, params = self.get_params()
+        query = urlencode(params)
+        url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{media_id}"
+        data = self.session_get_cache_json(f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{media_id}?{query}", key=url)
 
-        for item in self.get_media_metadata():
-            if item["etp_guid"] == media_metadata["parentId"]:
-                return next(self._create_media_data(item["id"], media_metadata["parentId"], season_id=media_metadata["seasonId"]))
+        return self.create_media_data(id=data["series_id"],
+                                      name=data["series_title"],
+                                      season_id=data["season_id"], season_title=data["season_title"],
+                                      lang=data["audio_locale"])
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)
 
-    def get_stream_urls(self, media_data=None, chapter_data=None):
-        data = self.session_get_json(self.stream_url.format(self.get_session_id(), chapter_data["alt_id"]))
+    def update_media_data(self, media_data):
+        url = f"{self.get_api_domain()}/content/v2/cms/seasons/{media_data['season_id']}/episodes"
+        data = self.session_get_cache_json(f"{url}?preferred_audio_language=ja-JP&locale=en-US", key=url, need_auth_headers=True)
+        for chapter in data["data"]:
+            for audio_info in filter(lambda x: x["audio_locale"] == media_data["lang"], chapter["versions"]):
+                chapter_id = audio_info["guid"]
+                self.update_chapter_data(media_data, id=chapter_id, number=chapter["episode_number"], title=chapter["title"], premium=chapter["is_premium_only"], special=chapter["is_clip"], alt_id=chapter["slug_title"])
 
-        streams = data["data"]["stream_data"]["streams"]
-        return [[stream["url"]] for stream in streams]
+    def get_stream_urls(self, media_data=None, chapter_data=None):
+        bucket, params = self.get_params()
+
+        query = urlencode(params)
+        url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{chapter_data['id']}"
+        data = self.session_get_cache_json(f"{url}?{query}", key=url)
+        stream_info_url = self.get_api_domain() + data["__links__"]["streams"]["href"]
+        stream_data = self.session_get_cache_json(f"{stream_info_url}?{query}", key=stream_info_url)
+        url_list = []
+        for video_type, videos in stream_data["streams"].items():
+            if "drm" in video_type:
+                continue
+            for video_info in videos.values():
+                if video_info["url"]:
+                    url_list.append((self.settings.get_prefered_lang_key(media_data, lang=video_info["hardsub_locale"]), video_info["url"], video_type))
+        url_list.sort()
+        return map(lambda x: [x[1]], url_list)
+
+    def get_subtitle_info(self, media_data, chapter_data):
+        bucket, params = self.get_params()
+
+        query = urlencode(params)
+        url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{chapter_data['id']}"
+        data = self.session_get_cache_json(f"{url}?{query}", key=url)
+        stream_info_url = self.get_api_domain() + data["__links__"]["streams"]["href"]
+        stream_data = self.session_get_cache_json(f"{stream_info_url}?{query}", key=stream_info_url)
+        for lang, values in stream_data["subtitles"].items():
+            yield lang, values["url"], values["format"], False

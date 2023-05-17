@@ -71,12 +71,17 @@ class RequestServer:
         self.logger.info(f"Sleeping for {b**c} seconds after seeing {c} failures")
         time.sleep(b**c)
 
-    def _request(self, post_request, url, force_cloud_scraper=False, start=0, **kwargs):
+    def get_auth_headers(self):
+        raise NotImplementedError
+
+    def _request(self, post_request, url, force_cloud_scraper=False, start=0, need_auth_headers=False, **kwargs):
         self.logger.info("Making %s request to %s ", "POST" if post_request else "GET", url)
         self.logger.debug("Request args: %s ", kwargs)
         start = start or time.time()
         if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
             kwargs["verify"] = False
+        if need_auth_headers:
+            kwargs["headers"] = self.get_auth_headers()
         self.update_default_args(kwargs)
         session = self.session
         if not kwargs.get("verify", True):
