@@ -134,8 +134,9 @@ class State:
 
         os.makedirs(self.settings.cache_dir, exist_ok=True)
         with open(self.settings.get_cookie_file(), "w") as f:
+            f.write("# Netscape HTTP Cookie File\n")
             for cookie in self.session.cookies:
-                l = [cookie.domain, str(cookie.domain_specified), cookie.path, str(cookie.secure).upper(), str(cookie.expires) if cookie.expires else "", cookie.name, cookie.value]
+                l = [cookie.domain, str(cookie.domain_specified and cookie.domain.startswith(".")).upper(), cookie.path, str(cookie.secure).upper(), str(cookie.expires) if cookie.expires else "", cookie.name, cookie.value]
                 f.write("\t".join(l) + "\n")
         return True
 

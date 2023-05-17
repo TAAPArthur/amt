@@ -838,6 +838,23 @@ class MediaReaderTest(BaseUnitTestClass):
         self.media_reader.state.load_session_cookies()
         assert not self.media_reader.state.save_session_cookies()
 
+    def test_load_cookies_external(self):
+        """Verify our cookies can be read by default python cookie jars"""
+        from http.cookiejar import MozillaCookieJar
+        self.media_reader.settings.no_save_session = False
+        key, value = "Key", "Value"
+
+        self.media_reader.session.cookies.set(key, value)
+        assert self.media_reader.state.save_session_cookies()
+
+        cookiejar = MozillaCookieJar(self.settings.get_cookie_file())
+        cookiejar.load(ignore_discard=True, ignore_expires=True)
+        cookies = list(cookiejar)
+        assert cookies
+        for cookie in cookies:
+            self.assertEqual(cookie.name, key)
+            self.assertEqual(cookie.value, value)
+
     def test_save_load(self):
         assert not os.path.exists(self.settings.get_metadata_file())
         self.add_test_media(TestServer.id)
