@@ -456,6 +456,8 @@ class GenericServer(MediaServer):
         for lang, url, ext, flip in self.get_subtitle_info(media_data, chapter_data):
             if not ext:
                 ext = self.get_extension(url)
+            if lang:
+                ext = lang.split("-")[0] + "." + ext
             basename = self.settings.get_page_file_name(media_data, chapter_data, ext=ext)
             if not sub_dir:
                 sub_dir = self.settings.get_subtitles_dir(media_data, chapter_data)
