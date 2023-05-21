@@ -362,7 +362,11 @@ class GenericServer(MediaServer):
                 try:
                     if ext == "m3u8":
                         segments = self.get_m3u8_segments(url)
-                        page_data.extend([self.create_page_data(url=segment.uri, encryption_key=segment.key, ext="ts") for segment in segments])
+                        urls = set()
+                        for segment in segments:
+                            if segment.uri not in urls:
+                                page_data.append(self.create_page_data(url=segment.uri, encryption_key=segment.key, ext=self.get_extension(segment.uri, "ts")))
+                                urls.add(segment.uri)
                     else:
                         page_data.extend([self.create_page_data(url=url, ext=ext)])
                 except ImportError as e:
