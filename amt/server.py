@@ -37,6 +37,7 @@ class RequestServer:
     maybe_need_cloud_scraper = False
     _normal_session = None  # the normal session in case a wrapper is used
     domain = None
+    global_lock = Lock()
 
     def __init__(self, session, settings=None):
         self.settings = settings
@@ -142,32 +143,34 @@ class RequestServer:
         _data = kwargs.get("data", kwargs.get("json", ""))
         key = (key or url) + (str(hash(json.dumps(_data))) if _data else "")
         file = self.settings.get_web_cache(key)
-        if key in self.mem_cache:
-            return self.mem_cache[key]
-        if not mem_cache:
-            try:
-                if ttl < 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
-                    with open(file, "r") as f:
-                        self.logger.debug("Returning cached value for %s", url)
-                        return json.load(f) if use_json else f.read()
-                else:
-                    os.remove(file)
-            except (json.decoder.JSONDecodeError, FileNotFoundError):
-                pass
+        with self.global_lock:
+            if key in self.mem_cache:
+                return self.mem_cache[key]
+            if not mem_cache:
+                try:
+                    if ttl < 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
+                        with open(file, "r") as f:
+                            self.logger.debug("Returning cached value for %s", url)
+                            return json.load(f) if use_json else f.read()
+                    else:
+                        os.remove(file)
+                except (json.decoder.JSONDecodeError, FileNotFoundError):
+                    pass
         r = self.session_get(url, **kwargs)
         text = output_format_func(r.text) if output_format_func else r.text
         data = json.loads(text) if use_json else text
 
-        if mem_cache:
-            self.mem_cache[key] = data
-        elif ttl:
-            for i in range(2):
-                try:
-                    with open(file, "w") as f:
-                        f.write(text)
-                        break
-                except FileNotFoundError:
-                    os.makedirs(self.settings.get_web_cache_dir(), exist_ok=True)
+        with self.global_lock:
+            if mem_cache:
+                self.mem_cache[key] = data
+            elif ttl:
+                for i in range(2):
+                    try:
+                        with open(file, "w") as f:
+                            f.write(text)
+                            break
+                    except FileNotFoundError:
+                        os.makedirs(self.settings.get_web_cache_dir(), exist_ok=True)
         return data
 
     def session_get_cache_json(self, url, **kwargs):
