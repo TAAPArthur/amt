@@ -179,10 +179,12 @@ class RequestServer:
     def soupify(self, BeautifulSoup, r):
         return BeautifulSoup(r if isinstance(r, str) else r.text, self.settings.bs4_parser)
 
-    def get_extension(self, url):
+    def get_extension(self, url, default=None):
         _, ext = os.path.splitext(url.split("?")[0])
         if ext and ext[0] == ".":
             ext = ext[1:]
+        if default and len(ext) > 4:
+            return default
         return ext
 
 
