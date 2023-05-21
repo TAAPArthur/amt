@@ -37,7 +37,6 @@ class RequestServer:
     maybe_need_cloud_scraper = False
     _normal_session = None  # the normal session in case a wrapper is used
     domain = None
-    implict_referer = True
 
     def __init__(self, session, settings=None):
         self.settings = settings
@@ -78,8 +77,6 @@ class RequestServer:
         start = start or time.time()
         if "verify" not in kwargs and self.settings.get_disable_ssl_verification(self.id):
             kwargs["verify"] = False
-        if self.implict_referer and "headers" not in kwargs:
-            kwargs["headers"] = {"Referer": f"https://{self.domain}"}
         self.update_default_args(kwargs)
         session = self.session
         if not kwargs.get("verify", True):

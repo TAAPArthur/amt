@@ -59,7 +59,7 @@ class GenericVizManga(Server):
     def get_media_chapter_data_helper(self, chapter_data, num_pages):
         pages = []
         page_nums = ",".join(map(str, range(num_pages)))
-        r = self.session_get(self.api_chapter_data_url.format(chapter_data["id"], page_nums))
+        r = self.session_get(self.api_chapter_data_url.format(chapter_data["id"], page_nums), headers={"Referer": f"https://{self.domain}"})
         data = r.json()
         if not data["ok"] or data["data"] == "no_auth":
             archive_info = self.get_limit_data(chapter_data["id"])

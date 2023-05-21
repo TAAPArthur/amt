@@ -12,7 +12,6 @@ class Hidive(Server):
     id = "hidive"
     media_type = MediaType.ANIME
     has_free_chapters = False
-    implict_referer = False
 
     base_url = "https://www.hidive.com"
     domain = "hidive.com"

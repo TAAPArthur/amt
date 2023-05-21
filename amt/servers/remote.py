@@ -19,7 +19,6 @@ class RemoteServer(Server):
     username, password = None, None
     max_depth = 10
     protocol = "http://"
-    implict_referer = False
 
     @classmethod
     def get_instances(clazz, session, settings=None):
