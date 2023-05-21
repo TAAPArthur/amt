@@ -235,7 +235,6 @@ class MediaReader:
             logging.info("Importing to %s under media %s", dest, name)
             if not dry_run:
                 if link:
-                    print("link")
                     os.link(file, dest)
                 else:
                     shutil.move(file, dest)

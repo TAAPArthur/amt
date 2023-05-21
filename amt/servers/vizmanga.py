@@ -66,8 +66,7 @@ class GenericVizManga(Server):
             self.logger.debug("Failed to get page info %s", archive_info["err"]["msg"])
             raise ChapterLimitException(archive_info["next_reset_epoch"], archive_info["download_limit"])
         urls = data["data"]
-        for num in range(num_pages):
-            url = urls[str(num)]
+        for page_num, url in sorted(urls.items()):
             pages.append(self.create_page_data(url=url, ext="jpg"))
         return pages
 

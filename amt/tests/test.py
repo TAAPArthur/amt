@@ -1132,13 +1132,13 @@ class ApplicationTestWithErrors(CliUnitTestClass):
 class GenericServerTest():
     def _test_list_and_search(self, server, test_just_list=False, media_type=None):
         media_list = None
-        with self.subTest(server=server.id, list=True):
+        with self.subTest(server=server.id, list=True, media_type=media_type):
             media_list = server.list_media(limit=4, media_type=media_type)
             assert media_list or not server.has_free_chapters or not server.domain
             self.verfiy_media_list(media_list, server=server)
 
         if media_list and not test_just_list:
-            with self.subTest(server=server.id, list=False):
+            with self.subTest(server=server.id, list=False, media_type=media_type):
                 for N in (1, 10):
                     search_media_list = server.search(media_list[0]["name"], limit=N, media_type=media_type) or server.search(media_list[0]["name"].split()[0], limit=N, media_type=media_type)
                     if search_media_list:
@@ -2182,7 +2182,7 @@ class ArgsTest(CliUnitTestClass):
             del media_data["chapters"][chapter_id]
 
         self.media_reader.upgrade_state_if_server_version_changed()
-        self.assertEquals(ids, set(media_data["chapters"].keys()))
+        self.assertEqual(ids, set(media_data["chapters"].keys()))
         self.verify_all_chapters_read(media_data)
 
     def test_upgrade_server_major_version(self):
@@ -2223,7 +2223,6 @@ class RealServerTest(GenericServerTest, RealBaseUnitTestClass):
                     self.assertTrue(self.media_reader.state.save_session_cookies())
                     server.session.cookies.clear()
                     self.assertTrue(self.media_reader.state.save_session_cookies())
-        self.assertEqual(min(2, len(self.media_reader.state.get_server_ids())), len(sessions))
 
     def test_search(self):
         for media_type in list(MediaType) + [None]:

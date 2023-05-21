@@ -72,7 +72,9 @@ class GenericFunimation(Server):
     def get_stream_urls(self, media_data=None, chapter_data=None):
         chapter_id = chapter_data["alt_id"]
         r = self.session_get(self.sources_api_url.format(chapter_id))
-        return [[item["src"]] for item in r.json()["items"]]
+        urls = [(item["videoType"] != "m3u8", [item["src"]]) for item in r.json()["items"]]
+        urls = list(map(lambda x: x[1], sorted(urls)))
+        return urls
 
     def backoff(self, c, r):
         try:
