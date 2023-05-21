@@ -545,6 +545,10 @@ class Server(GenericServer):
     def get_credentials(self):
         return self.settings.get_credentials(self.id if not self.alias else self.alias)
 
+    def media_data_id_is_stale(self, media_data):
+        """ Returns the new media if media_data itself needs to be updated and False if just chapter_data is out of date """
+        return None
+
     def relogin(self):
         username, password = self.get_credentials()
         try:

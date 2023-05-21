@@ -40,6 +40,12 @@ class TestServer(Server):
     offset_chapter_num = 0
     use_real_cloud_scraper = False
     redirect_suffix = "/redirect"
+    version = 1
+
+    def media_data_id_is_stale(self, media_data):
+        if abs(self.version - media_data.get("version", 0)) > 1:
+            return media_data["alt_id"]
+        return None
 
     def __init__(self, session, *args, no_fake_session=False, **kwargs):
         super().__init__(FakeSession(session) if not no_fake_session else session, *args, **kwargs)

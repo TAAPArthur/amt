@@ -214,7 +214,7 @@ class State:
             import random
             random.shuffle(media)
         for media_data in media:
-            if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id, media_data.global_id_alt, str(media_data["id"]), media_data["dir_name"]):
+            if name is not None and name not in (media_data["server_id"], media_data["name"], media_data.global_id, media_data.global_id_alt, str(media_data["id"]), media_data["id"], media_data["dir_name"]):
                 continue
             if media_type and media_data["media_type"] & media_type == 0:
                 continue
@@ -277,6 +277,14 @@ class MediaData(dict):
 
     def __str__(self):
         return "{}\t{} {} ({})".format(self.global_id, self["name"], self.get("label", self["season_title"]), MediaType(self["media_type"]).name)
+    def reset(self, media_data):
+        assert media_data is not self
+        assert not media_data.chapters
+        copy = MediaData(media_data)
+        self.copy_fields_to(copy)
+        self.clear()
+        self.chapters.clear()
+        self.update(copy)
 
     def get_sorted_chapters(self):
         return sorted(self["chapters"].values(), key=lambda x: x["number"])

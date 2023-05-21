@@ -1882,6 +1882,8 @@ class ArgsTest(CliUnitTestClass):
         media_list = self.add_test_media(TestServer.id)
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only"])
         self.media_reader.mark_read()
+        self.reload(set_settings=True, save_state=True)
+
         parse_args(media_reader=self.media_reader, args=["--auto", "migrate", "--exact", self.test_server.id])
         self.assertEqual(len(self.media_reader.get_media_ids()), len(media_list))
 
@@ -2181,6 +2183,26 @@ class ArgsTest(CliUnitTestClass):
         self.media_reader.upgrade_state_if_server_version_changed()
         self.assertEquals(ids, set(media_data["chapters"].keys()))
         self.verify_all_chapters_read(media_data)
+
+    def test_upgrade_server_major_version(self):
+        media_data = self.add_test_media(TestServer.id, limit=1)[0]
+        self.media_reader.mark_read()
+        self.media_reader.remove_media(name=media_data)
+
+        self.test_server.version += 10
+        media_id = media_data["id"]
+        media_data["alt_id"] = media_id
+        media_data["id"] = "junk"
+
+        self.media_reader.add_media(media_data, no_update=True)
+        self.assertTrue(self.media_reader.get_single_media(name="junk"))
+        self.media_reader.upgrade_state_if_server_version_changed()
+        self.assertEqual(media_id, media_data["id"])
+
+        self.assertRaises(StopIteration, self.media_reader.get_single_media, name="junk")
+        self.assertTrue(self.media_reader.get_single_media(name=media_id))
+        self.assertTrue(self.media_reader.get_single_media(name=media_id) is media_data)
+        self.verify_all_chapters_read()
 
 
 class RealServerTest(GenericServerTest, RealBaseUnitTestClass):

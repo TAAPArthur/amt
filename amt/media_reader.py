@@ -254,21 +254,24 @@ class MediaReader:
 
     ############# Upgrade and migration
 
-    def migrate(self, name, media_type=None, exact=False, move_self=False, force_same_id=False, raw_id=False, server_id=None, **kwargs):
+    def migrate(self, name, media_type=None, exact=False, move_self=False, force_same_id=False, server_id=None, media_id=None, **kwargs):
         media_list = []
         last_read_list = []
         failures = 0
         for media_data in list(self.get_media(name=name)):
             if move_self:
-                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_data.global_id if raw_id else media_data["id"] if force_same_id else None, no_add=True)
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_id or media_data["id"] if force_same_id else None, no_add=True)
             else:
                 new_media_data = self.search_for_media(media_data["name"], media_type=media_type or media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]], no_add=True, **kwargs)
             if new_media_data:
-                media_data.copy_fields_to(new_media_data)
-                media_list.append(new_media_data)
+                global_id = media_data.global_id
                 last_read_list.append(media_data.get_last_read_chapter_number())
-                self.remove_media(name=media_data)
-                self.add_media(new_media_data, no_update=True)
+                media_data.reset(new_media_data)
+                if global_id != media_data.global_id:
+                    logging.info("Replacing %s with %s", global_id, media_data.global_id)
+                    self.add_media(media_data, no_update=True)
+                    del self.media[global_id]
+                media_list.append(media_data)
             else:
                 logging.info("Failed to migrate %s", media_data.global_id)
                 failures += 1
@@ -279,11 +282,15 @@ class MediaReader:
         return failures
 
     def upgrade_state_if_server_version_changed(self):
-        for media_data in self.get_media():
+        for media_data in list(self.get_media()):
             server = self.get_server(media_data["server_id"])
             if server and media_data.get("version", 0) != server.version:
-                self.update(media_data)
-                media_data["version"] = server.version
+                media_id = server.media_data_id_is_stale(media_data)
+                if media_id:
+                    self.migrate(media_data, move_self=True, force_same_id=True, media_id=media_id)
+                else:
+                    self.update(media_data)
+                    media_data["version"] = server.version
 
     def upgrade_state(self):
         if self.state.is_out_of_date():
@@ -295,7 +302,7 @@ class MediaReader:
                         if key not in media_data:
                             media_data[key] = updated_media_data[key]
             else:
-                self.migrate(None, move_self=True, force_same_id=True, raw_id=True)
+                self.migrate(None, move_self=True, force_same_id=True)
             self.state.update_verion()
 
     # Updating media
@@ -498,7 +505,7 @@ class MediaReader:
         return media_data["trackers"].get(tracker_id, None)
 
     def track(self, media_data, tracker_id, tracking_id, tracker_title=None):
-        media_data["trackers"][tracker_id] = (tracking_id, tracker_title)
+        media_data["trackers"][tracker_id] = [tracking_id, tracker_title]
 
     def remove_tracker(self, name, media_type=None, tracker_id=None):
         if not tracker_id:
