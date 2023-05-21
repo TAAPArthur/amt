@@ -291,7 +291,7 @@ class MediaData(dict):
 
     @property
     def global_id(self):
-        return "{}:{}{}{}".format(self["server_id"], self["id"], (self["season_id"] if self["season_id"] else ""), self.get("lang", "")[:3])
+        return "{}:{}{}{}".format(self["server_id"], self["id"], (self["season_id"] if self["season_id"] else ""), self.get("lang", "").split("-")[0][:3])
 
     @property
     def global_id_alt(self):

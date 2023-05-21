@@ -75,7 +75,7 @@ class Settings:
     # Any keys defined in this dict should be declared in the class
     _specific_settings = {
         "search_score": {
-            MediaType.ANIME.name: [["lang", ["jp", "japanese", ""], -1]]
+            MediaType.ANIME.name: [["lang", ["jp", "ja-jp", "japanese", ""], -1]]
         },
         "viewer": {
             MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$SUB_PATH\" --sub-auto=all --title=\"$AMT_TITLE\" $AMT_EXTRA_ARG $AMT_USER_ARGS {media}",
