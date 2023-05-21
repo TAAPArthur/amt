@@ -80,6 +80,7 @@ class TestServer(Server):
         return self.stream_url_regex.search(url).group(2)
 
     def get_media_data_from_url(self, url):
+        assert self.can_add_media_from_url(url)
         media_id = self._get_media_id_from_url(url)
         for media_data in self.get_media_list():
             if str(media_data["id"]) == media_id:

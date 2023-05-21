@@ -263,21 +263,20 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
                 if limit and count > limit:
                     break
 
-    def get_media_data_from_url(self, url):
+    def get_all_media_data_from_url(self, url):
         match = self.add_series_url_regex.search(url)
         if match:
-            for media_data in self.get_media_data_for_series(match.group(1), match.group(2)):
-                return media_data
+            return self.get_media_data_for_series(match.group(1), match.group(2))
         media_id = self.get_chapter_id_for_url(url)
         bucket, params = self.get_params()
         query = urlencode(params)
         url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{media_id}"
         data = self.session_get_cache_json(f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{media_id}?{query}", key=url)
 
-        return self.create_media_data(id=data["series_id"],
-                                      name=data["series_title"],
-                                      season_id=data["season_id"], season_title=data["season_title"],
-                                      lang=data["audio_locale"])
+        return [self.create_media_data(id=data["series_id"],
+                                       name=data["series_title"],
+                                       season_id=data["season_id"], season_title=data["season_title"],
+                                       lang=data["audio_locale"])]
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)

@@ -12,6 +12,8 @@ class MediaReaderCLI(MediaReader):
 
     def select_media(self, term, results, prompt, no_print=False, auto_select_if_single=False):
         index = 0
+        if not results:
+            return None
 
         print("Looking for", term)
         if not self.auto_select and not (len(results) == 1 and auto_select_if_single):

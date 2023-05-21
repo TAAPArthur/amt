@@ -112,9 +112,6 @@ class Funimation(GenericFunimation):
 
         return media_data
 
-    def get_related_media_seasons(self, media_data):
-        return self._get_media_list([media_data["id"]])
-
     def get_media_list(self, limit=2, **kwargs):
         soup = self.soupify(BeautifulSoup, self.session_get(self.list_url))
         ids = []
@@ -171,10 +168,11 @@ class Funimation(GenericFunimation):
                         special = chapter["mediaCategory"] != "episode"
                         self.update_chapter_data(media_data, id=alt_exp["experienceId"], number=chapter["episodeId"], title=chapter["episodeTitle"], premium=premium, special=special, alt_id=exp["experienceId"])
 
-    def get_related_media_data_from_url(self, url, multiple=False, update=False):
+    def get_all_media_data_from_url(self, url):
         chapter_id = self._get_episode_id(url)
         r = self.session_get(self.show_api_url.format(chapter_id))
         data = r.json()
+        media_list = []
         for season in data["seasons"]:
             for episode in season["episodes"]:
                 for lang, videos in episode["languages"].items():
@@ -183,14 +181,13 @@ class Funimation(GenericFunimation):
                         if typeKey not in video:
                             continue
                         exp = video[typeKey]
-                        if multiple or int(exp["experienceId"]) == int(chapter_id):
-                            media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id, lang=lang.lower())
-                            if update:
-                                self.update_media_data(media_data, r=r)
-                            yield media_data
-
-    def get_media_data_from_url(self, url):
-        return next(self.get_related_media_data_from_url(url, update=True))
+                        media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id, lang=lang.lower())
+                        if int(exp["experienceId"]) == int(chapter_id):
+                            self.update_media_data(media_data, r=r)
+                            media_list.insert(0, media_data)
+                        else:
+                            media_list.append(media_data)
+        return media_list
 
     def get_chapter_id_for_url(self, url):
         chapter_id = self._get_episode_id(url)

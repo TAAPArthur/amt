@@ -2298,17 +2298,17 @@ class ServerStreamTest(RealBaseUnitTestClass):
         def func(url_data):
             url = url_data[0]
             with self.subTest(url=url):
-                media_data = self.media_reader.add_from_url(url, skip_add=True)
-                self.validate_url_data(media_data, url_data)
+                media_list = list(self.media_reader.get_media_from_url(url))
+                for media_data in media_list:
+                    try:
+                        self.validate_url_data(media_data, url_data)
+                        return
+                    except AssertionError:
+                        pass
+                _, server = self.media_reader.get_server_for_url(url)
+                self.assert_server_enabled_or_skip_test(server)
+                assert False, (url_data, media_list)
         self.for_each(func, self.streamable_urls + self.addable_urls)
-
-    def test_add_media_from_url(self):
-        def func(url_data):
-            url = url_data[0]
-            with self.subTest(url=url):
-                media_data = self.media_reader.add_from_url(url, skip_add=True)
-                self.validate_url_data(media_data, url_data)
-        self.for_each(func, self.addable_urls)
 
     def test_media_stream(self):
         def func(url_data):

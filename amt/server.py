@@ -388,17 +388,15 @@ class GenericServer(MediaServer):
         with open(path, 'wb') as fp:
             fp.write(content)
 
-    def get_related_media_seasons(self, media_data):
-        """ Returns all related seasons of media_data
-        """
-        return [media_data]
-
     def _get_media_id_from_url(self, url):
         """ Helper method to get the media_id from the url
         This method should be treated as "protected" and not called by outside classes
         as it may give nonsensical values
         """
         return (self.stream_url_regex.search(url) or self.add_series_url_regex.search(url)).group(1)
+
+    def get_all_media_data_from_url(self, url):
+        return [self.get_media_data_from_url(url)]
 
     def get_media_data_from_url(self, url):  # pragma: no cover
         """ Return the media data related to this url
@@ -408,7 +406,8 @@ class GenericServer(MediaServer):
         The media does not need to have its chapter's list populated but it is
         allowed to.
         """
-        raise NotImplementedError
+        assert GenericServer.get_media_data_from_url != self.get_all_media_data_from_url
+        return self.get_all_media_data_from_url(url)[0]
 
     def get_chapter_id_for_url(self, url):  # pragma: no cover
         """ Return the chapter id related to this url
