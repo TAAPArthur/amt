@@ -50,6 +50,7 @@ LOCAL_SERVERS = import_sub_classes(servers, LocalServer)
 
 SKIP_DOWNLOAD = os.getenv("SKIP_DOWNLOAD")
 SINGLE_THREADED = os.getenv("DEBUG")
+VERBOSE = os.getenv("VERBOSE")
 PREMIUM_TEST = os.getenv("PREMIUM_TEST")
 QUICK_TEST = os.getenv("QUICK")
 ENABLED_SERVERS = os.getenv("AMT_ENABLED_SERVERS")
@@ -147,7 +148,7 @@ class BaseUnitTestClass(unittest.TestCase):
             del os.environ[k]
 
         os.environ["AMT_HOME"] = TEST_HOME
-        init_logger(logging.INFO)
+        init_logger(logging.DEBUG if VERBOSE else logging.INFO)
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         os.makedirs(TEST_HOME)
         os.chdir(TEST_HOME)
