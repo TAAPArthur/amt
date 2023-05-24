@@ -26,8 +26,9 @@ from ..settings import Settings
 from ..state import ChapterData, MediaData, State
 from ..util.exceptions import ChapterLimitException
 from ..util.media_type import MediaType
-from .test_server import (TEST_BASE, TestAnimeServer, TestServer, TestUnofficialServer, TestServerLogin, TestServerLoginAnime)
+from .test_server import (TestAnimeServer, TestServer, TestUnofficialServer, TestServerLogin, TestServerLoginAnime)
 from .test_tracker import TestTracker
+
 
 HAS_PIL = True
 try:
@@ -40,8 +41,8 @@ except:
     HAS_PIL = False
 
 
-TEST_HOME = TEST_BASE + "test_home/"
-TEST_TEMP = TEST_BASE + "tmp/"
+TEST_BASE = "/tmp/amt/"
+TEST_HOME = os.path.join(TEST_BASE, "test_home/")
 
 
 TEST_SERVERS = import_sub_classes(tests, TestServer)
@@ -142,12 +143,14 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.torrent_stream_cmd = "exit 0"
         self.settings.torrent_info_cmd = "exit 0"
 
-    def setUp(self):
+    def resetEnv(self):
         # Clear all env variables
         for k in set(os.environ.keys()):
             del os.environ[k]
-
         os.environ["AMT_HOME"] = TEST_HOME
+
+    def setUp(self):
+        self.resetEnv()
         init_logger(logging.DEBUG if VERBOSE else logging.INFO)
         shutil.rmtree(TEST_HOME, ignore_errors=True)
         os.makedirs(TEST_HOME)
@@ -267,8 +270,14 @@ class CliUnitTestClass(BaseUnitTestClass):
 
 @unittest.skipIf(QUICK_TEST, "Real servers are disabled")
 class RealBaseUnitTestClass(BaseUnitTestClass):
+    CACHE_DIR = os.path.join(TEST_BASE, ".cache")
+
     def init(self):
         self.real = True
+
+    def resetEnv(self):
+        super().resetEnv()
+        os.environ["XDG_CACHE_HOME"] = self.CACHE_DIR
 
 
 class UtilTest(BaseUnitTestClass):
@@ -1340,6 +1349,7 @@ class LocalServerTest(GenericServerTest, BaseUnitTestClass):
 
 
 class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
+    TEST_TEMP = TEST_BASE + "tmp/"
     port = 8888
     resources_dir_name = ".resources"
     valid_domain = f"http://localhost:{port}"
@@ -1349,8 +1359,8 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
 
     @classmethod
     def setUpClass(cls):
-        os.makedirs(TEST_TEMP)
-        os.chdir(TEST_TEMP)
+        os.makedirs(cls.TEST_TEMP)
+        os.chdir(cls.TEST_TEMP)
         cls.web_server = subprocess.Popen(["python", "-m", "http.server", str(cls.port)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         while True:
             try:
@@ -1363,7 +1373,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
     def tearDownClass(cls):
         cls.web_server.kill()
         cls.web_server.wait()
-        shutil.rmtree(TEST_TEMP)
+        shutil.rmtree(cls.TEST_TEMP)
 
     file_info = (
         ("A", ["Test1/media/1/file.test", "Test1/media/2/file.test"], MediaType.ANIME, False, 1, 2),
@@ -1375,10 +1385,10 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
 
     def setUp(self):
         super().setUp()
-        for path in os.listdir(TEST_TEMP):
-            abs_path = os.path.join(TEST_TEMP, path)
+        for path in os.listdir(RemoteServerTest.TEST_TEMP):
+            abs_path = os.path.join(RemoteServerTest.TEST_TEMP, path)
             if os.path.isdir(abs_path):
-                shutil.rmtree(os.path.join(TEST_TEMP, path))
+                shutil.rmtree(os.path.join(RemoteServerTest.TEST_TEMP, path))
             else:
                 os.unlink(abs_path)
         os.makedirs(self.settings.config_dir)
@@ -1386,7 +1396,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
         for server_dir, relative_paths, media_type, auth, _, _ in self.file_info:
             server_id = f"{server_dir}_remote_test_{media_type.name}" + (" _auth" if auth else "")
             for path in relative_paths:
-                abs_path = os.path.join(TEST_TEMP, server_dir, path)
+                abs_path = os.path.join(RemoteServerTest.TEST_TEMP, server_dir, path)
                 os.makedirs(os.path.dirname(abs_path), exist_ok=True)
                 if path.count("/") > 1:
                     parent = os.path.dirname(abs_path)
@@ -1441,7 +1451,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
                     }
                     }
             json.dump(conf, f)
-        os.symlink(os.path.join(TEST_HOME, self.settings.data_dir), os.path.join(TEST_TEMP, path))
+        os.symlink(os.path.join(TEST_HOME, self.settings.data_dir), os.path.join(RemoteServerTest.TEST_TEMP, path))
 
         self.default_server_list = original_default
         self.reload(True)
@@ -1528,7 +1538,7 @@ class RemoteServerTest(GenericServerTest, BaseUnitTestClass):
                     self.assertTrue(os.listdir(dir_path))
                     num_files += 1
         expected_num_files = 0
-        for root, dirs, files in os.walk(TEST_TEMP):
+        for root, dirs, files in os.walk(RemoteServerTest.TEST_TEMP):
             expected_num_files += self.resources_dir_name in dirs
         self.assertEqual(expected_num_files, num_files)
 

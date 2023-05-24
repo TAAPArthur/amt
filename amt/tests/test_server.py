@@ -9,9 +9,6 @@ from ..server import Server
 from ..util.media_type import MediaType
 from ..util.progress_type import ProgressType
 
-TEST_BASE = "/tmp/amt/"
-
-
 class FakeSession(requests.Session):
     def __init__(self, session):
         super().__init__()
