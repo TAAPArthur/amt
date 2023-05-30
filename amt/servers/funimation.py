@@ -16,7 +16,7 @@ class GenericFunimation(Server):
     login_url = "https://www.funimation.com/log-in/"
     prod_api_base = "https://prod-api-funimationnow.dadcdigital.com"
     login_api_url = prod_api_base + "/api/auth/login/"
-    episode_url = prod_api_base + "/api/funimation/episodes/?limit=99999&title_id={}"
+    episode_url = prod_api_base + "/api/funimation/episodes/?limit=30&title_id={}"
 
     api_base = "https://www.funimation.com/api"
     show_api_url = api_base + "/experience/{}/"
@@ -99,8 +99,7 @@ class Funimation(GenericFunimation):
     def _get_media_list(self, ids, limit=None):
         media_data = []
         for id in ids[:limit]:
-            r = self.session_get(self.episode_url.format(id))
-            data = r.json()
+            data = self.session_get_cache_json(self.episode_url.format(id))
             if not data["count"]:
                 continue
             season_data = {(item["item"]["titleId"], item["item"]["titleName"], item["item"]["seasonId"], item["item"]["seasonTitle"], audio) for item in data["items"] for audio in item["audio"]}
