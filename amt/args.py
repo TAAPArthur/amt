@@ -311,7 +311,7 @@ def parse_args(args=None, media_reader=None, already_upgraded=False):
                 elif not isinstance(ret, dict):
                     for obj in ret:
                         print("\t".join(map(str, obj)) if isinstance(obj, tuple) else obj)
-            return 1 if ret is False else 0
+            return 1 if ret is False or ret is None else 0
     finally:
         if not namespace.no_save and ("dry_run" not in namespace or not namespace.dry_run):
             state.save()
