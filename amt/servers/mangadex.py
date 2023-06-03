@@ -73,7 +73,7 @@ class Mangadex(Server):
                 attr = chapter_data["attributes"]
                 if attr["translatedLanguage"] == media_data["lang"]:
                     if attr["pages"]:
-                        self.update_chapter_data(media_data, id=chapter_data["id"], number=attr["chapter"], title=attr["title"])
+                        self.update_chapter_data(media_data, id=chapter_data["id"], number=attr["chapter"], title=attr["title"], volume_number=attr.get("volume"))
             offset += data["limit"]
             if offset > data["total"]:
                 break
