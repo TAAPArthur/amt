@@ -93,6 +93,7 @@ def setup_subparsers(state, sub_parsers):
     sub_consume_parsers.add_argument("--limit", "-l", default=0, type=int)
     sub_consume_parsers.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--stream-index", "-q", default=0, type=int)
+    sub_consume_parsers.add_argument("--volume", default=False, action="store_const", const=True)
 
     view_parser = add_parser_helper(sub_parsers, "view", func_str="play", parents=[sub_consume_parsers], help="View pages of chapters")
     view_parser.add_argument("--batch-size", "-b", default=1, type=int, help="Batch media for consumption; Should only be used when all media is of the same type")
@@ -117,6 +118,7 @@ def setup_subparsers(state, sub_parsers):
     steam_parser.add_argument("--offset", type=float, default=0, help="Offset the url by N chapters")
     steam_parser.add_argument("--stream-index", "-q", default=0, type=int)
     steam_parser.add_argument("--record", "-r", default=False, action="store_const", const=True, help="Update or add media")
+    steam_parser.add_argument("--volume", default=False, action="store_const", const=True)
     steam_parser.add_argument("url")
 
     stream_url_parser = add_parser_helper(sub_parsers, "get-stream-url", help="Gets the steaming url for the media")

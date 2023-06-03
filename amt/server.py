@@ -277,6 +277,10 @@ class MediaServer(RequestServer):
             number = round(number - media_data["offset"], 4)
         if number % 1 == 0:
             number = int(number)
+        if isinstance(volume_number, str):
+            volume_number = float(volume_number.replace("-", "."))
+            if volume_number % 1 == 0:
+                volume_number = int(volume_number)
 
         new_values = dict(id=id, title=title, number=number, volume_number=volume_number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, **kwargs)
         if id in media_data["chapters"]:

@@ -286,8 +286,8 @@ class MediaData(dict):
         self.chapters.clear()
         self.update(copy)
 
-    def get_sorted_chapters(self):
-        return sorted(self["chapters"].values(), key=lambda x: x["number"])
+    def get_sorted_chapters(self, volume=False, filter_list=[]):
+        return sorted(self["chapters"].values(), key=lambda x: (x.get_number(volume=volume), x.get_number()))
 
     @property
     def global_id(self):
@@ -327,11 +327,17 @@ class MediaData(dict):
     def get_chapter_number_to_id(self, chapter_num):
         return max(filter(lambda x: x["number"] == chapter_num, self["chapters"].values()), key=lambda x: x["number"], default={}).get("id")
 
-    def get_last_read_chapter(self):
-        return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x["number"], default={})
+    def get_last_read_chapter(self, volume=False):
+        return max(filter(lambda x: x["read"], self["chapters"].values()), key=lambda x: x.get_number(volume), default=ChapterData({}))
 
-    def get_last_read_chapter_number(self):
-        return self.get_last_read_chapter().get("number", 0)
+    def get_last_read_chapter_number(self, volume=False):
+        return self.get_last_read_chapter(volume=volume).get_number(volume)
+
+    def get_unreads(self, any_unread=False, volume=False):
+        lastRead = self.get_last_read_chapter_number(volume=volume)
+        for chapter in self.get_sorted_chapters(volume=volume):
+            if not chapter["read"] and (any_unread or (chapter.get_number(volume) > lastRead and not chapter["special"])):
+                yield chapter
 
     def get_labels(self):
         return [self.global_id, self["name"], self["server_id"], self["server_alias"], MediaType(self["media_type"]).name]
@@ -346,6 +352,9 @@ class ChapterData(dict):
     def update(self, key_pars):
         super().update(key_pars)
         self.update_state = True
+
+    def get_number(self, volume=False):
+        return self.get("volume_number" if volume else "number") or 0
 
     def check_if_updated_and_clear(self):
         updated = self.update_state
