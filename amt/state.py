@@ -244,7 +244,7 @@ class State:
     def list_chapters(self, name, show_ids=False):
         media_data = self.get_single_media(name=name)
         for chapter in media_data.get_sorted_chapters():
-            yield "{:4}:{}{}".format(chapter["number"], chapter["title"], ":" + chapter["id"] if show_ids else "")
+            yield "{:4}{}:{}{}".format(chapter["number"], "*" if chapter["special"] else " ", chapter["title"], ":" + chapter["id"] if show_ids else "")
 
     def save_stats(self, identifier, stats):
         stats_file = self.settings.get_stats_file()
