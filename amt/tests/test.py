@@ -1227,7 +1227,7 @@ class GenericServerTest():
 
 class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
     torrents = ["TorrentA.torrent", "TorrentB.torrent", "TorrentC.torrent", "TorrentD.torrent"]
-    torrent_files = ["1.file", "2.file", "dir/3.file", "nested/dir/4.file"]
+    torrent_files = ["1.file", "2.file", "dir/3.file", "nested/dir/4.file", "Alt 1.file"]
 
     def setup_settings(self, **kwargs):
         super().setup_settings(**kwargs)
@@ -2281,6 +2281,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://mangasee123.com/manga/Gunslinger-Girl", "Gunslinger-Girl"),
         ("https://nyaa.si/view/135283", "135283"),
         ("https://nyaa.si/view/269191", "269191"),
+        ("https://nyaa.si/view/1047104", "1047104"),
         ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
         ("https://webtoons.com/en/drama/lookism/list?title_no=1049", 1049),
     ]
