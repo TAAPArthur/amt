@@ -91,10 +91,14 @@ class GenericTorrentServer(Server):
     def get_chapter_id_for_url(self, url):
         o = urlparse(url)
         query = parse_qs(o.query)
-        return query.get("file", None)[0]
+        return query.get("file", [None])[0]
 
     def can_stream_url(self, url):
-        return super().can_stream_url(url) and self.settings.torrent_info_cmd
+        return self.settings.torrent_info_cmd and super().can_stream_url(url) and self.get_chapter_id_for_url(url)
+
+    @property
+    def add_series_url_regex(self):
+        return self.stream_url_regex
 
 
 class Torrent(GenericTorrentServer):
