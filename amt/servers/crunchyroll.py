@@ -203,6 +203,9 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_api_domain(self):
         return self.get_config()['cxApiParams']['apiDomain']
 
+    def needs_authentication(self):
+        return not self.session_get_cookie("etp_rt") or super().needs_authentication()
+
     def init_auth_headers(self):
         if self.session_get_cookie("etp_rt"):
             grant_type, key = 'etp_rt_cookie', 'accountAuthClientId'
