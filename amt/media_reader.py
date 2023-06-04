@@ -204,7 +204,7 @@ class MediaReader:
         media_data = self.select_media(url, media_list, "Select media: ", auto_select_if_single=True)
         if media_data and not skip_add:
             self.add_media(media_data)
-        return media_data
+        return media_data if media_data else False
 
     def remove_media(self, **kwargs):
         media_data = self.get_single_media(**kwargs)
