@@ -25,7 +25,7 @@ class Nyaa(GenericTorrentServer):
     id = "nyaa"
     domain = "nyaa.si"
     base_url = f"https://{domain}"
-    search_url = base_url + "/?s=downloads&o=desc&f=0&c={}&q={}"
+    search_url = base_url + "/?s=size&o=desc&f=0&c={}&q={}"
     torrent_url = base_url + "/download/{}.torrent"
 
     stream_url_regex = re.compile(r"nyaa.si/view/(\w*)")
