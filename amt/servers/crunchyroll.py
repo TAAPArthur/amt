@@ -297,9 +297,9 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
         query = urlencode(params)
         url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{chapter_data['id']}"
-        data = self.session_get_cache_json(f"{url}?{query}", key=url)
+        data = self.session_get_json(f"{url}?{query}", key=url)
         stream_info_url = self.get_api_domain() + data["__links__"]["streams"]["href"]
-        stream_data = self.session_get_cache_json(f"{stream_info_url}?{query}", key=stream_info_url)
+        stream_data = self.session_get_json(f"{stream_info_url}?{query}", key=stream_info_url)
         url_list = []
         for video_type, videos in stream_data["streams"].items():
             if "drm" in video_type:
@@ -315,8 +315,8 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
         query = urlencode(params)
         url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{chapter_data['id']}"
-        data = self.session_get_cache_json(f"{url}?{query}", key=url)
+        data = self.session_get_json(f"{url}?{query}", key=url)
         stream_info_url = self.get_api_domain() + data["__links__"]["streams"]["href"]
-        stream_data = self.session_get_cache_json(f"{stream_info_url}?{query}", key=stream_info_url)
+        stream_data = self.session_get_json(f"{stream_info_url}?{query}", key=stream_info_url)
         for lang, values in stream_data["subtitles"].items():
             yield lang, values["url"], values["format"], False
