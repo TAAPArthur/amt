@@ -52,7 +52,7 @@ class Freewebnovel(Server):
         relative_paths = soup.find("select", {"id": "indexselect"}).findAll("option")
         self._update_media_data(media_data, soup)
         for relative_path in map(lambda x: x["value"], relative_paths[1:]):
-            r = self.session_get_cache(self.base_url + relative_path, skip_cache=relative_path == relative_paths[-1])
+            r = self.session_get_cache(self.base_url + relative_path, ttl=30, skip_cache=relative_path == relative_paths[-1])
             soup = self.soupify(BeautifulSoup, r)
             self._update_media_data(media_data, soup)
 
