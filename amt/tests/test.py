@@ -2335,16 +2335,19 @@ class ServerStreamTest(RealBaseUnitTestClass):
         def func(url_data):
             url = url_data[0]
             with self.subTest(url=url):
+                _, server = self.media_reader.get_server_for_url(url)
+                self.assert_server_enabled_or_skip_test(server)
                 media_list = list(self.media_reader.get_media_from_url(url))
+                err = None
+                assert media_list
                 for media_data in media_list:
                     try:
                         self.validate_url_data(media_data, url_data)
                         return
-                    except AssertionError:
-                        pass
-                _, server = self.media_reader.get_server_for_url(url)
-                self.assert_server_enabled_or_skip_test(server)
-                assert False, (url_data, media_list)
+                    except AssertionError as e:
+                        err = e
+                if err:
+                    raise err
         self.for_each(func, self.streamable_urls + self.addable_urls)
 
     def test_media_stream(self):

@@ -277,6 +277,7 @@ class MediaData(dict):
 
     def __str__(self):
         return "{}\t{} {} ({})".format(self.global_id, self["name"], self.get("label", self["season_title"]), MediaType(self["media_type"]).name)
+
     def reset(self, media_data):
         assert media_data is not self
         assert not media_data.chapters
