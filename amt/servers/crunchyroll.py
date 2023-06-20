@@ -255,16 +255,15 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def search_for_media(self, term, limit=None, **kwargs):
         url = f"{self.get_api_domain()}/content/v2/discover/search?q={term}&n=6&type=series,movie_listing"
         data = self.session_get_cache_json(f"{url}", key=url, need_auth_headers=True)
-        count = 0
+        media_list = []
         for media_info in data["data"]:
             if media_info["type"] != "series":
                 continue
             for media_item in media_info["items"]:
-                for media_data in self.get_media_data_for_series(media_item['id'], media_item["title"]):
-                    yield media_data
-                    count += 1
-                if limit and count > limit:
+                media_list.extend(self.get_media_data_for_series(media_item['id'], media_item["title"]))
+                if limit and len(media_list) > limit:
                     break
+        return media_list
 
     def get_all_media_data_from_url(self, url):
         match = self.add_series_url_regex.search(url)
