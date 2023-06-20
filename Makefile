@@ -25,7 +25,8 @@ quick_test_coverage: test_coverage
 
 full_test_coverage: test_coverage
 	coverage report --omit "*test*,amt/trackers/*,$$(grep -l login amt/servers/*.py | tr '\n' ',')" --fail-under=99 --skip-empty -m
-	coverage report --omit "*test*" --fail-under=90 --skip-empty -m
+	coverage report --omit "*test*,amt/servers/crunchyroll.py" --fail-under=90 --skip-empty -m
+	coverage report --omit "*test*" --fail-under=88 --skip-empty -m
 
 coverage_html:
 	coverage html

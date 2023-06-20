@@ -9,6 +9,7 @@ import sys
 import time
 import unittest
 
+from contextlib import contextmanager
 from inspect import findsource
 from requests.exceptions import ConnectionError
 from subprocess import CalledProcessError
@@ -278,6 +279,23 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
     def resetEnv(self):
         super().resetEnv()
         os.environ["XDG_CACHE_HOME"] = self.CACHE_DIR
+
+    @contextmanager
+    def subTest(self, **kwargs):
+        has_cloud_scraper = False
+        with super().subTest(**kwargs):
+            try:
+                import cloudscraper
+                has_cloud_scraper = True
+            except:
+                pass
+            if has_cloud_scraper:
+                try:
+                    yield
+                except cloudscraper.exceptions.CloudflareChallengeError as e:
+                    self.skipTest(e)
+            else:
+                yield
 
 
 class UtilTest(BaseUnitTestClass):
@@ -1146,7 +1164,7 @@ class ApplicationTestWithErrors(CliUnitTestClass):
 
 class GenericServerTest():
     def _test_list_and_search(self, server, test_just_list=False, media_type=None):
-        media_list = None
+        media_list = []
         with self.subTest(server=server.id, list=True, media_type=media_type):
             media_list = server.list_media(limit=4, media_type=media_type)
             assert media_list or not server.has_free_chapters or not server.domain
