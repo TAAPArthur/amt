@@ -21,7 +21,7 @@ class Mangasee(Server):
     chapter_regex = re.compile(r"vm.Chapters = (.*);")
     page_regex = re.compile(r"vm.CurChapter = (.*);")
     domain_regex = re.compile(r"vm.CurPathName\w* = \"(.*)\";")
-    stream_url_regex = re.compile(domain + r"/read-online/(.*)-chapter-(\d*\.?\d?)(-index-\d+)?-page")
+    stream_url_regex = re.compile(domain + r"/read-online/(.*)-chapter-(\d*\.?\d?)(-index-)?(\d+)?-page")
     add_series_url_regex = re.compile(domain + r"/manga/(.*)")
 
     def get_media_data_from_url(self, url):
@@ -31,11 +31,13 @@ class Mangasee(Server):
                 return media_data
 
     def get_chapter_id_for_url(self, url):
-        chapter_num = float(self.stream_url_regex.search(url).group(2))
+        match = self.stream_url_regex.search(url)
+        chapter_num = float(match.group(2))
         media_data = self.get_media_data_from_url(url)
         self.update_media_data(media_data)
+        id_prefix = match.group(4) if match.group(4) else "1"
         for chapter_data in media_data["chapters"].values():
-            if chapter_data["number"] == chapter_num:
+            if chapter_data["number"] == chapter_num and chapter_data["id"][0] == id_prefix:
                 return chapter_data["id"]
 
     def get_media_list(self, **kwargs):
@@ -52,24 +54,25 @@ class Mangasee(Server):
             number = float(id[1:-1] + "." + id[-1])
             if media_data["progress_type"] == ProgressType.CHAPTER_ONLY and chapter["Type"] == "Volume":
                 media_data["progress_type"] = ProgressType.VOLUME_ONLY
-            self.update_chapter_data(media_data, id, str(number), number)
+            title = chapter["ChapterName"]
+            if not title:
+                title = chapter.get('Type', "") + " " + str(number)
+            self.update_chapter_data(media_data, id, title, number)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
-        r = self.session_get(self.chapter_url.format(media_data["id"], chapter_data["number"]))
+
+        if chapter_data["id"][0] == "1":
+            r = self.session_get(self.chapter_url.format(media_data["id"], chapter_data["number"]))
+        else:
+            r = self.session_get(self.chapter_url_n.format(media_data["id"], chapter_data["number"], chapter_data["id"][0]))
         match = self.page_regex.search(r.text)
-        if not match:
-            for i in range(1, 10):
-                r = self.session_get(self.chapter_url_n.format(media_data["id"], chapter_data["number"], i))
-                match = self.page_regex.search(r.text)
-                if match:
-                    break
-        page_text = match.group(1)
-        page_data = json.loads(page_text)
+        page_data = json.loads(match.group(1))
         match = self.domain_regex.search(r.text)
         domain = match.group(1)
 
+        directory = media_data["id"] + "/" + page_data["Directory"] if page_data.get("Directory") else media_data["id"]
         pages = []
         for i in range(int(page_data["Page"])):
             number_str = "{:04d}".format(int(chapter_data["number"])) if chapter_data["number"] % 1 == 0 else "{:06.1f}".format(chapter_data["number"])
-            pages.append(self.create_page_data(url=self.page_url.format(domain, media_data["id"], number_str, i + 1)))
+            pages.append(self.create_page_data(url=self.page_url.format(domain, directory, number_str, i + 1)))
         return pages

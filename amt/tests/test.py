@@ -2261,6 +2261,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1", "seirei-gensouki-spirit-chronicles-manga", None, "seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1"),
         ("https://mangadex.org/chapter/ea697e18-470c-4e80-baf0-a3972720178f/1", "8a3d319d-2d10-4364-928c-0f30fd367c24", None, "ea697e18-470c-4e80-baf0-a3972720178f"),
         ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
+        ("https://mangasee123.com/read-online/Berserk-chapter-1-index-2-page-1.html", "Berserk", None, "200010"),
+        ("https://mangasee123.com/read-online/Berserk-chapter-1-page-1.html", "Berserk", None, "100010"),
         ("https://mangasee123.com/read-online/Bobobo-Bo-Bo-Bobo-chapter-214-page-1.html", "Bobobo-Bo-Bo-Bobo", None, "102140"),
         ("https://mangasee123.com/read-online/Onepunch-Man-chapter-147-index-2-page-1.html", "Onepunch-Man", None, "201470"),
         ("https://viz.com/shonenjump/one-piece-chapter-1/chapter/5090?action=read", "one-piece", None, "5090"),
