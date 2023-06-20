@@ -31,7 +31,7 @@ class Dbmultiverse(Server):
             for chapter in media_data.get_sorted_chapters():
                 if chapter["last_page"] >= chapter_id_or_page_num:
                     return chapter["id"]
-        return chapter_id_or_page_num
+        return str(chapter_id_or_page_num)
 
     def get_media_list(self, **kwargs):
         r = self.session_get(self.base_url)
