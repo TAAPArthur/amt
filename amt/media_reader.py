@@ -373,7 +373,7 @@ class MediaReader:
                 last_read = max(media_data.get_last_read_chapter_number(), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
-    def stream(self, url, cont=False, media_type=None, download=False, stream_index=0, offset=0, record=False, volume=False):
+    def stream(self, url, cont=False, media_type=None, download=False, stream_index=0, offset=0, record=False, volume=False, **download_chapter_args):
         url, server = self.get_server_for_url(url, streamable=True)
         if not server:
             logging.error("Could not find any matching server")
@@ -393,12 +393,12 @@ class MediaReader:
             self.add_media(media_data, no_update=True)
 
         if download:
-            server.download_chapter(media_data, chapter_data)
+            server.download_chapter(media_data, chapter_data, **download_chapter_args)
         else:
             min_chapter_num = chapter_data.get_number(volume) + offset
             num_list = sorted(set(map(lambda x: x.get_number(volume), filter(lambda x: x.get_number(volume) >= min_chapter_num, media_data["chapters"].values()))))
 
-            return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True, volume=volume) if num_list else False
+            return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True, volume=volume, **download_chapter_args) if num_list else False
         return 1
 
     def get_stream_url(self, name=None, num_list=None, shuffle=False, limit=None, force_abs=False):
@@ -428,7 +428,7 @@ class MediaReader:
                 media_data["media_type"] = media_type.value
                 media_data["media_type_name"] = media_type.name
 
-    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force_stream=False, volume=False, batch_size=1):
+    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force_stream=False, volume=False, batch_size=1, **download_chapter_args):
         num = 0
         batch = []
         media_chapters = []
@@ -440,7 +440,7 @@ class MediaReader:
                     if not server.is_fully_downloaded(media_data, chapter):
                         server.pre_download(media_data, chapter)
                 else:
-                    server.download_chapter(media_data, chapter)
+                    server.download_chapter(media_data, chapter, **download_chapter_args)
 
                 if server.is_fully_downloaded(media_data, chapter) and not force_stream:
                     batch.extend(server.get_children(media_data, chapter))

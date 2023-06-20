@@ -2353,8 +2353,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
             with self.subTest(url=url):
                 _, server = self.media_reader.get_server_for_url(url)
                 self.assert_server_enabled_or_skip_test(server)
-                if server.media_type == MediaType.ANIME and server.has_free_chapters:
-                    self.assertTrue(self.media_reader.stream(url))
+                if server.has_free_chapters:
+                    self.assertTrue(self.media_reader.stream(url, page_limit=2))
         self.for_each(func, self.streamable_urls)
 
 
