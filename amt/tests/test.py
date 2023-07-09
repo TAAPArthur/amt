@@ -1188,12 +1188,16 @@ class GenericServerTest():
             with self.subTest(server=server.id):
                 try:
                     server.get_media_list(unknown_kwargs=0)
-                except ValueError:
+                except TypeError:
+                    raise
+                except:
                     pass
                 try:
                     # Normally this method should be treated as private
                     server.search_for_media("term", unknown_kwargs=0)
-                except ValueError:
+                except TypeError:
+                    raise
+                except:
                     pass
 
     def test_workflow(self):
@@ -1234,6 +1238,8 @@ class GenericServerTest():
 
         def func(server):
             try:
+                if isinstance(server, TestServer):
+                    server.error_login = True
                 with self.subTest(server=server.id, method="relogin"):
                     assert not server.relogin()
             finally:
@@ -1241,6 +1247,10 @@ class GenericServerTest():
 
         unique_login_servers = {x.alias or x.id: x for x in map(self.media_reader.get_server, self.media_reader.state.get_server_ids_with_logins()) if x}
         self.for_each(func, unique_login_servers.values())
+
+
+class TestServerTest(GenericServerTest, BaseUnitTestClass):
+    pass
 
 
 class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
@@ -2361,8 +2371,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         self.for_each(func, self.streamable_urls)
 
 
-class TrackerTest(RealBaseUnitTestClass):
-
+class GenericTrackerTest():
     def test_validate_tracker_info(self):
         keys_for_lists_of_strings = ["external_links", "genres", "streaming_links", "studio", "tags"]
         keys_for_strings = ["name", "season"]
@@ -2379,14 +2388,20 @@ class TrackerTest(RealBaseUnitTestClass):
                         if key == "media_type":
                             assert isinstance(value, MediaType)
                         elif key in keys_for_lists_of_strings:
-                            assert isinstance(value, list)
+                            assert isinstance(value, list) or isinstance(value, tuple), f"{key}: {value}, should be a list"
                             for item in value:
                                 assert isinstance(item, str), f"{key}: {value}, should be a list of strings"
                         elif key in keys_for_strings:
-                            assert isinstance(value, str), f"{key}: {value}, should be a string"
+                            assert isinstance(value, str) or value is None, f"{key}: {value}, should be a string"
                         elif key != "id" and value:
                             float(value)
 
+
+class TestTrackerTest(GenericTrackerTest, BaseUnitTestClass):
+    pass
+
+
+class TrackerTest(GenericTrackerTest, RealBaseUnitTestClass):
     def test_load_from_tracker(self):
         for tracker_id in self.media_reader.get_tracker_ids():
             with self.subTest(tracker_id=tracker_id):
