@@ -134,7 +134,7 @@ class Anilist(Tracker):
                 media_type=MediaType.ANIME if x["media"]["type"] == "ANIME" else MediaType.get(x["media"]["format"], MediaType.MANGA),
                 progress=x["progress"],
                 progress_volumes=x["progressVolumes"],
-                name=x["media"]["title"]["english"] or x["media"]["title"]["romaji"],
+                names=x["media"]["title"],
                 score=x["score"],
                 nextTimeStamp=x["media"]["nextAiringEpisode"]["airingAt"] if x["media"]["nextAiringEpisode"] else None,
                 time_spent=x["progress"] * x["media"]["duration"] if x["media"]["duration"] else x["progress"] or x["progressVolumes"] or 0,

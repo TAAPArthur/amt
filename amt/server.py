@@ -10,7 +10,7 @@ from urllib3.exceptions import InsecureRequestWarning
 import logging
 
 from .job import Job
-from .state import ChapterData, MediaData
+from .state import ChapterData, MediaData, TrackerEntry
 from .util.media_type import MediaType
 from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
 from .util.progress_type import ProgressType
@@ -232,11 +232,30 @@ class MediaServer(RequestServer):
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
-        terms = get_alt_names(term) if not literal and not self.fuzzy_search else [term]
-        media_list = self.search_helper(terms, limit, media_type=media_type)
+        terms = [term] if isinstance(term, str) else set(term)
+        alt_terms = []
+        if literal or self.fuzzy_search:
+            alt_terms = terms
+        else:
+            for name in terms:
+                alt_terms.extend(get_alt_names(name))
+        media_list = self.search_helper(alt_terms, limit, media_type=media_type)
 
-        term_parts = set(self.non_word_char_regex.split(term.lower()))
-        return list(map(lambda x: (self.score_results(term_parts=term_parts, media_name=x["name"]), x), filter(lambda x: not media_type or x["media_type"] & media_type, media_list)))
+        term_parts_arr = []
+        for name in terms:
+            term_parts_arr.append(set(self.non_word_char_regex.split(name.lower())))
+
+        def score_result(media_name):
+            return max((self.score_results(term_parts=term_parts, media_name=media_name) for term_parts in term_parts_arr))
+
+        return list(map(lambda x: (score_result(x["name"]), x), filter(lambda x: not media_type or x["media_type"] & media_type, media_list)))
+
+        if literal or self.fuzzy_search:
+            terms = term
+        else:
+            terms = []
+            for name in term:
+                terms.extend(get_alt_names(name))
 
     def search_helper(self, terms, limit=None, media_type=None, **kwargs):
         self.maybe_relogin()
@@ -699,8 +718,8 @@ class Tracker(RequestServer):
     official = True
     alias = None
 
-    def get_media_dict(self, id, media_type, name, progress, progress_volumes=None, score=0, nextTimeStamp=None, time_spent=0, year=0, year_end=0, season=None, genres=tuple(), tags=tuple(), studio=tuple(), external_links=tuple(), streaming_links=tuple()):
-        m = dict(locals())
+    def get_media_dict(self, id, media_type, names, progress, progress_volumes=None, score=0, nextTimeStamp=None, time_spent=0, year=0, year_end=0, season=None, genres=tuple(), tags=tuple(), studio=tuple(), external_links=tuple(), streaming_links=tuple()):
+        m = TrackerEntry(locals())
         del m["self"]
         return m
 

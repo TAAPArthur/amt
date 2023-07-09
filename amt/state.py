@@ -248,12 +248,12 @@ class State:
 
     def save_stats(self, identifier, stats):
         stats_file = self.settings.get_stats_file()
-        saved_data = self.read_file_as_dict(stats_file)
+        saved_data = self.read_file_as_dict(stats_file, object_hook=lambda obj: TrackerEntry(obj))
         saved_data.update({identifier or "": stats})
         self.save_to_file(stats_file, saved_data)
 
     def list_stats(self, username=None, media_type=None, stat_group=StatGroup.NAME, sort_index=SortIndex.NAME, reverse=False, min_count=0, min_score=1, time_unit=0, no_header=False, details_type=Details.NAME, details_limit=None):
-        saved_data = self.read_file_as_dict(self.settings.get_stats_file())
+        saved_data = self.read_file_as_dict(self.settings.get_stats_file(), object_hook=lambda obj: TrackerEntry(obj))
         data = saved_data.get(username if username else "", {})
         if media_type:
             data = list(filter(lambda x: x["media_type"] == media_type, data))
@@ -361,3 +361,18 @@ class ChapterData(dict):
         updated = self.update_state
         self.update_state = False
         return updated
+
+
+class TrackerEntry(dict):
+    def __init__(self, backing_map):
+        super().__init__(backing_map)
+
+    def __getitem__(self, key):
+        if key == "name":
+            names = super().get("names")
+            return names.get("english") or names.get("romaji") or next(iter(names.values())) if names else super().__getitem__(key)
+        elif key == "names":
+            names = super().get("names")
+            return list(set(filter(lambda x: x, names.values())))
+        else:
+            return super().__getitem__(key)

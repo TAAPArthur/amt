@@ -148,25 +148,33 @@ class MediaReader:
 
         return media_data
 
-    def get_related_media_from_tracker_association(self, name, tracker_data, server_id=None):
+    def get_related_media_from_tracker_association(self, tracker_data, server_id=None):
         media_list = self.for_each(lambda url: self.get_media_from_url(url, server_id=server_id), tracker_data["external_links"])
         if tracker_data["streaming_links"]:
             media_list.extend(self.get_media_from_url(tracker_data["streaming_links"][0], server_id=server_id))
 
-        return self.select_media(name, list({media_data.global_id: media_data for media_data in filter(bool, media_list)}.values()), "Select from tracker links: ")
+        return self.select_media(tracker_data["name"], list({media_data.global_id: media_data for media_data in filter(bool, media_list)}.values()), "Select from tracker links: ")
 
     def search_for_media(self, name, media_type=None, exact=False, server_id=None, skip_local_search=False, skip_remote_search=False, tracker_data=None, **kwargs):
         media_data = known_matching_media = None
 
         if not skip_local_search:
-            alt_names = get_alt_names(name) if not exact else [name]
+            alt_names = []
+            if not tracker_data:
+                alt_names = get_alt_names(name) if not exact else [name]
+            else:
+                if exact:
+                    alt_names = tracker_data["names"]
+                else:
+                    for x in tracker_data["names"]:
+                        alt_names.extend(get_alt_names(x))
             known_matching_media = list(find_media_with_similar_name_in_list(alt_names, filter(lambda x: not self.get_tracker_info(x), self.get_media(media_type=media_type))))
             if known_matching_media:
                 logging.debug("Checking among known media")
-                media_data = self.select_media(name, known_matching_media, "Select from known media: ")
+                media_data = self.select_media(name or tracker_data["name"], known_matching_media, "Select from known media: ")
 
         if not media_data and tracker_data:
-            media_data = self.get_related_media_from_tracker_association(name, tracker_data, server_id=server_id)
+            media_data = self.get_related_media_from_tracker_association(tracker_data, server_id=server_id)
             if media_data:
                 if media_data.global_id not in self.get_media_ids():
                     self.add_media(media_data)
@@ -174,9 +182,9 @@ class MediaReader:
                     media_data = self.media[media_data.global_id]
 
         if not media_data and not skip_remote_search:
-            media_data = self.search_add(name, media_type=media_type, exact=exact, server_id=server_id, **kwargs)
+            media_data = self.search_add(name or tracker_data["names"], media_type=media_type, exact=exact, server_id=server_id, **kwargs)
         if not media_data:
-            logging.info("Could not find media %s", name)
+            logging.info("Could not find media %s", name or tracker_data["names"])
             return False
         return media_data
 
@@ -557,7 +565,7 @@ class MediaReader:
             if not media_data_list:
                 if no_add:
                     continue
-                media_data = self.search_for_media(entry["name"], entry["media_type"], exact=exact, skip_remote_search=local_only, tracker_data=entry, **kwargs)
+                media_data = self.search_for_media(None, entry["media_type"], exact=exact, skip_remote_search=local_only, tracker_data=entry, **kwargs)
                 if media_data:
                     self.maybe_resolve_media_type(media_data, media_type_filter=media_type)
                     self.track(media_data, tracker.id, entry["id"], entry["name"])

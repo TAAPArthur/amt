@@ -1696,6 +1696,11 @@ class ArgsTest(CliUnitTestClass):
         self.reload()
         assert len(self.media_reader.get_media_ids())
 
+    def test_load_exact(self):
+        self.media_reader.get_tracker().set_custom_anime_list(["Manga"])
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--exact"])
+        self.verify_no_media()
+
     def test_load(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "--server", TestServer.id, "InProgress"])
         assert len(self.media_reader.get_media_ids()) == 1
@@ -2374,7 +2379,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
 class GenericTrackerTest():
     def test_validate_tracker_info(self):
         keys_for_lists_of_strings = ["external_links", "genres", "streaming_links", "studio", "tags"]
-        keys_for_strings = ["name", "season"]
+        keys_for_strings = ["season"]
+        keys_for_dicts = ["names"]
 
         for tracker_id in self.media_reader.get_tracker_ids():
             with self.subTest(tracker_id=tracker_id):
@@ -2393,6 +2399,11 @@ class GenericTrackerTest():
                                 assert isinstance(item, str), f"{key}: {value}, should be a list of strings"
                         elif key in keys_for_strings:
                             assert isinstance(value, str) or value is None, f"{key}: {value}, should be a string"
+                        elif key in keys_for_dicts:
+                            assert isinstance(value, dict), f"{key}: {value}, should be a dict"
+                            for k, v in value.items():
+                                assert isinstance(k, str), f"{k}, should be a string"
+                                assert isinstance(v, str) or v is None, f"{v} should be a string"
                         elif key != "id" and value:
                             float(value)
 
