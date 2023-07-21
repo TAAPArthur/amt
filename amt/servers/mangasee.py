@@ -49,11 +49,16 @@ class Mangasee(Server):
         match = self.chapter_regex.search(r.text)
         chapters_text = match.group(1)
         chapter_list = json.loads(chapters_text)
+
+        if media_data["progress_type"] != ProgressType.VOLUME_ONLY:
+            for chapter in chapter_list:
+                if media_data["progress_type"] == ProgressType.CHAPTER_ONLY and chapter["Type"] == "Volume":
+                    media_data["progress_type"] = ProgressType.VOLUME_ONLY
         for chapter in chapter_list:
             id = chapter["Chapter"]
             number = float(id[1:-1] + "." + id[-1])
-            if media_data["progress_type"] == ProgressType.CHAPTER_ONLY and chapter["Type"] == "Volume":
-                media_data["progress_type"] = ProgressType.VOLUME_ONLY
+            if media_data["progress_type"] == ProgressType.VOLUME_ONLY and chapter["Type"] != "Volume":
+                continue
             title = chapter["ChapterName"]
             if not title:
                 title = chapter.get('Type', "") + " " + str(number)
