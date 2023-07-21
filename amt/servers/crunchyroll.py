@@ -287,8 +287,8 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         url = f"{self.get_api_domain()}/content/v2/cms/seasons/{media_data['season_id']}/episodes"
         data = self.session_get_cache_json(f"{url}?preferred_audio_language=ja-JP&locale=en-US", key=url, need_auth_headers=True)
         for chapter in data["data"]:
-            for audio_info in filter(lambda x: x["audio_locale"] == media_data["lang"], chapter["versions"]):
-                chapter_id = audio_info["guid"]
+            for audio_info in filter(lambda x: x["audio_locale"] == media_data["lang"], chapter["versions"] or [chapter]):
+                chapter_id = audio_info["guid"] if "guid" in audio_info else chapter["id"]
                 self.update_chapter_data(media_data, id=chapter_id, number=chapter["episode_number"], title=chapter["title"], premium=chapter["is_premium_only"], special=chapter["is_clip"], alt_id=chapter["slug_title"])
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
