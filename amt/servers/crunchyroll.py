@@ -198,7 +198,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_config(self):
         text = self.session_get_cache("https://www.crunchyroll.com/")
         assert "window.__APP_CONFIG__" in text, text
-        return json.loads(text.split("window.__APP_CONFIG__ = ")[1].splitlines()[0][:-1])
+        return json.loads(text.split("window.__APP_CONFIG__ = ")[1].splitlines()[0][:-1].split(";")[0])
 
     def get_api_domain(self):
         return self.get_config()['cxApiParams']['apiDomain']
