@@ -55,8 +55,8 @@ class MediaReader:
                         if self.settings.is_server_enabled(instance.id, instance.alias, instance.official):
                             assert instance.id not in instance_map, f"Duplicate server id: {instance.id}"
                             instance_map[instance.id] = instance
-                except ImportError:
-                    logging.debug("Could not instantiate %s", cls)
+                except ImportError as e:
+                    logging.debug("Could not instantiate %s %s", cls, e)
 
         self.session.headers.update({
             "Connection": "keep-alive",

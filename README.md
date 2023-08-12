@@ -114,7 +114,7 @@ Optional dependency breakdown
 * beautifulsoup4:      required to download images for JNovelClub (only for light novel parts)
 * beautifulsoup4:      required to enable DB multiverse, FreeWebNovel, Funimation, Nyaa, RemoteServer, Tubi and Webtoons
 * beautifulsoup4 :     required to search for Crunchyroll (manga)
-* cloudscraper:        required to enable MangaSee and HumbleBundle
+* cloudscraper:        required to enable searching/updating on MangaSee and HumbleBundle
 * cloudscraper:        potentially required to access all features of Crunchyroll (manga and anime)
 * m3u8 & pycryptodome: required just download media for Crunchyroll and HiDive (enables more formats for Funimation)
 

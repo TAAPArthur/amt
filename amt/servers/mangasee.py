@@ -8,7 +8,7 @@ from ..util.progress_type import ProgressType
 class Mangasee(Server):
     id = "mangasee"
     official = False
-    need_cloud_scraper = True
+    maybe_need_cloud_scraper = True
 
     domain = "mangasee123.com"
     base_url = f"https://{domain}"

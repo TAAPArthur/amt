@@ -34,7 +34,6 @@ class RequestServer:
     settings = None
 
     # If true a cloudscraper object should be given instead of a normal session
-    need_cloud_scraper = False
     maybe_need_cloud_scraper = False
     _normal_session = None  # the normal session in case a wrapper is used
     domain = None
@@ -43,7 +42,7 @@ class RequestServer:
     def __init__(self, session, settings=None):
         self.settings = settings
         self._normal_session = session
-        if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:
+        if self.settings.get_always_use_cloudscraper(self.id):
             self.session = self.get_cloudscraper_session(session)
         else:
             self.session = session
@@ -115,7 +114,7 @@ class RequestServer:
             except SSLError:
                 if self.settings.get_fallback_to_insecure_connection(self.id) and kwargs.get("verify", True):
                     self.logger.warning("Retry request insecurely %s", url)
-                    if self.settings.get_always_use_cloudscraper(self.id) or self.need_cloud_scraper:   # pragma: no cover
+                    if self.settings.get_always_use_cloudscraper(self.id) or force_cloud_scraper:   # pragma: no cover
                         self.logger.warning("Using insecure connections and cloudscraper are not supported and may result in an error like 'ValueError: Cannot set verify_mode to CERT_NONE when check_hostname is enabled.'")
                     kwargs["verify"] = False
                     return self._request(post_request, url, **kwargs)
@@ -127,7 +126,10 @@ class RequestServer:
                 continue
         if self.maybe_need_cloud_scraper and not force_cloud_scraper and r.status_code in (403, 503):
             if session == self._normal_session:
-                return self._request(post_request, url, force_cloud_scraper=True, **kwargs)
+                try:
+                    return self._request(post_request, url, force_cloud_scraper=True, **kwargs)
+                except ImportError:
+                    pass
         r.raise_for_status()
         end = time.time()
 

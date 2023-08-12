@@ -17,7 +17,7 @@ class HumbleBundle(Server):
     official = True
     has_free_chapters = False
     is_premium = True
-    need_cloud_scraper = True
+    maybe_need_cloud_scraper = True
 
     domain = "humblebundle.com"
     base_url = "https://www.humblebundle.com/home/library"

@@ -102,7 +102,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     id = "crunchyroll_anime"
     alias = "crunchyroll"
     media_type = MediaType.ANIME
-    need_cloud_scraper = True
+    maybe_need_cloud_scraper = True
 
     stream_url_regex = re.compile(r"crunchyroll.\w+/watch/(\w*)/.+")
     add_series_url_regex = re.compile(r"crunchyroll.\w+/series/(\w*)")
