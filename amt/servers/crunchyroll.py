@@ -184,7 +184,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     need_cloud_scraper = True
 
     stream_url_regex = re.compile(r"crunchyroll.\w+/watch/(\w*)/.+")
-    add_series_url_regex = re.compile(r"crunchyroll.\w+/series/(\w*)/([A-z-]*)")
+    add_series_url_regex = re.compile(r"crunchyroll.\w+/series/(\w*)")
 
     version = 2
 
@@ -243,7 +243,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_media_list(self, **kwargs):
         return self.search_for_media(None, **kwargs)
 
-    def get_media_data_for_series(self, media_id, media_title):
+    def get_media_data_for_series(self, media_id):
         season_url = f"{self.get_api_domain()}/content/v2/cms/series/{media_id}/seasons"
         season_data = self.session_get_cache_json(f"{season_url}", key=season_url, need_auth_headers=True)
         media_list = []
@@ -260,7 +260,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
             if media_info["type"] != "series":
                 continue
             for media_item in media_info["items"]:
-                media_list.extend(self.get_media_data_for_series(media_item['id'], media_item["title"]))
+                media_list.extend(self.get_media_data_for_series(media_item['id']))
                 if limit and len(media_list) > limit:
                     break
         return media_list
@@ -268,7 +268,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_all_media_data_from_url(self, url):
         match = self.add_series_url_regex.search(url)
         if match:
-            return self.get_media_data_for_series(match.group(1), match.group(2))
+            return self.get_media_data_for_series(match.group(1))
         media_id = self.get_chapter_id_for_url(url)
         bucket, params = self.get_params()
         query = urlencode(params)
