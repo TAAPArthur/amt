@@ -2322,7 +2322,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
     ]
 
     def test_a_verify_valid_stream_urls(self):
-        for streamable, url_list in [(True, self.streamable_urls), (False, self.addable_urls)]:
+        for streamable, url_list in [(True, self.streamable_urls), (False, self.streamable_urls), (False, self.addable_urls)]:
             for url_data in url_list:
                 sample_url = url_data[0]
                 for url in {sample_url, sample_url[:-1] if sample_url[-1] == "/" else sample_url, sample_url.replace("https:", "http:"), sample_url.replace("://", "://www.")}:

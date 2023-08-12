@@ -188,16 +188,16 @@ class MediaReader:
             return False
         return media_data
 
-    def get_server_for_url(self, url, streamable=False, server_id=None):
-        for server in self.get_servers():
-            func = server.can_stream_url if streamable else server.can_add_media_from_url
-            if server_id in (None, server.id):
-                if func(url):
-                    return url, server
-                elif server.domain and server.domain in url:
-                    new_url = server.get_redirect_url(url)
-                    if func(new_url):
-                        return new_url, server
+    def get_server_for_url(self, url, streamable=False, server_id=None, disallow_redirects=False):
+        servers = list(filter(lambda server: server_id in (None, server.id), self.get_servers()))
+        for server in servers:
+            if (server.can_stream_url if streamable else server.can_add_media_from_url)(url):
+                return url, server
+        if not disallow_redirects:
+            for server in filter(lambda server: server.domain and server.domain in url, servers):
+                new_url = server.get_redirect_url(url)
+                if new_url != url:
+                    return self.get_server_for_url(new_url, streamable=streamable, server_id=server_id, disallow_redirects=True)
         return url, None
 
     def get_media_from_url(self, url, server_id=None):
