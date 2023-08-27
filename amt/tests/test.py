@@ -2350,9 +2350,10 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
         ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
         ("https://mangasee123.com/manga/Gunslinger-Girl", "Gunslinger-Girl"),
+        ("https://nyaa.si/?f=0&c=1_2&q=%5BEMBER%5D+Watashi+no+Shiawase+na+Kekkon", "[EMBER] Watashi no Shiawase na Kekkon"),
+        ("https://nyaa.si/view/1047104", "1047104"),
         ("https://nyaa.si/view/135283", "135283"),
         ("https://nyaa.si/view/269191", "269191"),
-        ("https://nyaa.si/view/1047104", "1047104"),
         ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
         ("https://webtoons.com/en/drama/lookism/list?title_no=1049", 1049),
     ]

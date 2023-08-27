@@ -278,6 +278,8 @@ class MediaServer(RequestServer):
                 lang = "dub" if match else ""
         if media_type is None:
             media_type = self.media_type
+        if self.torrent:
+            kwargs["torrent_files"] = kwargs.get("torrent_files") or []
 
         return MediaData(dict(server_id=self.id, server_alias=self.alias, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", (season_title or name).replace(" ", "_")), name=name, media_type=media_type.value, media_type_name=media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_type=progress_type if progress_type is not None else self.progress_type, tags=[], lang=lang, nextTimeStamp=0, official=self.official, version=self.version, **kwargs))
 

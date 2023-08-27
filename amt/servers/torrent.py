@@ -14,27 +14,42 @@ class GenericTorrentServer(Server):
     progress_type = ProgressType.VOLUME_ONLY
     official = False
     torrent = True
+    version = 1
+
+    def upgrade_state(self, media_data):
+        return media_data["id"]
 
     @classmethod
     def get_instances(clazz, session, settings, **kwargs):
         return super().get_instances(session, settings, **kwargs) if settings.torrent_list_cmd else []
 
+    def get_torrent_url_from_basename(self, media_data, filename):  # pragma: no cover
+        return filename
+
+    def get_abs_torrent_file_path(self, media_data, filename):
+        dir_path = self.settings.get_media_dir(media_data)
+        os.makedirs(dir_path, exist_ok=True)
+        return os.path.join(dir_path, os.path.basename(filename))
+
     def list_files(self, media_data):
         dir_path = self.settings.get_media_dir(media_data)
-        return self.settings.run_cmd_and_save_output(self.settings.torrent_list_cmd, media_data=media_data, env_extra={"TORRENT_FILE": media_data["torrent_file"]}, wd=dir_path).splitlines()
+        for torrent_file in media_data["torrent_files"]:
+            abs_torrent_file_path = self.get_abs_torrent_file_path(media_data, self.get_torrent_url_from_basename(media_data, torrent_file))
+            for file in self.settings.run_cmd_and_save_output(self.settings.torrent_list_cmd, media_data=media_data, env_extra={"TORRENT_FILE": abs_torrent_file_path}, wd=dir_path).splitlines():
+                yield abs_torrent_file_path, file
 
-    def update_media_data(self, media_data):
-        if not media_data.get("downloaded_torrent_file", False):
-            self.download_torrent_file(media_data)
-            media_data["downloaded_torrent_file"] = True
-        files = self.list_files(media_data)
+    def update_media_data(self, media_data, limit=None, **kwargs):
+        for torrent_file in media_data["torrent_files"][:limit]:
+            self.download_torrent_file(media_data, self.get_torrent_url_from_basename(media_data, torrent_file))
+
+        files = list(self.list_files(media_data))
 
         numbers = set()
         duplicate_numbers = set()
-        for file in files:
+        for torrent_file, file in files:
             title = os.path.basename(file)
             n = name_parser.get_number_from_file_name(file, media_name=media_data["name"])
-            self.update_chapter_data(media_data, id=file, title=title, alt_id=title, number=n, path=file)
+            self.update_chapter_data(media_data, id=file, title=title, alt_id=title, number=n, path=file, torrent_file=torrent_file)
             if n and not media_data.chapters[file]["special"]:
                 if n in numbers:
                     duplicate_numbers.add(n)
@@ -54,7 +69,7 @@ class GenericTorrentServer(Server):
         dir_path = self.settings.get_media_dir(media_data)
         os.makedirs(dir_path, exist_ok=True)
         assert(os.path.exists(dir_path))
-        self.settings.run_cmd(self.settings.torrent_download_cmd, media_data=media_data, chapter_data=chapter_data, wd=dir_path, raiseException=True, env_extra={"TORRENT_FILE": media_data["torrent_file"]})
+        self.settings.run_cmd(self.settings.torrent_download_cmd, media_data=media_data, chapter_data=chapter_data, wd=dir_path, raiseException=True, env_extra={"TORRENT_FILE": chapter_data["torrent_file"]})
         return [chapter_data["id"]]
 
     def post_download(self, media_data, chapter_data, page_paths):
@@ -65,20 +80,16 @@ class GenericTorrentServer(Server):
     def get_stream_url(self, media_data, chapter_data, stream_index=0):
         return [None]
 
-    def download_torrent_file(self, media_data):
+    def download_torrent_file(self, media_data, torrent_file_url):
         """
         Downloads the raw torrent file
         """
 
-        dir_path = self.settings.get_media_dir(media_data)
-        os.makedirs(dir_path, exist_ok=True)
-        torrent_file = media_data["torrent_file"]
-        assert(torrent_file)
-        path = os.path.join(dir_path, os.path.basename(torrent_file))
+        path = self.get_abs_torrent_file_path(media_data, torrent_file_url)
         if not os.path.exists(path):
             self.logger.info("Downloading torrent file to %s", path)
-            self.save_torrent_file(torrent_file, path)
-        media_data["torrent_file"] = path
+            self.save_torrent_file(torrent_file_url, path)
+        return path
 
     def save_torrent_file(self, torrent_file, path):
         if os.path.exists(torrent_file):
@@ -124,4 +135,4 @@ class Torrent(GenericTorrentServer):
                 elif key == "name":
                     title = value
 
-        return self.create_media_data(id=info_hash, name=title, torrent_file=torrent_file)
+        return self.create_media_data(id=info_hash, name=title, torrent_files=[torrent_file])

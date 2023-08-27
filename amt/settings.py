@@ -367,7 +367,7 @@ class Settings:
         from shlex import quote
         for f in raw_files:
             if f is None:
-                env_extra["TORRENT_FILE"] = media_data["torrent_file"]
+                env_extra["TORRENT_FILE"] = chapter_data["torrent_file"]
                 env_extra["STREAMING"] = "1"
                 torrent = True
                 f = "-"
