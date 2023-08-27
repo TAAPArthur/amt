@@ -292,7 +292,7 @@ class MediaReader:
         for media_data in list(self.get_media()):
             server = self.get_server(media_data["server_id"])
             if server and media_data.get("version", 0) != server.version:
-                media_id = server.media_data_id_is_stale(media_data)
+                media_id = server.upgrade_state(media_data)
                 if media_id:
                     self.migrate(media_data, move_self=True, force_same_id=True, media_id=media_id)
                 else:

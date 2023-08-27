@@ -590,8 +590,13 @@ class Server(GenericServer):
     def get_credentials(self):
         return self.settings.get_credentials(self.id if not self.alias else self.alias)
 
-    def media_data_id_is_stale(self, media_data):
-        """ Returns the new media if media_data itself needs to be updated and False if just chapter_data is out of date """
+    def upgrade_state(self, media_data):
+        """
+        This method is used to automatically upgrade media/chapter state when the server version changes which indicates
+        a change in the persisted data.
+        Returns the potentially new media id if media_data itself needs to be updated and False if just chapter_data is out of date
+        If the former case, the media_data will be fully recreated. Otherwise all the chapter_data will just be updated.
+        """
         return None
 
     def relogin(self):

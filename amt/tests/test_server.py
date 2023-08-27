@@ -39,7 +39,7 @@ class TestServer(Server):
     redirect_suffix = "/redirect"
     version = 1
 
-    def media_data_id_is_stale(self, media_data):
+    def upgrade_state(self, media_data):
         if abs(self.version - media_data.get("version", 0)) > 1:
             return media_data["alt_id"]
         return None
