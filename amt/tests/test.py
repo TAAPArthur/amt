@@ -247,6 +247,8 @@ class BaseUnitTestClass(unittest.TestCase):
                 self.assertTrue(isinstance(media_data, MediaData), type(media_data))
                 self.verfiy_media_chapter_data(media_data)
                 assert "\n" not in media_data["name"]
+                assert media_data["name"]
+                assert media_data["id"]
 
             if not server:
                 server = self.media_reader.get_server(media_list[0]["server_id"])
@@ -1747,12 +1749,12 @@ class ArgsTest(CliUnitTestClass):
 
     def test_load_resolve_media_type(self):
         media_list = self.add_test_media(server_id=TestUnofficialServer.id)
-        self.assertFalse(any(media_data["media_type_name"] for media_data in media_list))
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
         for media_data in media_list:
             if self.media_reader.get_tracker_info(media_data):
                 self.assertTrue(media_data["media_type_name"])
                 self.assertTrue(MediaType(media_data["media_type"]).name)
+                self.assertEqual(MediaType(media_data["media_type"]).bit_count(), 1)
 
     def test_load_filter_by_type(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", f"--media-type={MediaType.ANIME.name}", "test_user"])
@@ -2352,8 +2354,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://hidive.com/tv/o-maidens-in-your-savage-season", "o-maidens-in-your-savage-season"),
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
-        ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
         ("https://mangasee123.com/manga/Gunslinger-Girl", "Gunslinger-Girl"),
+        ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
         ("https://nyaa.si/?f=0&c=1_2&q=%5BEMBER%5D+Watashi+no+Shiawase+na+Kekkon", "[EMBER] Watashi no Shiawase na Kekkon"),
         ("https://nyaa.si/view/1047104", "1047104"),
         ("https://nyaa.si/view/135283", "135283"),
