@@ -44,7 +44,7 @@ class Mangasee(Server):
         data = self.session_get_cache_json(self.media_list_url)
         return [self.create_media_data(media_data["i"], media_data["s"]) for media_data in data]
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         r = self.session_get(self.manga_url.format(media_data["id"]))
         match = self.chapter_regex.search(r.text)
         chapters_text = match.group(1)

@@ -80,7 +80,7 @@ class JNovelClub(GenericJNovelClub):
         media_ids = {volume["serie"]["titleslug"] for volume in data["ownedBooks"]}
         return filter(lambda x: x["id"] in media_ids, super().get_media_list())
 
-    def update_media_data(self, media_data: dict):
+    def update_media_data(self, media_data: dict, **kwargs):
         valid_ids = {x["slug"] for x in self.session_get_cache_json(self.chapters_url.format(media_data["id"]), mem_cache=True)["volumes"]}
         data = self.session_get_cache_json(self.book_list)
         for book in data["books"]:
@@ -133,7 +133,7 @@ class JNovelClubParts(GenericJNovelClub):
         data = r.json()["series"]
         return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", "")) for item in data]
 
-    def update_media_data(self, media_data: dict):
+    def update_media_data(self, media_data: dict, **kwargs):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
 
         last_chapter = media_data.get_last_chapter()

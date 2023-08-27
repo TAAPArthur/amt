@@ -37,7 +37,7 @@ class Mangaplus(Server):
         for series in data["success"]["allTitlesView"]["titles"]:
             yield self.create_media_data(id=series["titleId"], name=series["name"], lang=series.get("language", "English").lower())
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         r = self.session_get(self.api_media_url.format(media_data["id"]))
         series_info = r.json()["success"]["titleDetailView"]
         for chapter in series_info["firstChapterList"] + series_info.get("lastChapterList", []):

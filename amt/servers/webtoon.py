@@ -47,7 +47,7 @@ class Webtoons(Server):
         element = soup.find("ul", class_="card_lst")
         return self.get_media_list_helper(element.find_all("li")) if element else []
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         if not media_data.get("url"):
             r = self.session_get(self.chapters_url.format(media_data["id"]))
             soup = self.soupify(BeautifulSoup, r)

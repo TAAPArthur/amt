@@ -180,7 +180,7 @@ class VizManga(GenericVizManga):
             name = div.find("div", {"class", "pad-x-rg pad-t-rg pad-b-sm type-sm type-rg--sm type-md--lg type-center line-solid"}).getText().strip()
             yield self.create_media_data(id=id, name=name)
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         r = self.session_get(self.api_chapters_url.format(media_data["id"]))
         soup = self.soupify(BeautifulSoup, r)
 
@@ -281,7 +281,7 @@ class VizMangaLibrary(GenericVizManga):
                 if media_id is None or media_id == match.group(2):
                     yield url
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         url = self.series_url.format(media_data["id"], media_data["alt_id"])
         for volume_url in self._update_media_data(url, media_data["id"]):
             text = self.session_get_cache(self.base_url + volume_url, ttl=-1)

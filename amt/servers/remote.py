@@ -119,7 +119,7 @@ class RemoteServer(Server):
         except RequestException:
             yield from (self._create_media_data(requests.utils.unquote(link)) for link in self.list_files())
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         if media_data["alt_id"][-1] != "/":
             self.update_chapter_data(media_data, media_data["alt_id"], title=media_data["name"], number=name_parser.get_number_from_file_name(media_data["alt_id"], media_name=media_data["name"], default_num=1))
             return

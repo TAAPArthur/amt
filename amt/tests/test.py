@@ -1220,7 +1220,7 @@ class GenericServerTest():
                     self.assertTrue(media_data["media_type"] & media_type)
                 elif media_data.global_id in self.media_reader.get_media_ids():
                     continue
-                self.media_reader.add_media(media_data)
+                self.media_reader.add_media(media_data, limit=2)
                 self.verfiy_media_chapter_data(media_data)
                 if server.torrent and not media_data["chapters"]:
                     break
@@ -1931,7 +1931,7 @@ class ArgsTest(CliUnitTestClass):
         self.assertEqual(offset_list, sorted([chapter_data["number"] for chapter_data in chapters.values()]))
 
     def test_offset_none(self):
-        def update_media_data(media_data):
+        def update_media_data(media_data, **kwargs):
             self.test_server.update_chapter_data(media_data, id=1, title="1", number=0)
             self.test_server.update_chapter_data(media_data, id=2, title="2", number=20)
             self.test_server.update_chapter_data(media_data, id=3, title="3", number=30)

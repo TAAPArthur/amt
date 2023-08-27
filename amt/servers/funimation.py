@@ -152,7 +152,7 @@ class Funimation(GenericFunimation):
             video_info.append((min(lang_code_score + lang_name_score), video["id"]))
         return str(min(sorted(video_info))[1])
 
-    def update_media_data(self, media_data: dict, r=None):
+    def update_media_data(self, media_data: dict, r=None, **kwargs):
         if not r:
             r = self.session_get(self.show_api_url.format(media_data["alt_id"]))
 
@@ -221,7 +221,7 @@ class FunimationLibrary(GenericFunimation):
         data = self.session.get(self.search_url.format(term), headers=self.get_auth_header()).json()
         yield from self._get_media_list_helper(data)
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         data = self.session.get(self.episode_url.format(media_data["alt_id"], media_data["season_number"]), headers=self.get_auth_header()).json()
         for media_info in data["items"]:
             for season in media_info["seasons"]:

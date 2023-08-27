@@ -62,7 +62,7 @@ class Mangadex(Server):
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
 
         offset = 0
         while True:

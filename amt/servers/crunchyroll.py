@@ -148,7 +148,7 @@ class Crunchyroll(GenericCrunchyrollServer):
 
         return list(media_data_map.values())
 
-    def update_media_data(self, media_data: dict):
+    def update_media_data(self, media_data, **kwargs):
         json_data = self.session_get_json(self.api_chapters_url.format(media_data["id"]))
 
         # resp_data = json_data["series"]
@@ -283,7 +283,7 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         url = f"{self.get_api_domain()}/content/v2/cms/seasons/{media_data['season_id']}/episodes"
         data = self.session_get_cache_json(f"{url}?preferred_audio_language=ja-JP&locale=en-US", key=url, need_auth_headers=True)
         for chapter in data["data"]:

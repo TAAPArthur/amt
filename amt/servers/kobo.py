@@ -125,7 +125,7 @@ class Kobo(Server):
     def get_media_list(self, **kwargs):
         yield from self.list_books()
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, **kwargs):
         self.list_books(media_data=media_data)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):

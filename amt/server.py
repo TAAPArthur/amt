@@ -218,9 +218,9 @@ class MediaServer(RequestServer):
 
         return list(filter(lambda x: media_type is None or x["media_type"] & media_type, self.get_media_list(limit=limit, media_type=media_type)))
 
-    def update(self, media_data):
+    def update(self, media_data, limit=None):
         self.maybe_relogin()
-        self.update_media_data(media_data)
+        self.update_media_data(media_data, limit=limit)
 
     def score_results(self, term_parts, media_name):
         media_name = self.remove_lang_regex.sub("", media_name)
@@ -369,7 +369,7 @@ class GenericServer(MediaServer):
     def fuzzy_search(self):
         return self.search_for_media == GenericServer.search_for_media
 
-    def update_media_data(self, media_data):  # pragma: no cover
+    def update_media_data(self, media_data, limit=None):  # pragma: no cover
         """
         Returns media data from API
         """

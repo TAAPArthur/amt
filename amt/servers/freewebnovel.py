@@ -46,10 +46,10 @@ class Freewebnovel(Server):
             number = chapter_id.split("-")[-1]
             self.update_chapter_data(media_data, chapter_id, title, number)
 
-    def update_media_data(self, media_data):
+    def update_media_data(self, media_data, limit=None, **kwargs):
         r = self.session_get(self.chapters_url.format(media_data["id"]))
         soup = self.soupify(BeautifulSoup, r)
-        relative_paths = soup.find("select", {"id": "indexselect"}).findAll("option")
+        relative_paths = soup.find("select", {"id": "indexselect"}).findAll("option")[:limit]
         self._update_media_data(media_data, soup)
         for relative_path in map(lambda x: x["value"], relative_paths[1:]):
             r = self.session_get_cache(self.base_url + relative_path, ttl=30, skip_cache=relative_path == relative_paths[-1])

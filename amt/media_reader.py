@@ -112,7 +112,7 @@ class MediaReader:
     def list_some_media_from_server(self, server_id, limit=None):
         return self.get_server(server_id).list_media(limit=limit)[:limit]
 
-    def add_media(self, media_data, no_update=None):
+    def add_media(self, media_data, no_update=None, **kwargs):
         global_id = media_data.global_id
         if global_id in self.media:
             raise ValueError("{} {} is already known".format(global_id, media_data["name"]))
@@ -123,7 +123,7 @@ class MediaReader:
         if not media_data["chapters"]:
             self.state.load_chapter_data(media_data)
         if no_update is False or no_update is None and not media_data["chapters"]:
-            self.update_media(media_data)
+            self.update_media(media_data, **kwargs)
 
     def search_add(self, term, server_id=None, media_type=None, limit=None, exact=False, servers_to_exclude=[], server_list=None, no_add=False, media_id=None, raiseException=False):
         def func(x): return x.search(term, literal=exact, limit=limit, media_type=media_type)
@@ -317,13 +317,13 @@ class MediaReader:
     def update(self, name=None, media_type=None, no_shuffle=False, ignore_errors=False):
         return sum(self.for_each(self.update_media, self.get_media(name=name, media_type=media_type, shuffle=not no_shuffle), raiseException=not ignore_errors))
 
-    def update_media(self, media_data, limit=None, page_limit=None):
+    def update_media(self, media_data, limit=None):
         """
         Return number of updated chapters
         """
         server = self.get_server(media_data["server_id"])
         chapter_ids = set(media_data["chapters"].keys())
-        server.update(media_data)
+        server.update(media_data, limit=limit)
 
         if not self.settings.get_keep_unavailable(media_data):
             for chapter_id in chapter_ids:

@@ -77,7 +77,7 @@ class Hidive(Server):
     def search_for_media(self, term, alt_id=None, **kwargs):
         return self._get_media_list(self.search_url.format(term), self.add_series_url_regex)
 
-    def update_media_data(self, media_data: dict, r=None):
+    def update_media_data(self, media_data: dict, r=None, **kwargs):
         regex = re.compile(self.episode_list_pattern.format(media_data["id"]))
         for link, match in self.find_links_from_url(self.episode_list_url.format(media_data["id"]), regex):
             parent = link.parent.parent.parent.parent
