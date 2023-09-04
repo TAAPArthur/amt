@@ -2392,6 +2392,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
                 media_list = list(self.media_reader.get_media_from_url(url))
                 err = None
                 assert media_list
+                self.assertEqual(len({x.global_id for x in media_list}), len(media_list))
                 for media_data in media_list:
                     try:
                         self.validate_url_data(media_data, url_data)

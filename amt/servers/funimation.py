@@ -172,6 +172,7 @@ class Funimation(GenericFunimation):
         r = self.session_get(self.show_api_url.format(chapter_id))
         data = r.json()
         media_list = []
+        media_ids = set()
         for season in data["seasons"]:
             for episode in season["episodes"]:
                 for lang, videos in episode["languages"].items():
@@ -181,6 +182,9 @@ class Funimation(GenericFunimation):
                             continue
                         exp = video[typeKey]
                         media_data = self.create_media_data(id=data["showId"], name=data["showTitle"], season_id=season["seasonPk"], season_title=season["seasonTitle"], alt_id=chapter_id, lang=lang.lower())
+                        if media_data.global_id in media_ids:
+                            continue
+                        media_ids.add(media_data.global_id)
                         if int(exp["experienceId"]) == int(chapter_id):
                             self.update_media_data(media_data, r=r)
                             media_list.insert(0, media_data)
