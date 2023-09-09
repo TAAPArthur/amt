@@ -6,5 +6,5 @@ setup(name="amt",
       packages=["amt", "amt/servers", "amt/trackers", "amt/util"],
       scripts=["scripts/amt"],
       url="https://github.com/TAAPArthur/amt",
-      version=".9",
+      version="1",
       )
