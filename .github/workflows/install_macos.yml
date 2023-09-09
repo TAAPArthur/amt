@@ -1,0 +1,14 @@
+name: Install Mac
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install
+      run: |
+        pip install $PWD
