@@ -9,6 +9,7 @@ from ..server import Server
 from ..util.media_type import MediaType
 from ..util.progress_type import ProgressType
 
+
 class FakeSession(requests.Session):
     def __init__(self, session):
         super().__init__()
@@ -183,6 +184,9 @@ class TestServerLogin(TestServer):
     def reset(self):
         self.counter = 0
         self._is_logged_in = False
+
+    def get_remaining_chapters(self, *args, **kwargs):
+        return super().get_remaining_chapters(*args, **kwargs)
 
 
 class TestServerLoginAlias(TestServerLogin):

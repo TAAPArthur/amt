@@ -367,8 +367,11 @@ class MediaReader:
     def get_remaining_chapters(self, name=None):
         for media_data in self.get_media(name):
             server = self.get_server(media_data["server_id"])
-            if not (server.has_chapter_limit() and server.has_login() and server.needs_to_login() and not server.relogin()):
-                yield media_data.global_id, *server.get_remaining_chapters(media_data)
+            if server.has_chapter_limit():
+                if server.needs_to_login():
+                    server.relogin()
+                num, time_rem = server.get_remaining_chapters(media_data)
+                yield media_data.global_id, num, time_rem
 
     # Viewing chapters and marking read
 
