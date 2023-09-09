@@ -33,3 +33,4 @@ coverage_html:
 
 install:
 	python setup.py install "--root=$(DESTDIR)/"
+	install -Dt $(DESTDIR)/usr/share/amt scripts/*
