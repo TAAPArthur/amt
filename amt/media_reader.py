@@ -431,9 +431,11 @@ class MediaReader:
         if num_list:
             num_list = list(map(lambda x: last_read + x if x <= 0 and not force_abs else x, num_list))
             server = self.get_server(media_data["server_id"])
+            yielded = False
             for chapter in media_data.get_sorted_chapters(volume=volume):
-                if chapter.get_number(volume=volume) in num_list:
+                if chapter.get_number(volume=volume) in num_list or yielded and limit is None:
                     yield server, media_data, chapter
+                    yielded = True
         else:
             yield from self.get_unreads(name=name, media_type=media_type, limit=limit, shuffle=shuffle, any_unread=any_unread, volume=volume)
         if null_terminate:

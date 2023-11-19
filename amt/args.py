@@ -91,6 +91,7 @@ def setup_subparsers(state, sub_parsers):
     sub_consume_parsers.add_argument("--abs", default=False, action="store_const", const=True, dest="force_abs")
     sub_consume_parsers.add_argument("--any-unread", "-a", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--limit", "-l", default=0, type=int)
+    sub_consume_parsers.add_argument("--cont", "-c", dest="limit", action="store_const", const=None)
     sub_consume_parsers.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--stream-index", "-q", default=0, type=int)
     sub_consume_parsers.add_argument("--volume", default=False, action="store_const", const=True)
