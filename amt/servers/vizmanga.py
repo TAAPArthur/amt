@@ -33,7 +33,8 @@ class GenericVizManga(Server):
         r = self.session_get(self.refresh_login_url)
         soup = self.soupify(BeautifulSoup, r)
         account = soup.find("div", id="o_account-links-content")
-        self.is_premium = self.wsj_subscriber_regex.search(r.text).group(1) == "true" if self.has_free_chapters else True
+        match = self.wsj_subscriber_regex.search(r.text)
+        self.is_premium = match and match.group(1) == "true" if self.has_free_chapters else True
         return not account or account["logged_in"] == "false"
 
     def login(self, username, password):
