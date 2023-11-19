@@ -67,10 +67,13 @@ class RequestServer:
     def update_default_args(self, kwargs):
         pass
 
-    def backoff(self, c, r, backfactor=None):
-        b = backfactor or self.settings.get_backoff_factor(self.id)
-        self.logger.info(f"Sleeping for {b**c} seconds after seeing {c} failures")
-        time.sleep(b**c)
+    def get_backoff(self, c, r):
+        return int(r.headers.get("Retry-After", 0)) or self.settings.get_backoff_factor(self.id)**c
+
+    def backoff(self, c, r):
+        value = self.get_backoff(c,r)
+        self.logger.info(f"Sleeping for {value} seconds after seeing {c} failures")
+        time.sleep(value)
 
     def get_auth_headers(self):
         raise NotImplementedError
@@ -89,12 +92,15 @@ class RequestServer:
             session = self._normal_session
         elif force_cloud_scraper:
             session = self.get_cloudscraper_session(self.session)
-        for i in range(self.settings.get_max_retries(self.id)):
+        max_retries = self.settings.get_max_retries(self.id)
+        for i in range(max_retries):
             try:
                 r = session.post(url, **kwargs) if post_request else session.get(url, **kwargs)
                 if r.status_code != 200:
                     self.logger.warning("HTTPError: %d; Session class %s; headers %s;", r.status_code, type(session), kwargs.get("headers", {}))
                     self.logger.debug("HTTPError: %d; %s", r.status_code, r.text[:256])
+                    if time.time() - start > self.get_backoff(max_retries, r):
+                        break
                 if not r.status_code in self.settings.status_to_retry:
                     break
                 self.backoff(i + 1, r)
