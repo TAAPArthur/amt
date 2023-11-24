@@ -80,6 +80,7 @@ assimilate all unread chapters and then read them
 * [MangaDex](https://mangadex.org/) (unofficial)
 * [MangaPlus](https://mangaplus.shueisha.co.jp)
 * [MangaSee](https://mangasee123.com/) (unofficial)
+* [Manganelo](https://m.manganelo.com/wwww) (unofficial)
 * [Viz Library](https://viz.com)
 * [Viz](https://viz.com)
 
