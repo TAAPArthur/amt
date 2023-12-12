@@ -565,7 +565,7 @@ class MediaReader:
 
     def load_from_tracker(self, user_id=None, user_name=None, media_type=None, exact=False, local_only=False, no_add=False, force=False, remove=False, **kwargs):
         tracker = self.get_tracker()
-        data = tracker.get_tracker_list(user_name=user_name) if user_name else tracker.get_tracker_list(id=user_id)
+        data = tracker.get_tracker_list_current(user_name=user_name, id=user_id)
         new_count = 0
 
         unknown_media = []

@@ -1,6 +1,6 @@
 import logging
 
-from ..server import Tracker
+from ..server import Tracker, TrackerStatus
 from ..util.media_type import MediaType
 
 
@@ -115,13 +115,7 @@ class Anilist(Tracker):
             variables["id"] = user_info["id"]
         return variables
 
-    def get_full_list_data(self, user_name=None, id=None):
-        return self.get_tracker_list(user_name, id, status=None)
-
-    def get_tracker_list(self, user_name=None, id=None, status="CURRENT"):
-        variables = self._get_variables(user_name, id)
-        if status:
-            variables["status"] = status
+    def _get_tracker_list(self, variables):
         # Make the HTTP Api request
         pageIndex = 1
         while True:
@@ -151,6 +145,21 @@ class Anilist(Tracker):
                 pageIndex += 1
             else:
                 break
+
+    def get_string_list_from_tracker_status(self, status):
+        if status == None:
+            return [None]
+        elif status == TrackerStatus.CURRENT:
+            return ["CURRENT", "REPEATING"]
+        else:
+            return [status.name];
+
+    def get_tracker_list(self, user_name=None, id=None, status=None):
+        variables = self._get_variables(user_name, id)
+        for status_str in self.get_string_list_from_tracker_status(status):
+            if status_str:
+                variables["status"] = status_str
+            yield from self._get_tracker_list(variables)
 
     def update(self, list_of_updates):
         headers = self.get_auth_header()
