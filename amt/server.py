@@ -14,6 +14,7 @@ from .state import MediaData, TrackerEntry
 from .util.media_type import MediaType
 from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
 from .util.progress_type import ProgressType
+from enum import Enum, auto
 
 urllib3.disable_warnings(category=InsecureRequestWarning)
 
@@ -725,6 +726,15 @@ class Server(GenericServer):
         return float("inf"), 0
 
 
+class TrackerStatus(Enum):
+    CURRENT = auto()
+    PLANNING = auto()
+    COMPLETED = auto()
+    DROPPED = auto()
+    PAUSED = auto()
+    REPEATING = auto()
+
+
 class Tracker(RequestServer):
     id = None
     official = True
@@ -750,7 +760,10 @@ class Tracker(RequestServer):
     def get_full_list_data(self, user_name=None, id=None):
         return self.get_tracker_list(user_name, id, status=None)
 
-    def get_tracker_list(self, user_name=None, id=None, status="CURRENT"):  # pragma: no cover
+    def get_tracker_list_current(self, user_name=None, id=None):
+        return self.get_tracker_list(user_name=user_name, id=id, status=TrackerStatus.CURRENT)
+
+    def get_tracker_list(self, user_name=None, id=None, status=None):  # pragma: no cover
         """ Returns a list of media dicts
         See get_media_dict
         """
