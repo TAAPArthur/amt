@@ -265,6 +265,7 @@ class State:
 
 
 class MediaData(dict):
+    last_updated_chapter = 0
     def __init__(self, backing_map):
         super().__init__(backing_map)
         self.chapters = {}
@@ -342,6 +343,18 @@ class MediaData(dict):
 
     def get_labels(self):
         return [self.global_id, self["name"], self["server_id"], self["server_alias"], MediaType(self["media_type"]).name]
+
+    def get_last_updated_chapter_number(self):
+        return self.last_updated_chapter
+
+    def update_chapter_data(self, chapter_values):
+        id =chapter_values["id"]
+        if id in self["chapters"]:
+            self["chapters"][id].update(chapter_values)
+        else:
+            self["chapters"][id] = ChapterData(chapter_values)
+            self["chapters"][id]["read"] = False
+        self.last_updated_chapter = chapter_values["number"]
 
 
 class ChapterData(dict):
