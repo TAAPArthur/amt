@@ -10,7 +10,7 @@ from urllib3.exceptions import InsecureRequestWarning
 import logging
 
 from .job import Job
-from .state import ChapterData, MediaData, TrackerEntry
+from .state import MediaData, TrackerEntry
 from .util.media_type import MediaType
 from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
 from .util.progress_type import ProgressType
@@ -294,7 +294,7 @@ class MediaServer(RequestServer):
 
     def update_chapter_data(self, media_data, id, title, number, volume_number=None, premium=False, alt_id=None, special=False, date=None, subtitles=None, **kwargs):
         if number is None or number == "" or isinstance(number, str) and number.isalpha():
-            number = 0
+            number = media_data.get_last_updated_chapter_number() + .01
             special = True
         id = str(id)
         if isinstance(number, str):
@@ -313,11 +313,7 @@ class MediaServer(RequestServer):
                 volume_number = int(volume_number)
 
         new_values = dict(id=id, title=title, number=number, volume_number=volume_number, premium=premium, alt_id=alt_id, special=special, date=date, subtitles=subtitles, **kwargs)
-        if id in media_data["chapters"]:
-            media_data["chapters"][id].update(new_values)
-        else:
-            media_data["chapters"][id] = ChapterData(new_values)
-            media_data["chapters"][id]["read"] = False
+        media_data.update_chapter_data(new_values)
 
         chapter_data = media_data["chapters"][id]
         chapter_dir_name = self.settings.get_chapter_dir_name(media_data, chapter_data)
