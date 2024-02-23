@@ -24,7 +24,7 @@ class Hidive(Server):
     episode_data_url = base_url + "/play/settings"
 
     stream_url_regex = re.compile(domain + r"/stream/([^/]*)/([^/]*)")
-    add_series_url_regex = re.compile(f"(?:{domain}|^)/(?:tv|movies)/([^/]*)")
+    add_series_url_regex = re.compile(f"(?:{domain}|^)/(?:tv|movies)/([^?]*)")
     logo_regex = re.compile(r"https://static.hidive.com/bumpers/hidive/subscriber/HIDIVE_Bumper11_LogoIntroPremium_\d*p.ts")
 
     def needs_authentication(self):
@@ -79,10 +79,11 @@ class Hidive(Server):
 
     def update_media_data(self, media_data: dict, r=None, **kwargs):
         regex = re.compile(self.episode_list_pattern.format(media_data["id"]))
-        for link, match in self.find_links_from_url(self.episode_list_url.format(media_data["id"]), regex):
+        for link, match in self.find_links_from_url(self.episode_list_url.format(media_data["id"] + ("/" + media_data["season_id"] if media_data["season_id"] else "")), regex):
             parent = link.parent.parent.parent.parent
-            element = parent.find(lambda x: x.getText().strip() and (x.get("data-original-title") or x.get("title")))
+            element = parent.find("div", {"class": "synopsis"})
             if element:
+                element = element.find(lambda x: x.getText().strip() and (x.get("data-original-title") or x.get("title")))
                 title = element.get("data-original-title") or element.get("title")
                 self.update_chapter_data(media_data, id=match.group(1), number=match.group(2), title=title, premium=True)
 
@@ -130,12 +131,30 @@ class Hidive(Server):
             for lang, _, url, _ in stream_data["ccFiles"]:
                 yield lang, url, None, True
 
-    def get_media_data_from_url(self, url):
-        media_id = self._get_media_id_from_url(url)
+    def get_all_media_data_from_url(self, url):
         r = self.session_get(url)
         soup = self.soupify(BeautifulSoup, r)
+        season_header = soup.find("ul", {"class": "nav-tabs"})
+        media_list = []
+        for season_link in season_header.find_all("a"):
+            url = self.base_url + season_link.get("href")
+            if self.can_add_media_from_url(url):
+                media_list.append(self.get_media_data_from_url(url))
+        return media_list
+
+    def get_media_data_from_url(self, url):
+        r = self.session_get(url)
+        soup = self.soupify(BeautifulSoup, r)
+        season = soup.find("li", {"class": "active"})
+        if season:
+            url = self.base_url + season.find("a").get("href")
+        media_id = self._get_media_id_from_url(url)
+        season_id = None
+        if "/" in media_id:
+            media_id, season_id = media_id.split("/", 2)
+
         title = soup.find("div", {"class": "episodes"}).find("h1").getText().strip()
-        return self.create_media_data(id=media_id, name=title)
+        return self.create_media_data(id=media_id, name=title, season_id=season_id, season_title=str(season_id))
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(2)
