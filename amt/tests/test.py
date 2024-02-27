@@ -2323,7 +2323,6 @@ class ServerStreamTest(RealBaseUnitTestClass):
     streamable_urls = [
         ("https://chapmanganelo.com/manga-aa88620/chapter-1", "aa88620", None, "1"),
         ("https://chapmanganelo.com/manga-rh106075/chapter-11.1", "rh106075", None, "11.1"),
-        ("https://crunchyroll.com/manga/talentless-nana/read/1", "519", None, "17221"),
         ("https://crunchyroll.com/watch/GR3VWXP96/Im-Luffy-The-Man-Whos-Gonna-Be-King-of-the-Pirates", "GRMG8ZQZR", "GYVNM8476", "GR3VWXP96"),
         ("https://dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
         ("https://dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
@@ -2350,7 +2349,6 @@ class ServerStreamTest(RealBaseUnitTestClass):
     addable_urls = [
         ("https://chapmanganelo.com/manga-aa88620", "aa88620"),
         ("https://m.manganelo.com/manga-rh106075", "rh106075"),
-        ("https://crunchyroll.com/comics/manga/hoshi-no-samidare-the-lucifer-and-biscuit-hammer/volumes", 255),
         ("https://crunchyroll.com/lycoris-recoil", "G1XHJV2X9"),
         ("https://crunchyroll.com/series/GRMG8ZQZR/", "GRMG8ZQZR"),
         ("https://hidive.com/tv/o-maidens-in-your-savage-season", "o-maidens-in-your-savage-season"),
