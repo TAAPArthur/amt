@@ -55,7 +55,10 @@ class GenericJNovelClub(Server):
         media_data["nextTimeStamp"] = 0
         for event in filter(lambda x: x["serie"]["slug"] == media_data["id"], events):
             if isinstance(self, JNovelClubParts) == (event["details"] != "Ebook Publishing"):
-                avaliable_date = datetime.strptime(event["launch"], "%Y-%m-%dT%H:%M:%S%z").timestamp()
+                try:
+                    avaliable_date = datetime.strptime(event["launch"], "%Y-%m-%dT%H:%M:%S%z").timestamp()
+                except:
+                    avaliable_date = datetime.strptime(event["launch"], "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
                 if avaliable_date > now.timestamp():
                     media_data["nextTimeStamp"] = avaliable_date
                     break

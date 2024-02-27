@@ -2333,6 +2333,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://www.hidive.com/stream/the-eminence-in-shadow/s02e021", "the-eminence-in-shadow", "season-2", "s02e021"),
         ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),
         ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1", "seirei-gensouki-spirit-chronicles-manga", None, "seirei-gensouki-spirit-chronicles-manga-volume-1-chapter-1"),
+        ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-volume-24-part-1", "seirei-gensouki-spirit-chronicles", None, "seirei-gensouki-spirit-chronicles-volume-24-part-1"),
         ("https://mangadex.org/chapter/ea697e18-470c-4e80-baf0-a3972720178f/1", "8a3d319d-2d10-4364-928c-0f30fd367c24", None, "ea697e18-470c-4e80-baf0-a3972720178f"),
         ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
         ("https://mangasee123.com/read-online/Berserk-chapter-1-index-2-page-1.html", "Berserk", None, "200010"),
