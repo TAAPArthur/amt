@@ -17,8 +17,7 @@ class GenericCrunchyrollServer(Server):
     base_url = "https://api.crunchyroll.com"
     login_url = base_url + "/login.1.json"
 
-    _access_token = "WveH9VkPLrXvuNm"
-    _access_type = "com.crunchyroll.crunchyroid"
+    _api_auth_token = None
 
     crunchyroll_lock = RLock()
     session_id_may_be_invalid = True
@@ -58,11 +57,11 @@ class GenericCrunchyrollServer(Server):
         return make_request(url)
 
     def _store_login_data(self, data):
-        Crunchyroll._api_auth_token = data["data"]["auth"]
+        GenericCrunchyrollServer._api_auth_token = data["data"]["auth"]
         self.is_premium = data["data"]["user"]["premium"]
 
     def needs_authentication(self):
-        if Crunchyroll._api_auth_token:
+        if GenericCrunchyrollServer._api_auth_token:
             return False
         data = self.session_get_json(self.api_auth_url.format(self.get_session_id()))
         if data and "data" in data:
@@ -91,95 +90,9 @@ class GenericCrunchyrollServer(Server):
         return False
 
 
-class Crunchyroll(GenericCrunchyrollServer):
-    id = "crunchyroll"
-    maybe_need_cloud_scraper = True
-
-    base_url = "https://www.crunchyroll.com"
-    manga_url = base_url + "/comics/manga/{0}/volumes"
-
-    alpha_list_url = base_url + "/comics/manga/alpha?group=all"
-    popular_list_url = base_url + "/comics/manga"
-
-    api_base_url = "https://api-manga.crunchyroll.com"
-    api_chapter_url = api_base_url + "/list_chapter?session_id={}&chapter_id={}&auth={}"
-    api_chapters_url = api_base_url + "/chapters?series_id={}"
-
-    _api_auth_token = None
-    possible_page_url_keys = ["encrypted_mobile_image_url", "encrypted_composed_image_url"]
-    page_url_key = possible_page_url_keys[0]
-
-    stream_url_regex = re.compile(r"crunchyroll.com/manga/([\w-]*)/read/(\d*\.?\d*)")
-    add_series_url_regex = re.compile(r"crunchyroll.com/comics/manga/([\w-]*)")
-
-    def get_media_data_from_url(self, url):
-        name_slug = self._get_media_id_from_url(url)
-        for media_data in self.get_media_list():
-            if media_data["alt_id"] == name_slug:
-                return media_data
-
-    def get_chapter_id_for_url(self, url):
-        number = self.stream_url_regex.search(url).group(2)
-        media_data = self.get_media_data_from_url(url)
-        self.update_media_data(media_data)
-        for chapter_data in media_data["chapters"].values():
-            if chapter_data["number"] == float(number):
-                return chapter_data["id"]
-
-    @staticmethod
-    def decode_image(buffer):
-        # Don't know why 66 is special
-        return bytes(b ^ 66 for b in buffer)
-
-    def get_media_list(self, **kwargs):
-        media_data_map = {}
-        try:
-            from bs4 import BeautifulSoup
-            for url in (self.alpha_list_url, self.popular_list_url):
-                soup = self.soupify(BeautifulSoup, self.session_get_cache(url))
-                for group_item in soup.findAll("li", {"class": "group-item"}):
-                    media_id = group_item["group_id"]
-                    if media_id not in media_data_map:
-                        link = group_item.find("a")
-                        match = self.add_series_url_regex.search(self.domain + link["href"])
-                        media_data_map[media_id] = self.create_media_data(id=media_id, name=link["title"], alt_id=match.group(1), locale="enUS")
-        except ImportError:
-            pass
-
-        return list(media_data_map.values())
-
-    def update_media_data(self, media_data, **kwargs):
-        json_data = self.session_get_json(self.api_chapters_url.format(media_data["id"]))
-
-        # resp_data = json_data["series"]
-        chapters = json_data["chapters"]
-
-        # Chapters
-        for chapter in chapters:
-            date = None
-            raw_date_str = chapter.get("availability_start", chapter.get("updated"))
-            if raw_date_str:
-                date = raw_date_str.split(" ")[0]
-
-            self.update_chapter_data(media_data, id=chapter["chapter_id"], number=chapter["number"], title=chapter["locale"][media_data["locale"]]["name"], premium=not chapter["viewable"], date=date)
-
-    def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
-        data = self.session_get_json(self.api_chapter_url.format(self.get_session_id(), chapter_data["id"], Crunchyroll._api_auth_token))
-        raw_pages = data["pages"]
-        raw_pages.sort(key=lambda x: int(x["number"]))
-        pages = [self.create_page_data(url=page["locale"][media_data["locale"]][self.page_url_key], ext="jpg") for page in raw_pages if page["locale"]]
-
-        return pages
-
-    def save_chapter_page(self, page_data, path):
-        r = self.session_get(page_data["url"])
-        buffer = self.decode_image(r.content)
-        with open(path, "wb") as fp:
-            fp.write(buffer)
-
-
 class CrunchyrollAnime(GenericCrunchyrollServer):
     id = "crunchyroll_anime"
+    alias = "crunchyroll"
     media_type = MediaType.ANIME
     need_cloud_scraper = True
 
