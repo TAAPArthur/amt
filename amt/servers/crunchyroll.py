@@ -13,11 +13,7 @@ class GenericCrunchyrollServer(Server):
     alias = "crunchyroll"
 
     domain = "crunchyroll.com"
-    api_auth_url = "https://api-manga.crunchyroll.com/cr_authenticate?session_id={}&version=0&format=json"
-    base_url = "https://api.crunchyroll.com"
-    login_url = base_url + "/login.1.json"
-
-    _api_auth_token = None
+    login_url = "https://www.crunchyroll.com/auth/v1/token"
 
     crunchyroll_lock = RLock()
     session_id_may_be_invalid = True
@@ -56,38 +52,22 @@ class GenericCrunchyrollServer(Server):
                     url = url.replace(original_session_id, self.get_session_id())
         return make_request(url)
 
-    def _store_login_data(self, data):
-        GenericCrunchyrollServer._api_auth_token = data["data"]["auth"]
-        self.is_premium = data["data"]["user"]["premium"]
-
-    def needs_authentication(self):
-        if GenericCrunchyrollServer._api_auth_token:
-            return False
-        data = self.session_get_json(self.api_auth_url.format(self.get_session_id()))
-        if data and "data" in data:
-            self._store_login_data(data)
-            return False
-        if not data or data.get("error", False):
-            self.logger.info("Error authenticating %s", data)
-        return True
-
     def login(self, username, password):
-        response = self.session_get_json(self.login_url,
-                                         post=True,
-                                         data={
-                                             "session_id": self.get_session_id(force=True),
-                                             "account": username,
-                                             "password": password
-                                         },
-                                         headers={
-                                             "referer": f"https://{self.domain}/",
-                                             "origin": f"https://{self.domain}/"
-                                         })
-        if "data" in response:
-            self._store_login_data(response)
-            return True
-        self.logger.debug("Login failed; response: %s", response)
-        return False
+        self.session_get_json(self.login_url,
+                              post=True,
+                              data={
+                                  "username": username,
+                                  "password": password,
+                                  "grant_type": "password",
+                                  "scope": "offline_access",
+                                  "device_id": "12345678-1234-5678-1234-567812345678",
+                                  "device_type": self.settings.user_agent
+                              },
+                              headers={
+                                  "Authorization": "Basic b2VkYXJteHN0bGgxanZhd2ltbnE6OWxFaHZIWkpEMzJqdVY1ZFc5Vk9TNTdkb3BkSnBnbzE=",
+                                  "Content-Type": "application/x-www-form-urlencoded",
+                              })
+        return True
 
 
 class CrunchyrollAnime(GenericCrunchyrollServer):
@@ -116,8 +96,15 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     def get_api_domain(self):
         return self.get_config()['cxApiParams']['apiDomain']
 
+    @property
+    def is_premium(self):
+        for premium_cookies_name in ["crplusctamembership", "premplusctav"]:
+            if self.session_get_cookie(premium_cookies_name):
+                return True
+        return False
+
     def needs_authentication(self):
-        return not self.session_get_cookie("etp_rt") or super().needs_authentication()
+        return not self.session_get_cookie("etp_rt")
 
     def init_auth_headers(self):
         if self.session_get_cookie("etp_rt"):
