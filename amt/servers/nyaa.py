@@ -81,19 +81,27 @@ class NyaaParts(Nyaa):
 
     stream_url_regex = re.compile(Nyaa.domain + r"/.*\?.*q=.+")
 
-    def group_entries(self, entries, title, media_type):
-        for e in entries.keys():
-            if len(e) == len(title):
-                s = SequenceMatcher(None, e, title)
-                seqs = s.get_matching_blocks()
-                total_same = sum([s[-1] for s in seqs])
-                if total_same >= len(title) / 2:
-                    value = s.get_matching_blocks()[0], media_type
-                    if entries[e][0] == None:
-                        entries[e] = value
-                    elif entries[e] == value:
-                        return
-        entries[title] = None, media_type
+    def group_entries(self, entries):
+        for title in entries.keys():
+            best_value = None
+            best_entry = None
+            highest_score = 0
+            media_type = entries[title][1]
+            for e in entries.keys():
+                if e == title or entries[e][1] != media_type:
+                    continue
+                if len(e) == len(title):
+                    s = SequenceMatcher(None, e, title)
+                    seqs = s.get_matching_blocks()
+                    total_same = sum([s[-1] for s in seqs])
+                    if total_same >= len(title) / 2:
+                        if total_same > highest_score:
+                            highest_score = total_same
+                            best_value = s.get_matching_blocks()[0]
+                            best_entry = e
+            if best_value is not None:
+                if entries[best_entry][0] == None:
+                    entries[best_entry][0] = best_value
 
     def get_all_media_data_from_url(self, url):
         return self.search_for_media(None, url=url)
@@ -102,14 +110,17 @@ class NyaaParts(Nyaa):
         results = []
         entries = {}
         for slug, title, mediatype, _ in self.search_for_media_helper(term, media_type=media_type, url=url):
-            if "[" in title:
-                self.group_entries(entries, title, mediatype)
+            entries[title] = [None, mediatype]
+        self.group_entries(entries)
+        media_ids = set()
         for e in entries:
             matches, mediatype = entries[e]
             if matches:
                 title = " ".join(e[matches[0]:matches[2]].split(" ")[:-1])
                 alt_id = hex(abs(hash(title)))[2:]
-                results.append(self.create_media_data(id=title, alt_id=alt_id, name=title, media_type=mediatype))
+                if title not in media_ids:
+                    media_ids.add(title)
+                    results.append(self.create_media_data(id=title, alt_id=alt_id, name=title, media_type=mediatype))
         return results
 
     def update_media_data(self, media_data, **kwargs):
