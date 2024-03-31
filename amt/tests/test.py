@@ -740,10 +740,12 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def test_search_media(self):
         for server in self.media_reader.get_servers():
             with self.subTest(server=server.id):
-                media_data = server.list_media()[0]
-                name = media_data["name"]
-                self.assertEqual(media_data, list(server.search(name))[0][1])
-                assert server.search(name[:3])
+                for media_data in server.list_media():
+                    search_term = media_data["name"]
+                    search_results = sorted(list(server.search(search_term)), key=lambda x: x[0])
+                    assert search_results, f"Could not find results from {media_data['name']}"
+                    self.assertEqual(media_data.global_id, search_results[0][1].global_id)
+                    self.assertEqual(media_data, search_results[0][1])
 
     def test_search_inexact(self):
         self.assertTrue(self.test_server.search("The Manga1"))

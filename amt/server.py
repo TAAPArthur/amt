@@ -251,16 +251,9 @@ class MediaServer(RequestServer):
             term_parts_arr.append(set(self.non_word_char_regex.split(name.lower())))
 
         def score_result(media_name):
-            return max((self.score_results(term_parts=term_parts, media_name=media_name) for term_parts in term_parts_arr))
+            return min((self.score_results(term_parts=term_parts, media_name=media_name) for term_parts in term_parts_arr))
 
         return list(map(lambda x: (score_result(x["name"]), x), filter(lambda x: not media_type or x["media_type"] & media_type, media_list)))
-
-        if literal or self.fuzzy_search:
-            terms = term
-        else:
-            terms = []
-            for name in term:
-                terms.extend(get_alt_names(name))
 
     def search_helper(self, terms, limit=None, media_type=None, **kwargs):
         self.maybe_relogin()
