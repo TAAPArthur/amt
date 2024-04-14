@@ -100,6 +100,7 @@ class Settings:
     post_process_cmd = ""
     threads = 8  # per server thread count
     viewer = ""
+    raw_viewer = "mpv --ytdl-raw-options=cookies=~/.cache/amt/cookies.txt --title=\"$AMT_TITLE\" $AMT_EXTRA_ARG $AMT_USER_ARGS {media}"
     tmp_dir = "/tmp/.amt"
     always_use_cloudscraper = False  # server setting to force cloudscraper
 
@@ -350,11 +351,11 @@ class Settings:
         sub_dir = os.path.join(self.get_chapter_dir(media_data, chapter_data), self.subtitles_dir)
         return sub_dir
 
-    def open_viewer(self, raw_files, server_media_chapters):
+    def open_viewer(self, raw_files, server_media_chapters, raw_viewer=False):
         sub_path = ":".join(map(lambda x: self.get_subtitles_dir(x[1], x[2]), filter(lambda x: x[1]["media_type"] & MediaType.ANIME, server_media_chapters)))
 
         server, media_data, chapter_data = server_media_chapters[0]
-        viewer = self.get_field("viewer", media_data)
+        viewer = self.get_field("viewer", media_data) if not raw_viewer else self.get_field("raw_viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
         env_extra = {"AMT_TITLE": title, "SUB_PATH": sub_path, "HEADERS": server.get_auth_headers_str()}
         for d in self.get_field_values("env_list", media_data):

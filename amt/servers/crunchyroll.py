@@ -192,3 +192,6 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
         for subInfo in data["subtitles"].values():
             yield subInfo["language"], subInfo["url"], subInfo["format"], False
+
+    def get_human_url(self, media_data, chapter_data):
+        return f"{self.base_url}/watch/{chapter_data['id']}/"
