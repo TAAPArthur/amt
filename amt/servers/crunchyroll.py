@@ -1,72 +1,100 @@
 import base64
 import json
 import re
+import time
+import uuid
 
 from ..server import Server
 from ..util.media_type import MediaType
 from threading import RLock
-
-from urllib.parse import urlencode
 
 
 class GenericCrunchyrollServer(Server):
     alias = "crunchyroll"
 
     domain = "crunchyroll.com"
-    login_url = "https://www.crunchyroll.com/auth/v1/token"
+    base_url = f"https://www.{domain}"
+    api_base = f"https://api.{domain}"
+    token_url = f"{base_url}/auth/v1/token"
+    login_url = token_url
 
     crunchyroll_lock = RLock()
-    session_id_may_be_invalid = True
 
-    def get_session_id(self, force=False):
-        with GenericCrunchyrollServer.crunchyroll_lock:
-            session_id = self.session_get_cookie("session_id")
-            if force or session_id is None:
-                self.session_get(f"https://{self.domain}/comics/manga")
-                session_id = self.session_get_cookie("session_id")
-            return session_id
+    _auth_headers = None
+    _auth_refresh = 0
+
+    _BASIC_AUTH = 'Basic ' + base64.b64encode(':'.join((
+        't-kdgp2h8c3jub8fn0fq',
+        'yfLDfMfrYvKXh4JXS1LEI2cCqu1v5Wan',
+    )).encode()).decode()
+
+    @property
+    def is_logged_in(self):
+        return bool(self.refresh_token)
+
+    @property
+    def refresh_token(self):
+        return self.session_get_cookie("refresh_token")
+
+    @refresh_token.setter
+    def refresh_token(self, value):
+        return self.session_set_cookie("refresh_token", value)
+
+    @property
+    def is_premium(self):
+        return True
+        for premium_cookies_name in ["crplusctamembership", "premplusctav"]:
+            if self.session_get_cookie(premium_cookies_name):
+                return True
+        return False
 
     def session_get_json(self, url, mem_cache=False, skip_cache=True, **kwargs):
-        query_under_lock = GenericCrunchyrollServer.session_id_may_be_invalid and "session_id" in url
+        self.update_auth()
 
-        def make_request(url):
-            return self.session_get_cache_json(url, mem_cache=mem_cache, skip_cache=skip_cache, **kwargs)
-        session_id_regex = re.compile(r"session_id=([^&]*)")
-        if query_under_lock:
-            original_session_id = session_id_regex.search(url).group(1)
-            with GenericCrunchyrollServer.crunchyroll_lock:
-                if GenericCrunchyrollServer.session_id_may_be_invalid:
-                    data = make_request(url)
-                    if data.get("error", False) and data["code"] == "bad_session":
-                        self.logger.error("Failed request %s %s; retrying", url, data)
-                        new_session_id = self.get_session_id(force=True)
-                        self.logger.info("New id %s vs %s", new_session_id, original_session_id)
-                        new_url = url.replace(original_session_id, new_session_id)
-                        if not mem_cache:
-                            kwargs["ttl"] = 0
-                        data = make_request(new_url)
-                    if skip_cache:
-                        GenericCrunchyrollServer.session_id_may_be_invalid = False
-                    return data
-                else:
-                    url = url.replace(original_session_id, self.get_session_id())
-        return make_request(url)
+        return self.session_get_cache_json(url, mem_cache=mem_cache, skip_cache=skip_cache, **kwargs)
+
+    def get_auth_headers(self):
+        self.update_auth()
+        return GenericCrunchyrollServer._auth_headers
+
+    def get_auth_headers_str(self):
+        return ",".join((f"{k}:{v}" for k, v in self.get_auth_headers().items()))
+
+    def set_auth_info(self, data):
+        GenericCrunchyrollServer._auth_headers = {"Authorization": data["token_type"] + " " + data["access_token"]}
+        GenericCrunchyrollServer._auth_refresh = time.time() + data.get("expires_in", 300) - 10
+
+    def update_auth(self):
+        with GenericCrunchyrollServer.crunchyroll_lock:
+            if GenericCrunchyrollServer._auth_refresh > time.time():
+                return
+
+            auth_headers = {"Authorization": GenericCrunchyrollServer._BASIC_AUTH}
+            if self.refresh_token:
+                data = {
+                    "refresh_token": self.refresh_token,
+                    "grant_type": "refresh_token",
+                    "scope": "offline_access",
+                }
+            else:
+                data = {"grant_type": "client_id"}
+                auth_headers["ETP-Anonymous-ID"] = str(uuid.uuid4())
+
+            auth_response = self.session_post(self.token_url, headers=auth_headers, data=data).json()
+            self.set_auth_info(auth_response)
 
     def login(self, username, password):
-        self.session_get_json(self.login_url,
-                              post=True,
+        r = self.session_post(self.login_url,
                               data={
                                   "username": username,
                                   "password": password,
                                   "grant_type": "password",
                                   "scope": "offline_access",
-                                  "device_id": "12345678-1234-5678-1234-567812345678",
-                                  "device_type": self.settings.user_agent
                               },
-                              headers={
-                                  "Authorization": "Basic b2VkYXJteHN0bGgxanZhd2ltbnE6OWxFaHZIWkpEMzJqdVY1ZFc5Vk9TNTdkb3BkSnBnbzE=",
-                                  "Content-Type": "application/x-www-form-urlencoded",
-                              })
+                              headers={'Authorization': self._BASIC_AUTH})
+        data = r.json()
+        self.refresh_token = data["refresh_token"]
+        self.set_auth_info(data)
         return True
 
 
@@ -95,50 +123,6 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
 
     def get_api_domain(self):
         return self.get_config()['cxApiParams']['apiDomain']
-
-    @property
-    def is_premium(self):
-        for premium_cookies_name in ["crplusctamembership", "premplusctav"]:
-            if self.session_get_cookie(premium_cookies_name):
-                return True
-        return False
-
-    def needs_authentication(self):
-        return not self.session_get_cookie("etp_rt")
-
-    def init_auth_headers(self):
-        if self.session_get_cookie("etp_rt"):
-            grant_type, key = 'etp_rt_cookie', 'accountAuthClientId'
-        else:
-            grant_type, key = 'client_id', 'anonClientId'
-
-        config = self.get_config()
-        auth_token = 'Basic ' + str(base64.b64encode(('%s:' % config['cxApiParams'][key]).encode('ascii')), 'ascii')
-        headers = {'Authorization': auth_token, "Content-Type": "application/x-www-form-urlencoded"}
-
-        auth_response = self.session_get_json(f'{self.get_api_domain()}/auth/v1/token', post=True, headers=headers, data=f'grant_type={grant_type}'.encode('ascii'))
-        return {'Authorization': auth_response['token_type'] + ' ' + auth_response['access_token']}
-
-    def get_auth_headers(self):
-        if not self.auth_header:
-            self.auth_header = self.init_auth_headers()
-        return self.auth_header
-
-    def _get_params(self):
-        policy_response = self.session_get_json(f'{self.get_api_domain()}/index/v2', headers=self.get_auth_headers())
-        cms = policy_response.get('cms_web')
-        bucket = cms['bucket']
-        params = {
-            'Policy': cms['policy'],
-            'Signature': cms['signature'],
-            'Key-Pair-Id': cms['key_pair_id']
-        }
-        return (bucket, params)
-
-    def get_params(self):
-        if not self.params:
-            self.params = self._get_params()
-        return self.params
 
     def get_media_list(self, **kwargs):
         return self.search_for_media(None, **kwargs)
@@ -170,15 +154,14 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
         if match:
             return self.get_media_data_for_series(match.group(1))
         media_id = self.get_chapter_id_for_url(url)
-        bucket, params = self.get_params()
-        query = urlencode(params)
-        url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{media_id}"
-        data = self.session_get_cache_json(f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{media_id}?{query}", key=url)
+        url = f"{self.get_api_domain()}/content/v2/cms/objects/{media_id}?rating=true&locale=en-US"
+        try:
+            data = self.session_get_cache_json(url, key=url, need_auth_headers=True)
 
-        return [self.create_media_data(id=data["series_id"],
-                                       name=data["series_title"],
-                                       season_id=data["season_id"], season_title=data["season_title"],
-                                       lang=data["audio_locale"])]
+            media_id = data["data"][0]["episode_metadata"]["series_id"]
+            return self.get_media_data_for_series(media_id)
+        except:
+            return []
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)
@@ -192,30 +175,20 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
                 self.update_chapter_data(media_data, id=chapter_id, number=chapter["episode_number"], title=chapter["title"], premium=chapter["is_premium_only"], special=chapter["is_clip"], alt_id=chapter["slug_title"])
 
     def get_stream_urls(self, media_data=None, chapter_data=None):
-        bucket, params = self.get_params()
+        url = f"https://cr-play-service.prd.crunchyrollsvc.com/v1/{chapter_data['id']}/console/switch/play"
+        data = self.session_get_json(url, need_auth_headers=True)
 
-        query = urlencode(params)
-        url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{chapter_data['id']}"
-        data = self.session_get_json(f"{url}?{query}", key=url)
-        stream_info_url = self.get_api_domain() + data["__links__"]["streams"]["href"]
-        stream_data = self.session_get_json(f"{stream_info_url}?{query}", key=stream_info_url)
         url_list = []
-        for video_type, videos in stream_data["streams"].items():
-            if "drm" in video_type:
-                continue
-            for video_info in videos.values():
-                if video_info["url"]:
-                    url_list.append((self.settings.get_prefered_lang_key(media_data, lang=video_info["hardsub_locale"]), video_info["url"], video_type))
+        for hardSubs in data["hardSubs"].values():
+            url_list.append((self.settings.get_prefered_lang_key(media_data, lang=hardSubs["hlang"]), hardSubs["url"]))
+
+        url_list.append((self.settings.get_prefered_lang_key(media_data, lang=""), data["url"]))
         url_list.sort()
         return map(lambda x: [x[1]], url_list)
 
     def get_subtitle_info(self, media_data, chapter_data):
-        bucket, params = self.get_params()
+        url = f"https://cr-play-service.prd.crunchyrollsvc.com/v1/{chapter_data['id']}/console/switch/play"
+        data = self.session_get_json(url, need_auth_headers=True)
 
-        query = urlencode(params)
-        url = f"{self.get_api_domain()}/cms/v2{bucket}/episodes/{chapter_data['id']}"
-        data = self.session_get_json(f"{url}?{query}", key=url)
-        stream_info_url = self.get_api_domain() + data["__links__"]["streams"]["href"]
-        stream_data = self.session_get_json(f"{stream_info_url}?{query}", key=stream_info_url)
-        for lang, values in stream_data["subtitles"].items():
-            yield lang, values["url"], values["format"], False
+        for subInfo in data["subtitles"].values():
+            yield subInfo["language"], subInfo["url"], subInfo["format"], False
