@@ -135,6 +135,7 @@ class BaseUnitTestClass(unittest.TestCase):
 
         self.settings.suppress_cmd_output = True
         self.settings.viewer = "for m in {media}; do echo $m; done | sort | uniq -d | [ 0 -eq $(wc -l) ]"
+        self.settings.raw_viewer = self.settings.viewer
         self.settings._specific_settings = {}
         self.settings.post_process_cmd = ""
         self.settings.tmp_dir = TEST_HOME + ".tmp"
@@ -2103,6 +2104,11 @@ class ArgsTest(CliUnitTestClass):
     def test_play(self):
         self.add_test_media(media_type=MediaType.ANIME, limit_per_server=2)
         parse_args(media_reader=self.media_reader, args=["--auto", "play"])
+        self.verify_all_chapters_read()
+
+    def test_play_raw(self):
+        self.add_test_media(media_type=MediaType.ANIME, limit_per_server=2)
+        parse_args(media_reader=self.media_reader, args=["--auto", "play", "--raw"])
         self.verify_all_chapters_read()
 
     def test_play_fail(self):

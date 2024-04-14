@@ -160,6 +160,9 @@ class TestServer(Server):
         assert not os.path.exists(path)
         open(path, "w").close()
 
+    def get_human_url(self, media_data, chapter_data):
+        return f"https://{self.domain}/{media_data['id']}/{chapter_data['id']}"
+
 
 class TestServerLogin(TestServer):
     id = "test_server_login"

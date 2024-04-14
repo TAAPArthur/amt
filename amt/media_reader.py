@@ -392,7 +392,7 @@ class MediaReader:
                 last_read = max(media_data.get_last_read_chapter_number(), last_read)
             self.mark_chapters_until_n_as_read(media_data, last_read, force=force)
 
-    def stream(self, url, cont=False, media_type=None, download=False, stream_index=0, offset=0, record=False, volume=False, **download_chapter_args):
+    def stream(self, url, cont=False, media_type=None, download=False, raw=False, stream_index=0, offset=0, record=False, volume=False, **download_chapter_args):
         url, server = self.get_server_for_url(url, streamable=True)
         if not server:
             logging.error("Could not find any matching server")
@@ -417,7 +417,7 @@ class MediaReader:
             min_chapter_num = chapter_data.get_number(volume) + offset
             num_list = sorted(set(map(lambda x: x.get_number(volume), filter(lambda x: x.get_number(volume) >= min_chapter_num, media_data["chapters"].values()))))
 
-            return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, force_abs=True, volume=volume, **download_chapter_args) if num_list else False
+            return self.play(name=media_data, num_list=num_list, limit=None if cont else 1, raw=raw, force_abs=True, volume=volume, **download_chapter_args) if num_list else False
         return 1
 
     def get_stream_url(self, name=None, num_list=None, shuffle=False, limit=None, force_abs=False):
@@ -449,7 +449,7 @@ class MediaReader:
                 media_data["media_type"] = media_type.value
                 media_data["media_type_name"] = media_type.name
 
-    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force_stream=False, volume=False, batch_size=1, **download_chapter_args):
+    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, raw=False, any_unread=False, force_abs=False, force_stream=False, volume=False, batch_size=1, **download_chapter_args):
         num = 0
         batch = []
         server_media_chapters = []
@@ -457,13 +457,16 @@ class MediaReader:
             if info:
                 server, media_data, chapter = info
                 self.maybe_resolve_media_type(media_data, media_type)
-                if media_data["media_type"] == MediaType.ANIME:
-                    if not server.is_fully_downloaded(media_data, chapter):
-                        server.pre_download(media_data, chapter)
-                else:
-                    server.download_chapter(media_data, chapter, **download_chapter_args)
+                if not raw:
+                    if media_data["media_type"] == MediaType.ANIME:
+                        if not server.is_fully_downloaded(media_data, chapter):
+                            server.pre_download(media_data, chapter)
+                    else:
+                        server.download_chapter(media_data, chapter, **download_chapter_args)
 
-                if server.is_fully_downloaded(media_data, chapter) and not force_stream:
+                if raw:
+                    batch.append(server.get_human_url(media_data, chapter))
+                elif server.is_fully_downloaded(media_data, chapter) and not force_stream:
                     batch.extend(server.get_children(media_data, chapter))
                 else:
                     batch.extend(server.get_stream_url(media_data, chapter, stream_index=stream_index))
@@ -475,7 +478,7 @@ class MediaReader:
                 continue
 
             self.state.save_session_cookies()
-            success = self.settings.open_viewer(batch, server_media_chapters)
+            success = self.settings.open_viewer(batch, server_media_chapters, raw_viewer=raw)
             batch = []
             if success:
                 num += len(server_media_chapters)
