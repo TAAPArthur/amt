@@ -161,3 +161,6 @@ class Hidive(Server):
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(2)
+
+    def get_auth_headers_str(self):
+        return "Referer:https://www.hidive.com/stream/"

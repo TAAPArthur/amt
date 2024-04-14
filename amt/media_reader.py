@@ -452,7 +452,7 @@ class MediaReader:
     def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, any_unread=False, force_abs=False, force_stream=False, volume=False, batch_size=1, **download_chapter_args):
         num = 0
         batch = []
-        media_chapters = []
+        server_media_chapters = []
         for info in self.get_chapters(name, media_type=media_type, num_list=num_list, limit=limit, shuffle=shuffle, any_unread=any_unread, force_abs=force_abs, volume=volume, null_terminate=True):
             if info:
                 server, media_data, chapter = info
@@ -467,21 +467,21 @@ class MediaReader:
                     batch.extend(server.get_children(media_data, chapter))
                 else:
                     batch.extend(server.get_stream_url(media_data, chapter, stream_index=stream_index))
-                media_chapters.append((media_data, chapter))
+                server_media_chapters.append(info)
 
-                if len(media_chapters) != batch_size:
+                if len(server_media_chapters) != batch_size:
                     continue
             elif not batch:
                 continue
 
             self.state.save_session_cookies()
-            success = self.settings.open_viewer(batch, media_chapters)
+            success = self.settings.open_viewer(batch, server_media_chapters)
             batch = []
             if success:
-                num += len(media_chapters)
-                for _, chapter in media_chapters:
+                num += len(server_media_chapters)
+                for _, _, chapter in server_media_chapters:
                     chapter["read"] = True
-                media_chapters.clear()
+                server_media_chapters.clear()
                 if num == limit:
                     break
             else:

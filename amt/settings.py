@@ -78,13 +78,13 @@ class Settings:
             MediaType.ANIME.name: [["lang", ["jp", "ja-jp", "japanese", ""], -1]]
         },
         "viewer": {
-            MediaType.ANIME.name: "mpv --merge-files --cookies --cookies-file=~/.cache/amt/cookies.txt --sub-file-paths=\"$SUB_PATH\" --sub-auto=all --title=\"$AMT_TITLE\" $AMT_EXTRA_ARG $AMT_USER_ARGS {media}",
+            MediaType.ANIME.name: "mpv --cookies --cookies-file=~/.cache/amt/cookies.txt --http-header-fields=\"$HEADERS\" --sub-file-paths=\"$SUB_PATH\" --sub-auto=all --title=\"$AMT_TITLE\" $AMT_EXTRA_ARG $AMT_USER_ARGS {media}",
             MediaType.MANGA.name: "sxiv $AMT_EXTRA_ARG $AMT_USER_ARGS {media}",
             MediaType.NOVEL.name: "zathura $AMT_EXTRA_ARG $AMT_USER_ARGS {media}"
         },
         "env_list": {
             "hidive": {
-                "AMT_EXTRA_ARG": '--http-header-fields=Referer:https://www.hidive.com/stream/ --demuxer-lavf-o=protocol_whitelist=[crypto,data,file,hls,http,https,tcp,tls] '
+                "AMT_EXTRA_ARG": '--merge-files --http-header-fields=\"$HEADERS\" --demuxer-lavf-o=protocol_whitelist=[crypto,data,file,hls,http,https,tcp,tls] '
             }
         }
     }
@@ -350,13 +350,13 @@ class Settings:
         sub_dir = os.path.join(self.get_chapter_dir(media_data, chapter_data), self.subtitles_dir)
         return sub_dir
 
-    def open_viewer(self, raw_files, media_chapters):
-        sub_path = ":".join(map(lambda x: self.get_subtitles_dir(*x), filter(lambda x: x[0]["media_type"] & MediaType.ANIME, media_chapters)))
+    def open_viewer(self, raw_files, server_media_chapters):
+        sub_path = ":".join(map(lambda x: self.get_subtitles_dir(x[1], x[2]), filter(lambda x: x[1]["media_type"] & MediaType.ANIME, server_media_chapters)))
 
-        media_data, chapter_data = media_chapters[0]
+        server, media_data, chapter_data = server_media_chapters[0]
         viewer = self.get_field("viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
-        env_extra = {"AMT_TITLE": title, "SUB_PATH": sub_path}
+        env_extra = {"AMT_TITLE": title, "SUB_PATH": sub_path, "HEADERS": server.get_auth_headers_str()}
         for d in self.get_field_values("env_list", media_data):
             for key, value in d.items():
                 env_extra[key] = env_extra[key] + " " + value if key in env_extra else value

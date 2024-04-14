@@ -376,6 +376,9 @@ class GenericServer(MediaServer):
         """
         raise NotImplementedError
 
+    def get_auth_headers_str(self):
+        return ""
+
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         """
         Returns a list of page/episode data. For anime (specifically for video files) this may be a list of size 1
