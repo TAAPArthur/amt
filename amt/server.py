@@ -72,7 +72,7 @@ class RequestServer:
         return int(r.headers.get("Retry-After", 0)) or self.settings.get_backoff_factor(self.id)**c
 
     def backoff(self, c, r):
-        value = self.get_backoff(c,r)
+        value = self.get_backoff(c, r)
         self.logger.info(f"Sleeping for {value} seconds after seeing {c} failures")
         time.sleep(value)
 
@@ -154,7 +154,7 @@ class RequestServer:
             self.session.cookies.set(key, value, domain=self.domain, **kwargs)
 
     def session_get_cache(self, url, key=None, mem_cache=False, skip_cache=False, ttl=1, use_json=False, output_format_func=None, **kwargs):
-        if skip_cache:
+        if skip_cache and not mem_cache:
             return self.session_get(url, **kwargs).json()
         _data = kwargs.get("data", kwargs.get("json", ""))
         key = (key or url) + (str(hash(json.dumps(_data))) if _data else "")
@@ -220,7 +220,7 @@ class MediaServer(RequestServer):
             if self.need_to_login_to_list and self.needs_to_login():
                 self.logger.info("Server is not authenticated; relogging in")
                 if not self.relogin():
-                    raise ValueError("Failed to login")
+                    raise ValueError(f"Failed to login for {self.id}")
 
     def list_media(self, limit=None, media_type=None):
         self.maybe_relogin()

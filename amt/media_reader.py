@@ -259,7 +259,7 @@ class MediaReader:
                     self.search_add(media_name, media_type=media_type, server_id=server.id, exact=True)
         return no_errors
 
-    ############# Upgrade and migration
+    # Upgrade and migration
 
     def migrate(self, name, media_type=None, exact=False, move_self=False, force_same_id=False, server_id=None, media_id=None, **kwargs):
         media_list = []
@@ -583,6 +583,7 @@ class MediaReader:
                     continue
                 media_data = self.search_for_media(None, entry["media_type"], exact=exact, skip_remote_search=local_only, tracker_data=entry, **kwargs)
                 if media_data:
+                    logging.info("Tracking %s (%s) with %s", entry["names"], entry["id"], media_data.global_id)
                     self.maybe_resolve_media_type(media_data, media_type_filter=media_type)
                     self.track(media_data, tracker.id, entry["id"], entry["name"])
                     assert self.get_tracked_media(tracker.id, entry["id"])
