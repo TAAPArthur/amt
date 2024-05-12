@@ -324,7 +324,7 @@ class MediaData(dict):
         return max(self["chapters"].values(), key=lambda x: x["number"], default={})
 
     def get_first_chapter_number_greater_than_zero(self):
-        return min(self["chapters"].values(), key=lambda x: x["number"] if x["number"] > 0 else float("inf"))["number"]
+        return min(self["chapters"].values(), key=lambda x: x["number"] if x["number"] >= 1 else float("inf"))["number"]
 
     def get_chapter_number_to_id(self, chapter_num):
         return max(filter(lambda x: x["number"] == chapter_num, self["chapters"].values()), key=lambda x: x["number"], default={}).get("id")
@@ -338,7 +338,7 @@ class MediaData(dict):
     def get_unreads(self, any_unread=False, volume=False):
         lastRead = self.get_last_read_chapter_number(volume=volume)
         for chapter in self.get_sorted_chapters(volume=volume):
-            if not chapter["read"] and (any_unread or (chapter.get_number(volume) > lastRead and not chapter["special"])):
+            if not chapter["read"] and (any_unread or (chapter.get_number(volume) > lastRead)):
                 yield chapter
 
     def get_labels(self):

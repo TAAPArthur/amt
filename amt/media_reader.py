@@ -429,7 +429,7 @@ class MediaReader:
         media_data = self.get_single_media(media_type=media_type, name=name)
         last_read = media_data.get_last_read_chapter_number(volume=volume)
         if num_list:
-            num_list = list(map(lambda x: last_read + x if x <= 0 and not force_abs else x, num_list))
+            num_list = list(map(lambda x: int(last_read) + x if x <= 0 and not force_abs else x, num_list))
             server = self.get_server(media_data["server_id"])
             yielded = False
             for chapter in media_data.get_sorted_chapters(volume=volume):

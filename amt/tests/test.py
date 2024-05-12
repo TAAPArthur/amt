@@ -173,12 +173,11 @@ class BaseUnitTestClass(unittest.TestCase):
         assert media_list
         return media_list[:limit]
 
-    def get_all_chapters(self, name=None, media_type=None, special=False):
+    def get_all_chapters(self, name=None, media_type=None):
         for media_data in self.media_reader.get_media(name=name, media_type=media_type):
             server = self.media_reader.get_server(media_data["server_id"])
             for chapter in media_data.get_sorted_chapters():
-                if not chapter["special"] or special:
-                    yield server, media_data, chapter
+                yield server, media_data, chapter
 
     def get_num_chapters(self, **kwargs):
         return len(list(self.get_all_chapters(**kwargs)))
@@ -1922,7 +1921,7 @@ class ArgsTest(CliUnitTestClass):
         self.add_test_media(TestServer.id)
         for id, media_data in self.media_reader.media.items():
             server = self.media_reader.get_server(media_data["server_id"])
-            chapter = list(filter(lambda x: not x["special"], media_data.get_sorted_chapters()))[0]
+            chapter = media_data.get_sorted_chapters()[0]
             parse_args(media_reader=self.media_reader, args=["download-unread", "--limit", "1", id])
             self.assertEqual(0, server.download_chapter(media_data, chapter))
 
@@ -2182,17 +2181,17 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["stream", TestAnimeServer.get_streamable_url()])
 
     def test_add_from_url_stream_cont_record(self):
-        parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url(media_id=1)])
         self.verify_no_media()
-        parse_args(media_reader=self.media_reader, args=["stream", "--record", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "--record", TestAnimeServer.get_streamable_url(media_id=1)])
         self.assertTrue(self.media_reader.get_single_media())
         self.assertEqual(1, self.get_num_chapters_read())
-        parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "--cont", TestAnimeServer.get_streamable_url(media_id=1)])
         self.assertEqual(1, self.get_num_chapters_read())
-        parse_args(media_reader=self.media_reader, args=["stream", "--cont", "--record", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "--cont", "--record", TestAnimeServer.get_streamable_url(media_id=1)])
         self.verify_all_chapters_read(media_type=MediaType.ANIME)
         self.media_reader.get_single_media()["chapters"].clear()
-        parse_args(media_reader=self.media_reader, args=["stream", "--cont", "--record", TestAnimeServer.get_streamable_url()])
+        parse_args(media_reader=self.media_reader, args=["stream", "--cont", "--record", TestAnimeServer.get_streamable_url(media_id=1)])
         self.verify_all_chapters_read(media_type=MediaType.ANIME)
 
     def test_add_from_url_bad(self):
