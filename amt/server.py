@@ -87,6 +87,8 @@ class RequestServer:
             kwargs["verify"] = False
         if need_auth_headers:
             kwargs["headers"] = self.get_auth_headers()
+        if "headers" in kwargs:
+            kwargs["headers"]["User-Agent"] = self.settings.get_user_agent(self.id)
         self.update_default_args(kwargs)
         session = self.session
         if not kwargs.get("verify", True):
