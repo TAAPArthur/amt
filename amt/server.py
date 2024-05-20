@@ -77,7 +77,7 @@ class RequestServer:
         time.sleep(value)
 
     def get_auth_headers(self):
-        raise NotImplementedError
+        return dict()
 
     def _request(self, post_request, url, force_cloud_scraper=False, start=0, need_auth_headers=False, **kwargs):
         self.logger.info("Making %s request to %s ", "POST" if post_request else "GET", url)
@@ -399,10 +399,10 @@ class GenericServer(MediaServer):
                         urls = set()
                         for segment in segments:
                             if segment.uri not in urls:
-                                page_data.append(self.create_page_data(url=segment.uri, encryption_key=segment.key, ext=self.get_extension(segment.uri, "ts")))
+                                page_data.append(self.create_page_data(url=segment.uri, encryption_key=segment.key, ext=self.get_extension(segment.uri, "ts"), headers=self.get_auth_headers()))
                                 urls.add(segment.uri)
                     else:
-                        page_data.extend([self.create_page_data(url=url, ext=ext)])
+                        page_data.extend([self.create_page_data(url=url, ext=ext, headers=self.get_auth_headers())])
                 except ImportError as e:
                     last_err = e
             if page_data:
