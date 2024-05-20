@@ -2327,7 +2327,6 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://dragonball-multiverse.com/en/chapters.html?comic=page&chapter=80", "1", None, "80"),
         ("https://dragonball-multiverse.com/en/page-1854.html#h_read", "1", None, "80"),
         ("https://freewebnovel.com/itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu/chapter-1.html", "itai-no-wa-iya-nanode-bgyo-ryoku-ni-kyokufuri-shitai-to-omoimasu", None, "chapter-1"),
-        ("https://funimation.com/v/one-piece/im-luffy-the-man-whos-gonna-be-king-of-the-pirates", "20224", "20227", "22338"),
         ("https://hidive.com/stream/o-maidens-in-your-savage-season/s01e001", "o-maidens-in-your-savage-season", None, "s01e001"),
         ("https://www.hidive.com/stream/the-eminence-in-shadow/s02e021", "the-eminence-in-shadow", "season-2", "s02e021"),
         ("https://j-novel.club/read/i-refuse-to-be-your-enemy-volume-1-part-1", "i-refuse-to-be-your-enemy", None, "i-refuse-to-be-your-enemy-volume-1-part-1"),
@@ -2343,9 +2342,6 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://webtoons.com/en/drama/lookism/ep-283-hostel-epilogue/viewer?title_no=1049&episode_no=283", "1049", None, "283"),
     ]
 
-    premium_streamable_urls = [
-        ("https://www.funimation.com/v/bofuri-i-dont-want-to-get-hurt-so-ill-max-out-my-defense/defense-and-first-battle/?lang=japanese", "1019573", "1019574", "1019900"),
-    ]
     addable_urls = [
         ("https://chapmanganelo.com/manga-aa88620", "aa88620"),
         ("https://m.manganelo.com/manga-rh106075", "rh106075"),
