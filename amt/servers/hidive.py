@@ -9,7 +9,7 @@ from ..util.media_type import MediaType
 
 
 class Hidive(Server):
-    id = "hidive"
+    # id = "hidive"
     media_type = MediaType.ANIME
     has_free_chapters = False
 
