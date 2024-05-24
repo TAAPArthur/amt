@@ -100,7 +100,7 @@ class Kobo(Server):
             raise
 
     def get_url_maps(self):
-        return self.session_get_auth(self.init_url, ttl=1)["Resources"]
+        return self.session_get_auth(self.init_url, ttl=3600*24)["Resources"]
 
     def list_books(self, media_data=None, chapter_id=None, **kwargs):
         data = self.session_get_auth(self.get_url_maps()["library_sync"], **kwargs)
