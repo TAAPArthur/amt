@@ -51,7 +51,7 @@ class GenericVizManga(Server):
         return not self.needs_authentication()
 
     def get_limit_data(self, chapter_id):
-        data = self.session_get_cache_json(self.limits_url.format(chapter_id), ttl=.25)
+        data = self.session_get_cache_json(self.limits_url.format(chapter_id), ttl=3600*4)
         archive_info = data["archive_info"]
         if archive_info["next_reset_epoch"] <= time.time():
             data = self.session_get_cache_json(self.limits_url.format(chapter_id), ttl=0)
@@ -285,7 +285,7 @@ class VizMangaLibrary(GenericVizManga):
     def update_media_data(self, media_data, **kwargs):
         url = self.series_url.format(media_data["id"], media_data["alt_id"])
         for volume_url in self._update_media_data(url, media_data["id"]):
-            text = self.session_get_cache(self.base_url + volume_url, ttl=-1)
+            text = self.session_get_cache(self.base_url + volume_url)
             match = self.volume_id_regex.search(text)
             volume_id = match.group(1)
             match = self.volume_number_regex.search(text)

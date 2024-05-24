@@ -51,7 +51,7 @@ class GenericJNovelClub(Server):
     def update_timestamp(self, media_data):
         now = datetime.now()
         iso_str = now.isoformat() + "Z"
-        events = self.session_get_cache_json(self.events_url.format(iso_str), key=self.events_url, ttl=1)["events"]
+        events = self.session_get_cache_json(self.events_url.format(iso_str), key=self.events_url, ttl=3600*24)["events"]
         media_data["nextTimeStamp"] = 0
         for event in filter(lambda x: x["serie"]["slug"] == media_data["id"], events):
             if isinstance(self, JNovelClubParts) == (event["details"] != "Ebook Publishing"):
@@ -146,7 +146,7 @@ class JNovelClubParts(GenericJNovelClub):
                 shutil.rmtree(chapter_path)
         volumes = r.json()["volumes"]
         for i, volume in enumerate(volumes):
-            part_data = self.session_get_cache_json(self.parts_url.format(volume["slug"]), skip_cache=i == len(volumes) - 1, ttl=-1)
+            part_data = self.session_get_cache_json(self.parts_url.format(volume["slug"]), skip_cache=i == len(volumes) - 1, ttl=0)
             parts = part_data["parts"]
 
             volume_number = volume["number"]

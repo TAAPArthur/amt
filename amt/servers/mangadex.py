@@ -56,7 +56,7 @@ class Mangadex(Server):
         lang = chapter_data["data"]["attributes"]["translatedLanguage"]
         for metadata in relationships:
             if metadata["type"] == "manga":
-                data = self.session_get(self.manga_url.format(metadata["id"])).json()
+                data = self.session_get_cache(self.manga_url.format(metadata["id"])).json()
                 return self._get_media_list((data["data"], ), target_lang=lang)[0]
 
     def get_chapter_id_for_url(self, url):

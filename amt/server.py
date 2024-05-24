@@ -151,7 +151,7 @@ class RequestServer:
         for key, value in cookies_map.items():
             self.session.cookies.set(key, value, domain=self.domain, **kwargs)
 
-    def session_get_cache(self, url, key=None, mem_cache=False, skip_cache=False, ttl=1, use_json=False, output_format_func=None, **kwargs):
+    def session_get_cache(self, url, key=None, mem_cache=False, skip_cache=False, ttl=3600, use_json=False, output_format_func=None, **kwargs):
         if skip_cache and not mem_cache:
             return self.session_get(url, **kwargs).json()
         _data = kwargs.get("data", kwargs.get("json", ""))
@@ -162,7 +162,7 @@ class RequestServer:
                 return self.mem_cache[key]
             if not mem_cache:
                 try:
-                    if ttl < 0 or time.time() - os.path.getmtime(file) < ttl * 3600 * 24:
+                    if time.time() - os.path.getmtime(file) < ttl:
                         with open(file, "r") as f:
                             self.logger.debug("Returning cached value for %s", url)
                             return json.load(f) if use_json else f.read()
