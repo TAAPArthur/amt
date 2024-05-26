@@ -112,6 +112,11 @@ class CrunchyrollAnime(GenericCrunchyrollServer):
     auth_header = None
     params = None
 
+    _SWITCH_USER_AGENT = 'Crunchyroll/1.8.0 Nintendo Switch/12.3.12.0 UE4/4.27'
+
+    def init(self):
+        self.settings.set_field("user_agent", self._SWITCH_USER_AGENT, server_or_media_id=self.id)
+
     def upgrade_state(self, media_data):
         if media_data.get("version", 0) == 1:
             return media_data["alt_id"]
