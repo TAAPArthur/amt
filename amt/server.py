@@ -51,6 +51,11 @@ class RequestServer:
         self.mem_cache = {}
         self.logger = logging.getLogger(self.id)
 
+        self.init()
+
+    def init(self):
+        pass
+
     def get_cloudscraper_session(self, session):
         import cloudscraper
         if getattr(RequestServer, "cloudscraper", None) is None:
