@@ -56,7 +56,7 @@ class Mangadex(Server):
         lang = chapter_data["data"]["attributes"]["translatedLanguage"]
         for metadata in relationships:
             if metadata["type"] == "manga":
-                data = self.session_get_cache(self.manga_url.format(metadata["id"])).json()
+                data = self.session_get_cache_json(self.manga_url.format(metadata["id"]))
                 return self._get_media_list((data["data"], ), target_lang=lang)[0]
 
     def get_chapter_id_for_url(self, url):
@@ -66,8 +66,7 @@ class Mangadex(Server):
 
         offset = 0
         while True:
-            r = self.session_get(self.manga_chapters_url.format(media_data["id"], offset))
-            data = r.json()
+            data = self.session_get_cache_json(self.manga_chapters_url.format(media_data["id"], offset))
 
             for chapter_data in sorted(data["data"], key=lambda x: x["attributes"]["publishAt"], reverse=True):
                 attr = chapter_data["attributes"]
