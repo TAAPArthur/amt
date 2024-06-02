@@ -11,8 +11,8 @@ class Mangaplus(Server):
     domain = "mangaplus.shueisha.co.jp"
     base_url = f"https://{domain}"
     api_url = "https://jumpg-webapi.tokyo-cdn.com/api"
-    api_list_url = api_url + "/title_list/all?format=json"
-    api_media_url = api_url + "/title_detail?title_id={0}&format=json"
+    api_list_url = api_url + "/title_list/search?lang=eng&clang=eng&format=json"
+    api_media_url = api_url + "/title_detailV3?title_id={0}&format=json"
     api_chapter_url = api_url + "/manga_viewer?chapter_id={0}&split=yes&img_quality=high&format=json"
     media_url = base_url + "/titles/{0}?format=json"
 
@@ -34,15 +34,18 @@ class Mangaplus(Server):
 
     def get_media_list(self, **kwargs):
         data = self.session_get_cache_json(self.api_list_url)
-        for series in data["success"]["allTitlesView"]["titles"]:
-            yield self.create_media_data(id=series["titleId"], name=series["name"], lang=series.get("language", "English").lower())
+        for series in data["success"]["searchView"]["allTitlesGroup"]:
+            for media_info in series["titles"]:
+                yield self.create_media_data(id=media_info["titleId"], name=media_info["name"], lang=media_info.get("language", "English").lower())
 
     def update_media_data(self, media_data, **kwargs):
-        r = self.session_get(self.api_media_url.format(media_data["id"]))
-        series_info = r.json()["success"]["titleDetailView"]
-        for chapter in series_info["firstChapterList"] + series_info.get("lastChapterList", []):
-            number = chapter["name"][1:] if chapter["name"][0] == "#" else chapter["name"]
-            self.update_chapter_data(media_data, id=chapter["chapterId"], title=chapter["subTitle"], number=number)
+        data = self.session_get_cache_json(self.api_media_url.format(media_data["id"]))
+        series_info = data["success"]["titleDetailView"]
+        for chapter_info in series_info["chapterListGroup"]:
+            for key in ("firstChapterList", "midChapterList", "lastChapterList"):
+                for chapter in chapter_info.get(key, []):
+                    number = chapter["name"][1:] if chapter["name"][0] == "#" else chapter["name"]
+                    self.update_chapter_data(media_data, id=chapter["chapterId"], title=chapter["subTitle"], number=number)
         media_data["nextTimeStamp"] = series_info.get("nextTimeStamp", 0)
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
