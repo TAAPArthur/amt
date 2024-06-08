@@ -321,6 +321,7 @@ class UtilTest(BaseUnitTestClass):
             ("A B C 03 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 3),
             ("04. A B C 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 4),
             ("A B C 1080p BluRay.AAC2.0.x264-DEADBEEF - 05.mkv", 5),
+            ("A B C v06 (2015) (Digital).cbz", 6),
         ]
         for name, chapter_number in name_chapter_number_pairs:
             with self.subTest(name=name):
