@@ -97,13 +97,27 @@ class GenericTorrentServer(Server):
         else:
             self.save_chapter_page(self.create_page_data(url=torrent_file), path=path)
 
-    def get_chapter_id_for_url(self, url):
+    def parse_url_for_value(self, url, key):
         o = urlparse(url)
         query = parse_qs(o.query)
-        return query.get("file", [None])[0]
+        return query.get(key, [None])[0]
+
+    def get_chapter_id_for_url(self, url):
+        return self.parse_url_for_value(url, "file")
 
     def can_stream_url(self, url):
-        return self.settings.torrent_info_cmd and super().can_stream_url(url) and self.get_chapter_id_for_url(url)
+        return self.settings.torrent_info_cmd and super().can_stream_url(url)
+
+    def get_chapter_data_from_url(self, media_data, url):
+        chapter_data = super().get_chapter_data_from_url(media_data, url)
+        if chapter_data is None:
+            chapter_num = self.parse_url_for_value(url, "number")
+            if chapter_num is not None:
+                chapter_id = media_data.get_chapter_number_to_id(int(chapter_num))
+                chapter_data = media_data["chapters"].get(chapter_id, None)
+            elif len(media_data["chapters"]) == 1:
+                chapter_data = next(iter(media_data["chapters"].values()))
+        return chapter_data
 
     @property
     def add_series_url_regex(self):
@@ -120,7 +134,7 @@ class Torrent(GenericTorrentServer):
     def get_media_data_from_url(self, url):
         torrent_file = url
         with tempfile.NamedTemporaryFile() as fp:
-            if "?" in url and "file=" in url and not os.path.exists(url) and os.path.exists(url.split("?", 2)[0]):
+            if "?" in url and not os.path.exists(url) and os.path.exists(url.split("?", 2)[0]):
                 torrent_file = url.split("?", 2)[0]
                 self.save_torrent_file(torrent_file, fp.name)
             else:

@@ -460,6 +460,12 @@ class GenericServer(MediaServer):
         """
         raise NotImplementedError
 
+    def get_chapter_data_from_url(self, media_data, url):
+        chapter_id = self.get_chapter_id_for_url(url)
+        if chapter_id not in media_data["chapters"]:
+            self.update_media_data(media_data)
+        return media_data["chapters"].get(chapter_id, None)
+
     def get_human_url(self, media_data, chapter_data):
         """ Inverse of get_chapter_id_for_url; Takes out metadata and returns a human readable url"""
         raise NotImplementedError
@@ -468,7 +474,7 @@ class GenericServer(MediaServer):
         return self.stream_url_regex and self.stream_url_regex.search(url)
 
     def can_add_media_from_url(self, url):
-        return self.can_stream_url(url) or self.add_series_url_regex and self.add_series_url_regex.search(url)
+        return self.add_series_url_regex and self.add_series_url_regex.search(url) or self.can_stream_url(url)
 
     ################ ANIME ONLY #####################
     def get_stream_url(self, media_data, chapter_data, stream_index=0):

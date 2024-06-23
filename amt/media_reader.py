@@ -397,14 +397,15 @@ class MediaReader:
         if not server:
             logging.error("Could not find any matching server")
             return False
-        chapter_id = server.get_chapter_id_for_url(url)
-
         media_data = self.add_from_url(url, skip_add=True, server_id=server.id)
+
         if record and media_data.global_id in self.media:
             media_data = self.media[media_data.global_id]
-        if chapter_id not in media_data["chapters"]:
-            self.update_media(media_data)
-        chapter_data = media_data["chapters"][chapter_id]
+
+        chapter_data = server.get_chapter_data_from_url(media_data, url)
+        if not chapter_data:
+            logging.error("Error parsing url for server %s", server.id)
+            return False
 
         self.maybe_resolve_media_type(media_data, media_type)
 
