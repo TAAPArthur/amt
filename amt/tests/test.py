@@ -1323,6 +1323,21 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
                 for file in self.torrent_files:
                     self.assertTrue(self.media_reader.stream(f"{torrent}?file={file}", media_type=media_type))
                     self.assertTrue(self.media_reader.stream(f"{os.path.abspath(torrent)}?file={file}"))
+                self.assertFalse(self.media_reader.stream(f"{os.path.abspath(torrent)}?file=bad_file"))
+
+    def test_media_stream_single(self):
+        self.settings.torrent_list_cmd = f'[ -e "$TORRENT_FILE" ] && printf "{self.torrent_files[0]}"'
+        for media_type in list(MediaType):
+            with self.subTest(media_type=media_type):
+                self.assertTrue(self.media_reader.stream(f"{self.torrents[0]}", media_type=media_type))
+
+    def test_media_stream_number(self):
+        for media_type in list(MediaType):
+            with self.subTest(media_type=media_type):
+                self.assertTrue(self.media_reader.stream(f"{self.torrents[0]}?number=2", media_type=media_type, record=True))
+                media_data = self.media_reader.get_single_media()
+                self.assertEqual(2, media_data.get_last_read_chapter_number())
+                self.media_reader.remove_media(name=media_data)
 
     def test_media_stream_torrent_dont_use_viewer_directly(self):
         self.settings.torrent_stream_cmd = '[ -e "$TORRENT_FILE" ]'

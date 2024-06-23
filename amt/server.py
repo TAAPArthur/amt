@@ -462,6 +462,12 @@ class GenericServer(MediaServer):
         """
         raise NotImplementedError
 
+    def get_chapter_data_from_url(self, media_data, url):
+        chapter_id = self.get_chapter_id_for_url(url)
+        if chapter_id not in media_data["chapters"]:
+            self.update_media_data(media_data)
+        return media_data["chapters"].get(chapter_id, None)
+
     def get_human_url(self, media_data, chapter_data):
         """ Inverse of get_chapter_id_for_url; Takes out metadata and returns a human readable url"""
         raise NotImplementedError
