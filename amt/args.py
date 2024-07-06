@@ -212,6 +212,7 @@ def setup_subparsers(state, sub_parsers):
     load_parser = add_parser_helper(sub_parsers, "load_from_tracker", aliases=["load"], parents=[sub_search_parsers], help="Attempts to add all tracked media")
     load_parser.add_argument("--force", "-f", action="store_const", const=True, default=False, help="Force set of read chapters to be in sync with progress")
     load_parser.add_argument("--local-only", action="store_const", const=True, default=False, help="Only attempt to find a match among local media")
+    load_parser.add_argument("--existing", action="store_const", const=True, default=False, help="Assume media is already tracked")
     load_parser.add_argument("--no-add", action="store_const", const=True, default=False, help="Don't search for and add new media")
     load_parser.add_argument("--remove", action="store_const", const=True, default=False, help="Remove media that was tracked but no longer active on tracker")
     load_parser.add_argument("--user-id", default=None, nargs="?", help="id to load tracking info of")
