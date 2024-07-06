@@ -299,7 +299,7 @@ class MediaReader:
         self.for_each(self.update_media, media_list, raiseException=True)
         for media_data, last_read in zip(media_list, last_read_list):
             self.mark_chapters_until_n_as_read(media_data, last_read)
-        return failures
+        return not failures
 
     def upgrade_state_if_server_version_changed(self):
         for media_data in list(self.get_media()):
