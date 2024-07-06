@@ -81,6 +81,9 @@ class NyaaParts(Nyaa):
 
     stream_url_regex = re.compile(Nyaa.domain + r"/.*\?.*q=.+")
 
+    # ignore matches of len less than 3
+    MIN_MATCH_LEN = 3
+
     def group_entries(self, entries):
         for title in entries.keys():
             best_value = None
@@ -115,8 +118,10 @@ class NyaaParts(Nyaa):
         media_ids = set()
         for e in entries:
             matches, mediatype = entries[e]
-            if matches:
-                title = " ".join(e[matches[0]:matches[2]].split(" ")[:-1]).strip()
+            if matches and matches[2] > self.MIN_MATCH_LEN:
+                title = e[matches[0]:matches[2]].strip()
+                if " " in title:
+                    title = " ".join(title.split(" ")[:-1]).strip()
                 if title[-1] == "-":
                     title = title[:-1].strip()
                 alt_id = hex(abs(hash(title)))[2:]
