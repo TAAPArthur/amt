@@ -265,11 +265,20 @@ class MediaReader:
         media_list = []
         last_read_list = []
         failures = 0
+
+        target_media_list = list(self.get_media(name=name))
+        tracker_id_to_data = {}
+        if any(filter(lambda x: self.has_tracker_info(x), target_media_list)):
+            tracker = self.get_tracker()
+            for tracker_data in tracker.get_tracker_list_current():
+                tracker_id_to_data[tracker_data["id"]] = tracker_data
+
         for media_data in list(self.get_media(name=name)):
+            tracker_info = tracker_id_to_data.get(self.get_tracker_info(media_data)[0]) if self.has_tracker_info(media_data) else None
             if move_self:
-                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_id or media_data["id"] if force_same_id else None, no_add=True)
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_data["media_type"], skip_local_search=True, exact=exact, server_id=media_data["server_id"], media_id=media_id or media_data["id"] if force_same_id else None, no_add=True, tracker_data=tracker_info)
             else:
-                new_media_data = self.search_for_media(media_data["name"], media_type=media_type or media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]], no_add=True, **kwargs)
+                new_media_data = self.search_for_media(media_data["name"], media_type=media_type or media_data["media_type"], skip_local_search=True, exact=exact, servers_to_exclude=[media_data["server_id"]], no_add=True, tracker_data=tracker_info, **kwargs)
             if new_media_data:
                 global_id = media_data.global_id
                 last_read_list.append(media_data.get_last_read_chapter_number())
