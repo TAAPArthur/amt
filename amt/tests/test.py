@@ -2028,6 +2028,16 @@ class ArgsTest(CliUnitTestClass):
         for media_data in media_list:
             self.assertEqual(media_data, self.media_reader.get_single_media(name=media_data.global_id))
 
+    def test_migrate_server(self):
+        media_data = self.add_test_media(TestServer.id, limit=1)[0]
+        self.assertEqual(media_data["server_id"], TestServer.id)
+        for server in self.media_reader.get_servers():
+            if server.id == TestServer.id or server.media_type != TestServer.media_type or isinstance(server, LocalServer):
+                continue
+            self.assertEqual(0, parse_args(media_reader=self.media_reader, args=["--auto", "migrate", "--server", server.id, media_data["name"]]))
+            media_data = self.media_reader.get_single_media(name=media_data.global_id)
+            self.assertEqual(media_data["server_id"], server.id)
+
     def test_remove(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "manga"])
         media_id = list(self.media_reader.get_media_ids())[0]

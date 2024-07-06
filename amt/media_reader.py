@@ -261,7 +261,7 @@ class MediaReader:
 
     # Upgrade and migration
 
-    def migrate(self, name, media_type=None, exact=False, move_self=False, force_same_id=False, server_id=None, media_id=None, **kwargs):
+    def migrate(self, name, media_type=None, exact=False, move_self=False, force_same_id=False, media_id=None, **kwargs):
         media_list = []
         last_read_list = []
         failures = 0
