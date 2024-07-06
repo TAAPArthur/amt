@@ -272,18 +272,22 @@ class MediaServer(RequestServer):
                 break
         return media_map.values()
 
+    def infer_lang(self, name, season_title = ""):
+        lang_pattern = r"[\[(](\w*) Dub[)\]]"
+        match = re.search(lang_pattern, name) or re.search(lang_pattern, season_title)
+        if match:
+            return match.group(1)
+        else:
+            match = re.search(r"\(Dub\)", name) or re.search(r"\(Dub\)", season_title)
+            return "dub" if match else ""
+
     def create_media_data(self, id, name, season_id=None, season_title="", dir_name=None, offset=0, alt_id=None, progress_type=None, lang="", media_type=None, **kwargs):
         season_title = season_title or ""
         if season_title.startswith("Season"):
             season_title = ""
 
         if not lang:
-            match = re.search(r"\((\w*) Dub\)", name) or re.search(r"\((\w*) Dub\)", season_title)
-            if match:
-                lang = match.group(1) if match else ""
-            else:
-                match = re.search(r"\(Dub\)", name) or re.search(r"\(Dub\)", season_title)
-                lang = "dub" if match else ""
+            lang = self.infer_lang(name, season_title=season_title)
         if media_type is None:
             media_type = self.media_type
         if self.torrent:

@@ -119,6 +119,7 @@ class NyaaParts(Nyaa):
         for e in entries:
             matches, mediatype = entries[e]
             if matches and matches[2] > self.MIN_MATCH_LEN:
+                lang = self.infer_lang(e)
                 title = e[matches[0]:matches[2]].strip()
                 if " " in title:
                     title = " ".join(title.split(" ")[:-1]).strip()
@@ -127,7 +128,7 @@ class NyaaParts(Nyaa):
                 alt_id = hex(abs(hash(title)))[2:]
                 if title not in media_ids:
                     media_ids.add(title)
-                    results.append(self.create_media_data(id=title, alt_id=alt_id, name=title, media_type=mediatype))
+                    results.append(self.create_media_data(id=title, alt_id=alt_id, name=title, media_type=mediatype, lang=lang))
         return results
 
     def update_media_data(self, media_data, **kwargs):
