@@ -116,7 +116,9 @@ class NyaaParts(Nyaa):
         for e in entries:
             matches, mediatype = entries[e]
             if matches:
-                title = " ".join(e[matches[0]:matches[2]].split(" ")[:-1])
+                title = " ".join(e[matches[0]:matches[2]].split(" ")[:-1]).strip()
+                if title[-1] == "-":
+                    title = title[:-1].strip()
                 alt_id = hex(abs(hash(title)))[2:]
                 if title not in media_ids:
                     media_ids.add(title)
