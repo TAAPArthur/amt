@@ -139,7 +139,8 @@ class BaseUnitTestClass(unittest.TestCase):
         self.settings.post_process_cmd = ""
         self.settings.tmp_dir = TEST_HOME + ".tmp"
 
-        self.settings.torrent_list_cmd = "exit 0"
+        # Rough extract of approx file names from torrent
+        self.settings.torrent_list_cmd = "sed 's|http.://[^:]*:||g' \"$TORRENT_FILE\" | sed -n '/name/{s/:/\\n/gp}' | sed -n '{/\./{s/\(eed\)\?[0-9]\+$//p}}'"
         self.settings.torrent_download_cmd = "exit 0"
         self.settings.torrent_stream_cmd = "exit 0"
         self.settings.torrent_info_cmd = "exit 0"
@@ -2400,6 +2401,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://mangasee123.com/read-online/Berserk-chapter-1-page-1.html", "Berserk", None, "100010"),
         ("https://mangasee123.com/read-online/Bobobo-Bo-Bo-Bobo-chapter-214-page-1.html", "Bobobo-Bo-Bo-Bobo", None, "102140"),
         ("https://mangasee123.com/read-online/Onepunch-Man-chapter-147-index-2-page-1.html", "Onepunch-Man", None, "201470"),
+        ("https://nyaa.si/?f=0&c=1_2&q=LostYears+KonoSuba+-+God%E2%80%99s+blessing+on+this+wonderful+world%21&number=2", "[LostYears] KonoSuba - God’s blessing on this wonderful world!", ("S3", "1080p"), "[LostYears] KonoSuba - God’s blessing on this wonderful world! - S03E02 (WEB 1080p x264 AAC E-AC-3) [EBA4EA7E].mkv"),
+        ("https://nyaa.si/view/1047104?number=2", "1047104", None, "[nonA] Sayonara Zetsubou Sensei - 02 (BD 1024x576 x264 FLAC).mkv"),
         ("https://tubitv.com/movies/667951/gintama-the-very-final-subbed?start=true", "667951", None, "667951"),
         ("https://tubitv.com/tv-shows/318565/s04-e01-run-the-curry-of-life?start=true", "1622", "4", "318565"),
         ("https://tubitv.com/tv-shows/624483/s01-e01-sakura-and-the-strange-magical-book?start=true", "300007490", None, "624483"),
@@ -2444,9 +2447,15 @@ class ServerStreamTest(RealBaseUnitTestClass):
         if len(url_data) > 2:
             season_id, chapter_id = url_data[2:4]
             if season_id:
-                self.assertEqual(str(season_id), str(media_data["season_id"]))
+                if isinstance(season_id, str):
+                    self.assertEqual(str(season_id), str(media_data["season_id"]))
+                else:
+                    for seasond_id_part in season_id:
+                        self.assertIn(seasond_id_part, str(media_data["season_id"]))
             if chapter_id:
-                self.assertEqual(str(chapter_id), str(server.get_chapter_id_for_url(url)))
+                chapter_data = server.get_chapter_data_from_url(media_data, url)
+                self.assertTrue(chapter_data)
+                self.assertEqual(str(chapter_id), str(chapter_data["id"]))
                 self.assertTrue(media_data["chapters"])
                 self.assertIn(str(chapter_id), list(map(str, media_data["chapters"].keys())))
 
