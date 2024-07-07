@@ -14,7 +14,7 @@ class GenericTorrentServer(Server):
     progress_type = ProgressType.VOLUME_ONLY
     official = False
     torrent = True
-    version = 1
+    version = 2
 
     def upgrade_state(self, media_data):
         return media_data["id"]
