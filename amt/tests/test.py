@@ -2136,6 +2136,16 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["--auto", "play", "--raw"])
         self.verify_all_chapters_read()
 
+    def test_play_special(self):
+        for special in (True, False):
+            with self.subTest(special=special):
+                self.add_test_media(media_type=MediaType.ANIME)
+                parse_args(media_reader=self.media_reader, args=["--auto", "--no-save", "play", "--special" if special else "--nospecial"])
+                for data in self.get_all_chapters():
+                    chapter_data = data[-1]
+                    self.assertEqual(chapter_data["special"] == special, chapter_data["read"])
+                self.media_reader.media.clear()
+
     def test_play_fail(self):
         self.add_test_media(TestAnimeServer.id)
 
