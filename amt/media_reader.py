@@ -158,7 +158,7 @@ class MediaReader:
 
         return self.select_media(tracker_data["name"], list({media_data.global_id: media_data for media_data in filter(bool, media_list)}.values()), "Select from tracker links: ")
 
-    def search_for_media(self, name, media_type=None, exact=False, server_id=None, skip_local_search=False, skip_remote_search=False, tracker_data=None, **kwargs):
+    def search_for_media(self, name, media_type=None, exact=False, server_id=None, skip_local_search=False, skip_remote_search=False, tracker_data=None, no_add=False, **kwargs):
         media_data = known_matching_media = None
 
         if not skip_local_search:
@@ -179,13 +179,13 @@ class MediaReader:
         if not media_data and tracker_data:
             media_data = self.get_related_media_from_tracker_association(tracker_data, server_id=server_id)
             if media_data:
-                if media_data.global_id not in self.get_media_ids():
-                    self.add_media(media_data)
-                else:
+                if media_data.global_id in self.get_media_ids():
                     media_data = self.media[media_data.global_id]
+                elif not no_add:
+                    self.add_media(media_data)
 
         if not media_data and not skip_remote_search:
-            media_data = self.search_add(name or tracker_data["names"], media_type=media_type, exact=exact, server_id=server_id, **kwargs)
+            media_data = self.search_add(name or tracker_data["names"], media_type=media_type, exact=exact, server_id=server_id, no_add=no_add, **kwargs)
         if not media_data:
             logging.info("Could not find media %s", name or tracker_data["names"])
             return False
