@@ -274,7 +274,7 @@ class MediaServer(RequestServer):
                 break
         return media_map.values()
 
-    def infer_lang(self, name, season_title = ""):
+    def infer_lang(self, name, season_title=""):
         lang_pattern = r"[\[(](\w*) Dub[)\]]"
         match = re.search(lang_pattern, name) or re.search(lang_pattern, season_title)
         if match:
@@ -368,18 +368,20 @@ class GenericServer(MediaServer):
         """
         Returns an arbitrary selection of media.
         """
-        raise NotImplementedError
+        assert GenericServer.search_for_media != type(self).search_for_media
+        return self.search_for_media("", limit=limit, media_type=media_type)
 
     def search_for_media(self, term, limit=None, media_type=None, **kwargs):
         """
         Searches for a media containing term
         Different servers will handle search differently. Some are very literal while others do prefix matching and some would match any word
         """
+        assert GenericServer.get_media_list != type(self).get_media_list
         return find_media_with_similar_name_in_list(get_alt_names(term), self.get_media_list())
 
     @property
     def fuzzy_search(self):
-        return self.search_for_media == GenericServer.search_for_media
+        return type(self).search_for_media == GenericServer.search_for_media
 
     def update_media_data(self, media_data, limit=None):  # pragma: no cover
         """
@@ -457,7 +459,7 @@ class GenericServer(MediaServer):
         The media does not need to have its chapter's list populated but it is
         allowed to.
         """
-        assert GenericServer.get_media_data_from_url != self.get_all_media_data_from_url
+        assert GenericServer.get_media_data_from_url != type(self).get_all_media_data_from_url
         return self.get_all_media_data_from_url(url)[0]
 
     def get_chapter_id_for_url(self, url):  # pragma: no cover
