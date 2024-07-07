@@ -289,7 +289,7 @@ class MediaData(dict):
         self.update(copy)
 
     def get_sorted_chapters(self, volume=False, filter_list=[]):
-        return sorted(self["chapters"].values(), key=lambda x: (x.get_number(volume=volume), x.get_number()))
+        return sorted(self["chapters"].values(), key=lambda x: (x.get_number(volume=volume), x["special"], x.get_number()))
 
     @property
     def global_id(self):
