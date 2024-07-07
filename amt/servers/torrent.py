@@ -1,6 +1,7 @@
 from ..server import Server
 from ..util import name_parser
 from ..util.media_type import MediaType
+from ..util.name_parser import group_titles_for_same_media_season, get_season_id
 from ..util.progress_type import ProgressType
 from urllib.parse import urlparse, parse_qs
 import os
@@ -14,6 +15,8 @@ class GenericTorrentServer(Server):
     progress_type = ProgressType.VOLUME_ONLY
     official = False
     torrent = True
+
+    parts_server = False
     version = 2
 
     def upgrade_state(self, media_data):
@@ -38,7 +41,31 @@ class GenericTorrentServer(Server):
             for file in self.settings.run_cmd_and_save_output(self.settings.torrent_list_cmd, media_data=media_data, env_extra={"TORRENT_FILE": abs_torrent_file_path}, wd=dir_path).splitlines():
                 yield abs_torrent_file_path, file
 
+    def search_for_media_helper(self, term=None, media_type=None, url=None):  # pragma: no cover
+        raise NotImplementedError
+
+    def search_for_media(self, term, media_type=None, url=None, **kwargs):
+        results = []
+        raw_search_results = self.search_for_media_helper(term, media_type=media_type, url=url)
+        if not self.parts_server:
+            for slug, title, mediatype, label in raw_search_results:
+                results.append(self.create_media_data(id=slug, name=title, label=label, torrent_files=[slug], media_type=mediatype))
+        else:
+            title_media_type_list = [(title, mediatype) for _, title, mediatype, _ in raw_search_results]
+            for sample_file, title, media_type, season_id in group_titles_for_same_media_season(title_media_type_list):
+                lang = self.infer_lang(sample_file)
+                results.append(self.create_media_data(id=title, name=title, media_type=media_type, lang=lang, season_id=season_id))
+
+        return results
+
     def update_media_data(self, media_data, limit=None, **kwargs):
+
+        if self.parts_server:
+            for slug, title, mediatype, _ in self.search_for_media_helper(media_data["name"], media_type=media_data["media_type"]):
+                if title.startswith(media_data["name"]) and media_data["season_id"] == get_season_id(title):
+                    media_data["torrent_files"].append(slug)
+            media_data["torrent_files"] = list(set(media_data["torrent_files"]))
+
         for torrent_file in media_data["torrent_files"][:limit]:
             self.download_torrent_file(media_data, self.get_torrent_url_from_basename(media_data, torrent_file))
 
@@ -105,6 +132,9 @@ class GenericTorrentServer(Server):
                 chapter_data = next(iter(media_data["chapters"].values()))
         return chapter_data
 
+    def get_all_media_data_from_url(self, url):
+        return self.search_for_media(None, url=url) if self.parts_server else super().get_all_media_data_from_url(url)
+
     @property
     def add_series_url_regex(self):
         return self.stream_url_regex
@@ -116,6 +146,9 @@ class Torrent(GenericTorrentServer):
 
     def get_media_list(self, **kwargs):
         return []
+
+    def search_for_media(self, term, **kwargs):
+        return self.get_media_list(**kwargs)
 
     def get_media_data_from_url(self, url):
         torrent_file = url
