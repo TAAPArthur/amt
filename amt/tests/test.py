@@ -312,29 +312,25 @@ class UtilTest(BaseUnitTestClass):
         for common_prefix in ("A", "The", "That"):
             self.assertFalse(common_prefix in get_alt_names(f"{common_prefix} {name_base}"), common_prefix)
 
-    name_chapter_season_number_pairs = [
-        ("A.B.C.S01E00.1080p.BluRay.AAC2.0.x264-DEADBEEF.mkv", 0, 1),
-        ("A.B.C.S00E01.1080p.BluRay.AAC2.0.x264-DEADBEEF.mkv", 1, 0),
-        ("A B C S02E02 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 2, 2),
-        ("A B C 03 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 3, 0),
-        ("A B C 03 Season 4 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 3, 4),
-        ("04. A B C 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 4, 0),
-        ("A B C 1080p BluRay.AAC2.0.x264-DEADBEEF - 05.mkv", 5, 0),
-        ("A B C 3rd Season BluRay.AAC2.0.x264-DEADBEEF - 05.mkv", 5, 3),
-        ("A B C v06 (2015) (Digital).cbz", 6, 0),
+    name_chapter_season_quality_info = [
+        ("A.B.C.S01E00.1080p.BluRay.AAC2.0.x264-DEADBEEF.mkv", 0, 1, "1080p"),
+        ("A.B.C.S00E01.1080p.BluRay.AAC2.0.x264-DEADBEEF.mkv", 1, 0, "1080p"),
+        ("A B C S02E02 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 2, 2, "1080p"),
+        ("A B C 03 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 3, 0, "1080p",),
+        ("A B C 03 Season 4 1080p BluRay.AAC2.0.x264-DEADBEEF.mkv", 3, 4, "1080p"),
+        ("04. A B C 480p BluRay.AAC2.0.x264-DEADBEEF.mkv", 4, 0, "480p"),
+        ("A B C 1080p BluRay.AAC2.0.x264-DEADBEEF - 05.mkv", 5, 0, "1080p"),
+        ("A B C 3rd Season BluRay.AAC2.0.x264-DEADBEEF - 05.mkv", 5, 3, ""),
+        ("A B C v06 (2015) (Digital).cbz", 6, 0, ""),
     ]
 
-    def test_get_chapter_number_from_file_name(self):
-        from ..util.name_parser import get_number_from_file_name
-        for name, chapter_number, _ in self.name_chapter_season_number_pairs:
+    def test_parse_file_name(self):
+        from ..util.name_parser import get_number_from_file_name, get_season_number_from_file_name, get_quality_from_file_name
+        for name, chapter_number, season_number, quality in self.name_chapter_season_quality_info:
             with self.subTest(name=name):
                 self.assertEqual(get_number_from_file_name(name), chapter_number)
-
-    def test_get_season_from_file_name(self):
-        from ..util.name_parser import get_season_number_from_file_name
-        for name, _, season_number in self.name_chapter_season_number_pairs:
-            with self.subTest(name=name):
                 self.assertEqual(get_season_number_from_file_name(name), season_number)
+                self.assertEqual(get_quality_from_file_name(name), quality)
 
     def test_get_alt_names_remove_dub(self):
         from ..util.name_parser import get_alt_names
