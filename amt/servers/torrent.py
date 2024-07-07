@@ -44,26 +44,10 @@ class GenericTorrentServer(Server):
 
         files = list(self.list_files(media_data))
 
-        numbers = set()
-        duplicate_numbers = set()
         for torrent_file, file in files:
             title = os.path.basename(file)
             n = name_parser.get_number_from_file_name(file, media_name=media_data["name"])
             self.update_chapter_data(media_data, id=file, title=title, alt_id=title, number=n, path=file, torrent_file=torrent_file, special="OVA" in title.upper())
-            if n and not media_data.chapters[file]["special"]:
-                if n in numbers:
-                    duplicate_numbers.add(n)
-                else:
-                    numbers.add(n)
-
-        if duplicate_numbers:
-            counts = {}
-            for file in files:
-                counts[len(file)] = (counts.get(len(file), [0])[0] + 1, len(file))
-            most_common_len = sorted(counts.values(), reverse=True)[0][1]
-            for chapter_data in media_data.chapters.values():
-                if chapter_data["number"] in duplicate_numbers and len(chapter_data["path"]) != most_common_len:
-                    chapter_data["special"] = True
 
     def download_pages(self, media_data, chapter_data, **kwargs):
         dir_path = self.settings.get_media_dir(media_data)
