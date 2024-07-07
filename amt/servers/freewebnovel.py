@@ -12,7 +12,7 @@ class Freewebnovel(Server):
 
     domain = "freewebnovel.com"
     base_url = f"https://{domain}"
-    media_list_url = base_url + "/most-popular-novel/"
+    media_list_url = base_url + "/most-popular-novels/"
     search_url = base_url + "/search?searchkey={}"
     chapters_url = base_url + "/{}.html"
     chapter_url = base_url + "/{}/{}.html"
