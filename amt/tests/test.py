@@ -256,15 +256,6 @@ class BaseUnitTestClass(unittest.TestCase):
             assert all([x["server_id"] == server.id for x in media_list])
             assert all([x["media_type"] & server.media_type for x in media_list])
 
-    def skip_if_all_servers_are_not_enabled(self):
-        if self.settings.enabled_servers or self.settings.disabled_servers:
-            self.skipTest("Server not enabled")
-
-    def assert_server_enabled_or_skip_test(self, obj):
-        if (self.settings.enabled_servers or self.settings.disabled_servers) and not obj:
-            self.skipTest("Server not enabled")
-        assert obj
-
 
 class CliUnitTestClass(BaseUnitTestClass):
     def init(self):
@@ -299,6 +290,11 @@ class RealBaseUnitTestClass(BaseUnitTestClass):
                     self.skipTest(e)
             else:
                 yield
+
+    def assert_server_enabled_or_skip_test(self, obj):
+        if (self.settings.enabled_servers or self.settings.disabled_servers) and not obj:
+            self.skipTest("Server not enabled")
+        assert obj
 
 
 class UtilTest(BaseUnitTestClass):
@@ -2242,7 +2238,7 @@ class ArgsTest(CliUnitTestClass):
         server = self.media_reader.get_server(TestAnimeServer.id)
         media_data = server.get_media_data_from_url(TestAnimeServer.get_streamable_url())
         server.update_media_data(media_data)
-        chapter_data = media_data["chapters"][server.get_chapter_id_for_url(TestAnimeServer.get_streamable_url())]
+        chapter_data = server.get_chapter_data_from_url(media_data, TestAnimeServer.get_streamable_url())
         self.verify_download(media_data, chapter_data)
 
     def test_download_stream(self):
@@ -2462,7 +2458,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
             for url_data in url_list:
                 sample_url = url_data[0]
                 for url in {sample_url, sample_url[:-1] if sample_url[-1] == "/" else sample_url, sample_url.replace("https:", "http:"), sample_url.replace("://", "://www.")}:
-                    with self.subTest(url=url):
+                    with self.subTest(url=url, streamable=streamable):
                         self.assert_server_enabled_or_skip_test(self.media_reader.get_server_for_url(url, streamable)[1])
 
     def validate_url_data(self, media_data, url_data):
