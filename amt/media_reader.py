@@ -151,14 +151,14 @@ class MediaReader:
 
         return media_data
 
-    def get_related_media_from_tracker_association(self, tracker_data, server_id=None):
-        media_list = self.for_each(lambda url: self.get_media_from_url(url, server_id=server_id), tracker_data["external_links"])
+    def get_related_media_from_tracker_association(self, tracker_data, **kwargs):
+        media_list = self.for_each(lambda url: self.get_media_from_url(url, **kwargs), tracker_data["external_links"])
         if tracker_data["streaming_links"]:
-            media_list.extend(self.get_media_from_url(tracker_data["streaming_links"][0], server_id=server_id))
+            media_list.extend(self.get_media_from_url(tracker_data["streaming_links"][0], **kwargs))
 
         return self.select_media(tracker_data["name"], list({media_data.global_id: media_data for media_data in filter(bool, media_list)}.values()), "Select from tracker links: ")
 
-    def search_for_media(self, name, media_type=None, exact=False, server_id=None, skip_local_search=False, skip_remote_search=False, tracker_data=None, no_add=False, **kwargs):
+    def search_for_media(self, name, media_type=None, exact=False, server_id=None, servers_to_exclude=[], skip_local_search=False, skip_remote_search=False, tracker_data=None, no_add=False, **kwargs):
         media_data = known_matching_media = None
 
         if not skip_local_search:
@@ -177,22 +177,22 @@ class MediaReader:
                 media_data = self.select_media(name or tracker_data["name"], known_matching_media, "Select from known media: ")
 
         if not media_data and tracker_data:
-            media_data = self.get_related_media_from_tracker_association(tracker_data, server_id=server_id)
-            if media_data:
+            media_data = self.get_related_media_from_tracker_association(tracker_data, server_id=server_id, servers_to_exclude=servers_to_exclude)
+            if media_data and not no_add:
                 if media_data.global_id in self.get_media_ids():
                     media_data = self.media[media_data.global_id]
-                elif not no_add:
+                else:
                     self.add_media(media_data)
 
         if not media_data and not skip_remote_search:
-            media_data = self.search_add(name or tracker_data["names"], media_type=media_type, exact=exact, server_id=server_id, no_add=no_add, **kwargs)
+            media_data = self.search_add(name or tracker_data["names"], media_type=media_type, exact=exact, servers_to_exclude=servers_to_exclude, server_id=server_id, no_add=no_add, **kwargs)
         if not media_data:
             logging.info("Could not find media %s", name or tracker_data["names"])
             return False
         return media_data
 
-    def get_server_for_url(self, url, streamable=False, server_id=None, disallow_redirects=False):
-        servers = list(filter(lambda server: server_id in (None, server.id), self.get_servers()))
+    def get_server_for_url(self, url, streamable=False, server_id=None, servers_to_exclude=[], disallow_redirects=False):
+        servers = list(filter(lambda server: server_id in (None, server.id) and server.id not in servers_to_exclude, self.get_servers()))
         for server in servers:
             if (server.can_stream_url if streamable else server.can_add_media_from_url)(url):
                 return url, server
@@ -203,8 +203,8 @@ class MediaReader:
                     return self.get_server_for_url(new_url, streamable=streamable, server_id=server_id, disallow_redirects=True)
         return url, None
 
-    def get_media_from_url(self, url, server_id=None):
-        url, server = self.get_server_for_url(url, streamable=False, server_id=server_id)
+    def get_media_from_url(self, url, **kwargs):
+        url, server = self.get_server_for_url(url, streamable=False, **kwargs)
         return server.get_all_media_data_from_url(url) if server else []
 
     def add_from_url(self, url, server_id=None, skip_add=False):

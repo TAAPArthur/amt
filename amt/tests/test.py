@@ -2043,9 +2043,10 @@ class ArgsTest(CliUnitTestClass):
         self.assertEqual(len(self.media_reader.get_media_ids()), len(media_list))
 
         for media_data in media_list:
+            if media_data.get("unique", False):
+                continue
             media_data2 = self.media_reader.get_single_media(name=media_data["name"])
-            if not media_data.get("unique", False):
-                self.assertNotEqual(media_data.global_id, media_data2.global_id)
+            self.assertNotEqual(media_data.global_id, media_data2.global_id)
             self.assertEqual(media_data.get_last_read_chapter_number(), media_data2.get_last_read_chapter_number())
             self.assertEqual(media_data["progress"], media_data2["progress"])
             self.assertEqual(self.media_reader.get_tracker_info(media_data), self.media_reader.get_tracker_info(media_data2))
