@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import re
 
 from ..util.media_type import MediaType
+from ..util.name_parser import get_season_number_from_file_name
 from .torrent import GenericTorrentServer
 from difflib import SequenceMatcher
 
@@ -85,13 +86,13 @@ class NyaaParts(Nyaa):
     MIN_MATCH_LEN = 3
 
     def group_entries(self, entries):
-        for title in entries.keys():
+        for title, season_number in entries.keys():
             best_value = None
             best_entry = None
             highest_score = 0
-            media_type = entries[title][1]
-            for e in entries.keys():
-                if e == title or entries[e][1] != media_type:
+            media_type = entries[title, season_number][1]
+            for e, sn in entries.keys():
+                if e == title or entries[e, sn][1] != media_type or sn != season_number:
                     continue
                 if len(e) == len(title):
                     s = SequenceMatcher(None, e, title)
@@ -103,21 +104,24 @@ class NyaaParts(Nyaa):
                             best_value = s.get_matching_blocks()[0]
                             best_entry = e
             if best_value is not None:
-                if entries[best_entry][0] == None:
-                    entries[best_entry][0] = best_value
+                if entries[best_entry, season_number][0] == None:
+                    entries[best_entry, season_number][0] = best_value
 
     def get_all_media_data_from_url(self, url):
         return self.search_for_media(None, url=url)
+
+    def season_num_to_id(self, season_number):
+        return ("S" + str(season_number)) if season_number else None
 
     def search_for_media(self, term, media_type=None, url=None, **kwargs):
         results = []
         entries = {}
         for slug, title, mediatype, _ in self.search_for_media_helper(term, media_type=media_type, url=url):
-            entries[title] = [None, mediatype]
+            entries[title, get_season_number_from_file_name(title, default_num=None)] = [None, mediatype]
         self.group_entries(entries)
         media_ids = set()
-        for e in entries:
-            matches, mediatype = entries[e]
+        for e, season_number in entries:
+            matches, mediatype = entries[e, season_number]
             if matches and matches[2] > self.MIN_MATCH_LEN:
                 lang = self.infer_lang(e)
                 title = e[matches[0]:matches[2]].strip()
@@ -128,12 +132,13 @@ class NyaaParts(Nyaa):
                 alt_id = hex(abs(hash(title)))[2:]
                 if title not in media_ids:
                     media_ids.add(title)
-                    results.append(self.create_media_data(id=title, alt_id=alt_id, name=title, media_type=mediatype, lang=lang))
+                    results.append(self.create_media_data(id=title, alt_id=alt_id, name=title, media_type=mediatype, lang=lang, season_id=self.season_num_to_id(season_number)))
         return results
 
     def update_media_data(self, media_data, **kwargs):
         for slug, title, mediatype, _ in self.search_for_media_helper(media_data["name"], media_type=media_data["media_type"]):
             if title.startswith(media_data["name"]):
-                media_data["torrent_files"].append(slug)
+                if media_data["season_id"] is None or media_data["season_id"] == self.season_num_to_id(get_season_number_from_file_name(title, default_num=None)):
+                    media_data["torrent_files"].append(slug)
         media_data["torrent_files"] = list(set(media_data["torrent_files"]))
         super().update_media_data(media_data, **kwargs)

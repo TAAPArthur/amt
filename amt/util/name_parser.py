@@ -3,6 +3,7 @@ import re
 
 media_dir_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*( - [A-Z][A-z]*\d*)?)")
 number_regex = re.compile(r"(?:\s|E|v|^|/)(\d+\.?\d*)(?:\s|\.|v\d|$)", re.IGNORECASE)
+season_regex = re.compile(r"(?:S(\d+)E\d+| (\d+)(?:st|nd|rd|th) Season | Season (\d+))", re.IGNORECASE)
 
 remove_brackets_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\])")
 
@@ -26,10 +27,22 @@ def get_media_name_from_volume_name(name):
     media_id = get_media_id_from_name(media_name)
     return media_name, media_id
 
+def get_number_from_file_name_helper(regex, file_name, media_name="", default_num=0):
+    matches = regex.findall(remove_brackets_regex.sub("", file_name.replace(media_name, "").replace("_", " ")))
+    if matches:
+        if isinstance(matches[0], tuple):
+            matches=list(map(lambda x: max(x, key=len), matches))
+        num = float(max(matches, key=len))
+        return int(num) if num % 1 == 0 else num
+    return default_num
+
 
 def get_number_from_file_name(file_name, media_name="", default_num=0):
-    matches = number_regex.findall(remove_brackets_regex.sub("", file_name.replace(media_name, "").replace("_", " ")))
-    return float(max(matches, key=len)) if matches else default_num
+    return get_number_from_file_name_helper(number_regex, file_name, media_name=media_name, default_num=default_num)
+
+
+def get_season_number_from_file_name(file_name, media_name="", default_num=0):
+    return get_number_from_file_name_helper(season_regex, file_name, media_name=media_name, default_num=default_num)
 
 
 def get_alt_names(media_name):

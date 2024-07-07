@@ -12,7 +12,7 @@ import logging
 from .job import Job
 from .state import MediaData, TrackerEntry
 from .util.media_type import MediaType
-from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names)
+from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names, get_media_name_from_file)
 from .util.progress_type import ProgressType
 from enum import Enum, auto
 
@@ -287,6 +287,8 @@ class MediaServer(RequestServer):
         season_title = season_title or ""
         if season_title.startswith("Season"):
             season_title = ""
+        if alt_id is None and name != get_media_name_from_file(name):
+            alt_id=get_media_name_from_file(name)
 
         if not lang:
             lang = self.infer_lang(name, season_title=season_title)
