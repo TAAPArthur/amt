@@ -4,6 +4,7 @@ import re
 media_dir_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*( - [A-Z][A-z]*\d*)?)")
 number_regex = re.compile(r"(?:\s|E|v|^|/)(\d+\.?\d*)(?:\s|\.|v\d|$)", re.IGNORECASE)
 season_regex = re.compile(r"(?:S(\d+)E\d+| (\d+)(?:st|nd|rd|th) Season | Season (\d+))", re.IGNORECASE)
+quality_regex = re.compile(r"(\d\d\d?0p)", re.IGNORECASE)
 
 remove_brackets_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\])")
 
@@ -43,6 +44,10 @@ def get_number_from_file_name(file_name, media_name="", default_num=0):
 
 def get_season_number_from_file_name(file_name, media_name="", default_num=0):
     return get_number_from_file_name_helper(season_regex, file_name, media_name=media_name, default_num=default_num)
+
+def get_quality_from_file_name(file_name):
+    matches = quality_regex.findall(file_name)
+    return max(matches, key=len) if matches else ""
 
 
 def get_alt_names(media_name):
