@@ -653,6 +653,13 @@ class MediaReader:
                 shutil.rmtree(self.settings.get_web_cache_dir())
         if not os.path.exists(self.settings.media_dir):
             return
+
+        def chapter_path_remove(chapter_path):
+            if os.path.isdir(chapter_path):
+                shutil.rmtree(chapter_path)
+            else:
+                os.remove(chapter_path)
+
         media_dirs = {self.settings.get_media_dir(media_data): media_data for media_data in self.get_media()}
         for server_dir in os.listdir(self.settings.media_dir):
             server = self.get_server(server_dir)
@@ -678,11 +685,11 @@ class MediaReader:
                             shutil.rmtree(chapter_path)
                         elif not server.is_fully_downloaded(media_data, chapter_data):
                             logging.info("Removing %s because it hasn't been fully downloaded", chapter_path)
-                            shutil.rmtree(chapter_path)
+                            chapter_path_remove(chapter_path)
 
                     chapter_dirs = {self.settings.get_chapter_dir(media_data, chapter_data, skip_create=True): chapter_data for chapter_data in media_data.get_sorted_chapters()}
                     for chapter_dir in os.listdir(media_path):
                         chapter_path = os.path.join(media_path, chapter_dir)
                         if chapter_path not in chapter_dirs and os.path.isdir(chapter_path):
                             logging.info("Removing %s because chapter info has been removed", chapter_path)
-                            shutil.rmtree(chapter_path)
+                            chapter_path_remove(chapter_path)

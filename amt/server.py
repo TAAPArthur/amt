@@ -636,12 +636,12 @@ class Server(GenericServer):
             self.logger.info("Logged into %s; premium %s", self.id, self.is_premium)
         return self._is_logged_in
 
-    def get_download_marker(self, media_data, chapter_data):
-        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
+    def get_download_marker(self, media_data, chapter_data, **kwargs):
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data, **kwargs)
         return os.path.join(dir_path, self.DOWNLOAD_MARKER)
 
     def is_fully_downloaded(self, media_data, chapter_data):
-        return os.path.exists(self.get_download_marker(media_data, chapter_data))
+        return os.path.exists(self.get_download_marker(media_data, chapter_data, skip_create=True))
 
     def mark_download_complete(self, media_data, chapter_data):
         open(self.get_download_marker(media_data, chapter_data), 'w').close()

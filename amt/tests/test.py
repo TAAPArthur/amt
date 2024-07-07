@@ -1317,6 +1317,12 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
             self.media_reader.media.clear()
             assert (self.media_reader.add_from_url(os.path.abspath(torrent)))
 
+    def test_clean(self):
+        for torrent in self.torrents:
+            self.media_reader.add_from_url(torrent)
+        self.media_reader.download_unread_chapters()
+        self.media_reader.clean(remove_read=True)
+
     def test_media_stream(self):
         for torrent, media_type in zip(self.torrents, list(MediaType)):
             with self.subTest(media_type=media_type):
