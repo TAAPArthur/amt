@@ -20,7 +20,7 @@ from ..args import parse_args, setup_subparsers, init_logger
 from ..job import Job, RetryException
 from ..media_reader import SERVERS, MediaReader, import_sub_classes
 from ..media_reader_cli import MediaReaderCLI
-from ..server import RequestServer
+from ..server import GenericServer, RequestServer
 from ..servers.local import LocalServer
 from ..servers.remote import RemoteServer
 from ..settings import Settings
@@ -1204,19 +1204,14 @@ class GenericServerTest():
         for server in self.media_reader.get_servers():
             server._request = fake_request
             with self.subTest(server=server.id):
-                try:
-                    server.get_media_list(unknown_kwargs=0)
-                except TypeError:
-                    raise
-                except:
-                    pass
-                try:
-                    # Normally this method should be treated as private
-                    server.search_for_media("term", unknown_kwargs=0)
-                except TypeError:
-                    raise
-                except:
-                    pass
+                for method_name, args in (("get_media_list", []), ("search_for_media", ["term"])):
+                    if getattr(type(server), method_name) != getattr(GenericServer, method_name):
+                        try:
+                            getattr(server, method_name)(*args, unknown_kwargs=0)
+                        except TypeError:
+                            raise
+                        except:
+                            pass
 
     def test_workflow(self):
         def test_list_search_download(server, media_type):
