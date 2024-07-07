@@ -2,9 +2,7 @@ from bs4 import BeautifulSoup
 import re
 
 from ..util.media_type import MediaType
-from ..util.name_parser import get_season_number_from_file_name, get_quality_from_file_name
 from .torrent import GenericTorrentServer
-from difflib import SequenceMatcher
 
 
 def category_to_media_type(cat):
@@ -33,13 +31,10 @@ class Nyaa(GenericTorrentServer):
     stream_url_regex = re.compile(domain + r"/view/(\w*)")
     media_type = MediaType.ANIME | MediaType.NOVEL | MediaType.MANGA
 
-    def get_media_list(self, **kwargs):
-        return self.search_for_media("", **kwargs)
-
     def get_torrent_url_from_basename(self, media_data, basename):
         return self.torrent_url.format(basename)
 
-    def search_for_media_helper(self, term, media_type=None, url=None):
+    def search_for_media_helper(self, term=None, media_type=None, url=None):
         if not url:
             url = self.search_url.format(media_type_to_category(media_type), term)
         r = self.session_get_cache(url)
@@ -55,12 +50,6 @@ class Nyaa(GenericTorrentServer):
                 label = " ".join(filter(lambda x: x, map(lambda x: x.getText().strip(), row.findAll("td", {"class": "text-center"}))))
                 media_type = row_num_to_media_type[row_num]
                 yield slug, title, media_type, label
-
-    def search_for_media(self, term, media_type=None, **kwargs):
-        results = []
-        for slug, title, mediatype, label in self.search_for_media_helper(term, media_type=media_type):
-            results.append(self.create_media_data(id=slug, name=title, label=label, torrent_files=[slug], media_type=mediatype))
-        return results
 
     def get_media_data_from_url(self, url):
         slug = self.stream_url_regex.search(url).group(1)
@@ -79,68 +68,9 @@ class NyaaParts(Nyaa):
     alias = "nyaa"
     search_url = Nyaa.search_url + "&o=asc"
     media_type = MediaType.ANIME
+    parts_server = True
 
-    stream_url_regex = re.compile(Nyaa.domain + r"/.*\?.*q=.+")
-
-    # ignore matches of len less than 3
-    MIN_MATCH_LEN = 3
-
-    def group_entries(self, entries):
-        for title, season_id in entries.keys():
-            best_value = None
-            best_entry = None
-            highest_score = 0
-            media_type = entries[title, season_id][1]
-            for e, si in entries.keys():
-                if e == title or entries[e, si][1] != media_type or si != season_id:
-                    continue
-                if len(e) == len(title):
-                    s = SequenceMatcher(None, e, title)
-                    seqs = s.get_matching_blocks()
-                    total_same = sum([s[-1] for s in seqs])
-                    if total_same >= len(title) / 2:
-                        if total_same > highest_score:
-                            highest_score = total_same
-                            best_value = s.get_matching_blocks()[0]
-                            best_entry = e
-            if best_value is not None:
-                if entries[best_entry, season_id][0] == None:
-                    entries[best_entry, season_id][0] = best_value
+    stream_url_regex = re.compile(Nyaa.domain + r"/\?")
 
     def get_all_media_data_from_url(self, url):
         return self.search_for_media(None, url=url)
-
-    def get_season_id(self, title):
-        quality = get_quality_from_file_name(title)
-        season_number = get_season_number_from_file_name(title, default_num=None)
-        markers = title.count("(") + title.count("]")
-        season_id = ("S" + str(season_number)) if season_number is not None else ""
-        return season_id + quality + ("_" + str(markers) if markers else "")
-
-    def search_for_media(self, term, media_type=None, url=None, **kwargs):
-        results = []
-        entries = {}
-        for slug, title, mediatype, _ in self.search_for_media_helper(term, media_type=media_type, url=url):
-            entries[title, self.get_season_id(title)] = [None, mediatype]
-        self.group_entries(entries)
-        media_ids = set()
-        for e, season_id in entries:
-            matches, mediatype = entries[e, season_id]
-            if matches and matches[2] > self.MIN_MATCH_LEN:
-                lang = self.infer_lang(e)
-                title = e[matches[0]:matches[2]].strip()
-                if " " in title:
-                    title = " ".join(title.split(" ")[:-1]).strip()
-                if title[-1] == "-":
-                    title = title[:-1].strip()
-                if title not in media_ids:
-                    media_ids.add(title)
-                    results.append(self.create_media_data(id=title, name=title, media_type=mediatype, lang=lang, season_id=season_id))
-        return results
-
-    def update_media_data(self, media_data, **kwargs):
-        for slug, title, mediatype, _ in self.search_for_media_helper(media_data["name"], media_type=media_data["media_type"]):
-            if title.startswith(media_data["name"]) and media_data["season_id"] == self.get_season_id(title):
-                media_data["torrent_files"].append(slug)
-        media_data["torrent_files"] = list(set(media_data["torrent_files"]))
-        super().update_media_data(media_data, **kwargs)

@@ -342,6 +342,37 @@ class UtilTest(BaseUnitTestClass):
             self.assertEqual(list(get_alt_names(title.lower())), [name.lower()])
             self.assertEqual(list(get_alt_names(title.upper())), [name.upper()])
 
+    def test_group_titles_for_same_media_season(self):
+        from ..util.name_parser import group_titles_for_same_media_season
+        title_base = "[Author] Media_Title Bluray"
+        title_base2 = "Bluray [Author] Media_Title"
+        title_base_alt = "[Author2] Media_Title dvdv2"
+        media_groups = (
+            ((title_base, ""), ["S1E1", "S1E2", "S1E2"]),
+            ((title_base, ""), ["S2E1", "S2E2", "S2E4"]),
+            ((title_base2, ""), ["S01E01", "S01E02"]),
+            ((title_base_alt, ""), ["S01E01", "S01E02"]),
+            (("random prefix", title_base), ["S1E1", "S1E2"]),
+            ((title_base, "[1080p]"), ["S1E3", "S1E4"]),
+            ((title_base, " [720p]"), ["S1E3", "S1E4"]),
+            ((title_base, "[1080p][Eng sub]"), ["S1E5", "S1E6"]),
+            ((title_base, "[1080p][Eng sub](token1)"), ["S1E7", "S1E8"]),
+        )
+        title_media_type_list = list()
+        for media_type in list(MediaType):
+            for title_base, values in media_groups:
+                for chapter_name in values:
+                    title_media_type_list.append((" - ".join([title_base[0], chapter_name, title_base[1]]), media_type))
+        results = list(group_titles_for_same_media_season(title_media_type_list))
+        self.assertEqual(len(results), len(MediaType) * len(media_groups), list(map(lambda x: (x[1], x[2]), results)))
+        ids = set()
+        expected_titles = list(map(lambda x: x[0][0], media_groups))
+        for sample_file, title, media_type, season_id in results:
+            self.assertIn(title, expected_titles)
+            self.assertTrue((sample_file, media_type) in title_media_type_list)
+            ids.add(title + season_id + str(media_type))
+        self.assertEqual(len(results), len(ids))
+
 
 @unittest.skipIf(not HAS_PIL, "PIL is needed to test")
 class DecoderTest(BaseUnitTestClass):

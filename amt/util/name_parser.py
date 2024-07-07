@@ -1,3 +1,4 @@
+from difflib import SequenceMatcher
 import os
 import re
 
@@ -60,3 +61,49 @@ def find_media_with_similar_name_in_list(media_names, media_list):
     for media_data in media_list:
         if any(map(lambda name: name in media_data["name"].lower() or ("season_title" in media_data and name in media_data["season_title"].lower()) or media_data["name"].lower() in name, media_names)):
             yield media_data
+
+
+def get_season_id(title):
+    quality = get_quality_from_file_name(title)
+    season_number = get_season_number_from_file_name(title, default_num=None)
+    markers = title.count("(") + title.count("]")
+    season_id = ("S" + str(season_number)) if season_number is not None else ""
+    return season_id + quality + ("_" + str(markers) if markers else "")
+
+
+def group_titles_for_same_media_season(title_media_type_list, min_match_len = 3 ):
+    keys = list()
+    for title, media_type in title_media_type_list:
+        keys.append((title, get_season_id(title), media_type))
+
+    results = set()
+    for i, key, in enumerate(keys):
+        sample_file, season_id, media_type = key
+        best_value = None
+        highest_score = 0
+        for e, si, mt in keys[i + 1:]:
+            if e == sample_file or mt != media_type or si != season_id:
+                continue
+            if len(e) == len(sample_file):
+                seqs = SequenceMatcher(None, e, sample_file).get_matching_blocks()
+                if any(map(lambda s: s.a != s.b, seqs)):
+                    continue
+                total_same = sum([s[-1] for s in seqs])
+                if total_same >= len(sample_file) / 2:
+                    if total_same > highest_score and seqs[0][2] > min_match_len:
+                        highest_score = total_same
+                        best_value = seqs[0]
+
+        if best_value is not None:
+            matches = best_value
+            title = sample_file[matches[0]:matches[2]].strip()
+            if " " in title:
+                title = " ".join(title.split(" ")[:-1]).strip()
+            if title[-1] == "-":
+                title = title[:-1].strip()
+
+            k = title, media_type, season_id
+            if k in results:
+                continue
+            results.add(k)
+            yield sample_file, title, media_type, season_id
