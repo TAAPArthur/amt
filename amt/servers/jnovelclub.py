@@ -174,7 +174,7 @@ class JNovelClubParts(GenericJNovelClub):
     def download_sources(self, resources_path, path, url, text):
         img_path = os.path.join(resources_path, os.path.basename(url).replace("%20", "_"))
         with open(img_path, 'wb') as fp:
-            fp.write(self.session_get(url).content)
+            fp.write(self.session_get(url.strip()).content)
         text = text.replace(url, os.path.relpath(img_path, os.path.dirname(path)))
         return text
 
