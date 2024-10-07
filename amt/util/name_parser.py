@@ -3,7 +3,7 @@ import os
 import re
 
 media_dir_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*( - [A-Z][A-z]*\d*)?)")
-number_regex = re.compile(r"(?:\s|E|v|^|/)(\d+\.?\d*)(?:\s|\.|v\d|$)", re.IGNORECASE)
+number_regex = re.compile(r"(?:\s|E|v|^|/)(\d+\.?\d*)(?:\s|\.|v\d|-|$)", re.IGNORECASE)
 season_regex = re.compile(r"(?:S(\d+)E\d+| (\d+)(?:st|nd|rd|th) Season | Season (\d+))", re.IGNORECASE)
 quality_regex = re.compile(r"(\d\d\d?0p)", re.IGNORECASE)
 
