@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import shutil
@@ -15,11 +16,11 @@ from ..util.progress_type import ProgressType
 class GenericJNovelClub(Server):
     alias = "j_novel_club"
     domain = "j-novel.club"
-    login_url = "https://api.j-novel.club/api/users/login"
     api_domain = "https://labs.j-novel.club"
-    api_base_url = api_domain + "/app/v1"
+    api_base_url = api_domain + "/app/v2"
     user_info_url = api_base_url + "/me?format=json"
 
+    login_url = api_base_url + "/auth/login?format=json"
     series_info_url = api_base_url + "/series/{}?format=json"
     series_url = api_base_url + "/series?format=json&limit=1000"
     search_url = api_base_url + "/series?format=json"
@@ -33,10 +34,11 @@ class GenericJNovelClub(Server):
 
     def login(self, username, password):
         self.session_post(self.login_url,
-                          data={
-                              "email": username,
-                              "password": password
-                          })
+                          data=json.dumps({
+                              "login": username,
+                              "password": password,
+                          }),
+                          headers= {"accept": "application/json", "content-type": "application/json"})
 
         self.needs_authentication()
         return True
@@ -74,14 +76,16 @@ class JNovelClub(GenericJNovelClub):
     has_free_chapters = False
 
     stream_url_regex = re.compile(GenericJNovelClub.api_base_url + r"/me/library/([^/]*)/")
-    book_list = "https://labs.j-novel.club/app/v1/me/library?format=json"
+    book_list = "https://labs.j-novel.club/app/v2/me/library?format=json"
 
     pages_url = GenericJNovelClub.api_base_url + "/me/library/{}?format=json"
 
     def get_media_list(self, **kwargs):
-        data = self.session_get_cache_json(self.owned_url)
-        media_ids = {volume["serie"]["titleslug"] for volume in data["ownedBooks"]}
-        return filter(lambda x: x["id"] in media_ids, super().get_media_list())
+        data = self.session_get_cache_json(self.book_list)
+        series_map = {}
+        for book_data in data["books"]:
+            series_map[book_data["serie"]["slug"]] = book_data["serie"]
+        return self._create_media_data_helper(series_map.values())
 
     def update_media_data(self, media_data: dict, **kwargs):
         valid_ids = {x["slug"] for x in self.session_get_cache_json(self.chapters_url.format(media_data["id"]), mem_cache=True)["volumes"]}
@@ -115,8 +119,8 @@ class JNovelClubParts(GenericJNovelClub):
 
     maybe_need_cloud_scraper = True
 
-    novel_pages_url = JNovelClub.api_domain + "/embed/{}/data.xhtml"
-    manga_pages_url = JNovelClub.api_domain + "/embed/{}"
+    novel_pages_url = JNovelClub.api_domain + "/embed/v2/{}/data.xhtml"
+    manga_pages_url = JNovelClub.api_domain + "/embed/v2/{}"
 
     part_to_series_url = JNovelClub.api_base_url + "/parts/{}/serie?format=json"
     parts_url = JNovelClub.api_base_url + "/volumes/{}/parts?format=json"
@@ -154,7 +158,7 @@ class JNovelClubParts(GenericJNovelClub):
             total = volume["totalParts"] if volume["totalParts"] else len(parts)
             for part in parts:
                 vol_number = round(volume_number + (part["number"] - parts[0]["number"] + 1) / total - 1, 2)
-                self.update_chapter_data(media_data, id=part["slug"], alt_id=part["legacyId"], number=part["number"], volume_number=vol_number, title=part["title"], premium=not part["preview"])
+                self.update_chapter_data(media_data, id=part["slug"], alt_id=part["id"], number=part["number"], volume_number=vol_number, title=part["title"], premium=not part["preview"])
         self.update_timestamp(media_data)
 
     def get_media_data_from_url(self, url):
