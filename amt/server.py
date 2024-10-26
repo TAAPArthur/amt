@@ -708,7 +708,7 @@ class Server(GenericServer):
             page_paths = self.download_pages(media_data, chapter_data, **kwargs)
             self.post_download(media_data, chapter_data, page_paths=page_paths)
 
-        self.settings.post_process(media_data, page_paths, self.settings.get_media_dir(media_data))
+        self.settings.post_process(media_data, page_paths, dir_path)
 
         self.mark_download_complete(media_data, chapter_data)
         self.logger.info("%s %d %s is downloaded; Total pages %d", media_data["name"], chapter_data["number"], chapter_data["title"], len(page_paths))

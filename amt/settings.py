@@ -385,4 +385,4 @@ class Settings:
     def post_process(self, media_data, file_paths, dir_path):
         cmd = self.get_field("post_process_cmd", media_data)
         if cmd:
-            self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths)), wd=dir_path, raiseException=True))
+            self.run_cmd(cmd.format(files=" ".join(map(Settings._smart_quote, file_paths))), wd=dir_path, raiseException=True)

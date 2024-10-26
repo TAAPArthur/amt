@@ -769,7 +769,7 @@ class ServerWorkflowsTest(BaseUnitTestClass):
     def test_server_download_post_process_fail(self):
         self.settings.post_process_cmd = "exit 1"
         media_data = self.add_test_media(server_id=TestServer.id, limit=1)[0]
-        self.media_reader.download_unread_chapters(media_data)
+        self.assertRaises(CalledProcessError, self.media_reader.download_unread_chapters, media_data)
 
     def test_search_media(self):
         for server in self.media_reader.get_servers():
