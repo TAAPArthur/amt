@@ -99,7 +99,7 @@ class GenericCrunchyrollServer(Server):
 
 
 class CrunchyrollAnime(GenericCrunchyrollServer):
-    id = "crunchyroll_anime"
+    # id = "crunchyroll_anime"
     alias = "crunchyroll"
     media_type = MediaType.ANIME
     need_cloud_scraper = True
