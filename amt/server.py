@@ -309,6 +309,10 @@ class MediaServer(RequestServer):
             number = media_data.get_last_updated_chapter_number() + .01
             special = True
         id = str(id)
+        if media_data.get("filter") and not re.search(media_data.get("filter"), title):
+            if id in media_data["chapters"]:
+                del media_data["chapters"][id]
+            return
         if isinstance(number, str):
             try:
                 number = float(number.replace("-", "."))

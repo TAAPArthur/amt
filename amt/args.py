@@ -67,6 +67,10 @@ def setup_subparsers(state, sub_parsers):
     remove_parsers = add_parser_helper(sub_parsers, "remove", func_str="remove-media", help="Remove media")
     remove_parsers.add_argument("name", choices=state.get_all_single_names(), help="id of media to remove")
 
+    filter_parsers = add_parser_helper(sub_parsers, "add-media-filter", help="Add filter to cause matching chapters to be ignored")
+    filter_parsers.add_argument("name", choices=state.get_all_single_names(), help="id of media to remove")
+    filter_parsers.add_argument("filter_regex", help="regex")
+
     # update and download
     update_parser = add_parser_helper(sub_parsers, "update", help="Update all media")
     update_parser.add_argument("--media-type", choices=list(MediaType), type=MediaType.__getattr__, help="Filter for a specific type")

@@ -218,6 +218,10 @@ class MediaReader:
         media_data = self.get_single_media(**kwargs)
         del self.media[media_data.global_id]
 
+    def add_media_filter(self, filter_regex, **kwargs):
+        media_data = self.get_single_media(**kwargs)
+        media_data["filter"] = filter_regex
+
     def import_cookies(self, files, server_id=None):
         domains = {self.get_server(server_id).domain} if server_id else {server.domain for server in self.get_servers()}
         for file in files:
