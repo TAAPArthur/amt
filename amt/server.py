@@ -312,6 +312,7 @@ class MediaServer(RequestServer):
         if media_data.get("filter") and not re.search(media_data.get("filter"), title):
             if id in media_data["chapters"]:
                 del media_data["chapters"][id]
+                self.logger.info("Ignoring chapter '%s' (%s)", title, id)
             return
         if isinstance(number, str):
             try:
