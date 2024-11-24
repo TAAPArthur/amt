@@ -307,7 +307,10 @@ class Settings:
                 cmd = self.password_load_cmd.format(server_id=server_id)
                 self.get_logger().debug("Loading credentials for %s `%s`", server_id, cmd)
                 output = self.run_cmd_and_save_output(cmd, env_extra={"SERVER_ID": server_id})
-                login, password = re.split(self.credential_separator_regex, output)[:2]
+                credentials = re.split(self.credential_separator_regex, output)[:2]
+                if len(credentials) == 1:
+                    credentials = None, credentials[0]
+                login, password = credentials
                 return login, password
             except:
                 self.get_logger().error("Unable to load credentials for %s", server_id)

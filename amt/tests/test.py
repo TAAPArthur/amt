@@ -567,6 +567,14 @@ class SettingsCredentialsTest(BaseUnitTestClass):
         self.settings.store_secret(tracker_id, secret)
         assert secret == self.settings.get_secret(tracker_id)
 
+    def test_credentials_single(self):
+        server_id = "test"
+        self.assertRaises(CalledProcessError, self.settings.get_credentials, server_id)
+        password = "pass"
+        self.settings.password_save_cmd = f"( cat - ) > {TEST_HOME}{{server_id}}"
+        self.settings.store_credentials(server_id, "", password)
+        self.assertEqual((None, password), self.settings.get_credentials(server_id))
+
     def test_credentials_override(self):
         self.settings.password_override_prefix = "prefix"
         server_id = "test"
