@@ -176,26 +176,11 @@ class JNovelClubParts(GenericJNovelClub):
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)
 
-    def download_sources(self, resources_path, path, url, text):
-        img_path = os.path.join(resources_path, os.path.basename(url).replace("%20", "_"))
-        with open(img_path, 'wb') as fp:
-            fp.write(self.session_get(url.strip()).content)
-        text = text.replace(url, os.path.relpath(img_path, os.path.dirname(path)))
-        return text
-
     def save_chapter_page_novel(self, page_data, path):
         resources_path = os.path.join(os.path.dirname(path), ".resources")
         os.makedirs(resources_path, exist_ok=True)
         r = self.session_get(page_data["url"])
-        text = r.text
-        try:
-            from bs4 import BeautifulSoup
-            soup = self.soupify(BeautifulSoup, r)
-            for tagName, linkField in (("img", "src"), ("link", "href")):
-                for element in soup.findAll(tagName):
-                    text = self.download_sources(resources_path, path, element[linkField], text)
-        except ImportError:
-            pass
+        text = self.download_external_sources_and_transform_text(r.text, path)
 
         with open(path, 'w') as fp:
             fp.write(text)

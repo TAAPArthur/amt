@@ -327,10 +327,10 @@ class MediaServer(RequestServer):
 
         return True
 
-    def create_page_data(self, url, id=None, encryption_key=None, ext=None, headers={}, stream=False):
+    def create_page_data(self, url, id=None, encryption_key=None, ext=None, headers={}, stream=False, **kwargs):
         if not ext:
             ext = self.get_extension(url)
-        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext, headers=headers, stream=False)
+        return dict(url=url, id=id, encryption_key=encryption_key, ext=ext, headers=headers, stream=False, **kwargs)
 
 
 class GenericServer(MediaServer):
@@ -424,6 +424,26 @@ class GenericServer(MediaServer):
                 return page_data
 
         raise last_err
+
+    def download_sources(self, resources_path, path, url, text):
+        img_path = os.path.join(resources_path, os.path.basename(url).replace("%20", "_"))
+        with open(img_path, 'wb') as fp:
+            fp.write(self.session_get(url.strip()).content)
+        text = text.replace(url, os.path.relpath(img_path, os.path.dirname(path)))
+        return text
+
+    def download_external_sources_and_transform_text(self, text, path):
+        resources_path = os.path.join(os.path.dirname(path), ".resources")
+        os.makedirs(resources_path, exist_ok=True)
+        try:
+            from bs4 import BeautifulSoup
+            soup = self.soupify(BeautifulSoup, text)
+            for tagName, linkField in (("img", "src"), ("link", "href")):
+                for element in soup.findAll(tagName):
+                    text = self.download_sources(resources_path, path, element[linkField], text)
+        except ImportError:
+            pass
+        return text
 
     def save_chapter_page(self, page_data, path):
         """ Save the page designated by page_data to path
