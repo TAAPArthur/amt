@@ -360,7 +360,7 @@ class Settings:
         server, media_data, chapter_data = server_media_chapters[0]
         viewer = self.get_field("viewer", media_data) if not raw_viewer else self.get_field("raw_viewer", media_data)
         title = self.get_field("chapter_title_format", media_data).format(media_name=media_data["name"], chapter_number=chapter_data["number"], chapter_title=chapter_data["title"])
-        env_extra = {"AMT_TITLE": title, "SUB_PATH": sub_path, "HEADERS": server.get_auth_headers_str()}
+        env_extra = {"AMT_TITLE": title, "SUB_PATH": sub_path, "HEADERS": server.get_auth_headers_str(), "CHAPTER_NUMBER": chapter_data["number"]}
         for d in self.get_field_values("env_list", media_data):
             for key, value in d.items():
                 env_extra[key] = env_extra[key] + " " + value if key in env_extra else value
