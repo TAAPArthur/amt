@@ -167,7 +167,7 @@ class RequestServer:
                 return self.mem_cache[key]
             if not mem_cache:
                 try:
-                    if time.time() - os.path.getmtime(file) < ttl:
+                    if time.time() - os.path.getmtime(file) < ttl or ttl < 0:
                         with open(file, "r") as f:
                             self.logger.debug("Returning cached value for %s", url)
                             return json.load(f) if use_json else f.read()
