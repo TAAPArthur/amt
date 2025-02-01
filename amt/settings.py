@@ -382,7 +382,7 @@ class Settings:
         cmd = viewer.format(media=name) if title else viewer.format(name)
         if torrent:
             env_extra["VIEWER_CMD"] = cmd
-            cmd = self.torrent_stream_cmd
+            cmd = self.get_field("torrent_stream_cmd", media_data)
         return self.get_runner().run_cmd(cmd, wd=wd, media_data=media_data, chapter_data=chapter_data, env_extra=env_extra, shell=self.shell)
 
     def post_process(self, media_data, file_paths, dir_path):
