@@ -22,7 +22,7 @@ class Tubi(Server):
     add_series_url_regex = re.compile(f"{domain}/(?:movies|series)/([^/]*)/([^/]*)")
 
     def get_episode_info(self, media_data=None, url=None):
-        text = self.session_get_cache(url or (self.base_url + media_data["alt_id"]), ttl=90)
+        text = self.session_get_cache(url or (self.base_url + media_data["alt_id"]), ttl=-1)
         text = text.split("window.__data=", 1)[-1].split("</script>")[0].strip()
         text = text.replace("undefined", "0")
         text = text.replace("new Date(", "").replace("\")", "\"")
@@ -71,16 +71,32 @@ class Tubi(Server):
             yield from self._get_media_list_from_url(f"/{label}/{data['id']}")
     """
 
-    def update_media_data(self, media_data, **kwargs):
-        data = self.get_episode_info(media_data)
+    def update_media_data_helper(self, media_data, **kwargs):
+        data = self.get_episode_info(media_data, **kwargs)
         series_info = next(filter(lambda x: x["id"] == media_data["id"], data["video"]["byId"].values()))
-        episode_ids = []
+        episode_number_to_id = {}
         if "seasons" in series_info and not isinstance(series_info["seasons"], int):
             season_info = next(filter(lambda x: x["number"] == media_data["season_id"], series_info["seasons"])) if "seasons" in series_info else None
-            episode_ids = list(map(lambda x: x["id"], season_info["episodes"]))
+            episode_number_to_id = {int(x["num"]): x["id"] for x in season_info["episodes"]}
 
-        for episode_metadata in filter(lambda x: x["type"] == "v" and (not episode_ids or x["id"] in episode_ids), data["video"]["byId"].values()):
+        episodes = list(filter(lambda x: x["type"] == "v" and (not episode_number_to_id or x["id"] in episode_number_to_id.values()), data["video"]["byId"].values()))
+
+        for episode_metadata in episodes:
             self.update_chapter_data(media_data, id=episode_metadata["id"], number=episode_metadata.get("episode_number"), title=episode_metadata["title"], lang=episode_metadata["lang"], premium=episode_metadata["needs_login"])
+
+        if episode_number_to_id:
+            last_episode_info = max(episodes, key=lambda x: int(x.get("episode_number")))
+            if int(last_episode_info.get("episode_number")) != max(episode_number_to_id.keys()):
+                next_id = episode_number_to_id[int(last_episode_info.get("episode_number")) + 1]
+                return self.base_url + f"/tv-shows/{next_id}/"
+        return None
+
+    def update_media_data(self, media_data, **kwargs):
+        url = None
+        while True:
+            url = self.update_media_data_helper(media_data, url=url)
+            if not url:
+                break
 
     def get_stream_urls(self, media_data, chapter_data):
         data = self.get_episode_info(media_data)
