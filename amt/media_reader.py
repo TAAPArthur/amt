@@ -450,13 +450,15 @@ class MediaReader:
                 media_data["media_type"] = media_type.value
                 media_data["media_type_name"] = media_type.name
 
-    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, stream_index=0, raw=False, special=None, any_unread=False, force_abs=False, force_stream=False, volume=False, batch_size=1, **download_chapter_args):
+    def play(self, name=None, media_type=None, shuffle=False, limit=None, num_list=None, season_number=None, stream_index=0, raw=False, special=None, any_unread=False, force_abs=False, force_stream=False, volume=False, batch_size=1, **download_chapter_args):
         num = 0
         batch = []
         server_media_chapters = []
         for info in self.get_chapters(name, media_type=media_type, num_list=num_list, limit=limit, shuffle=shuffle, any_unread=any_unread, force_abs=force_abs, volume=volume, null_terminate=True):
             if info:
                 server, media_data, chapter = info
+                if season_number is not None and chapter["volume_number"] != season_number:
+                    continue
                 if special is not None and chapter["special"] != special:
                     continue
                 self.maybe_resolve_media_type(media_data, media_type)

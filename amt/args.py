@@ -95,6 +95,7 @@ def setup_subparsers(state, sub_parsers):
     sub_consume_parsers.add_argument("--shuffle", "-s", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--stream-index", "-q", default=0, type=int)
     sub_consume_parsers.add_argument("--volume", default=False, action="store_const", const=True)
+    sub_consume_parsers.add_argument("--season", dest="season_number", type=int)
     sub_consume_parsers.add_argument("--raw", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--special", default=None, action="store_const", const=True)
     sub_consume_parsers.add_argument("--nospecial", default=None, dest="special", action="store_const", const=False)

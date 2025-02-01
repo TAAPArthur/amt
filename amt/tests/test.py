@@ -2218,6 +2218,17 @@ class ArgsTest(CliUnitTestClass):
         os.environ["AMT_USER_ARGS"] = "--extra"
         self.assertEqual(0, parse_args(media_reader=self.media_reader, args=["play"]))
 
+    def test_play_season(self):
+        def update_media_data(media_data, **kwargs):
+            self.test_server.update_chapter_data(media_data, id=1, title="1", number=1, volume_number=1)
+            self.test_server.update_chapter_data(media_data, id=2, title="2", number=3, volume_number=2)
+            self.test_server.update_chapter_data(media_data, id=3, title="3", number=5, volume_number=3)
+        self.test_server.update_media_data = update_media_data
+        media_data = self.add_test_media(server_id=TestServer.id, limit=1)[0]
+        parse_args(media_reader=self.media_reader, args=["view", "--season", "2", media_data.global_id])
+        self.assertEqual(self.get_num_chapters_read(), 1)
+        self.assertEqual(3, media_data.get_last_read_chapter_number())
+
     def test_get_stream_url(self):
         self.add_test_media(TestAnimeServer.id)
         parse_args(media_reader=self.media_reader, args=["get-stream-url"])
