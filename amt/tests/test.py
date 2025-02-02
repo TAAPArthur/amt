@@ -1182,7 +1182,7 @@ class ApplicationTestWithErrors(CliUnitTestClass):
         assert self.test_server.was_error_thrown()
 
     def test_update_with_error(self):
-        media_list = self.add_test_media(no_update=True)
+        media_list = self.add_test_media(no_update=True, server_id=self.test_server.id)
         self.test_server.inject_error()
         self.assertRaises(ValueError, parse_args, media_reader=self.media_reader, args=["update"])
         assert self.test_server.was_error_thrown()
