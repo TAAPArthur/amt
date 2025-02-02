@@ -17,10 +17,10 @@ def get_log_level_name():
     return ["ERROR", "WARNING", "INFO", "DEBUG"]
 
 
-def gen_auto_complete(parser):  # pragma: no cover
+def gen_auto_complete(parser):
     """ Support autocomplete via argcomplete if installed"""
     try:
-        if "_ARGCOMPLETE" in os.environ:
+        if "_ARGCOMPLETE" in os.environ or "_ARGCOMPLETE_FORCE" in os.environ:
             import argcomplete
             argcomplete.autocomplete(parser, default_completer=None)
     except ImportError:
@@ -29,7 +29,7 @@ def gen_auto_complete(parser):  # pragma: no cover
 
 def add_file_completion(parser):  # pragma: no cover
     try:
-        if "_ARGCOMPLETE" in os.environ:
+        if "_ARGCOMPLETE" in os.environ or "_ARGCOMPLETE_FORCE" in os.environ:
             import argcomplete
             parser.completer = argcomplete.completers.FilesCompleter
     except ImportError:

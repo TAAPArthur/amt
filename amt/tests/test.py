@@ -1646,9 +1646,16 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["login", server.id])
         assert server.needs_to_login()
 
+    def test_autocomplete(self):
+        try:
+            os.environ["_ARGCOMPLETE_FORCE"] = "1"
+            parse_args(media_reader=self.media_reader, args=["list"])
+        finally:
+            del os.environ["_ARGCOMPLETE_FORCE"]
+
     def test_autocomplete_not_found(self):
         with patch.dict(sys.modules, {"argcomplete": None}):
-            parse_args(media_reader=self.media_reader, args=["list"])
+            self.test_autocomplete()
 
     def test_cookies(self):
         key, value = "Key", "value"
