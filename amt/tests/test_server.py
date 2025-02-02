@@ -16,11 +16,9 @@ class FakeSession(requests.Session):
         self.response = requests.Response()
         self.response.status_code = 200
         self.cookies = session.cookies
+        self.post = self.get
 
     def get(self, *args, **kwargs):
-        return self.response
-
-    def post(self, *args, **kwargs):
         return self.response
 
     def close(self, *args, **kwargs):

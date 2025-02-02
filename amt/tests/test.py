@@ -108,7 +108,7 @@ class BaseUnitTestClass(unittest.TestCase):
         _servers.sort(key=lambda x: x.id or "")
         self.media_reader = cls(state=state, server_list=_servers) if self.real else cls(state=state, server_list=_servers, tracker_list=TEST_TRACKERS)
         if not self.settings.disabled_servers and self.real:
-            assert(self.media_reader.get_servers())
+            assert (self.media_reader.get_servers())
 
     def for_each(self, func, media_list, raiseException=True):
         Job(self.settings.threads, [lambda x=media_data: func(x) for media_data in media_list], raiseException=raiseException).run()
@@ -212,7 +212,7 @@ class BaseUnitTestClass(unittest.TestCase):
         self.assertTrue(sorted(server.get_children(media_data, chapter_data)), server.get_children(media_data, chapter_data))
         for file in server.get_children(media_data, chapter_data):
             self.assertTrue(file)
-            self.assertTrue(os.path.exists(file))
+            self.assertTrue(os.path.exists(file), f"{file} doesn't exist")
             self.assertFalse(os.path.basename(file)[0] == ".")
 
     def verify_all_chapters_downloaded(self, **kwargs):
@@ -1108,7 +1108,7 @@ class MediaReaderTest(BaseUnitTestClass):
 
     def test_search_add(self):
         media_data = self.media_reader.search_add("a")
-        assert(media_data)
+        assert (media_data)
         assert media_data in list(self.media_reader.get_media())
 
     def test_load_from_tracker(self):
@@ -1282,7 +1282,7 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
 
     def tearDown(self):
         for x in self.torrents:
-            assert(os.path.exists(x))
+            assert (os.path.exists(x))
         super().tearDown()
 
     def init(self):
@@ -1316,9 +1316,9 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
 
     def test_add_media_from_url(self):
         for torrent in self.torrents:
-            assert(self.media_reader.add_from_url(torrent))
+            assert self.media_reader.add_from_url(torrent)
             self.media_reader.media.clear()
-            assert(self.media_reader.add_from_url(os.path.abspath(torrent)))
+            assert self.media_reader.add_from_url(os.path.abspath(torrent))
 
     def test_media_stream(self):
         for torrent, media_type in zip(self.torrents, list(MediaType)):
@@ -2027,6 +2027,7 @@ class ArgsTest(CliUnitTestClass):
 
     def test_clean_noop(self):
         self.add_test_media(TestServer.id, limit=1)
+        parse_args(media_reader=self.media_reader, args=["clean"])
         self.media_reader.download_unread_chapters()
         parse_args(media_reader=self.media_reader, args=["clean"])
         self.verify_all_chapters_downloaded()

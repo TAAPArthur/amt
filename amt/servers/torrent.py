@@ -68,7 +68,7 @@ class GenericTorrentServer(Server):
     def download_pages(self, media_data, chapter_data, **kwargs):
         dir_path = self.settings.get_media_dir(media_data)
         os.makedirs(dir_path, exist_ok=True)
-        assert(os.path.exists(dir_path))
+        assert (os.path.exists(dir_path))
         self.settings.run_cmd(self.settings.torrent_download_cmd, media_data=media_data, chapter_data=chapter_data, wd=dir_path, raiseException=True, env_extra={"TORRENT_FILE": chapter_data["torrent_file"]})
         return [chapter_data["id"]]
 
