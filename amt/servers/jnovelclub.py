@@ -44,7 +44,7 @@ class GenericJNovelClub(Server):
         return True
 
     def _create_media_data_helper(self, data):
-        return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", ""), media_type=MediaType[item["type"]]) for item in data]
+        return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", ""), media_type=MediaType[item["type"]]) for item in data if (MediaType[item["type"]] & self.media_type)]
 
     def get_media_list(self, **kwargs):
         data = self.session_get_cache_json(self.series_url)["series"]
@@ -114,7 +114,7 @@ class JNovelClub(GenericJNovelClub):
 
 class JNovelClubParts(GenericJNovelClub):
     id = "j_novel_club_parts"
-    media_type = MediaType.MANGA | MediaType.NOVEL
+    media_type = MediaType.NOVEL
     progress_type = ProgressType.CHAPTER_VOLUME
 
     maybe_need_cloud_scraper = True
@@ -136,6 +136,7 @@ class JNovelClubParts(GenericJNovelClub):
         data = {"query": term.replace(" (Manga)", "")}
         if media_type:
             data["type"] = 1 if media_type == MediaType.NOVEL else 2
+        data["type"] = 1
         r = self.session_post(self.search_url, json=data)
         data = r.json()["series"]
         return [self.create_media_data(item["slug"], item["title"], alt_id=item["shortTitle"].replace(" ", "")) for item in data]
