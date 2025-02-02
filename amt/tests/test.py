@@ -1296,6 +1296,7 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
                 f.write(x.split(".")[0])
 
         for server in self.media_reader.get_servers():
+            assert not server.get_media_list()
             server.get_media_list = lambda **kwargs: [server.get_media_data_from_url(x) for x in self.torrents]
 
     def test_media_type_selection(self):
@@ -1309,6 +1310,9 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
         self.media_reader.play()
         self.verify_all_chapters_read()
         self.verfiy_media_list(list(self.media_reader.get_media()))
+
+    def test_unknown_torrent_file(self):
+        self.assertRaises(requests.exceptions.MissingSchema, self.media_reader.add_from_url, "unknown_file.torrent")
 
     def test_add_media_from_url(self):
         for torrent in self.torrents:
@@ -1339,6 +1343,12 @@ class TorrentServerTest(GenericServerTest, BaseUnitTestClass):
         except:
             pass
         self.verify_no_chapters_downloaded()
+
+    def test_upgrade_state(self):
+        media_data = self.media_reader.add_from_url(self.torrents[0])
+        del media_data["version"]
+        self.media_reader.upgrade_state_if_server_version_changed()
+        assert media_data["version"]
 
 
 class LocalServerTest(GenericServerTest, BaseUnitTestClass):

@@ -95,9 +95,7 @@ class GenericTorrentServer(Server):
         if os.path.exists(torrent_file):
             shutil.copy(torrent_file, path)
         else:
-            r = self.session_get(torrent_file)
-            with open(path, 'wb') as fp:
-                fp.write(r.content)
+            self.save_chapter_page(self.create_page_data(url=torrent_file), path=path)
 
     def get_chapter_id_for_url(self, url):
         o = urlparse(url)
