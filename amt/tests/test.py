@@ -2439,7 +2439,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-volume-24-part-1", "seirei-gensouki-spirit-chronicles", None, "seirei-gensouki-spirit-chronicles-volume-24-part-1"),
         ("https://mangadex.org/chapter/ea697e18-470c-4e80-baf0-a3972720178f/1", "8a3d319d-2d10-4364-928c-0f30fd367c24", None, "ea697e18-470c-4e80-baf0-a3972720178f"),
         ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
-        ("https://nyaa.si/?f=0&c=1_2&q=LostYears+KonoSuba+-+God%E2%80%99s+blessing+on+this+wonderful+world%21&number=2", "[LostYears] KonoSuba - God’s blessing on this wonderful world!", ("S3", "1080p"), "[LostYears] KonoSuba - God’s blessing on this wonderful world! - S03E02 (WEB 1080p x264 AAC E-AC-3) [EBA4EA7E].mkv"),
+        ("https://nyaa.si/?f=0&c=0_0&q=Anime+time+Konosuba+Season+3&number=2", "[Anime Time] Kono Subarashii Sekai ni Shukufuku wo", "S31080p_7", "[Anime Time] Kono Subarashii Sekai ni Shukufuku wo - S03E02 [1080p][HEVC 10bit x265][AAC][Multi Sub].mkv"),
         ("https://nyaa.si/view/1047104?number=2", "1047104", None, "[nonA] Sayonara Zetsubou Sensei - 02 (BD 1024x576 x264 FLAC).mkv"),
         ("https://tubitv.com/movies/667951/gintama-the-very-final-subbed?start=true", "667951", None, "667951"),
         ("https://tubitv.com/tv-shows/318565/s04-e01-run-the-curry-of-life?start=true", "1622", "4", "318565"),
