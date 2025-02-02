@@ -6,6 +6,7 @@ from requests.exceptions import HTTPError
 import requests
 
 from ..server import Server
+from ..servers.torrent import GenericTorrentServer
 from ..util.media_type import MediaType
 from ..util.progress_type import ProgressType
 
@@ -45,8 +46,10 @@ class TestServer(Server):
 
     def __init__(self, session, *args, no_fake_session=False, **kwargs):
         super().__init__(FakeSession(session) if not no_fake_session else session, *args, **kwargs)
-        self.stream_url_regex = re.compile(f"{self.id}.com/([0-9]*)/([0-9]*)$")
-        self.add_series_url_regex = re.compile(f"{self.id}.com/([0-9]*)$")
+        if not self.stream_url_regex:
+            self.stream_url_regex = re.compile(f"{self.id}.com/([0-9]*)/([0-9]*)$")
+        if not self.add_series_url_regex:
+            self.add_series_url_regex = re.compile(f"{self.id}.com/([0-9]*)$")
         self.timestamp = datetime.now().timestamp()
         self.domain = f"{self.id}.com"
 
@@ -117,7 +120,7 @@ class TestServer(Server):
         media_id = media_data["id"]
         if self.media_type != MediaType.ANIME:
             deltas = [0, 30, 60 * 2, 3600 * 2, 3600 * 24 * 7]
-            media_data["nextTimeStamp"] = self.timestamp + deltas[media_id % len(deltas)]
+            media_data["nextTimeStamp"] = self.timestamp + deltas[hash(media_id) % len(deltas)]
         assert media_id in map(lambda x: x["id"], self.get_media_list())
         if media_id == 1:
             self.update_chapter_data(media_data, id=1, title="Chapter1", number=1, date="2020-07-08", premium=self.has_login()),
@@ -293,3 +296,40 @@ class TestNovel(TestServer):
 
     def update_chapter_data(self, media_data, **kwargs):
         super().update_chapter_data(media_data, volume_number=1, **kwargs)
+
+
+class TestTorrentServer(TestServer, GenericTorrentServer):
+    id = "test_torrent_server"
+    media_type = MediaType.NOVEL
+
+    def get_media_list(self, **kwargs):
+        return self.search_for_media(None)
+
+    def search_for_media_helper(self, term=None, **kwargs):
+        for media_data in super().get_media_list():
+            if not term or term in media_data["name"]:
+                if self.parts_server:
+                    yield None, media_data["name"] + " 01 part", self.media_type, media_data.get("label")
+                    yield None, media_data["name"] + " 02 part", self.media_type, media_data.get("label")
+                else:
+                    yield media_data["id"], media_data["name"], self.media_type, media_data.get("label")
+
+    def update_media_data(self, media_data, **kwargs):
+        super().update_media_data(media_data, **kwargs)
+        for chapter_data in media_data["chapters"].values():
+            chapter_data["torrent_file"] = "torrent_file_does_not_exist.torrent"
+            chapter_data["id"] = chapter_data["id"] + ".txt"
+        self.update_torrent_files(media_data)
+
+    def download_pages(self, media_data, chapter_data, **kwargs):
+        self.maybe_inject_error()
+        paths = super().download_pages(media_data, chapter_data, **kwargs)
+        for path in paths:
+            assert not os.path.exists(path)
+            open(path, "w").close()
+        return paths
+
+
+class TestTorrentPartsServer(TestTorrentServer):
+    id = "test_torrent_parts_server"
+    parts_server = True
