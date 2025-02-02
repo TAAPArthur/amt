@@ -2439,10 +2439,6 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://j-novel.club/read/seirei-gensouki-spirit-chronicles-volume-24-part-1", "seirei-gensouki-spirit-chronicles", None, "seirei-gensouki-spirit-chronicles-volume-24-part-1"),
         ("https://mangadex.org/chapter/ea697e18-470c-4e80-baf0-a3972720178f/1", "8a3d319d-2d10-4364-928c-0f30fd367c24", None, "ea697e18-470c-4e80-baf0-a3972720178f"),
         ("https://mangaplus.shueisha.co.jp/viewer/1000486", "100020", None, "1000486"),
-        ("https://mangasee123.com/read-online/Berserk-chapter-1-index-2-page-1.html", "Berserk", None, "200010"),
-        ("https://mangasee123.com/read-online/Berserk-chapter-1-page-1.html", "Berserk", None, "100010"),
-        ("https://mangasee123.com/read-online/Bobobo-Bo-Bo-Bobo-chapter-214-page-1.html", "Bobobo-Bo-Bo-Bobo", None, "102140"),
-        ("https://mangasee123.com/read-online/Onepunch-Man-chapter-147-index-2-page-1.html", "Onepunch-Man", None, "201470"),
         ("https://nyaa.si/?f=0&c=1_2&q=LostYears+KonoSuba+-+God%E2%80%99s+blessing+on+this+wonderful+world%21&number=2", "[LostYears] KonoSuba - God’s blessing on this wonderful world!", ("S3", "1080p"), "[LostYears] KonoSuba - God’s blessing on this wonderful world! - S03E02 (WEB 1080p x264 AAC E-AC-3) [EBA4EA7E].mkv"),
         ("https://nyaa.si/view/1047104?number=2", "1047104", None, "[nonA] Sayonara Zetsubou Sensei - 02 (BD 1024x576 x264 FLAC).mkv"),
         ("https://tubitv.com/movies/667951/gintama-the-very-final-subbed?start=true", "667951", None, "667951"),
@@ -2450,15 +2446,14 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://tubitv.com/tv-shows/624483/s01-e01-sakura-and-the-strange-magical-book?start=true", "300007490", None, "624483"),
         ("https://viz.com/shonenjump/one-piece-chapter-1/chapter/5090?action=read", "one-piece", None, "5090"),
         ("https://webtoons.com/en/drama/lookism/ep-283-hostel-epilogue/viewer?title_no=1049&episode_no=283", "1049", None, "283"),
+        ("https://weebcentral.com/chapters/01J76XYTQF0NESRNNX434QB7TG", "01J76XY7VSG3R5ANYPDWTXDVP6", None, "01J76XYTQF0NESRNNX434QB7TG"),
     ]
 
     addable_urls = [
         ("https://chapmanganelo.com/manga-aa88620", "aa88620"),
-        ("https://m.manganelo.com/manga-rh106075", "rh106075"),
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
+        ("https://m.manganelo.com/manga-rh106075", "rh106075"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
-        ("https://mangasee123.com/manga/Gunslinger-Girl", "Gunslinger-Girl"),
-        ("https://mangasee123.com/manga/Mairimashita-Iruma-kun", "Mairimashita-Iruma-kun"),
         ("https://nyaa.si/?f=0&c=1_2&q=%5BEMBER%5D+Watashi+no+Shiawase+na+Kekkon", "[EMBER] Watashi no Shiawase na Kekkon"),
         ("https://nyaa.si/view/1047104", "1047104"),
         ("https://nyaa.si/view/135283", "135283"),
@@ -2466,6 +2461,8 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://tubitv.com/series/300007490/cardcaptor-sakura?start=true", "300007490"),
         ("https://viz.com/shonenjump/chapters/my-hero-academia-vigilantes", "my-hero-academia-vigilantes"),
         ("https://webtoons.com/en/drama/lookism/list?title_no=1049", 1049),
+        ("https://weebcentral.com/series/01J76XY7Q6SJ45Z7MDCP9V4RQ3/Gunslinger-Girl", "01J76XY7Q6SJ45Z7MDCP9V4RQ3"),
+        ("https://weebcentral.com/series/01J76XY7VSG3R5ANYPDWTXDVP6/Kingdom", "01J76XY7VSG3R5ANYPDWTXDVP6"),
     ]
 
     def test_a_verify_valid_stream_urls(self):
