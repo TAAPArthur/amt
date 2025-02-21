@@ -1810,6 +1810,15 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["--auto", "load", "--exact"])
         self.verify_no_media()
 
+    def test_load_local_only_mismatch(self):
+        parse_args(media_reader=self.media_reader, args=["--auto", "search", "--server", TestServer.id, "InProgress"])
+        self.media_reader.get_tracker().set_custom_anime_list(["Manga"], media_type=MediaType.MANGA)
+        parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
+        self.verify_media_len(1)
+
+    def test_load_empty(self):
+        assert not parse_args(media_reader=self.media_reader, args=["--auto", "load", "--local-only", "test_user"])
+
     def test_load(self):
         parse_args(media_reader=self.media_reader, args=["--auto", "search", "--server", TestServer.id, "InProgress"])
         assert len(self.media_reader.get_media_ids()) == 1

@@ -587,6 +587,9 @@ class MediaReader:
                 if no_add:
                     continue
                 media_data = self.search_for_media(None, entry["media_type"], exact=exact, skip_remote_search=local_only, tracker_data=entry, **kwargs)
+                if not media_data and local_only:
+                    untracked_media = list(filter(lambda x: not self.get_tracker_info(x), self.get_media(media_type=entry["media_type"])))
+                    media_data = self.select_media(entry["name"], untracked_media, "Select from known untracked media: ")
                 if media_data:
                     logging.info("Tracking %s (%s) with %s", entry["names"], entry["id"], media_data.global_id)
                     self.maybe_resolve_media_type(media_data, media_type_filter=media_type)
