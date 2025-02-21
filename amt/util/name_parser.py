@@ -30,7 +30,7 @@ def get_media_name_from_volume_name(name):
     return media_name, media_id
 
 def get_number_from_file_name_helper(regex, file_name, media_name="", default_num=0):
-    matches = regex.findall(remove_brackets_regex.sub("", file_name.replace(media_name, "").replace("_", " ")))
+    matches = regex.findall(file_name.replace(media_name, "").replace("_", " "))
     if matches:
         if isinstance(matches[0], tuple):
             matches=list(map(lambda x: max(x, key=len), matches))
@@ -39,8 +39,8 @@ def get_number_from_file_name_helper(regex, file_name, media_name="", default_nu
     return default_num
 
 
-def get_number_from_file_name(file_name, media_name="", default_num=0):
-    return get_number_from_file_name_helper(number_regex, file_name, media_name=media_name, default_num=default_num)
+def get_number_from_file_name(file_name, media_name="", default_num=0, regex_str=None):
+    return get_number_from_file_name_helper(number_regex if regex_str is None else re.compile(regex_str), file_name, media_name=media_name, default_num=default_num)
 
 
 def get_season_number_from_file_name(file_name, media_name="", default_num=0):

@@ -301,7 +301,7 @@ class MediaServer(RequestServer):
     def update_chapter_data(self, media_data, id, title, number = None, filename=None, volume_number=None, premium=False, alt_id=None, special=False, date=None, subtitles=None, **kwargs):
         if filename:
             if number is None:
-                number=get_number_from_file_name(filename, media_name=media_data["name"], default_num=1)
+                number=get_number_from_file_name(filename, media_name=media_data["name"], default_num=1, regex_str=media_data.get("number_regex", None))
             if volume_number is None:
                 volume_number = get_season_number_from_file_name(filename, media_name=media_data["name"], default_num=None)
 
