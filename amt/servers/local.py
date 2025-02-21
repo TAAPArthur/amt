@@ -18,7 +18,7 @@ class LocalServer(Server):
 
     def get_import_media_dest(self, media_name, file_name):
         media_data = self._create_media_data(media_name)
-        self.update_chapter_data(media_data, id=file_name, title=file_name, number=name_parser.get_number_from_file_name(file_name, media_name=media_name))
+        self.update_chapter_data(media_data, id=file_name, title=file_name, filename=file_name)
         chapter_data = media_data["chapters"][file_name]
         return os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), file_name)
 

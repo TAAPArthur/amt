@@ -12,7 +12,7 @@ import logging
 from .job import Job
 from .state import MediaData, TrackerEntry
 from .util.media_type import MediaType
-from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names, get_media_name_from_file)
+from .util.name_parser import (find_media_with_similar_name_in_list, get_alt_names, get_media_name_from_file, get_number_from_file_name, get_season_number_from_file_name)
 from .util.progress_type import ProgressType
 from enum import Enum, auto
 
@@ -297,7 +297,14 @@ class MediaServer(RequestServer):
 
         return MediaData(dict(server_id=self.id, server_alias=self.alias, id=id, dir_name=dir_name if dir_name else re.sub(r"[\W]", "", (season_title or name).replace(" ", "_")), name=name, media_type=media_type.value, media_type_name=media_type.name, progress=0, season_id=season_id, season_title=season_title, offset=offset, alt_id=alt_id, trackers={}, progress_type=progress_type if progress_type is not None else self.progress_type, tags=[], lang=lang, nextTimeStamp=0, official=self.official, version=self.version, **kwargs))
 
-    def update_chapter_data(self, media_data, id, title, number, volume_number=None, premium=False, alt_id=None, special=False, date=None, subtitles=None, **kwargs):
+    infer_number_from_title = False
+    def update_chapter_data(self, media_data, id, title, number = None, filename=None, volume_number=None, premium=False, alt_id=None, special=False, date=None, subtitles=None, **kwargs):
+        if filename:
+            if number is None:
+                number=get_number_from_file_name(filename, media_name=media_data["name"], default_num=1)
+            if volume_number is None:
+                volume_number = get_season_number_from_file_name(filename, media_name=media_data["name"], default_num=None)
+
         if number is None or number == "" or isinstance(number, str) and number.isalpha():
             number = media_data.get_last_updated_chapter_number() + .01
             special = True

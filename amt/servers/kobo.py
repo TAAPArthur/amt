@@ -5,7 +5,7 @@ import re
 
 from ..server import Server
 from ..util.media_type import MediaType
-from ..util.name_parser import get_media_name_from_volume_name, get_number_from_file_name
+from ..util.name_parser import get_media_name_from_volume_name
 
 from Crypto.Cipher import AES
 from Crypto.Util import Padding
@@ -119,7 +119,7 @@ class Kobo(Server):
                         media_type = MediaType.NOVEL
                     media_map[media_id] = self.create_media_data(id=media_id, name=media_name, media_type=media_type)
                 elif media_data["id"] == media_id:
-                    self.update_chapter_data(media_data, id=metadata["RevisionId"], alt_id=metadata["Slug"], title=metadata["Title"], number=get_number_from_file_name(metadata["Title"], media_name=media_data["name"], default_num=1), data=metadata["PublicationDate"])
+                    self.update_chapter_data(media_data, id=metadata["RevisionId"], alt_id=metadata["Slug"], title=metadata["Title"], data=metadata["PublicationDate"])
         return media_map.values()
 
     def get_media_list(self, **kwargs):

@@ -76,8 +76,7 @@ class GenericTorrentServer(Server):
 
         for torrent_file, file in files:
             title = os.path.basename(file)
-            n = name_parser.get_number_from_file_name(file, media_name=media_data["name"])
-            self.update_chapter_data(media_data, id=file, title=title, alt_id=title, number=n, path=file, torrent_file=torrent_file, special="OVA" in title.upper())
+            self.update_chapter_data(media_data, id=file, title=title, alt_id=title, filename=file, path=file, torrent_file=torrent_file, special="OVA" in title.upper())
 
     def download_pages(self, media_data, chapter_data, **kwargs):
         dir_path = self.settings.get_media_dir(media_data)

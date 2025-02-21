@@ -121,7 +121,7 @@ class RemoteServer(Server):
 
     def update_media_data(self, media_data, **kwargs):
         if media_data["alt_id"][-1] != "/":
-            self.update_chapter_data(media_data, media_data["alt_id"], title=media_data["name"], number=name_parser.get_number_from_file_name(media_data["alt_id"], media_name=media_data["name"], default_num=1))
+            self.update_chapter_data(media_data, media_data["alt_id"], title=media_data["name"], filename=media_data["alt_id"])
             return
 
         try:
@@ -137,7 +137,7 @@ class RemoteServer(Server):
             pass
 
         for link in self.list_files(media_data["alt_id"], depth=1, in_media_dir=True):
-            self.update_chapter_data(media_data, os.path.join(media_data["alt_id"], link), title=link, number=name_parser.get_number_from_file_name(link, media_name=media_data["name"], default_num=1), premium=self.has_login())
+            self.update_chapter_data(media_data, os.path.join(media_data["alt_id"], link), title=link, filename=link, premium=self.has_login())
 
     def get_media_chapter_data(self, media_data, chapter_data, stream_index=0):
         entires = self.list_files(chapter_data["id"]) if chapter_data["id"][-1] == "/" else [None]
