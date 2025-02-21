@@ -21,7 +21,7 @@ class Tubi(Server):
     stream_url_regex = re.compile(f"{domain}/(?:movies|tv-shows)/([^/]*)")
     add_series_url_regex = re.compile(f"{domain}/(?:movies|series)/([^/]*)/([^/]*)")
 
-    def get_episode_info(self, media_data=None, url=None):
+    def get_media_metadata(self, media_data=None, url=None):
         text = self.session_get_cache(url or (self.base_url + media_data["alt_id"]), ttl=-1)
         text = text.split("window.__data=", 1)[-1].split("</script>")[0].strip()
         text = text.replace("undefined", "0")
@@ -29,11 +29,22 @@ class Tubi(Server):
         text = text[:-1]
         return json.loads(text)
 
+    def get_human_url(self, media_data, chapter_data):
+        return self.base_url + f"/tv-shows/{chapter_data['id']}/"
+
+    def get_episode_info(self, media_data, chapter_data):
+        data = self.get_media_metadata(media_data)
+        if chapter_data["id"] not in data["video"]["byId"]:
+            data = self.get_media_metadata(url=self.get_human_url(media_data, chapter_data))
+
+        return data["video"]["byId"][chapter_data["id"]]
+        # episode_info = next(filter(lambda x: x["id"] == chapter_data["id"], data["video"]["byId"].values()))
+
     def _get_media_list_from_url(self, relative_url, limit=None):
         url = self.base_url + relative_url
         match = self.add_series_url_regex.search(url)
         if match:
-            data = self.get_episode_info(url=url)
+            data = self.get_media_metadata(url=url)
             media_id = match.group(1)
             series_info = next(filter(lambda x: x["id"] == media_id, data["video"]["byId"].values()))
             if series_info["type"] == "s":
@@ -72,7 +83,7 @@ class Tubi(Server):
     """
 
     def update_media_data_helper(self, media_data, **kwargs):
-        data = self.get_episode_info(media_data, **kwargs)
+        data = self.get_media_metadata(media_data, **kwargs)
         series_info = next(filter(lambda x: x["id"] == media_data["id"], data["video"]["byId"].values()))
         episode_number_to_id = {}
         if "seasons" in series_info and not isinstance(series_info["seasons"], int):
@@ -99,12 +110,11 @@ class Tubi(Server):
                 break
 
     def get_stream_urls(self, media_data, chapter_data):
-        data = self.get_episode_info(media_data)
-        return [[x["manifest"]["url"] for x in data["video"]["byId"][chapter_data["id"]]["video_resources"]]]
+        episode_info = self.get_episode_info(media_data, chapter_data)
+        return [[x["manifest"]["url"] for x in episode_info["video_resources"]]]
 
     def get_subtitle_info(self, media_data, chapter_data):
-        data = self.get_episode_info(media_data)
-        episode_info = next(filter(lambda x: x["id"] == chapter_data["id"], data["video"]["byId"].values()))
+        episode_info = self.get_episode_info(media_data, chapter_data)
         for subtitles in episode_info.get("subtitles", []):
             yield subtitles["lang"], subtitles["url"], None, False
 
@@ -114,7 +124,7 @@ class Tubi(Server):
         if match:
             return list(self._get_media_list_from_url(relative_url))
         alt_id = url.split(self.domain)[1].split("?")[0]
-        data = self.get_episode_info(url=url)
+        data = self.get_media_metadata(url=url)
 
         chapter_id = self.get_chapter_id_for_url(url)
         series_info = next(filter(lambda x: x["type"] == "s", data["video"]["byId"].values()))
