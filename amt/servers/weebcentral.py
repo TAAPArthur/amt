@@ -11,7 +11,8 @@ class Weebcentral(Server):
     base_url = f"https://{domain}"
 
     search_url = base_url + "/search/data?order=Ascending&official=Any&display_mode=Full+Display"
-    manga_url = base_url + "/series/{}"
+    manga_url = base_url + "/series/{}/full-chapter-list"
+
     chapter_url = base_url + "/chapters/{}"
     images_url = base_url + "/chapters/{}/images?is_prev=False&reading_style=long_strip"
 
