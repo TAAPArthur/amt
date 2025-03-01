@@ -205,7 +205,10 @@ class MediaReader:
 
     def get_media_from_url(self, url, **kwargs):
         url, server = self.get_server_for_url(url, streamable=False, **kwargs)
-        return server.get_all_media_data_from_url(url) if server else []
+        if not server:
+            logging.info("Could not find any matching media for url %s", url)
+            return []
+        return sorted(server.get_all_media_data_from_url(url), key=lambda x: self.settings.get_prefered_lang_key(x))
 
     def add_from_url(self, url, server_id=None, skip_add=False):
         media_list = self.get_media_from_url(url, server_id=server_id)

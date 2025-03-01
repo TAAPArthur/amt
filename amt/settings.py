@@ -266,8 +266,10 @@ class Settings:
             return server_id in self.enabled_servers + [self.tracker_id] or alias and alias in self.enabled_servers
         return server_id not in self.disabled_servers and server_id and (not alias or alias not in self.disabled_servers)
 
-    def get_prefered_lang_key(self, media_data, lang):
+    def get_prefered_lang_key(self, media_data, lang = None):
         search_score = self.get_field("search_score", media_data)
+        if not lang :
+            lang = media_data.get("lang")
         lang = lang.lower()
         for key, values, score in search_score:
             if key == "lang":
