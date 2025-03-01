@@ -23,6 +23,7 @@ class Mangadex(Server):
 
     manga_url = api_base_url + "/manga/{}"
     stream_url_regex = re.compile(r"mangadex.org/chapter/([^/]*)")
+    add_series_url_regex = re.compile(r"mangadex.org/title/([^/]*)")
 
     def _get_media_list(self, data, target_lang=None):
         results = []
@@ -49,7 +50,12 @@ class Mangadex(Server):
     def search_for_media(self, term, limit=100, **kwargs):
         return list(self._list_or_search_get_media_list(self.search_url.format_map(SafeDict(title=term)), limit))
 
-    def get_media_data_from_url(self, url):
+    def get_all_media_data_from_url(self, url):
+        match = self.add_series_url_regex.search(url)
+        if match:
+            media_id = match.group(1)
+            data = self.session_get_cache_json(self.manga_url.format(media_id))
+            return self._get_media_list((data["data"], ))
         chapter_id = self.stream_url_regex.search(url).group(1)
         chapter_data = self.session_get(self.chapter_url.format(chapter_id)).json()
         relationships = chapter_data["data"]["relationships"]
@@ -57,7 +63,7 @@ class Mangadex(Server):
         for metadata in relationships:
             if metadata["type"] == "manga":
                 data = self.session_get_cache_json(self.manga_url.format(metadata["id"]))
-                return self._get_media_list((data["data"], ), target_lang=lang)[0]
+                return self._get_media_list((data["data"], ), target_lang=lang)
 
     def get_chapter_id_for_url(self, url):
         return self.stream_url_regex.search(url).group(1)

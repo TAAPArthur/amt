@@ -2462,6 +2462,7 @@ class ServerStreamTest(RealBaseUnitTestClass):
         ("https://chapmanganelo.com/manga-aa88620", "aa88620"),
         ("https://j-novel.club/series/monster-tamer", "monster-tamer"),
         ("https://m.manganelo.com/manga-rh106075", "rh106075"),
+        ("https://mangadex.org/title/0f7295a6-eaf5-470b-a003-b7789a9a0f4a/the-idaten-deities-know-only-peace", "0f7295a6-eaf5-470b-a003-b7789a9a0f4a"),
         ("https://mangaplus.shueisha.co.jp/titles/100020", 100020),
         ("https://nyaa.si/?f=0&c=1_2&q=%5BEMBER%5D+Watashi+no+Shiawase+na+Kekkon", "[EMBER] Watashi no Shiawase na Kekkon"),
         ("https://nyaa.si/view/1047104", "1047104"),
