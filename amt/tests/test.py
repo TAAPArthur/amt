@@ -2305,38 +2305,38 @@ class ArgsTest(CliUnitTestClass):
 
     def test_import(self):
         media_name, chapter_title, path, path_file = self.import_test_setup()
-        parse_args(media_reader=self.media_reader, args=["import", "--name", media_name, path_file])
+        parse_args(media_reader=self.media_reader, args=["--auto", "import", "--name", media_name, path_file])
         self.verify_import_test(media_name, chapter_title)
 
     def test_import_bad(self):
         media_name, chapter_title, path, path_file = self.import_test_setup()
-        parse_args(media_reader=self.media_reader, args=["import", path_file])
+        parse_args(media_reader=self.media_reader, args=["--auto", "import", path_file])
         self.verify_no_media()
 
     def test_import_update(self):
         media_name, chapter_title, path, path_file = self.import_test_setup(file_name="A 01.txt")
-        parse_args(media_reader=self.media_reader, args=["import", "--name", media_name, path_file])
+        parse_args(media_reader=self.media_reader, args=["--auto", "import", "--name", media_name, path_file])
         media_name, chapter_title, path, path_file = self.import_test_setup(file_name="A 02.txt")
-        parse_args(media_reader=self.media_reader, args=["import", "--name", media_name, path_file])
+        parse_args(media_reader=self.media_reader, args=["--auto", "import", "--name", media_name, path_file])
         self.verify_import_test(media_name, chapter_title)
 
     def test_import_directory(self):
         media_name, chapter_title, path, path_file = self.import_test_setup()
         self.assertTrue(os.path.exists(path_file))
-        parse_args(media_reader=self.media_reader, args=["import", "--link", path])
+        parse_args(media_reader=self.media_reader, args=["--auto", "import", "--link", path])
         self.assertTrue(os.path.exists(path_file))
         self.verify_import_test(media_name, chapter_title)
 
     def test_import_directory_self(self):
         media_name, chapter_title, path, _ = self.import_test_setup()
         os.chdir(path)
-        parse_args(media_reader=self.media_reader, args=["import", "."])
+        parse_args(media_reader=self.media_reader, args=["--auto", "import", "."])
         self.verify_import_test(media_name, chapter_title)
 
     def test_import_nested_directory(self):
         parent_dir = "dir1"
         media_name, chapter_title, path, _ = self.import_test_setup(parent_dir=parent_dir)
-        parse_args(media_reader=self.media_reader, args=["import", "--name", media_name, parent_dir])
+        parse_args(media_reader=self.media_reader, args=["--auto", "import", "--name", media_name, parent_dir])
         self.verify_import_test(media_name, chapter_title)
 
     def _test_upgrade_helper(self, minor):
