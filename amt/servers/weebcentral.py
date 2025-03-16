@@ -31,18 +31,19 @@ class Weebcentral(Server):
             self.update_chapter_data(media_data, a_element.get("href").split("/")[-1], title, number=num)
 
     def get_media_chapter_data(self, media_data, chapter_data, **kwargs):
+        headers = {
+            "Hx-Current-Url": self.chapter_url.format(chapter_data["id"]),
+            "Hx-Request": "true",
+            "Referer": self.chapter_url.format(chapter_data["id"]),
+        }
         r = self.session_get(
             self.images_url.format(chapter_data["id"]),
-            headers={
-                "Hx-Current-Url": self.chapter_url.format(chapter_data["id"]),
-                "Hx-Request": "true",
-                "Referer": self.chapter_url.format(chapter_data["id"]),
-            }
+            headers=headers
         )
         soup = self.soupify(BeautifulSoup, r)
         pages = []
         for element in soup.select('img'):
-            pages.append(self.create_page_data(element.get('src')))
+            pages.append(self.create_page_data(element.get('src'), headers=headers))
         return pages
 
     def search_for_media(self, term, **kwargs):
