@@ -104,9 +104,9 @@ def setup_subparsers(state, sub_parsers):
     sub_consume_parsers.add_argument("--raw", default=False, action="store_const", const=True)
     sub_consume_parsers.add_argument("--special", default=None, action="store_const", const=True)
     sub_consume_parsers.add_argument("--nospecial", default=None, dest="special", action="store_const", const=False)
+    sub_consume_parsers.add_argument("--batch-size", "-b", default=1, type=int, help="Batch media for consumption; Should only be used when all media is of the same type")
 
     view_parser = add_parser_helper(sub_parsers, "view", func_str="play", parents=[sub_consume_parsers], help="View pages of chapters")
-    view_parser.add_argument("--batch-size", "-b", default=1, type=int, help="Batch media for consumption; Should only be used when all media is of the same type")
     view_parser.add_argument("name", choices=state.get_all_names(MediaType.MANGA | MediaType.NOVEL), default=None, nargs="?")
     view_parser.add_argument("num_list", default=None, nargs="*", type=float)
     view_parser.set_defaults(media_type=MediaType.MANGA | MediaType.NOVEL)
@@ -123,6 +123,7 @@ def setup_subparsers(state, sub_parsers):
     consume_parser.add_argument("num_list", default=None, nargs="*", type=float)
 
     steam_parser = add_parser_helper(sub_parsers, "stream", help="Streams anime; this won't download any files; if the media is already downloaded, it will be used directly")
+    steam_parser.add_argument("--batch-size", "-b", default=1, type=int, help="Batch media for consumption; Should only be used when all media is of the same type")
     steam_parser.add_argument("--raw", default=False, action="store_const", const=True)
     steam_parser.add_argument("--cont", "-c", default=False, action="store_const", const=True)
     steam_parser.add_argument("--download", "-d", default=False, action="store_const", const=True)
