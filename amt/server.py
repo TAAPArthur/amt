@@ -149,6 +149,16 @@ class RequestServer:
                 return cookie.value
         return None
 
+    def session_clear_cookies(self):
+        assert self.domain
+        did_work = False
+        for cookie in list(self.session.cookies):
+            if (self.domain in cookie.domain or cookie.domain in self.domain):
+                self.logger.info("Deleting cookie %s:%s form domain %s", cookie.name, cookie.value, cookie.domain)
+                did_work = True
+                del self.session.cookies[cookie.name]
+        return did_work
+
     def session_set_cookie(self, name, value, **kwargs):
         self.session.cookies.set(name, value, domain=self.domain, **kwargs)
 
@@ -232,7 +242,7 @@ class MediaServer(RequestServer):
 
     def update(self, media_data, limit=None):
         self.maybe_relogin()
-        self.update_media_data(media_data, limit=limit)
+        self.relogin_on_error(lambda :self.update_media_data(media_data, limit=limit))
 
     def score_results(self, term_parts, media_name):
         media_name = self.remove_lang_regex.sub("", media_name)
@@ -662,7 +672,10 @@ class Server(GenericServer):
     def relogin(self):
         username, password = self.get_credentials()
         try:
-            self._is_logged_in = self.login(username, password)
+            for i in range(2):
+                self._is_logged_in = self.login(username, password)
+                if self._is_logged_in or not self.session_clear_cookies():
+                    break
         except HTTPError:
             self._is_logged_in = False
         if not self._is_logged_in:
@@ -705,6 +718,10 @@ class Server(GenericServer):
             else:  # pragma: no cover
                 self.logger.error("Error %s: This could happen if you are trying to view mature account and are being blocked, or if you are trying to consume premium content without a premium account", str(e))
                 raise
+        except HTTPError:
+            self.session_clear_cookies()
+            return func()
+
 
     def needs_to_login(self):
         try:
