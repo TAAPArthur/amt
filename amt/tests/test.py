@@ -203,6 +203,10 @@ class BaseUnitTestClass(unittest.TestCase):
             self.assertEqual(2, len(file_name.split(".")), f"Problem with extension of {file_name}")
             path = os.path.join(dir_path, file_name)
             if isinstance(server, TestServer) or server.is_local_server() or type(server).id is None or server.torrent:
+                assert os.path.exists(path)
+                with open(path, "rb") as img_file:
+                    pass
+                subprocess.check_call(["ls", "-alts", path])
                 continue
             if media_type == MediaType.MANGA:
                 with open(path, "rb") as img_file:
