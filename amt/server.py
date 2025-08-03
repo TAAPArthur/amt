@@ -481,7 +481,8 @@ class GenericServer(MediaServer):
         return (self.stream_url_regex.search(url) or self.add_series_url_regex.search(url)).group(1)
 
     def get_all_media_data_from_url(self, url):
-        return [self.get_media_data_from_url(url)]
+        media_data = self.get_media_data_from_url(url)
+        return [media_data] if media_data else []
 
     def get_media_data_from_url(self, url):  # pragma: no cover
         """ Return the media data related to this url
