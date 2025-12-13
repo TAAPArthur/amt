@@ -2122,6 +2122,21 @@ class ArgsTest(CliUnitTestClass):
         parse_args(media_reader=self.media_reader, args=["clean", "--remove-read"])
         self.verify_no_chapters_downloaded()
 
+    def test_clean_unexpected_data(self):
+        self.add_test_media(TestServer.id)
+        self.media_reader.download_unread_chapters()
+
+        for root, dirs, files in os.walk(self.settings.media_dir, topdown=False):
+            print(root, dirs, files)
+            for directory in dirs:
+                print(directory, os.path.join(root, directory, "foo", "bar"))
+                os.makedirs(os.path.join(root, directory, "foo", "bar"))
+                with open(os.path.join(root, directory, "file"), "w") as f:
+                    f.write("dummy_data")
+
+        # just want to verify we don't crash
+        parse_args(media_reader=self.media_reader, args=["clean"])
+
     def test_clean_stream(self):
         media_data = self.add_test_media(media_type=MediaType.ANIME, limit=1)[0]
         parse_args(media_reader=self.media_reader, args=["play"])

@@ -682,7 +682,8 @@ class MediaReader:
                     media_path = os.path.join(server_path, media_dir)
                     if media_path not in media_dirs:
                         logging.info("Removing %s because it has been removed", media_path)
-                        shutil.rmtree(media_path)
+                        if os.path.isdir(media_path):
+                            shutil.rmtree(media_path)
                         continue
                     media_data = media_dirs[media_path]
                     for chapter_data in media_data.get_sorted_chapters():
