@@ -3,8 +3,9 @@ import os
 import re
 
 media_dir_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\]|\d+[.-:]?)?\s*([\w\-]+\w+[\w';:\. ]*\w[!?]*( - [A-Z][A-z]*\d*)?)")
-number_regex = re.compile(r"(?:\s|E|v|^|/)(\d+\.?\d*)(?:\s|\.|v\d|-|$)", re.IGNORECASE)
-season_regex = re.compile(r"(?:S(\d+)E\d+| (\d+)(?:st|nd|rd|th) Season | Season (\d+))", re.IGNORECASE)
+number_regex_ending = r"(?:\s|\.|v\d|-|$)"
+number_regexes = [r"S\d+E(\d+\.?\d*)", r"(?:\s|E|v|^|/)(\d+\.?\d*)"]
+season_regexes = [r"(?:S(\d+)E\d+| (\d+)(?:st|nd|rd|th) Season | Season (\d+))"]
 quality_regex = re.compile(r"(\d\d\d?0p)", re.IGNORECASE)
 
 remove_brackets_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\])")
@@ -29,22 +30,26 @@ def get_media_name_from_volume_name(name):
     media_id = get_media_id_from_name(media_name)
     return media_name, media_id
 
-def get_number_from_file_name_helper(regex, file_name, media_name="", default_num=0):
-    matches = regex.findall(file_name.replace(media_name, "").replace("_", " "))
-    if matches:
-        if isinstance(matches[0], tuple):
-            matches=list(map(lambda x: max(x, key=len), matches))
-        num = float(max(matches, key=len))
-        return int(num) if num % 1 == 0 else num
+def get_number_from_file_name_helper(regexes, file_name, media_name="", regex_ending="", default_num=0):
+    for regex in regexes:
+        print(regex, file_name)
+        matches = re.findall(regex + regex_ending, file_name.replace(media_name, "").replace("_", " "), re.IGNORECASE)
+        if matches:
+            print(matches)
+            if isinstance(matches[0], tuple):
+                matches=list(map(lambda x: max(x, key=len), matches))
+            print(matches)
+            num = float(max(matches, key=len))
+            return int(num) if num % 1 == 0 else num
     return default_num
 
 
 def get_number_from_file_name(file_name, media_name="", default_num=0, regex_str=None):
-    return get_number_from_file_name_helper(number_regex if regex_str is None else re.compile(regex_str), file_name, media_name=media_name, default_num=default_num)
+    return get_number_from_file_name_helper(number_regexes if regex_str is None else [regex_str], file_name, media_name=media_name, regex_ending=number_regex_ending, default_num=default_num)
 
 
 def get_season_number_from_file_name(file_name, media_name="", default_num=0):
-    return get_number_from_file_name_helper(season_regex, file_name, media_name=media_name, default_num=default_num)
+    return get_number_from_file_name_helper(season_regexes, file_name, media_name=media_name, default_num=default_num)
 
 def get_quality_from_file_name(file_name):
     matches = quality_regex.findall(file_name)

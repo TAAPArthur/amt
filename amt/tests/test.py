@@ -323,6 +323,7 @@ class UtilTest(BaseUnitTestClass):
         ("A B C 1080p BluRay.AAC2.0.x264-DEADBEEF - 05.mkv", 5, 0, "1080p"),
         ("A B C 3rd Season BluRay.AAC2.0.x264-DEADBEEF - 05.mkv", 5, 3, ""),
         ("A B C v06 (2015) (Digital).cbz", 6, 0, ""),
+        ("D 123 S01E02.cbz", 2, 1, ""),
     ]
 
     def test_parse_file_name(self):
