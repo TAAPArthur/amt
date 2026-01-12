@@ -1,7 +1,6 @@
 from ..server import Server
-from ..util import name_parser
 from ..util.media_type import MediaType
-from ..util.name_parser import group_titles_for_same_media_season, get_season_id
+from ..util.name_parser import group_titles_for_same_media_season, get_season_id, is_special_episode_from_name, clean_media_name
 from ..util.progress_type import ProgressType
 from urllib.parse import urlparse, parse_qs
 import os
@@ -62,9 +61,10 @@ class GenericTorrentServer(Server):
         if not self.parts_server:
             return
         for slug, title, mediatype, _ in self.search_for_media_helper(media_data["name"], media_type=media_data["media_type"]):
-            if title.startswith(media_data["name"]) and media_data["season_id"] == get_season_id(title):
+            title = clean_media_name(title)
+            if title.startswith(media_data["name"]) and media_data["season_id"] == get_season_id(title) and media_data.get("filelen") == len(title):
                 media_data["torrent_files"].append(slug)
-        media_data["torrent_files"] = list(set(media_data["torrent_files"]))
+        media_data["torrent_files"] = sorted(list(set(media_data["torrent_files"])))
 
     def update_media_data(self, media_data, limit=None, **kwargs):
         self.update_torrent_files(media_data)
@@ -76,18 +76,19 @@ class GenericTorrentServer(Server):
 
         for torrent_file, file in files:
             title = os.path.basename(file)
-            self.update_chapter_data(media_data, id=file, title=title, alt_id=title, filename=file, path=file, torrent_file=torrent_file, special="OVA" in title.upper())
+            special = is_special_episode_from_name(title)
+            self.update_chapter_data(media_data, id=file, title=title, alt_id=title, filename=file, path=file, torrent_file=torrent_file, special=special)
 
     def download_pages(self, media_data, chapter_data, **kwargs):
-        dir_path = self.settings.get_media_dir(media_data)
+        dir_path = self.settings.get_chapter_dir(media_data, chapter_data)
         os.makedirs(dir_path, exist_ok=True)
         assert (os.path.exists(dir_path))
-        self.settings.run_cmd(self.settings.torrent_download_cmd, media_data=media_data, chapter_data=chapter_data, wd=dir_path, raiseException=True, env_extra={"TORRENT_FILE": chapter_data["torrent_file"]})
+        self.settings.run_cmd(self.settings.get_torrent_download_cmd(self.id), media_data=media_data, chapter_data=chapter_data, wd=dir_path, raiseException=True, env_extra={"TORRENT_FILE": chapter_data["torrent_file"]})
         return [os.path.join(dir_path, chapter_data["id"])]
 
     def post_download(self, media_data, chapter_data, page_paths):
         dest = os.path.join(self.settings.get_chapter_dir(media_data, chapter_data), os.path.basename(chapter_data["id"]))
-        src = os.path.join(self.settings.get_media_dir(media_data), page_paths[0])
+        src = os.path.join(self.settings.get_media_dir(media_data), os.path.basename(chapter_data["id"]))
         os.symlink(src, dest)
 
     def get_stream_url(self, media_data, chapter_data, stream_index=0):

@@ -8,11 +8,16 @@ number_regexes = [r"S\d+E(\d+\.?\d*)", r"(?:\s|E|v|^|/)(\d+\.?\d*)"]
 season_regexes = [r"(?:S(\d+)E\d+| (\d+)(?:st|nd|rd|th) Season | Season (\d+))"]
 quality_regex = re.compile(r"(\d\d\d?0p)", re.IGNORECASE)
 
+special_regex = re.compile(r"( -|)(Extra|Trailer|OVA)( -|)", re.IGNORECASE)
+
 remove_brackets_regex = re.compile(r"(\([^\)]+\)|\[[^\]]+\])")
 
 id_formatter_regex = re.compile(r"\W+")
 
 media_name_regex = re.compile("(, )?(Vol\.|volume|Volume|Part|) \d+\.?\d*$")
+
+def is_special_episode_from_name(chapter_name):
+    return special_regex.search(chapter_name) is not None
 
 
 def get_media_name_from_file(base_name, is_dir=True):
@@ -71,15 +76,17 @@ def find_media_with_similar_name_in_list(media_names, media_list):
 def get_season_id(title):
     quality = get_quality_from_file_name(title)
     season_number = get_season_number_from_file_name(title, default_num=None)
-    markers = title.count("(") + title.count("]")
     season_id = ("S" + str(season_number)) if season_number is not None else ""
-    return season_id + quality + ("_" + str(markers) if markers else "")
+    return season_id + quality
 
+def clean_media_name(name):
+    name = name.replace("[END]", "")
+    return name
 
 def group_titles_for_same_media_season(title_media_type_list, min_match_len = 3 ):
     keys = list()
     for title, media_type in title_media_type_list:
-        keys.append((title, get_season_id(title), media_type))
+        keys.append((clean_media_name(title), get_season_id(title), media_type))
 
     results = set()
     for i, key, in enumerate(keys):
@@ -107,7 +114,7 @@ def group_titles_for_same_media_season(title_media_type_list, min_match_len = 3 
             if title[-1] == "-":
                 title = title[:-1].strip()
 
-            k = title, media_type, season_id
+            k = title, media_type, season_id, len(sample_file)
             if k in results:
                 continue
             results.add(k)
